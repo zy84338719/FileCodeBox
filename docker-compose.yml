@@ -9,8 +9,8 @@ services:
     ports:
       - "12345:12345"
     volumes:
-      - ./data:/root/data
-      - ./themes:/root/themes
+      - ./data:/app/data
+      - ./themes:/app/themes
     environment:
       - GIN_MODE=release
       - TZ=Asia/Shanghai

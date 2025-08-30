@@ -7,8 +7,8 @@ services:
     ports:
       - "12345:12345"
     volumes:
-      - filecodebox-data:/root/data
-      - filecodebox-themes:/root/themes
+      - filecodebox-data:/app/data
+      - filecodebox-themes:/app/themes
       - /etc/localtime:/etc/localtime:ro  # 同步系统时间
     environment:
       - GIN_MODE=release
