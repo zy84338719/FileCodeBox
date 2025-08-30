@@ -19,10 +19,17 @@ func setupTestDB() *gorm.DB {
 	}
 
 	// 自动迁移
-	if err := db.AutoMigrate(&models.FileCode{}, &models.UploadChunk{}, &models.KeyValue{}); err != nil {
+	if err := db.AutoMigrate(&models.FileCode{}, &models.UploadChunk{}, &models.KeyValue{}, &models.User{}); err != nil {
 		panic("failed to migrate database: " + err.Error())
 	}
 	return db
+}
+
+func setupTestServices(db *gorm.DB, cfg *config.Config) (*ShareService, *UserService) {
+	storageManager := storage.NewStorageManager(cfg)
+	userService := NewUserService(db, cfg)
+	shareService := NewShareService(db, storageManager, cfg, userService)
+	return shareService, userService
 }
 
 func TestShareText(t *testing.T) {
@@ -30,8 +37,7 @@ func TestShareText(t *testing.T) {
 	cfg := &config.Config{
 		DataPath: "./test_data",
 	}
-	storageManager := storage.NewStorageManager(cfg)
-	service := NewShareService(db, storageManager, cfg)
+	service, _ := setupTestServices(db, cfg)
 
 	// 测试分享文本
 	fileCode, err := service.ShareText("Hello World", 1, "day")
@@ -61,8 +67,7 @@ func TestShareText(t *testing.T) {
 func TestGenerateCode(t *testing.T) {
 	db := setupTestDB()
 	cfg := &config.Config{}
-	storageManager := storage.NewStorageManager(cfg)
-	service := NewShareService(db, storageManager, cfg)
+	service, _ := setupTestServices(db, cfg)
 
 	code1 := service.generateCode()
 	code2 := service.generateCode()
@@ -79,8 +84,7 @@ func TestGenerateCode(t *testing.T) {
 func TestParseExpireInfo(t *testing.T) {
 	db := setupTestDB()
 	cfg := &config.Config{}
-	storageManager := storage.NewStorageManager(cfg)
-	service := NewShareService(db, storageManager, cfg)
+	service, _ := setupTestServices(db, cfg)
 
 	// 测试天数过期
 	expiredAt, expiredCount, usedCount := service.parseExpireInfo(7, "day")
