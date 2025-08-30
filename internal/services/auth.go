@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -440,7 +441,10 @@ func (s *AuthService) ValidateToken(tokenString string) (*AuthClaims, error) {
 
 		// 检查会话是否过期
 		if session.ExpiresAt.Before(time.Now()) {
-			s.daoManager.UserSession.UpdateIsActive(session, false)
+			if err := s.daoManager.UserSession.UpdateIsActive(session, false); err != nil {
+				// 记录错误但继续处理
+				log.Printf("Failed to update session active status: %v", err)
+			}
 			return nil, errors.New("会话已过期")
 		}
 
@@ -496,7 +500,9 @@ func (s *AuthService) createUserSession(user *models.User, ipAddress, userAgent 
 		// 删除最旧的会话
 		oldestSession, err := s.daoManager.UserSession.GetOldestSessionByUserID(user.ID)
 		if err == nil {
-			s.daoManager.UserSession.UpdateIsActive(oldestSession, false)
+			if err := s.daoManager.UserSession.UpdateIsActive(oldestSession, false); err != nil {
+				log.Printf("Failed to update oldest session active status: %v", err)
+			}
 		}
 	}
 
@@ -563,7 +569,9 @@ func (s *AuthService) generateSessionID() (string, error) {
 
 // cleanExpiredSessions 清理过期会话
 func (s *AuthService) cleanExpiredSessions(userID uint) {
-	s.daoManager.UserSession.CleanExpiredSessions()
+	if err := s.daoManager.UserSession.CleanExpiredSessions(); err != nil {
+		log.Printf("Failed to clean expired sessions: %v", err)
+	}
 }
 
 // invalidateOtherSessions 使其他会话失效

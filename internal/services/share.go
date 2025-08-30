@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
+	"log"
 	"mime/multipart"
 	"path/filepath"
 	"time"
@@ -104,7 +105,7 @@ func (s *ShareService) ShareTextWithAuth(req ShareTextRequest) (*models.FileCode
 	if req.UserID != nil {
 		if err := s.userService.UpdateUserUploadStats(*req.UserID, int64(textSize)); err != nil {
 			// 记录错误但不影响上传成功
-			// 可以考虑使用日志记录这个错误
+			log.Printf("Failed to update user upload stats: %v", err)
 		}
 	}
 
@@ -194,7 +195,7 @@ func (s *ShareService) ShareFileWithAuth(req ShareFileRequest) (*models.FileCode
 	if req.UserID != nil {
 		if err := s.userService.UpdateUserUploadStats(*req.UserID, req.File.Size); err != nil {
 			// 记录错误但不影响上传成功
-			// 可以考虑使用日志记录这个错误
+			log.Printf("Failed to update user upload stats: %v", err)
 		}
 	}
 
