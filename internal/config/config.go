@@ -158,7 +158,7 @@ func Init() *Config {
 	config := defaultConfig
 
 	// 创建数据目录
-	if err := os.MkdirAll(config.DataPath, 0755); err != nil {
+	if err := os.MkdirAll(config.DataPath, 0750); err != nil {
 		panic("创建数据目录失败: " + err.Error())
 	}
 

@@ -1,9 +1,10 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/storage"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -183,12 +184,17 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 
 		// 重新创建 WebDAV 存储以应用新配置
 		// 由于使用了策略模式，我们需要重新创建存储实例
-		sh.storageManager.ReconfigureWebDAV(
+		if err := sh.storageManager.ReconfigureWebDAV(
 			sh.config.WebDAVHostname,
 			sh.config.WebDAVUsername,
 			sh.config.WebDAVPassword,
 			sh.config.WebDAVRootPath,
-		)
+		); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "重新配置WebDAV存储失败: " + err.Error(),
+			})
+			return
+		}
 
 	case "s3":
 		if accessKeyID, ok := req.Config["access_key_id"].(string); ok {

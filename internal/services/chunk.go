@@ -3,11 +3,12 @@ package services
 import (
 	"crypto/sha256"
 	"fmt"
+	"mime/multipart"
+	"path/filepath"
+
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/storage"
-	"mime/multipart"
-	"path/filepath"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -270,7 +271,7 @@ type UploadStatus struct {
 	MissingChunks  []int  `json:"missing_chunks"`
 	Progress       string `json:"progress"`
 	ResumePosition int64  `json:"resume_position"`
-	Status         string `json:"status"` // uploading, completed, failed, cancelled
+	Status         string `json:"status"` // uploading, completed, failed, canceled
 }
 
 // GetUploadStatus 获取上传状态

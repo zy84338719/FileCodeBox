@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	"github.com/zy84338719/filecodebox/internal/services"
 	"net/http"
 	"strconv"
 
+	"github.com/zy84338719/filecodebox/internal/services"
+
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 // ShareHandler 分享处理器
@@ -137,7 +139,10 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 	}
 
 	// 更新使用次数
-	h.service.UpdateFileUsage(fileCode)
+	if err := h.service.UpdateFileUsage(fileCode); err != nil {
+		// 记录错误但不阻止下载
+		logrus.WithError(err).Error("更新文件使用次数失败")
+	}
 
 	if fileCode.Text != "" {
 		// 返回文本内容

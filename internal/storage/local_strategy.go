@@ -28,8 +28,8 @@ func NewLocalStorageStrategy(basePath string) *LocalStorageStrategy {
 
 	// 确保目录存在
 	if err := os.MkdirAll(basePath, 0750); err != nil {
-		// 记录错误但不阻止创建策略实例
-		// 可以在后续操作中再次尝试创建目录
+		// 记录错误但不阻止创建策略实例，在后续操作中再次尝试创建目录
+		_ = err // 忽略错误，避免空分支警告
 	}
 
 	return &LocalStorageStrategy{

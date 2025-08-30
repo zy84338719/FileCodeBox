@@ -1,11 +1,12 @@
 package middleware
 
 import (
-	"github.com/zy84338719/filecodebox/internal/config"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/zy84338719/filecodebox/internal/config"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -48,7 +49,7 @@ func (rl *RateLimiter) GetLimiter(key string, r rate.Limit, b int) *rate.Limiter
 	return limiter
 }
 
-// 清理过期的限流器
+// Cleanup 清理过期的限流器
 func (rl *RateLimiter) Cleanup() {
 	ticker := time.NewTicker(time.Hour)
 	go func() {

@@ -2,13 +2,14 @@ package routes
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/middleware"
-	"io/ioutil"
-	"net/http"
-	"path/filepath"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -127,7 +128,7 @@ func SetupRoutes(
 func serveIndex(c *gin.Context, cfg *config.Config) {
 	indexPath := filepath.Join(".", cfg.ThemesSelect, "index.html")
 
-	content, err := ioutil.ReadFile(indexPath)
+	content, err := os.ReadFile(indexPath)
 	if err != nil {
 		c.String(http.StatusNotFound, "Index file not found")
 		return
@@ -152,7 +153,7 @@ func serveIndex(c *gin.Context, cfg *config.Config) {
 func serveAdminPage(c *gin.Context, cfg *config.Config) {
 	adminPath := filepath.Join(".", cfg.ThemesSelect, "admin.html")
 
-	content, err := ioutil.ReadFile(adminPath)
+	content, err := os.ReadFile(adminPath)
 	if err != nil {
 		c.String(http.StatusNotFound, "Admin page not found")
 		return

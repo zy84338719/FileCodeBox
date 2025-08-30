@@ -30,14 +30,14 @@ func InitLogger(dataPath string, production bool) {
 
 	// 创建日志目录
 	logDir := filepath.Join(dataPath, "logs")
-	if err := os.MkdirAll(logDir, 0755); err != nil {
+	if err := os.MkdirAll(logDir, 0750); err != nil {
 		logrus.Warn("创建日志目录失败:", err)
 		return
 	}
 
 	// 创建日志文件
 	logFile := filepath.Join(logDir, "filecodebox.log")
-	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		logrus.Warn("打开日志文件失败:", err)
 		return
