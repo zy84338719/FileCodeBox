@@ -2,23 +2,25 @@ package storage
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"mime/multipart"
 	"net/http"
 	"strings"
+	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
 )
 
 // S3StorageStrategy S3 存储策略实现
 type S3StorageStrategy struct {
-	client     *s3.S3
+	client     *s3.Client
 	bucketName string
 	basePath   string
 	hostname   string
@@ -31,31 +33,41 @@ func NewS3StorageStrategy(accessKeyID, secretAccessKey, bucketName, endpointURL,
 		return nil, fmt.Errorf("S3 bucket name cannot be empty")
 	}
 
-	// 创建AWS会话配置
-	awsConfig := &aws.Config{
-		Region: aws.String(regionName),
-	}
+	ctx := context.Background()
 
-	// 如果有自定义endpoint
-	if endpointURL != "" {
-		awsConfig.Endpoint = aws.String(endpointURL)
-		awsConfig.S3ForcePathStyle = aws.Bool(true) // 对于自定义endpoint，通常需要path style
+	// 创建配置选项
+	var optFns []func(*config.LoadOptions) error
+
+	// 设置区域
+	if regionName != "" {
+		optFns = append(optFns, config.WithRegion(regionName))
 	}
 
 	// 设置凭证
 	if accessKeyID != "" && secretAccessKey != "" {
-		creds := credentials.NewStaticCredentials(accessKeyID, secretAccessKey, sessionToken)
-		awsConfig.Credentials = creds
+		creds := credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, sessionToken)
+		optFns = append(optFns, config.WithCredentialsProvider(creds))
 	}
 
-	// 创建会话
-	sess, err := session.NewSession(awsConfig)
+	// 加载配置
+	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+
+	// 创建S3客户端选项
+	var s3OptFns []func(*s3.Options)
+
+	// 如果有自定义endpoint
+	if endpointURL != "" {
+		s3OptFns = append(s3OptFns, func(o *s3.Options) {
+			o.BaseEndpoint = aws.String(endpointURL)
+			o.UsePathStyle = true // 对于自定义endpoint，通常需要path style
+		})
 	}
 
 	// 创建S3客户端
-	client := s3.New(sess)
+	client := s3.NewFromConfig(cfg, s3OptFns...)
 
 	strategy := &S3StorageStrategy{
 		client:     client,
@@ -82,7 +94,7 @@ func (ss *S3StorageStrategy) buildKey(relativePath string) string {
 func (ss *S3StorageStrategy) WriteFile(path string, data []byte) error {
 	key := ss.buildKey(path)
 
-	_, err := ss.client.PutObject(&s3.PutObjectInput{
+	_, err := ss.client.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket: aws.String(ss.bucketName),
 		Key:    aws.String(key),
 		Body:   bytes.NewReader(data),
@@ -95,7 +107,7 @@ func (ss *S3StorageStrategy) WriteFile(path string, data []byte) error {
 func (ss *S3StorageStrategy) ReadFile(path string) ([]byte, error) {
 	key := ss.buildKey(path)
 
-	result, err := ss.client.GetObject(&s3.GetObjectInput{
+	result, err := ss.client.GetObject(context.Background(), &s3.GetObjectInput{
 		Bucket: aws.String(ss.bucketName),
 		Key:    aws.String(key),
 	})
@@ -121,7 +133,7 @@ func (ss *S3StorageStrategy) DeleteFile(path string) error {
 	}
 
 	// 删除单个文件
-	_, err := ss.client.DeleteObject(&s3.DeleteObjectInput{
+	_, err := ss.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
 		Bucket: aws.String(ss.bucketName),
 		Key:    aws.String(key),
 	})
@@ -137,7 +149,7 @@ func (ss *S3StorageStrategy) deleteWithPrefix(prefix string) error {
 	}
 
 	// 列出所有匹配的对象
-	result, err := ss.client.ListObjectsV2(&s3.ListObjectsV2Input{
+	result, err := ss.client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
 		Bucket: aws.String(ss.bucketName),
 		Prefix: aws.String(prefix),
 	})
@@ -147,7 +159,7 @@ func (ss *S3StorageStrategy) deleteWithPrefix(prefix string) error {
 
 	// 删除所有匹配的对象
 	for _, obj := range result.Contents {
-		_, err := ss.client.DeleteObject(&s3.DeleteObjectInput{
+		_, err := ss.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
 			Bucket: aws.String(ss.bucketName),
 			Key:    obj.Key,
 		})
@@ -163,7 +175,7 @@ func (ss *S3StorageStrategy) deleteWithPrefix(prefix string) error {
 func (ss *S3StorageStrategy) FileExists(path string) bool {
 	key := ss.buildKey(path)
 
-	_, err := ss.client.HeadObject(&s3.HeadObjectInput{
+	_, err := ss.client.HeadObject(context.Background(), &s3.HeadObjectInput{
 		Bucket: aws.String(ss.bucketName),
 		Key:    aws.String(key),
 	})
@@ -213,24 +225,28 @@ func (ss *S3StorageStrategy) GenerateFileURL(filePath string, fileName string) (
 		return "/share/download", nil
 	}
 
-	// 生成预签名URL
-	req, _ := ss.client.GetObjectRequest(&s3.GetObjectInput{
+	// 使用AWS SDK v2的预签名客户端
+	presignClient := s3.NewPresignClient(ss.client)
+
+	// 生成预签名URL（1小时有效期）
+	presignResult, err := presignClient.PresignGetObject(context.Background(), &s3.GetObjectInput{
 		Bucket: aws.String(ss.bucketName),
 		Key:    aws.String(key),
+	}, func(opts *s3.PresignOptions) {
+		opts.Expires = time.Duration(3600) * time.Second
 	})
 
-	url, err := req.Presign(3600) // 1小时有效期
 	if err != nil {
 		return "", fmt.Errorf("生成预签名URL失败: %v", err)
 	}
 
-	return url, nil
+	return presignResult.URL, nil
 }
 
 // TestConnection 测试 S3 连接
 func (ss *S3StorageStrategy) TestConnection() error {
 	// 测试是否可以列出 bucket
-	_, err := ss.client.HeadBucket(&s3.HeadBucketInput{
+	_, err := ss.client.HeadBucket(context.Background(), &s3.HeadBucketInput{
 		Bucket: aws.String(ss.bucketName),
 	})
 	if err != nil {
@@ -241,7 +257,7 @@ func (ss *S3StorageStrategy) TestConnection() error {
 	testKey := ss.buildKey(".test_connection")
 
 	// 尝试写入测试文件
-	_, err = ss.client.PutObject(&s3.PutObjectInput{
+	_, err = ss.client.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket: aws.String(ss.bucketName),
 		Key:    aws.String(testKey),
 		Body:   bytes.NewReader([]byte("test")),
@@ -251,7 +267,7 @@ func (ss *S3StorageStrategy) TestConnection() error {
 	}
 
 	// 清理测试文件
-	_, err = ss.client.DeleteObject(&s3.DeleteObjectInput{
+	_, err = ss.client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
 		Bucket: aws.String(ss.bucketName),
 		Key:    aws.String(testKey),
 	})
