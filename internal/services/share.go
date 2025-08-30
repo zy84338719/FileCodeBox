@@ -9,26 +9,26 @@ import (
 	"time"
 
 	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/dao"
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/storage"
-
 	"gorm.io/gorm"
 )
 
 // ShareService 分享服务
 type ShareService struct {
-	db          *gorm.DB
 	storage     *storage.StorageManager
 	config      *config.Config
 	userService *UserService
+	daoManager  *dao.DAOManager
 }
 
 func NewShareService(db *gorm.DB, storageManager *storage.StorageManager, config *config.Config, userService *UserService) *ShareService {
 	return &ShareService{
-		db:          db,
 		storage:     storageManager,
 		config:      config,
 		userService: userService,
+		daoManager:  dao.NewDAOManager(db),
 	}
 }
 
@@ -96,7 +96,7 @@ func (s *ShareService) ShareTextWithAuth(req ShareTextRequest) (*models.FileCode
 		Prefix:       "Text",
 	}
 
-	if err := s.db.Create(fileCode).Error; err != nil {
+	if err := s.daoManager.FileCode.Create(fileCode); err != nil {
 		return nil, err
 	}
 
@@ -186,7 +186,7 @@ func (s *ShareService) ShareFileWithAuth(req ShareFileRequest) (*models.FileCode
 		OwnerIP:      req.ClientIP,
 	}
 
-	if err := s.db.Create(fileCode).Error; err != nil {
+	if err := s.daoManager.FileCode.Create(fileCode); err != nil {
 		return nil, err
 	}
 
@@ -208,8 +208,8 @@ func (s *ShareService) GetFileByCode(code string, checkExpire bool) (*models.Fil
 
 // GetFileByCodeWithAuth 根据代码获取文件（带认证检查）
 func (s *ShareService) GetFileByCodeWithAuth(code string, checkExpire bool, userID *uint) (*models.FileCode, error) {
-	var fileCode models.FileCode
-	if err := s.db.Where("code = ?", code).First(&fileCode).Error; err != nil {
+	fileCode, err := s.daoManager.FileCode.GetByCode(code)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, fmt.Errorf("文件不存在")
 		}
@@ -231,7 +231,7 @@ func (s *ShareService) GetFileByCodeWithAuth(code string, checkExpire bool, user
 		// 这里可以根据业务需求调整权限控制逻辑
 	}
 
-	return &fileCode, nil
+	return fileCode, nil
 }
 
 // UpdateFileUsage 更新文件使用次数
@@ -240,7 +240,7 @@ func (s *ShareService) UpdateFileUsage(fileCode *models.FileCode) error {
 	if fileCode.ExpiredCount > 0 {
 		fileCode.ExpiredCount--
 	}
-	return s.db.Save(fileCode).Error
+	return s.daoManager.FileCode.Update(fileCode)
 }
 
 // generateCode 生成随机代码

@@ -1,13 +1,16 @@
 package services
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
 	"log"
 	"mime/multipart"
 	"path/filepath"
+	"time"
 
 	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/dao"
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/storage"
 
@@ -17,16 +20,16 @@ import (
 
 // ChunkService 分片服务
 type ChunkService struct {
-	db      *gorm.DB
-	storage *storage.StorageManager
-	config  *config.Config
+	daoManager *dao.DAOManager
+	storage    *storage.StorageManager
+	config     *config.Config
 }
 
 func NewChunkService(db *gorm.DB, storageManager *storage.StorageManager, config *config.Config) *ChunkService {
 	return &ChunkService{
-		db:      db,
-		storage: storageManager,
-		config:  config,
+		daoManager: dao.NewDAOManager(db),
+		storage:    storageManager,
+		config:     config,
 	}
 }
 
@@ -51,8 +54,7 @@ func (s *ChunkService) InitChunkUpload(fileName string, fileSize int64, chunkSiz
 	}
 
 	// 1. 检查文件是否已存在（秒传功能）
-	var existingFile models.FileCode
-	err := s.db.Where("file_hash = ? AND size = ? AND deleted_at IS NULL", fileHash, fileSize).First(&existingFile).Error
+	existingFile, err := s.daoManager.FileCode.GetByHashAndSize(fileHash, fileSize)
 	if err == nil && !existingFile.IsExpired() {
 		return &InitChunkUploadResult{
 			Existed:  true,
@@ -61,8 +63,7 @@ func (s *ChunkService) InitChunkUpload(fileName string, fileSize int64, chunkSiz
 	}
 
 	// 2. 检查是否有未完成的上传会话（断点续传）
-	var existingChunk models.UploadChunk
-	err = s.db.Where("chunk_hash = ? AND file_size = ? AND chunk_index = -1", fileHash, fileSize).First(&existingChunk).Error
+	existingChunk, err := s.daoManager.Chunk.GetByHash(fileHash, fileSize)
 
 	var uploadID string
 	var totalChunks int
@@ -86,16 +87,13 @@ func (s *ChunkService) InitChunkUpload(fileName string, fileSize int64, chunkSiz
 			FileName:    fileName,
 		}
 
-		if err := s.db.Create(chunk).Error; err != nil {
+		if err := s.daoManager.Chunk.Create(chunk); err != nil {
 			return nil, err
 		}
 	}
 
 	// 3. 获取已上传的分片列表
-	var uploadedChunks []int
-	err = s.db.Model(&models.UploadChunk{}).
-		Where("upload_id = ? AND completed = true AND chunk_index >= 0", uploadID).
-		Pluck("chunk_index", &uploadedChunks).Error
+	uploadedChunks, err := s.daoManager.Chunk.GetUploadedChunkIndexes(uploadID)
 	if err != nil {
 		return nil, err
 	}
@@ -123,8 +121,7 @@ func (s *ChunkService) InitChunkUpload(fileName string, fileSize int64, chunkSiz
 // UploadChunk 上传分片，支持断点续传
 func (s *ChunkService) UploadChunk(uploadID string, chunkIndex int, file *multipart.FileHeader) (string, error) {
 	// 获取上传会话信息
-	var chunkInfo models.UploadChunk
-	err := s.db.Where("upload_id = ? AND chunk_index = -1", uploadID).First(&chunkInfo).Error
+	chunkInfo, err := s.daoManager.Chunk.GetByUploadID(uploadID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return "", fmt.Errorf("上传会话不存在或已过期")
@@ -138,8 +135,7 @@ func (s *ChunkService) UploadChunk(uploadID string, chunkIndex int, file *multip
 	}
 
 	// 检查该分片是否已上传
-	var existingChunk models.UploadChunk
-	err = s.db.Where("upload_id = ? AND chunk_index = ? AND completed = true", uploadID, chunkIndex).First(&existingChunk).Error
+	existingChunk, err := s.daoManager.Chunk.GetChunkByIndex(uploadID, chunkIndex)
 	if err == nil {
 		// 分片已存在，返回已有的哈希值（实现幂等性）
 		return existingChunk.ChunkHash, nil
@@ -183,9 +179,7 @@ func (s *ChunkService) UploadChunk(uploadID string, chunkIndex int, file *multip
 		Completed:   true,
 	}
 
-	err = s.db.Where("upload_id = ? AND chunk_index = ?", uploadID, chunkIndex).
-		Assign(chunkRecord).
-		FirstOrCreate(chunkRecord).Error
+	err = s.daoManager.Chunk.FirstOrCreateChunk(chunkRecord)
 	if err != nil {
 		return "", fmt.Errorf("保存分片记录失败: %v", err)
 	}
@@ -196,8 +190,7 @@ func (s *ChunkService) UploadChunk(uploadID string, chunkIndex int, file *multip
 // CompleteUpload 完成上传
 func (s *ChunkService) CompleteUpload(uploadID string, expireValue int, expireStyle string) (*models.FileCode, error) {
 	// 获取上传基本信息
-	var chunkInfo models.UploadChunk
-	err := s.db.Where("upload_id = ? AND chunk_index = -1", uploadID).First(&chunkInfo).Error
+	chunkInfo, err := s.daoManager.Chunk.GetByUploadID(uploadID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, fmt.Errorf("上传会话不存在")
@@ -206,10 +199,7 @@ func (s *ChunkService) CompleteUpload(uploadID string, expireValue int, expireSt
 	}
 
 	// 验证所有分片是否完整
-	var completedCount int64
-	err = s.db.Model(&models.UploadChunk{}).
-		Where("upload_id = ? AND completed = true AND chunk_index >= 0", uploadID).
-		Count(&completedCount).Error
+	completedCount, err := s.daoManager.Chunk.CountCompletedChunks(uploadID)
 	if err != nil {
 		return nil, err
 	}
@@ -226,15 +216,14 @@ func (s *ChunkService) CompleteUpload(uploadID string, expireValue int, expireSt
 
 	// 合并文件
 	storageInterface := s.storage.GetStorage()
-	err = storageInterface.MergeChunks(uploadID, &chunkInfo, savePath)
+	err = storageInterface.MergeChunks(uploadID, chunkInfo, savePath)
 	if err != nil {
 		return nil, fmt.Errorf("合并文件失败: %v", err)
 	}
 
 	// 生成代码和过期信息
-	shareService := &ShareService{db: s.db, config: s.config}
-	code := shareService.generateCode()
-	expiredAt, expiredCount, usedCount := shareService.parseExpireInfo(expireValue, expireStyle)
+	code := s.generateCode()
+	expiredAt, expiredCount, usedCount := s.parseExpireInfo(expireValue, expireStyle)
 
 	// 创建文件记录
 	fileCode := &models.FileCode{
@@ -252,7 +241,7 @@ func (s *ChunkService) CompleteUpload(uploadID string, expireValue int, expireSt
 		Suffix:       suffix,
 	}
 
-	if err := s.db.Create(fileCode).Error; err != nil {
+	if err := s.daoManager.FileCode.Create(fileCode); err != nil {
 		return nil, err
 	}
 
@@ -282,8 +271,7 @@ type UploadStatus struct {
 // GetUploadStatus 获取上传状态
 func (s *ChunkService) GetUploadStatus(uploadID string) (*UploadStatus, error) {
 	// 获取上传基本信息
-	var chunkInfo models.UploadChunk
-	err := s.db.Where("upload_id = ? AND chunk_index = -1", uploadID).First(&chunkInfo).Error
+	chunkInfo, err := s.daoManager.Chunk.GetByUploadID(uploadID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, fmt.Errorf("上传会话不存在")
@@ -292,10 +280,7 @@ func (s *ChunkService) GetUploadStatus(uploadID string) (*UploadStatus, error) {
 	}
 
 	// 获取已上传的分片列表
-	var uploadedChunks []int
-	err = s.db.Model(&models.UploadChunk{}).
-		Where("upload_id = ? AND completed = true AND chunk_index >= 0", uploadID).
-		Pluck("chunk_index", &uploadedChunks).Error
+	uploadedChunks, err := s.daoManager.Chunk.GetUploadedChunkIndexes(uploadID)
 	if err != nil {
 		return nil, err
 	}
@@ -342,8 +327,7 @@ func (s *ChunkService) GetUploadStatus(uploadID string) (*UploadStatus, error) {
 
 // VerifyChunk 验证分片完整性
 func (s *ChunkService) VerifyChunk(uploadID string, chunkIndex int, expectedHash string) (bool, error) {
-	var chunk models.UploadChunk
-	err := s.db.Where("upload_id = ? AND chunk_index = ? AND completed = true", uploadID, chunkIndex).First(&chunk).Error
+	chunk, err := s.daoManager.Chunk.GetChunkByIndex(uploadID, chunkIndex)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return false, nil // 分片不存在
@@ -357,7 +341,7 @@ func (s *ChunkService) VerifyChunk(uploadID string, chunkIndex int, expectedHash
 // CancelUpload 取消上传
 func (s *ChunkService) CancelUpload(uploadID string) error {
 	// 删除所有相关的分片记录
-	err := s.db.Where("upload_id = ?", uploadID).Delete(&models.UploadChunk{}).Error
+	err := s.daoManager.Chunk.DeleteByUploadID(uploadID)
 	if err != nil {
 		return fmt.Errorf("删除上传记录失败: %v", err)
 	}
@@ -371,4 +355,48 @@ func (s *ChunkService) CancelUpload(uploadID string) error {
 	}
 
 	return nil
+}
+
+// generateCode 生成随机代码
+func (s *ChunkService) generateCode() string {
+	bytes := make([]byte, 6)
+	if _, err := rand.Read(bytes); err != nil {
+		// 如果随机数生成失败，使用时间戳作为备选方案
+		return fmt.Sprintf("%x", time.Now().UnixNano())[:12]
+	}
+	return fmt.Sprintf("%x", bytes)[:12]
+}
+
+// parseExpireInfo 解析过期信息
+func (s *ChunkService) parseExpireInfo(expireValue int, expireStyle string) (*time.Time, int, int) {
+	var expiredAt *time.Time
+	expiredCount := 0
+	usedCount := 0
+
+	switch expireStyle {
+	case "day":
+		t := time.Now().Add(time.Duration(expireValue) * 24 * time.Hour)
+		expiredAt = &t
+		expiredCount = -1
+	case "hour":
+		t := time.Now().Add(time.Duration(expireValue) * time.Hour)
+		expiredAt = &t
+		expiredCount = -1
+	case "minute":
+		t := time.Now().Add(time.Duration(expireValue) * time.Minute)
+		expiredAt = &t
+		expiredCount = -1
+	case "count":
+		expiredCount = expireValue
+	case "forever":
+		// 永不过期
+		expiredCount = -1
+	default:
+		// 默认1天
+		t := time.Now().Add(24 * time.Hour)
+		expiredAt = &t
+		expiredCount = -1
+	}
+
+	return expiredAt, expiredCount, usedCount
 }

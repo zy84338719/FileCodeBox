@@ -2,9 +2,9 @@ package storage
 
 import (
 	"fmt"
-	"github.com/zy84338719/filecodebox/internal/models"
 	"mime/multipart"
-	"net/http"
+
+	"github.com/zy84338719/filecodebox/internal/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -81,7 +81,7 @@ func (so *StorageOperator) CleanChunks(uploadID string) error {
 func (so *StorageOperator) GetFileResponse(c *gin.Context, fileCode *models.FileCode) error {
 	// 处理文本分享
 	if fileCode.Text != "" {
-		c.JSON(http.StatusOK, gin.H{
+		c.JSON(200, gin.H{
 			"code":    200,
 			"message": "success",
 			"detail": gin.H{

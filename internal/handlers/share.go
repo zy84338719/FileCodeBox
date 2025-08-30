@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"net/http"
 	"strconv"
 
+	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -41,18 +41,12 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 
 	expireValue, err := strconv.Atoi(expireValueStr)
 	if err != nil || expireValue <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "过期时间参数错误",
-		})
+		common.BadRequestResponse(c, "过期时间参数错误")
 		return
 	}
 
 	if text == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "文本内容不能为空",
-		})
+		common.BadRequestResponse(c, "文本内容不能为空")
 		return
 	}
 
@@ -76,21 +70,11 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 
 	fileCode, err := h.service.ShareTextWithAuth(req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": err.Error(),
-		})
+		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"detail": gin.H{
-			"code":        fileCode.Code,
-			"upload_type": fileCode.UploadType,
-		},
-	})
+	common.SuccessWithUploadInfo(c, fileCode.Code, fileCode.UploadType)
 }
 
 // ShareFile 分享文件
@@ -114,19 +98,13 @@ func (h *ShareHandler) ShareFile(c *gin.Context) {
 
 	expireValue, err := strconv.Atoi(expireValueStr)
 	if err != nil || expireValue <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "过期时间参数错误",
-		})
+		common.BadRequestResponse(c, "过期时间参数错误")
 		return
 	}
 
 	file, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "获取文件失败",
-		})
+		common.BadRequestResponse(c, "获取文件失败")
 		return
 	}
 
@@ -150,21 +128,14 @@ func (h *ShareHandler) ShareFile(c *gin.Context) {
 
 	fileCode, err := h.service.ShareFileWithAuth(req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": err.Error(),
-		})
+		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"detail": gin.H{
-			"code":        fileCode.Code,
-			"name":        file.Filename,
-			"upload_type": fileCode.UploadType,
-		},
+	common.SuccessResponse(c, gin.H{
+		"code":        fileCode.Code,
+		"name":        file.Filename,
+		"upload_type": fileCode.UploadType,
 	})
 }
 
@@ -200,10 +171,7 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 	}
 
 	if code == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "文件代码不能为空",
-		})
+		common.BadRequestResponse(c, "文件代码不能为空")
 		return
 	}
 
@@ -216,10 +184,7 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 
 	fileCode, err := h.service.GetFileByCodeWithAuth(code, true, userID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code":    404,
-			"message": err.Error(),
-		})
+		common.NotFoundResponse(c, err.Error())
 		return
 	}
 
@@ -231,31 +196,23 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 
 	if fileCode.Text != "" {
 		// 返回文本内容
-		c.JSON(http.StatusOK, gin.H{
-			"code":    200,
-			"message": "success",
-			"detail": gin.H{
-				"code":         fileCode.Code,
-				"name":         fileCode.Prefix + fileCode.Suffix,
-				"size":         fileCode.Size,
-				"text":         fileCode.Text,
-				"upload_type":  fileCode.UploadType,
-				"require_auth": fileCode.RequireAuth,
-			},
+		common.SuccessResponse(c, gin.H{
+			"code":         fileCode.Code,
+			"name":         fileCode.Prefix + fileCode.Suffix,
+			"size":         fileCode.Size,
+			"text":         fileCode.Text,
+			"upload_type":  fileCode.UploadType,
+			"require_auth": fileCode.RequireAuth,
 		})
 	} else {
 		// 返回文件下载信息
-		c.JSON(http.StatusOK, gin.H{
-			"code":    200,
-			"message": "success",
-			"detail": gin.H{
-				"code":         fileCode.Code,
-				"name":         fileCode.Prefix + fileCode.Suffix,
-				"size":         fileCode.Size,
-				"text":         "/share/download?code=" + fileCode.Code,
-				"upload_type":  fileCode.UploadType,
-				"require_auth": fileCode.RequireAuth,
-			},
+		common.SuccessResponse(c, gin.H{
+			"code":         fileCode.Code,
+			"name":         fileCode.Prefix + fileCode.Suffix,
+			"size":         fileCode.Size,
+			"text":         "/share/download?code=" + fileCode.Code,
+			"upload_type":  fileCode.UploadType,
+			"require_auth": fileCode.RequireAuth,
 		})
 	}
 }
@@ -276,10 +233,7 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 func (h *ShareHandler) DownloadFile(c *gin.Context) {
 	code := c.Query("code")
 	if code == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "文件代码不能为空",
-		})
+		common.BadRequestResponse(c, "文件代码不能为空")
 		return
 	}
 
@@ -292,29 +246,19 @@ func (h *ShareHandler) DownloadFile(c *gin.Context) {
 
 	fileCode, err := h.service.GetFileByCodeWithAuth(code, false, userID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code":    404,
-			"message": err.Error(),
-		})
+		common.NotFoundResponse(c, err.Error())
 		return
 	}
 
 	if fileCode.Text != "" {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    200,
-			"message": "success",
-			"detail":  fileCode.Text,
-		})
+		common.SuccessResponse(c, fileCode.Text)
 		return
 	}
 
 	// 使用存储接口下载文件
 	storageInterface := h.service.GetStorageInterface()
 	if err := storageInterface.GetFileResponse(c, fileCode); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code":    404,
-			"message": "文件下载失败: " + err.Error(),
-		})
+		common.NotFoundResponse(c, "文件下载失败: "+err.Error())
 		return
 	}
 }

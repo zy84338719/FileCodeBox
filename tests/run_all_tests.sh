@@ -23,24 +23,47 @@ fi
 echo "✅ 服务器运行正常" | tee -a "$REPORT_FILE"
 echo | tee -a "$REPORT_FILE"
 
-# 测试脚本分类
-declare -A test_categories=(
-    ["core"]="test_api.sh test_admin.sh test_chunk.sh"
-    ["storage"]="test_storage_management.sh test_storage_switch_fix.sh test_webdav_config.sh"
-    ["database"]="test_database_config.sh test_date_grouping.sh"
-    ["frontend"]="test_web.sh test_ui_features.sh test_javascript.sh test_progress.sh"
-    ["issues"]="test_upload_limit.sh test_download_issue.sh diagnose_storage_issue.sh"
-    ["performance"]="benchmark.sh"
-    ["resume"]="test_resume_upload.sh"
-    ["basic"]="simple_test.sh"
-)
+# 测试脚本分类 - 使用兼容性更好的方法
+get_test_scripts() {
+    local category=$1
+    case "$category" in
+        "core")
+            echo "test_api.sh test_admin.sh test_chunk.sh"
+            ;;
+        "storage")
+            echo "test_storage_management.sh test_webdav_config.sh"
+            ;;
+        "database")
+            echo "test_database_config.sh test_date_grouping.sh"
+            ;;
+        "frontend")
+            echo "test_web.sh test_ui_features.sh test_javascript.sh test_progress.sh"
+            ;;
+        "issues")
+            echo "test_upload_limit.sh"
+            ;;
+        "performance")
+            echo "benchmark.sh"
+            ;;
+        "resume")
+            echo "test_resume_upload.sh"
+            ;;
+        "basic")
+            echo "simple_test.sh"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
 
 # 运行测试分类
 run_category_tests() {
     local category=$1
     local scripts=$2
+    local category_upper=$(echo "$category" | tr '[:lower:]' '[:upper:]')
     
-    echo "=== 📂 ${category^^} 测试 ===" | tee -a "$REPORT_FILE"
+    echo "=== 📂 ${category_upper} 测试 ===" | tee -a "$REPORT_FILE"
     echo "测试脚本: $scripts" | tee -a "$REPORT_FILE"
     echo | tee -a "$REPORT_FILE"
     
@@ -68,7 +91,7 @@ run_category_tests() {
         fi
     done
     
-    echo "📊 ${category^^} 测试结果: 通过 $passed, 失败 $failed" | tee -a "$REPORT_FILE"
+    echo "📊 ${category_upper} 测试结果: 通过 $passed, 失败 $failed" | tee -a "$REPORT_FILE"
     echo | tee -a "$REPORT_FILE"
     
     return $failed
@@ -84,7 +107,8 @@ main() {
     
     # 按分类运行测试
     for category in core storage database frontend issues performance resume basic; do
-        if run_category_tests "$category" "${test_categories[$category]}"; then
+        local scripts=$(get_test_scripts "$category")
+        if run_category_tests "$category" "$scripts"; then
             echo "✅ $category 测试分类通过" | tee -a "$REPORT_FILE"
         else
             echo "❌ $category 测试分类有失败项" | tee -a "$REPORT_FILE"
@@ -115,19 +139,24 @@ main() {
 # 处理命令行参数
 case "${1:-all}" in
     "core")
-        run_category_tests "core" "${test_categories[core]}"
+        scripts=$(get_test_scripts "core")
+        run_category_tests "core" "$scripts"
         ;;
     "storage")
-        run_category_tests "storage" "${test_categories[storage]}"
+        scripts=$(get_test_scripts "storage")
+        run_category_tests "storage" "$scripts"
         ;;
     "frontend")
-        run_category_tests "frontend" "${test_categories[frontend]}"
+        scripts=$(get_test_scripts "frontend")
+        run_category_tests "frontend" "$scripts"
         ;;
     "performance")
-        run_category_tests "performance" "${test_categories[performance]}"
+        scripts=$(get_test_scripts "performance")
+        run_category_tests "performance" "$scripts"
         ;;
     "resume")
-        run_category_tests "resume" "${test_categories[resume]}"
+        scripts=$(get_test_scripts "resume")
+        run_category_tests "resume" "$scripts"
         ;;
     "all"|*)
         main

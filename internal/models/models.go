@@ -11,23 +11,21 @@ import (
 
 // FileCode 文件代码模型
 type FileCode struct {
-	ID           uint           `gorm:"primarykey" json:"id"`
-	Code         string         `gorm:"uniqueIndex;size:255" json:"code"`
-	Prefix       string         `gorm:"size:255" json:"prefix"`
-	Suffix       string         `gorm:"size:255" json:"suffix"`
-	UUIDFileName string         `gorm:"size:255" json:"uuid_file_name"`
-	FilePath     string         `gorm:"size:255" json:"file_path"`
-	Size         int64          `gorm:"default:0" json:"size"`
-	Text         string         `gorm:"type:text" json:"text"`
-	ExpiredAt    *time.Time     `json:"expired_at"`
-	ExpiredCount int            `gorm:"default:0" json:"expired_count"`
-	UsedCount    int            `gorm:"default:0" json:"used_count"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at"`
-	FileHash     string         `gorm:"size:64" json:"file_hash"`
-	IsChunked    bool           `gorm:"default:false" json:"is_chunked"`
-	UploadID     string         `gorm:"size:36" json:"upload_id"`
+	gorm.Model
+	Code         string     `gorm:"uniqueIndex;size:255" json:"code"`
+	Prefix       string     `gorm:"size:255" json:"prefix"`
+	Suffix       string     `gorm:"size:255" json:"suffix"`
+	UUIDFileName string     `gorm:"size:255" json:"uuid_file_name"`
+	FilePath     string     `gorm:"size:255" json:"file_path"`
+	Size         int64      `gorm:"default:0" json:"size"`
+	Text         string     `gorm:"type:text" json:"text"`
+	ExpiredAt    *time.Time `json:"expired_at"`
+	ExpiredCount int        `gorm:"default:0" json:"expired_count"`
+	UsedCount    int        `gorm:"default:0" json:"used_count"`
+
+	FileHash  string `gorm:"size:64" json:"file_hash"`
+	IsChunked bool   `gorm:"default:false" json:"is_chunked"`
+	UploadID  string `gorm:"size:36" json:"upload_id"`
 
 	// 新增：用户认证相关字段
 	UserID      *uint  `gorm:"index" json:"user_id"`                           // 上传用户ID，为null表示匿名上传
@@ -110,30 +108,24 @@ func (u *UploadChunk) IsComplete(db *gorm.DB) (bool, error) {
 
 // KeyValue 键值对模型
 type KeyValue struct {
-	ID        uint           `gorm:"primarykey" json:"id"`
-	Key       string         `gorm:"uniqueIndex;size:255" json:"key"`
-	Value     string         `gorm:"type:text" json:"value"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	gorm.Model
+	Key   string `gorm:"uniqueIndex;size:255" json:"key"`
+	Value string `gorm:"type:text" json:"value"`
 }
 
 // User 用户模型
 type User struct {
-	ID            uint           `gorm:"primarykey" json:"id"`
-	Username      string         `gorm:"uniqueIndex;size:50" json:"username"`
-	Email         string         `gorm:"uniqueIndex;size:100" json:"email"`
-	PasswordHash  string         `gorm:"size:128" json:"-"`                      // 密码哈希，不返回给前端
-	Nickname      string         `gorm:"size:50" json:"nickname"`                // 用户昵称
-	Avatar        string         `gorm:"size:255" json:"avatar"`                 // 头像URL
-	Role          string         `gorm:"size:20;default:'user'" json:"role"`     // admin, user
-	Status        string         `gorm:"size:20;default:'active'" json:"status"` // active, inactive, banned
-	EmailVerified bool           `gorm:"default:false" json:"email_verified"`    // 邮箱是否验证
-	LastLoginAt   *time.Time     `json:"last_login_at"`                          // 最后登录时间
-	LastLoginIP   string         `gorm:"size:45" json:"last_login_ip"`           // 最后登录IP
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-	DeletedAt     gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	gorm.Model
+	Username      string     `gorm:"uniqueIndex;size:50" json:"username"`
+	Email         string     `gorm:"uniqueIndex;size:100" json:"email"`
+	PasswordHash  string     `gorm:"size:128" json:"-"`                      // 密码哈希，不返回给前端
+	Nickname      string     `gorm:"size:50" json:"nickname"`                // 用户昵称
+	Avatar        string     `gorm:"size:255" json:"avatar"`                 // 头像URL
+	Role          string     `gorm:"size:20;default:'user'" json:"role"`     // admin, user
+	Status        string     `gorm:"size:20;default:'active'" json:"status"` // active, inactive, banned
+	EmailVerified bool       `gorm:"default:false" json:"email_verified"`    // 邮箱是否验证
+	LastLoginAt   *time.Time `json:"last_login_at"`                          // 最后登录时间
+	LastLoginIP   string     `gorm:"size:45" json:"last_login_ip"`           // 最后登录IP
 
 	// 用户上传统计
 	TotalUploads    int   `gorm:"default:0" json:"total_uploads"`     // 总上传次数
@@ -145,14 +137,12 @@ type User struct {
 
 // UserSession 用户会话模型
 type UserSession struct {
-	ID        uint           `gorm:"primarykey" json:"id"`
-	UserID    uint           `gorm:"index" json:"user_id"`
-	SessionID string         `gorm:"uniqueIndex;size:128" json:"session_id"` // JWT token ID
-	IPAddress string         `gorm:"size:45" json:"ip_address"`              // 登录IP
-	UserAgent string         `gorm:"size:500" json:"user_agent"`             // 用户代理
-	ExpiresAt time.Time      `json:"expires_at"`                             // 过期时间
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
-	IsActive  bool           `gorm:"default:true" json:"is_active"` // 是否活跃
+	gorm.Model
+	UserID    uint      `gorm:"index" json:"user_id"`
+	SessionID string    `gorm:"uniqueIndex;size:128" json:"session_id"` // JWT token ID
+	IPAddress string    `gorm:"size:45" json:"ip_address"`              // 登录IP
+	UserAgent string    `gorm:"size:500" json:"user_agent"`             // 用户代理
+	ExpiresAt time.Time `json:"expires_at"`                             // 过期时间
+
+	IsActive bool `gorm:"default:true" json:"is_active"` // 是否活跃
 }

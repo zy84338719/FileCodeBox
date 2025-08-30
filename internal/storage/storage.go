@@ -41,7 +41,7 @@ func NewStorageManager(cfg *config.Config) *StorageManager {
 	// 创建 PathManager
 	basePath := cfg.StoragePath
 	if basePath == "" {
-		basePath = filepath.Join(cfg.DataPath, "share", "data")
+		basePath = filepath.Join(cfg.DataPath)
 	}
 	pathManager := NewPathManager(basePath)
 
@@ -141,7 +141,7 @@ func (sm *StorageManager) ReconfigureWebDAV(hostname, username, password, rootPa
 
 	// 如果没有找到 PathManager，创建一个默认的
 	if pathManager == nil {
-		pathManager = NewPathManager("./data/share/data")
+		pathManager = NewPathManager("./data")
 	}
 
 	// 创建新的 WebDAV 策略

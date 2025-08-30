@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"net/http"
 	"strconv"
 
+	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -38,27 +38,17 @@ func (h *ChunkHandler) InitChunkUpload(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "参数错误: " + err.Error(),
-		})
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
 		return
 	}
 
 	result, err := h.service.InitChunkUpload(req.FileName, req.FileSize, req.ChunkSize, req.FileHash)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "初始化上传失败: " + err.Error(),
-		})
+		common.InternalServerErrorResponse(c, "初始化上传失败: "+err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"detail":  result,
-	})
+	common.SuccessResponse(c, result)
 }
 
 // UploadChunk 上传分片
@@ -80,37 +70,24 @@ func (h *ChunkHandler) UploadChunk(c *gin.Context) {
 
 	chunkIndex, err := strconv.Atoi(chunkIndexStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "分片索引错误",
-		})
+		common.BadRequestResponse(c, "分片索引错误")
 		return
 	}
 
 	file, err := c.FormFile("chunk")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "获取分片文件失败",
-		})
+		common.BadRequestResponse(c, "获取分片文件失败")
 		return
 	}
 
 	chunkHash, err := h.service.UploadChunk(uploadID, chunkIndex, file)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": err.Error(),
-		})
+		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"detail": gin.H{
-			"chunk_hash": chunkHash,
-		},
+	common.SuccessResponse(c, gin.H{
+		"chunk_hash": chunkHash,
 	})
 }
 
@@ -135,29 +112,19 @@ func (h *ChunkHandler) CompleteUpload(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "参数错误: " + err.Error(),
-		})
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
 		return
 	}
 
 	fileCode, err := h.service.CompleteUpload(uploadID, req.ExpireValue, req.ExpireStyle)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": err.Error(),
-		})
+		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"detail": gin.H{
-			"code": fileCode.Code,
-			"name": fileCode.Prefix + fileCode.Suffix,
-		},
+	common.SuccessResponse(c, gin.H{
+		"code": fileCode.Code,
+		"name": fileCode.Prefix + fileCode.Suffix,
 	})
 }
 
@@ -167,18 +134,11 @@ func (h *ChunkHandler) GetUploadStatus(c *gin.Context) {
 
 	status, err := h.service.GetUploadStatus(uploadID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": err.Error(),
-		})
+		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"detail":  status,
-	})
+	common.SuccessResponse(c, status)
 }
 
 // VerifyChunk 验证分片完整性
@@ -188,10 +148,7 @@ func (h *ChunkHandler) VerifyChunk(c *gin.Context) {
 
 	chunkIndex, err := strconv.Atoi(chunkIndexStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "分片索引错误",
-		})
+		common.BadRequestResponse(c, "分片索引错误")
 		return
 	}
 
@@ -200,28 +157,18 @@ func (h *ChunkHandler) VerifyChunk(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "参数错误: " + err.Error(),
-		})
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
 		return
 	}
 
 	isValid, err := h.service.VerifyChunk(uploadID, chunkIndex, req.ChunkHash)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": err.Error(),
-		})
+		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"detail": gin.H{
-			"valid": isValid,
-		},
+	common.SuccessResponse(c, gin.H{
+		"valid": isValid,
 	})
 }
 
@@ -231,15 +178,9 @@ func (h *ChunkHandler) CancelUpload(c *gin.Context) {
 
 	err := h.service.CancelUpload(uploadID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": err.Error(),
-		})
+		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "上传已取消",
-	})
+	common.SuccessWithMessage(c, "上传已取消", nil)
 }

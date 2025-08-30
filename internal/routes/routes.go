@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/middleware"
@@ -31,7 +32,6 @@ func SetupRoutes(
 	apiHandler := handlers.NewAPIHandler()
 
 	router.GET("/health", apiHandler.GetHealth)
-	router.GET("/api/doc", apiHandler.GetAPIDoc)
 
 	// 首页和静态页面
 	router.GET("/", func(c *gin.Context) {
@@ -50,22 +50,18 @@ func SetupRoutes(
 
 	// 获取配置接口
 	router.POST("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    200,
-			"message": "success",
-			"detail": gin.H{
-				"name":               cfg.Name,
-				"description":        cfg.Description,
-				"explain":            cfg.PageExplain,
-				"uploadSize":         cfg.UploadSize,
-				"expireStyle":        cfg.ExpireStyle,
-				"enableChunk":        getEnableChunk(cfg),
-				"openUpload":         cfg.OpenUpload,
-				"notify_title":       cfg.NotifyTitle,
-				"notify_content":     cfg.NotifyContent,
-				"show_admin_address": cfg.ShowAdminAddr,
-				"max_save_seconds":   cfg.MaxSaveSeconds,
-			},
+		common.SuccessResponse(c, gin.H{
+			"name":               cfg.Name,
+			"description":        cfg.Description,
+			"explain":            cfg.PageExplain,
+			"uploadSize":         cfg.UploadSize,
+			"expireStyle":        cfg.ExpireStyle,
+			"enableChunk":        getEnableChunk(cfg),
+			"openUpload":         cfg.OpenUpload,
+			"notify_title":       cfg.NotifyTitle,
+			"notify_content":     cfg.NotifyContent,
+			"show_admin_address": cfg.ShowAdminAddr,
+			"max_save_seconds":   cfg.MaxSaveSeconds,
 		})
 	})
 

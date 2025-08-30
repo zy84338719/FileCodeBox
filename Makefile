@@ -1,15 +1,41 @@
-.PHONY: build run test clean docker-build docker-run dev
+.PHONY: build run test clean docker-build docker-run dev release
+
+# 版本信息
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+GO_VERSION := $(shell go version | awk '{print $$3}')
+
+# 构建标志
+LDFLAGS := -ldflags "\
+	-X main.version=$(VERSION) \
+	-X main.commit=$(COMMIT) \
+	-X main.date=$(DATE) \
+	-w -s"
 
 # 默认目标
 all: build
 
-# 编译项目
+# 编译项目（带版本信息）
 build:
-	go build -o filecodebox .
+	@echo "Building FileCodeBox $(VERSION) ($(COMMIT)) at $(DATE)"
+	go build $(LDFLAGS) -o filecodebox .
+
+# 发布构建（优化编译）
+release:
+	@echo "Building FileCodeBox release $(VERSION) ($(COMMIT)) at $(DATE)"
+	CGO_ENABLED=0 go build $(LDFLAGS) -a -installsuffix cgo -o filecodebox .
 
 # 运行项目
 run: build
 	./filecodebox
+
+# 显示版本信息
+version:
+	@echo "FileCodeBox $(VERSION)"
+	@echo "Commit: $(COMMIT)"
+	@echo "Built: $(DATE)"
+	@echo "Go Version: $(GO_VERSION)"
 
 # 运行测试
 test:
@@ -38,7 +64,7 @@ vet:
 
 # 构建Docker镜像
 docker-build:
-	docker build -t filecodebox-go .
+	docker build --build-arg VERSION=$(VERSION) --build-arg COMMIT=$(COMMIT) --build-arg DATE=$(DATE) -t filecodebox-go .
 
 # 运行Docker容器
 docker-run: docker-build
@@ -61,13 +87,15 @@ deps:
 
 # 生成API文档
 docs:
-	@echo "API文档可通过 http://localhost:12345/api/doc 访问"
+	@echo "API文档可通过 http://localhost:12345/swagger/index.html 访问"
 
 # 查看帮助
 help:
 	@echo "可用的make命令："
-	@echo "  build       - 编译项目"
+	@echo "  build       - 编译项目（带版本信息）"
+	@echo "  release     - 发布构建（优化编译）"
 	@echo "  run         - 编译并运行项目"
+	@echo "  version     - 显示版本信息"
 	@echo "  test        - 运行测试"
 	@echo "  dev         - 开发模式（需要安装air）"
 	@echo "  clean       - 清理编译文件"

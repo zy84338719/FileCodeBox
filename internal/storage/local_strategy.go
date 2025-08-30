@@ -106,17 +106,14 @@ func (ls *LocalStorageStrategy) SaveUploadFile(file *multipart.FileHeader, saveP
 
 // ServeFile 提供文件下载服务
 func (ls *LocalStorageStrategy) ServeFile(c *gin.Context, filePath string, fileName string) error {
-	fullPath := filepath.Join(ls.basePath, filePath)
-
 	// 检查文件是否存在
-	if !ls.FileExists(fullPath) {
-		c.JSON(404, gin.H{"error": "文件不存在"})
-		return fmt.Errorf("文件不存在: %s", fullPath)
+	if !ls.FileExists(filePath) {
+		return fmt.Errorf("文件不存在: %s", filePath)
 	}
 
 	// 设置文件下载头
 	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fileName))
-	c.File(fullPath)
+	c.File(filePath)
 	return nil
 }
 

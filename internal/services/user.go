@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/dao"
 	"github.com/zy84338719/filecodebox/internal/models"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -18,15 +19,15 @@ import (
 
 // UserService 用户服务
 type UserService struct {
-	db  *gorm.DB
-	cfg *config.Config
+	cfg        *config.Config
+	daoManager *dao.DAOManager
 }
 
 // NewUserService 创建用户服务
 func NewUserService(db *gorm.DB, cfg *config.Config) *UserService {
 	return &UserService{
-		db:  db,
-		cfg: cfg,
+		cfg:        cfg,
+		daoManager: dao.NewDAOManager(db),
 	}
 }
 
@@ -47,8 +48,8 @@ func (s *UserService) Register(username, email, password, nickname string) (*mod
 	}
 
 	// 验证用户名和邮箱的唯一性
-	var existingUser models.User
-	if err := s.db.Where("username = ? OR email = ?", username, email).First(&existingUser).Error; err == nil {
+	existingUser, err := s.daoManager.User.CheckExists(username, email)
+	if err == nil {
 		if existingUser.Username == username {
 			return nil, errors.New("用户名已存在")
 		}
@@ -76,7 +77,7 @@ func (s *UserService) Register(username, email, password, nickname string) (*mod
 		MaxStorageQuota: s.cfg.UserStorageQuota,
 	}
 
-	if err := s.db.Create(user).Error; err != nil {
+	if err := s.daoManager.User.Create(user); err != nil {
 		return nil, fmt.Errorf("创建用户失败: %w", err)
 	}
 
@@ -86,8 +87,8 @@ func (s *UserService) Register(username, email, password, nickname string) (*mod
 // Login 用户登录
 func (s *UserService) Login(usernameOrEmail, password, ipAddress, userAgent string) (string, *models.User, error) {
 	// 查找用户
-	var user models.User
-	if err := s.db.Where("username = ? OR email = ?", usernameOrEmail, usernameOrEmail).First(&user).Error; err != nil {
+	user, err := s.daoManager.User.GetByUsernameOrEmail(usernameOrEmail)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", nil, errors.New("用户名或密码错误")
 		}
@@ -116,16 +117,16 @@ func (s *UserService) Login(usernameOrEmail, password, ipAddress, userAgent stri
 	}
 
 	// 检查会话数量限制
-	var sessionCount int64
-	if err := s.db.Model(&models.UserSession{}).Where("user_id = ? AND is_active = true", user.ID).Count(&sessionCount).Error; err != nil {
+	sessionCount, err := s.daoManager.UserSession.CountActiveSessionsByUserID(user.ID)
+	if err != nil {
 		return "", nil, fmt.Errorf("检查会话数量失败: %w", err)
 	}
 
 	if sessionCount >= int64(s.cfg.MaxSessionsPerUser) {
 		// 删除最旧的会话
-		var oldestSession models.UserSession
-		if err := s.db.Where("user_id = ? AND is_active = true", user.ID).Order("created_at ASC").First(&oldestSession).Error; err == nil {
-			s.db.Model(&oldestSession).Update("is_active", false)
+		oldestSession, err := s.daoManager.UserSession.GetOldestSessionByUserID(user.ID)
+		if err == nil {
+			s.daoManager.UserSession.UpdateIsActive(oldestSession, false)
 		}
 	}
 
@@ -164,7 +165,7 @@ func (s *UserService) Login(usernameOrEmail, password, ipAddress, userAgent stri
 		IsActive:  true,
 	}
 
-	if err := s.db.Create(session).Error; err != nil {
+	if err := s.daoManager.UserSession.Create(session); err != nil {
 		return "", nil, fmt.Errorf("保存会话失败: %w", err)
 	}
 
@@ -172,12 +173,12 @@ func (s *UserService) Login(usernameOrEmail, password, ipAddress, userAgent stri
 	now := time.Now()
 	user.LastLoginAt = &now
 	user.LastLoginIP = ipAddress
-	if err := s.db.Save(&user).Error; err != nil {
+	if err := s.daoManager.User.Update(user); err != nil {
 		// 记录错误但不阻止登录
 		fmt.Printf("更新用户登录信息失败: %v\n", err)
 	}
 
-	return tokenString, &user, nil
+	return tokenString, user, nil
 }
 
 // ValidateToken 验证token
@@ -192,15 +193,15 @@ func (s *UserService) ValidateToken(tokenString string) (interface{}, error) {
 
 	if claims, ok := token.Claims.(*UserClaims); ok && token.Valid {
 		// 检查会话是否仍然有效
-		var session models.UserSession
-		if err := s.db.Where("session_id = ? AND is_active = true", claims.SessionID).First(&session).Error; err != nil {
+		session, err := s.daoManager.UserSession.GetBySessionID(claims.SessionID)
+		if err != nil {
 			return nil, errors.New("会话已失效")
 		}
 
 		// 检查会话是否过期
 		if session.ExpiresAt.Before(time.Now()) {
 			// 标记会话为无效
-			s.db.Model(&session).Update("is_active", false)
+			s.daoManager.UserSession.UpdateIsActive(session, false)
 			return nil, errors.New("会话已过期")
 		}
 
@@ -212,34 +213,31 @@ func (s *UserService) ValidateToken(tokenString string) (interface{}, error) {
 
 // Logout 用户登出
 func (s *UserService) Logout(sessionID string) error {
-	return s.db.Model(&models.UserSession{}).
-		Where("session_id = ?", sessionID).
-		Update("is_active", false).Error
+	// 获取会话并标记为无效
+	session, err := s.daoManager.UserSession.GetBySessionID(sessionID)
+	if err != nil {
+		return err
+	}
+	return s.daoManager.UserSession.UpdateIsActive(session, false)
 }
 
 // GetUserByID 根据ID获取用户
 func (s *UserService) GetUserByID(userID uint) (*models.User, error) {
-	var user models.User
-	if err := s.db.First(&user, userID).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
+	return s.daoManager.User.GetByID(userID)
 }
 
 // UpdateUserProfile 更新用户资料
 func (s *UserService) UpdateUserProfile(userID uint, nickname, avatar string) error {
-	return s.db.Model(&models.User{}).
-		Where("id = ?", userID).
-		Updates(map[string]interface{}{
-			"nickname": nickname,
-			"avatar":   avatar,
-		}).Error
+	return s.daoManager.User.UpdateColumns(userID, map[string]interface{}{
+		"nickname": nickname,
+		"avatar":   avatar,
+	})
 }
 
 // ChangePassword 修改密码
 func (s *UserService) ChangePassword(userID uint, oldPassword, newPassword string) error {
-	var user models.User
-	if err := s.db.First(&user, userID).Error; err != nil {
+	user, err := s.daoManager.User.GetByID(userID)
+	if err != nil {
 		return fmt.Errorf("用户不存在: %w", err)
 	}
 
@@ -255,48 +253,53 @@ func (s *UserService) ChangePassword(userID uint, oldPassword, newPassword strin
 	}
 
 	// 更新密码
-	return s.db.Model(&user).Update("password_hash", string(hashedPassword)).Error
+	return s.daoManager.User.UpdatePassword(userID, string(hashedPassword))
 }
 
 // GetUserFiles 获取用户上传的文件
 func (s *UserService) GetUserFiles(userID uint, page, limit int) ([]models.FileCode, int64, error) {
-	var files []models.FileCode
 	var total int64
 
 	offset := (page - 1) * limit
 
 	// 计算总数
-	if err := s.db.Model(&models.FileCode{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
+	total, err := s.daoManager.FileCode.CountByUserID(userID)
+	if err != nil {
 		return nil, 0, err
 	}
 
-	// 获取文件列表
-	if err := s.db.Where("user_id = ?", userID).
-		Order("created_at DESC").
-		Offset(offset).
-		Limit(limit).
-		Find(&files).Error; err != nil {
+	// 获取文件列表 - 注意：这里需要添加分页支持到 DAO
+	files, err := s.daoManager.FileCode.GetFilesByUserID(userID)
+	if err != nil {
 		return nil, 0, err
 	}
 
-	return files, total, nil
+	// 手动分页（后续可以优化到 DAO 层）
+	start := offset
+	end := start + limit
+	if start > len(files) {
+		return []models.FileCode{}, total, nil
+	}
+	if end > len(files) {
+		end = len(files)
+	}
+
+	return files[start:end], total, nil
 }
 
 // UpdateUserStats 更新用户统计信息
 func (s *UserService) UpdateUserStats(userID uint, uploadCount, downloadCount int, storageSize int64) error {
-	return s.db.Model(&models.User{}).
-		Where("id = ?", userID).
-		Updates(map[string]interface{}{
-			"total_uploads":   gorm.Expr("total_uploads + ?", uploadCount),
-			"total_downloads": gorm.Expr("total_downloads + ?", downloadCount),
-			"total_storage":   gorm.Expr("total_storage + ?", storageSize),
-		}).Error
+	return s.daoManager.User.UpdateColumns(userID, map[string]interface{}{
+		"total_uploads":   gorm.Expr("total_uploads + ?", uploadCount),
+		"total_downloads": gorm.Expr("total_downloads + ?", downloadCount),
+		"total_storage":   gorm.Expr("total_storage + ?", storageSize),
+	})
 }
 
 // CheckStorageQuota 检查用户存储配额
 func (s *UserService) CheckStorageQuota(userID uint, additionalSize int64) error {
-	var user models.User
-	if err := s.db.First(&user, userID).Error; err != nil {
+	user, err := s.daoManager.User.GetByID(userID)
+	if err != nil {
 		return fmt.Errorf("用户不存在: %w", err)
 	}
 
@@ -323,31 +326,35 @@ func (s *UserService) generateSessionID() (string, error) {
 
 // cleanExpiredSessions 清理过期会话
 func (s *UserService) cleanExpiredSessions(userID uint) error {
-	return s.db.Model(&models.UserSession{}).
-		Where("user_id = ? AND (expires_at < ? OR is_active = false)", userID, time.Now()).
-		Delete(&models.UserSession{}).Error
+	return s.daoManager.UserSession.CleanExpiredSessions()
 }
 
 // GetUserStats 获取用户统计信息
 func (s *UserService) GetUserStats(userID uint) (map[string]interface{}, error) {
-	var user models.User
-	if err := s.db.First(&user, userID).Error; err != nil {
+	user, err := s.daoManager.User.GetByID(userID)
+	if err != nil {
 		return nil, err
 	}
 
 	// 获取文件数量
-	var fileCount int64
-	if err := s.db.Model(&models.FileCode{}).Where("user_id = ?", userID).Count(&fileCount).Error; err != nil {
+	fileCount, err := s.daoManager.FileCode.CountByUserID(userID)
+	if err != nil {
 		return nil, err
 	}
 
-	// 获取今日上传数量
-	today := time.Now().Format("2006-01-02")
-	var todayUploads int64
-	if err := s.db.Model(&models.FileCode{}).
-		Where("user_id = ? AND DATE(created_at) = ?", userID, today).
-		Count(&todayUploads).Error; err != nil {
+	// 获取今日上传数量 - 使用用户的文件数量作为近似值
+	files, err := s.daoManager.FileCode.GetFilesByUserID(userID)
+	if err != nil {
 		return nil, err
+	}
+
+	// 计算今日上传数量
+	today := time.Now().Truncate(24 * time.Hour)
+	var todayUploads int64
+	for _, file := range files {
+		if file.CreatedAt.After(today) {
+			todayUploads++
+		}
 	}
 
 	stats := map[string]interface{}{
@@ -400,28 +407,24 @@ func (s *UserService) IsRegistrationAllowed() bool {
 
 // UpdateUserUploadStats 更新用户上传统计信息
 func (s *UserService) UpdateUserUploadStats(userID uint, fileSize int64) error {
-	return s.db.Model(&models.User{}).
-		Where("id = ?", userID).
-		Updates(map[string]interface{}{
-			"total_uploads": gorm.Expr("total_uploads + ?", 1),
-			"total_storage": gorm.Expr("total_storage + ?", fileSize),
-		}).Error
+	return s.daoManager.User.UpdateColumns(userID, map[string]interface{}{
+		"total_uploads": gorm.Expr("total_uploads + ?", 1),
+		"total_storage": gorm.Expr("total_storage + ?", fileSize),
+	})
 }
 
 // UpdateUserDownloadStats 更新用户下载统计信息
 func (s *UserService) UpdateUserDownloadStats(userID uint) error {
-	return s.db.Model(&models.User{}).
-		Where("id = ?", userID).
-		Updates(map[string]interface{}{
-			"total_downloads": gorm.Expr("total_downloads + ?", 1),
-		}).Error
+	return s.daoManager.User.UpdateColumns(userID, map[string]interface{}{
+		"total_downloads": gorm.Expr("total_downloads + ?", 1),
+	})
 }
 
 // DeleteUserFile 删除用户文件
 func (s *UserService) DeleteUserFile(userID uint, fileID uint) error {
 	// 首先检查文件是否属于该用户
-	var fileCode models.FileCode
-	if err := s.db.Where("id = ? AND user_id = ?", fileID, userID).First(&fileCode).Error; err != nil {
+	fileCode, err := s.daoManager.FileCode.GetByUserID(userID, fileID)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("文件不存在或您没有权限删除该文件")
 		}
@@ -429,7 +432,7 @@ func (s *UserService) DeleteUserFile(userID uint, fileID uint) error {
 	}
 
 	// 开始事务
-	tx := s.db.Begin()
+	tx := s.daoManager.BeginTransaction()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
@@ -437,7 +440,7 @@ func (s *UserService) DeleteUserFile(userID uint, fileID uint) error {
 	}()
 
 	// 删除文件记录
-	if err := tx.Delete(&fileCode).Error; err != nil {
+	if err := s.daoManager.FileCode.DeleteByUserID(tx, userID); err != nil {
 		tx.Rollback()
 		return fmt.Errorf("删除文件记录失败: %w", err)
 	}
@@ -462,4 +465,24 @@ func (s *UserService) DeleteUserFile(userID uint, fileID uint) error {
 	// 但为了简化，暂时只删除数据库记录
 
 	return nil
+}
+
+// DeleteUserFileByCode 根据code删除用户文件
+func (s *UserService) DeleteUserFileByCode(userID uint, code string) error {
+	// 首先根据code查找文件
+	fileCode, err := s.daoManager.FileCode.GetByCode(code)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("文件不存在")
+		}
+		return fmt.Errorf("查询文件失败: %w", err)
+	}
+
+	// 检查文件是否属于该用户
+	if fileCode.UserID == nil || *fileCode.UserID != userID {
+		return errors.New("文件不存在或您没有权限删除该文件")
+	}
+
+	// 调用DeleteUserFile方法
+	return s.DeleteUserFile(userID, fileCode.ID)
 }

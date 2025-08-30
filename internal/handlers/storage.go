@@ -1,8 +1,7 @@
 package handlers
 
 import (
-	"net/http"
-
+	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/storage"
 
@@ -46,23 +45,19 @@ func (sh *StorageHandler) GetStorageInfo(c *gin.Context) {
 		storageDetails[storageType] = details
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"detail": gin.H{
-			"current":         currentStorage,
-			"available":       availableStorages,
-			"storage_details": storageDetails,
-			"storage_config": gin.H{
-				"local": gin.H{
-					"storage_path": sh.config.StoragePath,
-				},
-				"webdav": gin.H{
-					"hostname":  sh.config.WebDAVHostname,
-					"username":  sh.config.WebDAVUsername,
-					"root_path": sh.config.WebDAVRootPath,
-					"url":       sh.config.WebDAVURL,
-				},
+	common.SuccessResponse(c, gin.H{
+		"current":         currentStorage,
+		"available":       availableStorages,
+		"storage_details": storageDetails,
+		"storage_config": gin.H{
+			"local": gin.H{
+				"storage_path": sh.config.StoragePath,
+			},
+			"webdav": gin.H{
+				"hostname":  sh.config.WebDAVHostname,
+				"username":  sh.config.WebDAVUsername,
+				"root_path": sh.config.WebDAVRootPath,
+				"url":       sh.config.WebDAVURL,
 			},
 		},
 	})
@@ -75,38 +70,25 @@ func (sh *StorageHandler) SwitchStorage(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "参数错误: " + err.Error(),
-		})
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
 		return
 	}
 
 	// 切换存储
 	if err := sh.storageManager.SwitchStorage(req.StorageType); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": err.Error(),
-		})
+		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
 	// 更新配置
 	sh.config.FileStorage = req.StorageType
 	if err := sh.config.Save(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "保存配置失败: " + err.Error(),
-		})
+		common.InternalServerErrorResponse(c, "保存配置失败: "+err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "存储切换成功",
-		"detail": gin.H{
-			"current": req.StorageType,
-		},
+	common.SuccessWithMessage(c, "存储切换成功", gin.H{
+		"current": req.StorageType,
 	})
 }
 
@@ -114,32 +96,19 @@ func (sh *StorageHandler) SwitchStorage(c *gin.Context) {
 func (sh *StorageHandler) TestStorageConnection(c *gin.Context) {
 	storageType := c.Param("type")
 	if storageType == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "存储类型不能为空",
-		})
+		common.BadRequestResponse(c, "存储类型不能为空")
 		return
 	}
 
 	err := sh.storageManager.TestStorage(storageType)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    400,
-			"message": "连接测试失败",
-			"detail": gin.H{
-				"error": err.Error(),
-			},
-		})
+		common.BadRequestResponse(c, "连接测试失败: "+err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "连接测试成功",
-		"detail": gin.H{
-			"type":   storageType,
-			"status": "connected",
-		},
+	common.SuccessWithMessage(c, "连接测试成功", gin.H{
+		"type":   storageType,
+		"status": "connected",
 	})
 }
 
@@ -151,10 +120,7 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "参数错误: " + err.Error(),
-		})
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
 		return
 	}
 
@@ -190,9 +156,7 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 			sh.config.WebDAVPassword,
 			sh.config.WebDAVRootPath,
 		); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "重新配置WebDAV存储失败: " + err.Error(),
-			})
+			common.InternalServerErrorResponse(c, "重新配置WebDAV存储失败: "+err.Error())
 			return
 		}
 
@@ -224,24 +188,15 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 		}
 
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "不支持的存储类型: " + req.StorageType,
-		})
+		common.BadRequestResponse(c, "不支持的存储类型: "+req.StorageType)
 		return
 	}
 
 	// 保存配置（会同时保存到文件和数据库）
 	if err := sh.config.Save(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "保存配置失败: " + err.Error(),
-		})
+		common.InternalServerErrorResponse(c, "保存配置失败: "+err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "存储配置更新成功",
-	})
+	common.SuccessWithMessage(c, "存储配置更新成功", nil)
 }
