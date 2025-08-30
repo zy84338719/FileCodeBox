@@ -1,0 +1,380 @@
+basePath: /
+host: localhost:12345
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: FileCodeBox 是一个用于文件分享和代码片段管理的 Web 应用程序
+  license:
+    name: MIT
+    url: https://github.com/zy84338719/filecodebox/blob/main/LICENSE
+  termsOfService: http://swagger.io/terms/
+  title: FileCodeBox API
+  version: "1.0"
+paths:
+  /api/doc:
+    get:
+      consumes:
+      - application/json
+      description: 获取完整的API文档信息，包括所有端点和错误码
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API文档信息
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取API文档
+      tags:
+      - API文档
+  /chunk/upload/chunk/{upload_id}/{chunk_index}:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传指定索引的文件分片
+      parameters:
+      - description: 上传ID
+        in: path
+        name: upload_id
+        required: true
+        type: string
+      - description: 分片索引
+        in: path
+        name: chunk_index
+        required: true
+        type: integer
+      - description: 分片文件
+        in: formData
+        name: chunk
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 上传成功，返回分片哈希
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 上传文件分片
+      tags:
+      - 分片上传
+  /chunk/upload/complete/{upload_id}:
+    post:
+      consumes:
+      - application/json
+      description: 完成所有分片上传，合并文件并生成分享代码
+      parameters:
+      - description: 上传ID
+        in: path
+        name: upload_id
+        required: true
+        type: string
+      - description: 完成上传参数
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 上传完成，返回分享代码
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 完成分片上传
+      tags:
+      - 分片上传
+  /chunk/upload/init/:
+    post:
+      consumes:
+      - application/json
+      description: 初始化文件分片上传，返回上传ID和分片信息
+      parameters:
+      - description: 上传初始化参数
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 初始化成功，返回上传ID和分片信息
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 初始化分片上传
+      tags:
+      - 分片上传
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: 检查服务器健康状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 健康状态信息
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 健康检查
+      tags:
+      - 系统
+  /share/download:
+    get:
+      consumes:
+      - application/json
+      description: 根据分享代码下载文件或获取文本内容
+      parameters:
+      - description: 分享代码
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      - application/json
+      responses:
+        "200":
+          description: 文本内容
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 分享代码不存在
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 下载分享文件
+      tags:
+      - 分享
+  /share/file/:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传并分享文件，生成分享代码
+      parameters:
+      - description: 要分享的文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      - default: 1
+        description: 过期值
+        in: formData
+        name: expire_value
+        type: integer
+      - default: day
+        description: 过期样式
+        enum:
+        - minute
+        - hour
+        - day
+        - week
+        - month
+        - year
+        - forever
+        in: formData
+        name: expire_style
+        type: string
+      - default: false
+        description: 是否需要认证
+        in: formData
+        name: require_auth
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分享成功，返回分享代码和文件信息
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 分享文件
+      tags:
+      - 分享
+  /share/select/:
+    get:
+      consumes:
+      - application/json
+      description: 根据分享代码获取文件或文本的详细信息
+      parameters:
+      - description: 分享代码(GET方式)
+        in: query
+        name: code
+        type: string
+      - description: 分享代码(POST方式)
+        in: formData
+        name: code
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 文件信息
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 分享代码不存在
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取分享文件信息
+      tags:
+      - 分享
+    post:
+      consumes:
+      - application/json
+      description: 根据分享代码获取文件或文本的详细信息
+      parameters:
+      - description: 分享代码(GET方式)
+        in: query
+        name: code
+        type: string
+      - description: 分享代码(POST方式)
+        in: formData
+        name: code
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 文件信息
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 分享代码不存在
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取分享文件信息
+      tags:
+      - 分享
+  /share/text/:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 分享文本内容并生成分享代码
+      parameters:
+      - description: 文本内容
+        in: formData
+        name: text
+        required: true
+        type: string
+      - default: 1
+        description: 过期值
+        in: formData
+        name: expire_value
+        type: integer
+      - default: day
+        description: 过期样式
+        enum:
+        - minute
+        - hour
+        - day
+        - week
+        - month
+        - year
+        - forever
+        in: formData
+        name: expire_style
+        type: string
+      - default: false
+        description: 是否需要认证
+        in: formData
+        name: require_auth
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分享成功，返回分享代码
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 分享文本内容
+      tags:
+      - 分享
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: X-API-Key
+    type: apiKey
+  BasicAuth:
+    type: basic
+swagger: "2.0"

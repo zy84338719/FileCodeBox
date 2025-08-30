@@ -20,6 +20,19 @@ func NewShareHandler(service *services.ShareService) *ShareHandler {
 }
 
 // ShareText 分享文本
+// @Summary 分享文本内容
+// @Description 分享文本内容并生成分享代码
+// @Tags 分享
+// @Accept multipart/form-data
+// @Produce json
+// @Param text formData string true "文本内容"
+// @Param expire_value formData int false "过期值" default(1)
+// @Param expire_style formData string false "过期样式" default(day) Enums(minute, hour, day, week, month, year, forever)
+// @Param require_auth formData boolean false "是否需要认证" default(false)
+// @Success 200 {object} map[string]interface{} "分享成功，返回分享代码"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /share/text/ [post]
 func (h *ShareHandler) ShareText(c *gin.Context) {
 	text := c.PostForm("text")
 	expireValueStr := c.DefaultPostForm("expire_value", "1")
@@ -81,6 +94,19 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 }
 
 // ShareFile 分享文件
+// @Summary 分享文件
+// @Description 上传并分享文件，生成分享代码
+// @Tags 分享
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "要分享的文件"
+// @Param expire_value formData int false "过期值" default(1)
+// @Param expire_style formData string false "过期样式" default(day) Enums(minute, hour, day, week, month, year, forever)
+// @Param require_auth formData boolean false "是否需要认证" default(false)
+// @Success 200 {object} map[string]interface{} "分享成功，返回分享代码和文件信息"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /share/file/ [post]
 func (h *ShareHandler) ShareFile(c *gin.Context) {
 	expireValueStr := c.DefaultPostForm("expire_value", "1")
 	expireStyle := c.DefaultPostForm("expire_style", "day")
@@ -143,6 +169,18 @@ func (h *ShareHandler) ShareFile(c *gin.Context) {
 }
 
 // GetFile 获取文件信息
+// @Summary 获取分享文件信息
+// @Description 根据分享代码获取文件或文本的详细信息
+// @Tags 分享
+// @Accept json
+// @Produce json
+// @Param code query string false "分享代码(GET方式)"
+// @Param code formData string false "分享代码(POST方式)"
+// @Success 200 {object} map[string]interface{} "文件信息"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 404 {object} map[string]interface{} "分享代码不存在"
+// @Router /share/select/ [get]
+// @Router /share/select/ [post]
 func (h *ShareHandler) GetFile(c *gin.Context) {
 	var code string
 
@@ -223,6 +261,18 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 }
 
 // DownloadFile 下载文件
+// @Summary 下载分享文件
+// @Description 根据分享代码下载文件或获取文本内容
+// @Tags 分享
+// @Accept json
+// @Produce application/octet-stream
+// @Produce application/json
+// @Param code query string true "分享代码"
+// @Success 200 {file} binary "文件内容"
+// @Success 200 {object} map[string]interface{} "文本内容"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 404 {object} map[string]interface{} "分享代码不存在"
+// @Router /share/download [get]
 func (h *ShareHandler) DownloadFile(c *gin.Context) {
 	code := c.Query("code")
 	if code == "" {

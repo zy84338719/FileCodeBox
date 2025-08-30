@@ -95,11 +95,11 @@ jobs:
           ${{ matrix.output }}
           build-info-${{ matrix.goos }}-${{ matrix.goarch }}.txt
 
-  docker:
-    name: Build Docker image
+  docker-test:
+    name: Test Docker build
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
 
     steps:
     - name: Checkout code
@@ -108,64 +108,29 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Log in to Docker Hub
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-
-    - name: Log in to GitHub Container Registry
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
+    - name: Extract metadata for testing
+      id: meta-test
       uses: docker/metadata-action@v5
       with:
-        images: |
-          filecodebox/filecodebox
-          ghcr.io/${{ github.repository }}
+        images: filecodebox-test
         tags: |
           type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
-          type=raw,value=latest,enable={{is_default_branch}}
-          type=raw,value=dev,enable={{is_default_branch}}
-        labels: |
-          org.opencontainers.image.title=FileCodeBox
-          org.opencontainers.image.description=高性能文件分享服务 - Go语言实现
-          org.opencontainers.image.vendor=FileCodeBox
-          org.opencontainers.image.url=https://github.com/${{ github.repository }}
-          org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          org.opencontainers.image.documentation=https://github.com/${{ github.repository }}#readme
-          org.opencontainers.image.licenses=MIT
+          type=raw,value=test
 
-    - name: Build and push Docker image
+    - name: Build Docker image for testing
       uses: docker/build-push-action@v5
       with:
         context: .
-        platforms: linux/amd64,linux/arm64
-        push: ${{ startsWith(github.ref, 'refs/tags/') }}
-        load: ${{ !startsWith(github.ref, 'refs/tags/') }}  # 在非标签推送时加载到本地
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        platforms: linux/amd64  # 仅单平台用于测试
+        load: true  # 加载到本地进行测试
+        tags: ${{ steps.meta-test.outputs.tags }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-        outputs: |
-          type=image,name=target,annotation-index.org.opencontainers.image.description=FileCodeBox - 高性能文件分享服务
 
     - name: Test Docker image
-      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
       run: |
         # 获取构建的镜像标签
-        IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+        IMAGE_TAG=$(echo "${{ steps.meta-test.outputs.tags }}" | head -n1)
         echo "Testing image: $IMAGE_TAG"
         
         # 启动容器进行基础测试
@@ -186,14 +151,57 @@ jobs:
         # 清理测试容器
         docker stop filecodebox-test || true
 
-    - name: Save Docker image info
-      run: |
-        echo "Docker Build Info:" > docker-build-info.txt
-        echo "Platforms: linux/amd64,linux/arm64" >> docker-build-info.txt
-        echo "Tags: ${{ steps.meta.outputs.tags }}" >> docker-build-info.txt
-        echo "Labels: ${{ steps.meta.outputs.labels }}" >> docker-build-info.txt
-        echo "Build Time: $(date)" >> docker-build-info.txt
-        echo "Commit: ${{ github.sha }}" >> docker-build-info.txt
+  docker:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}
+        tags: |
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=raw,value=latest
+        labels: |
+          org.opencontainers.image.title=FileCodeBox
+          org.opencontainers.image.description=高性能文件分享服务 - Go语言实现
+          org.opencontainers.image.vendor=FileCodeBox
+          org.opencontainers.image.url=https://github.com/${{ github.repository }}
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          org.opencontainers.image.documentation=https://github.com/${{ github.repository }}#readme
+          org.opencontainers.image.licenses=MIT
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64  # 多平台构建用于发布
+        push: true  # 推送到注册表
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        outputs: |
+          type=image,name=target,annotation-index.org.opencontainers.image.description=FileCodeBox - 高性能文件分享服务
 
   release:
     name: Create Release
@@ -288,7 +296,9 @@ jobs:
         
         **Docker 镜像:**
         \`\`\`bash
-        docker pull filecodebox/filecodebox:${{ github.ref_name }}
+        docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+        # 或者最新版本
+        docker pull ghcr.io/${{ github.repository }}:latest
         \`\`\`
         
         ### 🔧 快速开始

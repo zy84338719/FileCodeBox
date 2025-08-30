@@ -1,5 +1,26 @@
 package main
 
+// @title FileCodeBox API
+// @version 1.0
+// @description FileCodeBox 是一个用于文件分享和代码片段管理的 Web 应用程序
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name MIT
+// @license.url https://github.com/zy84338719/filecodebox/blob/main/LICENSE
+
+// @host localhost:12345
+// @BasePath /
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name X-API-Key
+
+// @securityDefinitions.basic BasicAuth
+
 import (
 	"context"
 	"flag"
@@ -22,6 +43,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+
+	// swagger imports
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	// swagger docs
+	_ "github.com/zy84338719/filecodebox/docs"
 )
 
 var (
@@ -112,6 +140,9 @@ func main() {
 
 	// 设置路由
 	routes.SetupRoutes(router, shareHandler, chunkHandler, adminHandler, storageHandler, userHandler, cfg, userService)
+
+	// 添加 Swagger 路由
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	logrus.Info("应用初始化完成")
 

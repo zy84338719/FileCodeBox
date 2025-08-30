@@ -29,8 +29,9 @@ func SetupRoutes(
 ) {
 	// API文档和健康检查
 	apiHandler := handlers.NewAPIHandler()
-	router.GET("/api/doc", apiHandler.GetAPIDoc)
+
 	router.GET("/health", apiHandler.GetHealth)
+	router.GET("/api/doc", apiHandler.GetAPIDoc)
 
 	// 首页和静态页面
 	router.GET("/", func(c *gin.Context) {
