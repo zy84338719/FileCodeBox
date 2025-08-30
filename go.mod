@@ -1,8 +1,8 @@
 module github.com/zy84338719/filecodebox
 
-go 1.22
+go 1.24
 
-toolchain go1.22.12
+toolchain go1.24.4
 
 require (
 	github.com/aws/aws-sdk-go v1.55.8

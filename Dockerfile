@@ -1,5 +1,5 @@
 # 多阶段构建：第一阶段用于编译
-FROM golang:1.22-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 # 安装构建依赖
 RUN apk add --no-cache \
