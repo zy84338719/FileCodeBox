@@ -2,12 +2,47 @@ version: '3.8'
 
 services:
   filecodebox-go:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: filecodebox
     ports:
       - "12345:12345"
     volumes:
-      - ./data:/app/data
-      - ./themes:/app/themes
+      - ./data:/root/data
+      - ./themes:/root/themes
     environment:
       - GIN_MODE=release
+      - TZ=Asia/Shanghai
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:12345/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # 资源限制（可选）
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    # 网络配置（如果需要自定义网络）
+    # networks:
+    #   - filecodebox-network
+
+# 自定义网络（可选）
+# networks:
+#   filecodebox-network:
+#     driver: bridge
+
+# 如果需要使用外部存储卷
+# volumes:
+#   filecodebox-data:
+#     driver: local

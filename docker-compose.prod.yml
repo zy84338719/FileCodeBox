@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  filecodebox-go:
+    image: filecodebox-go:latest
+    container_name: filecodebox-prod
+    ports:
+      - "12345:12345"
+    volumes:
+      - filecodebox-data:/root/data
+      - filecodebox-themes:/root/themes
+      - /etc/localtime:/etc/localtime:ro  # 同步系统时间
+    environment:
+      - GIN_MODE=release
+      - TZ=Asia/Shanghai
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:12345/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    networks:
+      - filecodebox-network
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+  # Nginx 反向代理（可选）
+  nginx:
+    image: nginx:alpine
+    container_name: filecodebox-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx-cache:/var/cache/nginx
+    depends_on:
+      - filecodebox-go
+    restart: unless-stopped
+    networks:
+      - filecodebox-network
+    profiles:
+      - with-nginx
+
+networks:
+  filecodebox-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  filecodebox-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data
+  filecodebox-themes:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./themes
+  nginx-cache:
+    driver: local
