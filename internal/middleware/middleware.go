@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/config"
 	"net/http"
 	"strings"
 	"sync"

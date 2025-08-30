@@ -3,9 +3,9 @@ package services
 import (
 	"crypto/md5"
 	"crypto/rand"
-	"filecodebox/internal/config"
-	"filecodebox/internal/models"
-	"filecodebox/internal/storage"
+	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/models"
+	"github.com/zy84338719/filecodebox/internal/storage"
 	"fmt"
 	"mime/multipart"
 	"path/filepath"

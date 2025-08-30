@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"filecodebox/internal/config"
-	"filecodebox/internal/handlers"
-	"filecodebox/internal/middleware"
+	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/handlers"
+	"github.com/zy84338719/filecodebox/internal/middleware"
 	"fmt"
 	"io/ioutil"
 	"net/http"

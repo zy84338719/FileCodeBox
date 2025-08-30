@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"filecodebox/internal/models"
+	"github.com/zy84338719/filecodebox/internal/models"
 	"mime/multipart"
 
 	"github.com/gin-gonic/gin"

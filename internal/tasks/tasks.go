@@ -1,8 +1,8 @@
 package tasks
 
 import (
-	"filecodebox/internal/models"
-	"filecodebox/internal/storage"
+	"github.com/zy84338719/filecodebox/internal/models"
+	"github.com/zy84338719/filecodebox/internal/storage"
 	"time"
 
 	"github.com/robfig/cron/v3"

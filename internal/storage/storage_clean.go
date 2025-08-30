@@ -2,13 +2,14 @@ package storage
 
 import (
 	"crypto/sha256"
-	"filecodebox/internal/config"
-	"filecodebox/internal/models"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"path/filepath"
 	"time"
+
+	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -51,9 +52,9 @@ func NewStorageManager(cfg *config.Config) *StorageManager {
 	if cfg.WebDAVHostname != "" {
 		webdavStrategy, err := NewWebDAVStorageStrategy(
 			cfg.WebDAVHostname,
+			cfg.WebDAVRootPath,
 			cfg.WebDAVUsername,
 			cfg.WebDAVPassword,
-			cfg.WebDAVRootPath,
 		)
 		if err == nil {
 			sm.storages["webdav"] = NewStrategyBasedStorage(webdavStrategy, pathManager)
@@ -143,7 +144,7 @@ func (sm *StorageManager) ReconfigureWebDAV(hostname, username, password, rootPa
 	}
 
 	// 创建新的 WebDAV 策略
-	webdavStrategy, err := NewWebDAVStorageStrategy(hostname, username, password, rootPath)
+	webdavStrategy, err := NewWebDAVStorageStrategy(hostname, rootPath, username, password)
 	if err != nil {
 		return fmt.Errorf("创建 WebDAV 策略失败: %v", err)
 	}

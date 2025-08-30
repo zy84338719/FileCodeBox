@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"filecodebox/internal/models"
+	"github.com/zy84338719/filecodebox/internal/models"
 
 	"gorm.io/gorm"
 )

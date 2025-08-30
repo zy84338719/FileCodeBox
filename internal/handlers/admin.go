@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"filecodebox/internal/config"
-	"filecodebox/internal/services"
+	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/services"
 	"net/http"
 	"strconv"
 	"time"

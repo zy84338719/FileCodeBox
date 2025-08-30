@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"filecodebox/internal/config"
-	"filecodebox/internal/storage"
+	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/storage"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

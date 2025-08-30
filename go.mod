@@ -1,4 +1,4 @@
-module filecodebox
+module github.com/zy84338719/filecodebox
 
 go 1.23.0
 
