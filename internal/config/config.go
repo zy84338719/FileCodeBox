@@ -1,3 +1,4 @@
+// Package config 处理应用程序配置管理
 package config
 
 import (
@@ -183,25 +184,9 @@ func (c *Config) InitWithDB(db *gorm.DB) error {
 	return nil
 }
 
-// InitDefaultDataInDB 在数据库中初始化默认配置数据
-func (c *Config) InitDefaultDataInDB() error {
-	if c.db == nil {
-		return errors.New("数据库连接未设置")
-	}
-
-	// 检查是否已经有配置数据
-	var count int64
-	if err := c.db.Model(&models.KeyValue{}).Count(&count).Error; err != nil {
-		return fmt.Errorf("检查配置数据失败: %w", err)
-	}
-
-	// 如果已有数据，不进行初始化
-	if count > 0 {
-		return nil
-	}
-
-	// 准备默认配置数据
-	defaultConfigs := map[string]string{
+// buildConfigMap 构建配置映射表
+func (c *Config) buildConfigMap() map[string]string {
+	return map[string]string{
 		"name":                       c.Name,
 		"description":                c.Description,
 		"host":                       c.Host,
@@ -233,6 +218,27 @@ func (c *Config) InitDefaultDataInDB() error {
 		"s3_signature_version":       c.S3SignatureVersion,
 		"s3_proxy":                   fmt.Sprintf("%d", c.S3Proxy),
 	}
+}
+
+// InitDefaultDataInDB 在数据库中初始化默认配置数据
+func (c *Config) InitDefaultDataInDB() error {
+	if c.db == nil {
+		return errors.New("数据库连接未设置")
+	}
+
+	// 检查是否已经有配置数据
+	var count int64
+	if err := c.db.Model(&models.KeyValue{}).Count(&count).Error; err != nil {
+		return fmt.Errorf("检查配置数据失败: %w", err)
+	}
+
+	// 如果已有数据，不进行初始化
+	if count > 0 {
+		return nil
+	}
+
+	// 使用公共方法获取配置映射
+	defaultConfigs := c.buildConfigMap()
 
 	// 批量插入默认配置
 	var keyValues []models.KeyValue
@@ -270,38 +276,8 @@ func (c *Config) saveToDatabase() error {
 		return errors.New("数据库连接未设置")
 	}
 
-	configMap := map[string]string{
-		"name":                       c.Name,
-		"description":                c.Description,
-		"host":                       c.Host,
-		"upload_size":                fmt.Sprintf("%d", c.UploadSize),
-		"admin_token":                c.AdminToken,
-		"storage_path":               c.StoragePath,
-		"open_upload":                fmt.Sprintf("%d", c.OpenUpload),
-		"enable_chunk":               fmt.Sprintf("%d", c.EnableChunk),
-		"chunk_size":                 fmt.Sprintf("%d", c.ChunkSize),
-		"enable_concurrent_download": fmt.Sprintf("%d", c.EnableConcurrentDownload),
-		"max_concurrent_downloads":   fmt.Sprintf("%d", c.MaxConcurrentDownloads),
-		"download_timeout":           fmt.Sprintf("%d", c.DownloadTimeout),
-		"notify_title":               c.NotifyTitle,
-		"notify_content":             c.NotifyContent,
-		"page_explain":               c.PageExplain,
-		"themes_select":              c.ThemesSelect,
-		"file_storage":               c.FileStorage,
-		"webdav_hostname":            c.WebDAVHostname,
-		"webdav_username":            c.WebDAVUsername,
-		"webdav_password":            c.WebDAVPassword,
-		"webdav_root_path":           c.WebDAVRootPath,
-		"webdav_url":                 c.WebDAVURL,
-		"s3_access_key_id":           c.S3AccessKeyID,
-		"s3_secret_access_key":       c.S3SecretAccessKey,
-		"s3_bucket_name":             c.S3BucketName,
-		"s3_endpoint_url":            c.S3EndpointURL,
-		"s3_region_name":             c.S3RegionName,
-		"s3_hostname":                c.S3Hostname,
-		"s3_signature_version":       c.S3SignatureVersion,
-		"s3_proxy":                   fmt.Sprintf("%d", c.S3Proxy),
-	}
+	// 使用公共方法获取配置映射
+	configMap := c.buildConfigMap()
 
 	for key, value := range configMap {
 		kv := models.KeyValue{

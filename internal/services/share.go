@@ -1,12 +1,12 @@
 package services
 
 import (
-	"crypto/md5"
 	"crypto/rand"
+	"crypto/sha256"
+	"fmt"
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/storage"
-	"fmt"
 	"mime/multipart"
 	"path/filepath"
 	"time"
@@ -140,14 +140,18 @@ func (s *ShareService) UpdateFileUsage(fileCode *models.FileCode) error {
 // generateCode 生成随机代码
 func (s *ShareService) generateCode() string {
 	bytes := make([]byte, 6)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		// 如果随机数生成失败，使用时间戳作为备选方案
+		return fmt.Sprintf("%x", time.Now().UnixNano())[:12]
+	}
 	return fmt.Sprintf("%x", bytes)[:12]
 }
 
 // generateUploadID 生成上传ID
 func (s *ShareService) generateUploadID() string {
 	data := fmt.Sprintf("%d", time.Now().UnixNano())
-	return fmt.Sprintf("%x", md5.Sum([]byte(data)))
+	hash := sha256.Sum256([]byte(data))
+	return fmt.Sprintf("%x", hash)[:32] // 截取前32位
 }
 
 // parseExpireInfo 解析过期信息

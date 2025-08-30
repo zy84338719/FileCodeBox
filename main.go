@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"flag"
+	"fmt"
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/database"
 	"github.com/zy84338719/filecodebox/internal/handlers"
@@ -11,8 +13,6 @@ import (
 	"github.com/zy84338719/filecodebox/internal/services"
 	"github.com/zy84338719/filecodebox/internal/storage"
 	"github.com/zy84338719/filecodebox/internal/tasks"
-	"flag"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -38,7 +38,7 @@ func main() {
 		fmt.Printf("FileCodeBox %s\n", version)
 		fmt.Printf("Commit: %s\n", commit)
 		fmt.Printf("Built: %s\n", date)
-		fmt.Printf("Go Version: %s\n", fmt.Sprintf("%s", "go1.21+"))
+		fmt.Printf("Go Version: %s\n", "go1.21+")
 		return
 	}
 
@@ -113,8 +113,12 @@ func main() {
 
 	// 创建HTTP服务器
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
-		Handler: router,
+		Addr:              fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Handler:           router,
+		ReadHeaderTimeout: 30 * time.Second,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	// 启动服务器

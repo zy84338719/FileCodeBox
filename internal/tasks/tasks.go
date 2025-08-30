@@ -33,10 +33,14 @@ func NewTaskManager(db *gorm.DB, storageManager *storage.StorageManager, dataPat
 // Start 启动任务管理器
 func (tm *TaskManager) Start() {
 	// 每小时清理一次过期文件
-	tm.cron.AddFunc("0 * * * *", tm.cleanExpiredFiles)
+	if _, err := tm.cron.AddFunc("0 * * * *", tm.cleanExpiredFiles); err != nil {
+		logrus.WithError(err).Error("添加过期文件清理任务失败")
+	}
 
 	// 每天清理一次临时文件
-	tm.cron.AddFunc("0 2 * * *", tm.cleanTempFiles)
+	if _, err := tm.cron.AddFunc("0 2 * * *", tm.cleanTempFiles); err != nil {
+		logrus.WithError(err).Error("添加临时文件清理任务失败")
+	}
 
 	tm.cron.Start()
 	logrus.Info("任务管理器已启动")

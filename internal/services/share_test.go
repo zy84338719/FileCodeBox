@@ -18,7 +18,9 @@ func setupTestDB() *gorm.DB {
 	}
 
 	// 自动迁移
-	db.AutoMigrate(&models.FileCode{}, &models.UploadChunk{}, &models.KeyValue{})
+	if err := db.AutoMigrate(&models.FileCode{}, &models.UploadChunk{}, &models.KeyValue{}); err != nil {
+		panic("failed to migrate database: " + err.Error())
+	}
 	return db
 }
 

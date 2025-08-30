@@ -1,3 +1,4 @@
+// Package models 定义应用程序的数据模型
 package models
 
 import (

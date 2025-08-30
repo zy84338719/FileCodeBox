@@ -1,3 +1,4 @@
+// Package database 提供数据库连接和初始化功能
 package database
 
 import (
