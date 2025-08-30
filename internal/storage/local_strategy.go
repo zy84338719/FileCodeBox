@@ -23,7 +23,7 @@ type LocalStorageStrategy struct {
 // NewLocalStorageStrategy 创建本地存储策略
 func NewLocalStorageStrategy(basePath string) *LocalStorageStrategy {
 	if basePath == "" {
-		basePath = "./data/share/data"
+		basePath = "./data"
 	}
 
 	// 确保目录存在

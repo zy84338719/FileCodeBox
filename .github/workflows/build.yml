@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-  push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
@@ -42,7 +41,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.23'
+        go-version: '1.24'
 
     - name: Cache Go modules
       uses: actions/cache@v3
