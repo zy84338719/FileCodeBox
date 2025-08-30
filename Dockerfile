@@ -1,17 +1,13 @@
 # 多阶段构建：第一阶段用于编译
-FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
-# 定义构建参数
-ARG TARGETOS
-ARG TARGETARCH
-ARG BUILDPLATFORM
-
-# 安装构建依赖（适用于Alpine）
+# 安装构建依赖
 RUN apk add --no-cache \
     gcc \
     musl-dev \
     sqlite-dev \
-    git
+    git \
+    ca-certificates
 
 WORKDIR /app
 
@@ -22,11 +18,8 @@ RUN go mod download
 # 复制源代码
 COPY . .
 
-# 根据目标平台编译
-RUN CGO_ENABLED=1 \
-    GOOS=${TARGETOS} \
-    GOARCH=${TARGETARCH} \
-    go build -a -installsuffix cgo -ldflags="-w -s" -o filecodebox .
+# 编译应用程序
+RUN CGO_ENABLED=1 go build -ldflags="-w -s" -o filecodebox .
 
 # 第二阶段：运行时镜像
 FROM alpine:latest
