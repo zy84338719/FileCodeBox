@@ -30,15 +30,10 @@ func NewWebDAVStorageStrategy(hostname, username, password, rootPath string) (*W
 
 	// 确保 hostname 包含协议
 	if !strings.HasPrefix(hostname, "http://") && !strings.HasPrefix(hostname, "https://") {
-		hostname = "https://" + hostname
+		hostname = "http://" + hostname
 	}
 
 	client := gowebdav.NewClient(hostname, username, password)
-
-	// 测试连接
-	if err := client.Connect(); err != nil {
-		return nil, fmt.Errorf("failed to connect to WebDAV server: %w", err)
-	}
 
 	strategy := &WebDAVStorageStrategy{
 		client:   client,
@@ -46,6 +41,11 @@ func NewWebDAVStorageStrategy(hostname, username, password, rootPath string) (*W
 		hostname: hostname,
 		username: username,
 		password: password,
+	}
+
+	// 测试连接和认证
+	if err := strategy.TestConnection(); err != nil {
+		return nil, fmt.Errorf("failed to connect to WebDAV server: %w", err)
 	}
 
 	// 确保根目录存在
@@ -78,18 +78,20 @@ func (ws *WebDAVStorageStrategy) buildPath(relativePath string) string {
 
 // ensureDir 确保目录存在
 func (ws *WebDAVStorageStrategy) ensureDir(path string) error {
+	if path == "" || path == "." || path == "/" {
+		return nil
+	}
+
 	client, err := ws.getClient()
 	if err != nil {
 		return err
 	}
 
 	// 递归创建父目录
-	if path != "." && path != "/" && path != "" {
-		parent := filepath.Dir(path)
-		if parent != path {
-			if err := ws.ensureDir(parent); err != nil {
-				return err
-			}
+	parent := filepath.Dir(path)
+	if parent != path && parent != "." && parent != "/" {
+		if err := ws.ensureDir(parent); err != nil {
+			return err
 		}
 	}
 
@@ -100,7 +102,21 @@ func (ws *WebDAVStorageStrategy) ensureDir(path string) error {
 	}
 
 	// 创建目录
-	return client.Mkdir(path, 0755)
+	if err := client.Mkdir(path, 0755); err != nil {
+		if strings.Contains(err.Error(), "401") {
+			return fmt.Errorf("创建目录 %s 认证失败", path)
+		}
+		if strings.Contains(err.Error(), "403") {
+			return fmt.Errorf("没有创建目录 %s 的权限", path)
+		}
+		// 如果目录已存在，忽略错误
+		if strings.Contains(err.Error(), "405") || strings.Contains(err.Error(), "409") {
+			return nil
+		}
+		return fmt.Errorf("创建目录 %s 失败: %v", path, err)
+	}
+
+	return nil
 }
 
 // WriteFile 写入文件
@@ -206,17 +222,56 @@ func (ws *WebDAVStorageStrategy) TestConnection() error {
 		return err
 	}
 
+	// 首先测试基本连接
+	if err := client.Connect(); err != nil {
+		if strings.Contains(err.Error(), "401") {
+			return fmt.Errorf("认证失败，请检查用户名和密码")
+		}
+		if strings.Contains(err.Error(), "403") {
+			return fmt.Errorf("权限不足，请检查用户权限")
+		}
+		if strings.Contains(err.Error(), "404") {
+			return fmt.Errorf("服务器地址不存在，请检查 hostname")
+		}
+		return fmt.Errorf("连接失败: %v", err)
+	}
+
+	// 测试根路径访问
+	_, err = client.ReadDir("/")
+	if err != nil {
+		if strings.Contains(err.Error(), "401") {
+			return fmt.Errorf("根目录访问认证失败，请检查用户名和密码")
+		}
+		if strings.Contains(err.Error(), "403") {
+			return fmt.Errorf("没有根目录访问权限")
+		}
+		// 如果不能访问根目录，尝试访问指定的基础路径
+		if ws.basePath != "" && ws.basePath != "/" {
+			_, err = client.ReadDir(ws.basePath)
+			if err != nil {
+				return fmt.Errorf("无法访问指定路径 %s: %v", ws.basePath, err)
+			}
+		}
+	}
+
 	// 测试是否可以在基础路径下创建和删除文件
 	testPath := ws.buildPath(".test_connection")
 
 	// 尝试写入测试文件
 	if err := client.Write(testPath, []byte("test"), 0644); err != nil {
+		if strings.Contains(err.Error(), "401") {
+			return fmt.Errorf("写入权限认证失败")
+		}
+		if strings.Contains(err.Error(), "403") {
+			return fmt.Errorf("没有写入权限")
+		}
 		return fmt.Errorf("无法写入测试文件: %v", err)
 	}
 
 	// 清理测试文件
 	if err := client.Remove(testPath); err != nil {
-		return fmt.Errorf("无法删除测试文件: %v", err)
+		// 删除失败不是致命错误，只记录警告
+		log.Printf("Warning: 无法删除测试文件 %s: %v", testPath, err)
 	}
 
 	return nil

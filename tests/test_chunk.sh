@@ -12,9 +12,20 @@ echo "1. 创建测试文件..."
 dd if=/dev/zero of=large_test_file.bin bs=1024 count=100 2>/dev/null
 echo "创建了100KB的测试文件"
 
-# 计算文件哈希
+# 计算文件哈希和大小
 FILE_HASH=$(sha256sum large_test_file.bin | cut -d' ' -f1)
-FILE_SIZE=$(stat -f%z large_test_file.bin 2>/dev/null || stat -c%s large_test_file.bin)
+# 跨平台获取文件大小
+if command -v stat >/dev/null 2>&1; then
+    # 尝试 Linux 格式
+    FILE_SIZE=$(stat -c%s large_test_file.bin 2>/dev/null)
+    if [ $? -ne 0 ]; then
+        # 尝试 macOS 格式
+        FILE_SIZE=$(stat -f%z large_test_file.bin 2>/dev/null)
+    fi
+else
+    # 备用方法
+    FILE_SIZE=$(wc -c < large_test_file.bin)
+fi
 CHUNK_SIZE=32768  # 32KB分片
 
 echo "文件大小: $FILE_SIZE 字节"

@@ -241,7 +241,7 @@ func UserAuth(cfg *config.Config, userService interface {
 		}
 
 		// 类型断言获取claims
-		if claims, ok := claimsInterface.(*services.UserClaims); ok {
+		if claims, ok := claimsInterface.(*services.AuthClaims); ok {
 			// 将用户信息设置到上下文
 			c.Set("user_id", claims.UserID)
 			c.Set("username", claims.Username)
@@ -300,7 +300,7 @@ func OptionalUserAuth(cfg *config.Config, userService interface {
 		}
 
 		// 类型断言获取claims
-		if claims, ok := claimsInterface.(*services.UserClaims); ok {
+		if claims, ok := claimsInterface.(*services.AuthClaims); ok {
 			// 将用户信息设置到上下文
 			c.Set("user_id", claims.UserID)
 			c.Set("username", claims.Username)

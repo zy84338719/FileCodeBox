@@ -21,7 +21,7 @@ type TaskManager struct {
 
 func NewTaskManager(db *gorm.DB, storageManager *storage.StorageManager, dataPath string) *TaskManager {
 	// 创建路径管理器
-	pathManager := storage.NewPathManager(dataPath + "/share/data")
+	pathManager := storage.NewPathManager(dataPath)
 
 	return &TaskManager{
 		db:          db,

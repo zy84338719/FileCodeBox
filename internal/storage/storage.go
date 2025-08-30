@@ -145,7 +145,7 @@ func (sm *StorageManager) ReconfigureWebDAV(hostname, username, password, rootPa
 	}
 
 	// 创建新的 WebDAV 策略
-	webdavStrategy, err := NewWebDAVStorageStrategy(hostname, rootPath, username, password)
+	webdavStrategy, err := NewWebDAVStorageStrategy(hostname, username, password, rootPath)
 	if err != nil {
 		return fmt.Errorf("创建 WebDAV 策略失败: %v", err)
 	}

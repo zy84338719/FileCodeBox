@@ -766,13 +766,17 @@
                             uploadStatus.textContent = '上传成功！';
                             uploadStatus.className = 'upload-status status-success';
                             
+                            // 自动复制提取码到剪贴板
+                            const shareCode = result.detail.code;
+                            copyToClipboardAuto(shareCode);
+                            
                             setTimeout(() => {
                                 showResult(`
                                     <h3>文件上传成功！</h3>
                                     <div class="result-code">${result.detail.code}</div>
                                     <p>文件名: ${result.detail.name}</p>
                                     <p>文件大小: ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                                    <p>请保存好提取码</p>
+                                    <p>✅ 提取码已自动复制到剪贴板</p>
                                 `);
                                 
                                 // 重置表单
@@ -864,11 +868,15 @@
                 const result = await response.json();
                 
                 if (result.code === 200) {
+                    // 自动复制提取码到剪贴板
+                    const shareCode = result.detail.share_code;
+                    copyToClipboardAuto(shareCode);
+                    
                     showResult(`
                         <h3>文本分享成功！</h3>
-                        <div class="result-code">${result.detail.code}</div>
+                        <div class="result-code">${result.detail.share_code}</div>
                         <p>文本长度: ${e.target.text.value.length} 字符</p>
-                        <p>请保存好提取码</p>
+                        <p>✅ 提取码已自动复制到剪贴板</p>
                     `);
                     
                     // 重置表单
@@ -1102,6 +1110,91 @@
             }
             
             document.body.removeChild(textArea);
+        }
+        
+        // 自动复制到剪贴板功能（无按钮反馈）
+        function copyToClipboardAuto(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                // 现代浏览器的 Clipboard API
+                navigator.clipboard.writeText(text).then(() => {
+                    console.log('提取码已自动复制到剪贴板:', text);
+                    // 可以选择显示一个简单的提示
+                    showCopyNotification('提取码已复制: ' + text);
+                }).catch(err => {
+                    console.error('自动复制失败:', err);
+                    fallbackCopyTextToClipboardAuto(text);
+                });
+            } else {
+                // 备用方案
+                fallbackCopyTextToClipboardAuto(text);
+            }
+        }
+        
+        function fallbackCopyTextToClipboardAuto(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    console.log('提取码已自动复制到剪贴板:', text);
+                    showCopyNotification('提取码已复制: ' + text);
+                } else {
+                    console.error('自动复制失败');
+                }
+            } catch (err) {
+                console.error('备用自动复制方案失败:', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        // 显示复制成功的通知
+        function showCopyNotification(message) {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #28a745;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                z-index: 10000;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // 显示动画
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
         }
         
         // 页面加载时检查用户登录状态

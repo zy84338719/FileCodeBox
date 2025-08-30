@@ -15,9 +15,9 @@ echo
 # 测试分享文本
 echo "2. 测试分享文本..."
 TEXT_RESULT=$(curl -s -X POST "${BASE_URL}/share/text/" \
-  -F "text=这是一个测试文本内容" \
-  -F "expire_value=1" \
-  -F "expire_style=day")
+  -d "text=这是一个测试文本内容" \
+  -d "expire_value=1" \
+  -d "expire_style=day")
 
 echo "分享结果: $TEXT_RESULT"
 TEXT_CODE=$(echo $TEXT_RESULT | jq -r '.detail.code' 2>/dev/null)
@@ -29,7 +29,7 @@ if [ "$TEXT_CODE" != "null" ] && [ "$TEXT_CODE" != "" ]; then
     echo "3. 测试获取文本..."
     curl -s -X POST "${BASE_URL}/share/select/" \
       -H "Content-Type: application/json" \
-      -d "{\"code\":\"$TEXT_CODE\"}" | jq '.'
+      -d "{\"code\": \"$TEXT_CODE\"}" | jq '.' || echo "获取文本失败"
 else
     echo "文本分享失败"
 fi

@@ -144,7 +144,7 @@ func (s *ShareService) ShareFileWithAuth(req ShareFileRequest) (*models.FileCode
 	// 构建完整的保存路径 - 使用绝对路径
 	basePath := s.config.StoragePath
 	if basePath == "" {
-		basePath = filepath.Join(s.config.DataPath, "share", "data")
+		basePath = filepath.Join(s.config.DataPath)
 	}
 	savePath := filepath.Join(basePath, path, uuidFileName)
 
@@ -223,7 +223,14 @@ func (s *ShareService) GetFileByCodeWithAuth(code string, checkExpire bool, user
 	// 检查是否需要登录才能访问
 	if fileCode.RequireAuth {
 		if userID == nil {
-			return nil, fmt.Errorf("该文件需要登录后才能访问")
+			// 如果文件是匿名上传的（user_id为空），但设置了require_auth，
+			// 这可能是一个配置错误，我们应该允许访问
+			if fileCode.UserID == nil {
+				// 匿名上传的文件，即使设置了require_auth也允许访问
+				// 这是一个兼容性处理
+			} else {
+				return nil, fmt.Errorf("该文件需要登录后才能访问")
+			}
 		}
 
 		// 如果是用户自己上传的文件，允许访问

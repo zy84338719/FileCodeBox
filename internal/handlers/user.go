@@ -202,11 +202,6 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	if len(req.NewPassword) < 6 {
-		common.BadRequestResponse(c, "新密码长度至少6个字符")
-		return
-	}
-
 	if err := h.userService.ChangePassword(userID.(uint), req.OldPassword, req.NewPassword); err != nil {
 		common.BadRequestResponse(c, err.Error())
 		return

@@ -289,6 +289,35 @@
             color: #666;
         }
         
+        .btn-sm {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            transition: background 0.3s ease;
+        }
+        
+        .btn-sm:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn-sm.active {
+            background: #495057;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
         @media (max-width: 768px) {
             .stats-grid {
                 grid-template-columns: 1fr;
@@ -1081,7 +1110,7 @@
                 
                 if (result.code === 200) {
                     const data = result.detail;
-                    const files = data.files || [];
+                    const files = data.list || []; // 修复：使用 list 而不是 files
                     
                     let tableHtml = `
                         <table class="table">
@@ -1102,16 +1131,16 @@
                     files.forEach(file => {
                         tableHtml += `
                             <tr>
-                                <td>${file.id}</td>
+                                <td>${file.ID}</td>
                                 <td>${file.code}</td>
                                 <td>${file.prefix}${file.suffix}</td>
                                 <td>${formatFileSize(file.size)}</td>
-                                <td>${formatDateTime(file.created_at)}</td>
+                                <td>${formatDateTime(file.CreatedAt)}</td>
                                 <td>${formatDateTime(file.expired_at)}</td>
                                 <td>
-                                    <button class="btn" onclick="editFile(${file.id})">编辑</button>
-                                    <button class="btn btn-danger" onclick="deleteFile(${file.id})">删除</button>
-                                    ${file.text ? '' : `<button class="btn btn-success" onclick="downloadFile(${file.id})">下载</button>`}
+                                    <button class="btn" onclick="editFile('${file.code}')">编辑</button>
+                                    <button class="btn btn-danger" onclick="deleteFile('${file.code}')">删除</button>
+                                    ${file.text ? '' : `<button class="btn btn-success" onclick="downloadFile('${file.code}')">下载</button>`}
                                 </td>
                             </tr>
                         `;
@@ -1151,13 +1180,13 @@
         }
 
         // 删除文件
-        async function deleteFile(id) {
+        async function deleteFile(code) {
             if (!confirm('确定要删除这个文件吗？')) {
                 return;
             }
             
             try {
-                const result = await apiRequest(`/admin/files/${id}`, {
+                const result = await apiRequest(`/admin/files/${code}`, {
                     method: 'DELETE'
                 });
                 
@@ -1173,15 +1202,50 @@
             }
         }
 
-        // 编辑文件
-        async function editFile(id) {
+        // 安全的时间格式化函数
+        function formatDateTimeLocal(dateString) {
             try {
-                const response = await fetch(`/admin/files/${id}`, {
+                if (!dateString) return '';
+                
+                // 处理不同的时间格式
+                let date;
+                if (dateString.includes('+') || dateString.includes('Z')) {
+                    // 带时区的ISO字符串
+                    date = new Date(dateString);
+                } else {
+                    // 简单的日期字符串
+                    date = new Date(dateString + 'Z'); // 添加Z表示UTC时间
+                }
+                
+                if (isNaN(date.getTime())) {
+                    console.warn('Invalid date format:', dateString);
+                    return '';
+                }
+                
+                // 转换为本地时间的datetime-local格式 (YYYY-MM-DDTHH:mm)
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            } catch (error) {
+                console.warn('Error formatting date:', dateString, error);
+                return '';
+            }
+        }
+
+        // 编辑文件
+        async function editFile(code) {
+            try {
+                const response = await fetch(`/admin/files/${code}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
                 
                 if (response.ok) {
-                    const file = await response.json();
+                    const result = await response.json();
+                    const file = result.detail; // 解析detail字段
                     
                     // 显示编辑表单
                     const modal = document.createElement('div');
@@ -1224,7 +1288,7 @@
                                 
                                 <div style="margin-bottom: 15px;">
                                     <label style="display: block; margin-bottom: 5px;">过期时间:</label>
-                                    <input type="datetime-local" id="expiredAt" value="${new Date(file.expired_at).toISOString().slice(0, 16)}" style="
+                                    <input type="datetime-local" id="expiredAt" value="${formatDateTimeLocal(file.expired_at)}" style="
                                         width: 100%;
                                         padding: 8px;
                                         border: 1px solid #ddd;
@@ -1302,9 +1366,9 @@
         }
 
         // 下载文件
-        async function downloadFile(id) {
+        async function downloadFile(code) {
             try {
-                const response = await fetch(`/admin/files/download?id=${id}`, {
+                const response = await fetch(`/admin/files/download?code=${code}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
                 
@@ -2188,9 +2252,15 @@
             try {
                 let result;
                 if (isEdit) {
-                    result = await apiRequest(`/admin/users/${userId}`, 'PUT', data);
+                    result = await apiRequest(`/admin/users/${userId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(data)
+                    });
                 } else {
-                    result = await apiRequest('/admin/users', 'POST', data);
+                    result = await apiRequest('/admin/users', {
+                        method: 'POST',
+                        body: JSON.stringify(data)
+                    });
                 }
                 
                 if (result.code === 200) {
@@ -2212,8 +2282,11 @@
             }
             
             try {
-                const result = await apiRequest(`/admin/users/${userId}/status`, 'PUT', {
-                    is_active: isActive
+                const result = await apiRequest(`/admin/users/${userId}/status`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        is_active: isActive
+                    })
                 });
                 
                 if (result.code === 200) {
@@ -2234,7 +2307,9 @@
             }
             
             try {
-                const result = await apiRequest(`/admin/users/${userId}`, 'DELETE');
+                const result = await apiRequest(`/admin/users/${userId}`, {
+                    method: 'DELETE'
+                });
                 
                 if (result.code === 200) {
                     showAlert('用户删除成功', 'success');

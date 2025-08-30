@@ -108,14 +108,13 @@ func (h *AdminHandler) GetFiles(c *gin.Context) {
 
 // DeleteFile 删除文件
 func (h *AdminHandler) DeleteFile(c *gin.Context) {
-	idStr := c.Param("id")
-	id64, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		common.BadRequestResponse(c, "文件ID错误")
+	code := c.Param("code")
+	if code == "" {
+		common.BadRequestResponse(c, "文件代码不能为空")
 		return
 	}
 
-	err = h.service.DeleteFile(uint(id64))
+	err := h.service.DeleteFileByCode(code)
 	if err != nil {
 		common.InternalServerErrorResponse(c, "删除失败: "+err.Error())
 		return
@@ -126,14 +125,13 @@ func (h *AdminHandler) DeleteFile(c *gin.Context) {
 
 // GetFile 获取单个文件信息
 func (h *AdminHandler) GetFile(c *gin.Context) {
-	idStr := c.Param("id")
-	id64, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		common.BadRequestResponse(c, "文件ID错误")
+	code := c.Param("code")
+	if code == "" {
+		common.BadRequestResponse(c, "文件代码不能为空")
 		return
 	}
 
-	fileCode, err := h.service.GetFileByID(uint(id64))
+	fileCode, err := h.service.GetFileByCode(code)
 	if err != nil {
 		common.NotFoundResponse(c, "文件不存在")
 		return
@@ -183,11 +181,10 @@ func (h *AdminHandler) CleanExpiredFiles(c *gin.Context) {
 
 // UpdateFile 更新文件信息
 func (h *AdminHandler) UpdateFile(c *gin.Context) {
-	// 从URL参数获取ID
-	idStr := c.Param("id")
-	id64, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		common.BadRequestResponse(c, "文件ID错误")
+	// 从URL参数获取code
+	code := c.Param("code")
+	if code == "" {
+		common.BadRequestResponse(c, "文件代码不能为空")
 		return
 	}
 
@@ -204,7 +201,7 @@ func (h *AdminHandler) UpdateFile(c *gin.Context) {
 	}
 
 	// 获取现有文件信息
-	fileCode, err := h.service.GetFileByID(uint(id64))
+	_, err := h.service.GetFileByCode(code)
 	if err != nil {
 		common.NotFoundResponse(c, "文件不存在")
 		return
@@ -216,8 +213,12 @@ func (h *AdminHandler) UpdateFile(c *gin.Context) {
 		expiredAt = updateData.ExpiredAt
 	}
 
-	// 保存更新 - 使用现有的UpdateFile方法
-	err = h.service.UpdateFile(uint(id64), updateData.Code, fileCode.Prefix, fileCode.Suffix, expiredAt, updateData.ExpiredCount)
+	// 保存更新 - 使用UpdateFileByCode方法
+	var expTime time.Time
+	if expiredAt != nil {
+		expTime = *expiredAt
+	}
+	err = h.service.UpdateFileByCode(code, updateData.Code, "", expTime)
 	if err != nil {
 		common.InternalServerErrorResponse(c, "更新失败: "+err.Error())
 		return
@@ -228,14 +229,13 @@ func (h *AdminHandler) UpdateFile(c *gin.Context) {
 
 // DownloadFile 下载文件（管理员）
 func (h *AdminHandler) DownloadFile(c *gin.Context) {
-	idStr := c.Query("id")
-	id64, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		common.BadRequestResponse(c, "文件ID错误")
+	code := c.Query("code")
+	if code == "" {
+		common.BadRequestResponse(c, "文件代码不能为空")
 		return
 	}
 
-	fileCode, err := h.service.GetFileByID(uint(id64))
+	fileCode, err := h.service.GetFileByCode(code)
 	if err != nil {
 		common.NotFoundResponse(c, "文件不存在")
 		return
@@ -243,20 +243,25 @@ func (h *AdminHandler) DownloadFile(c *gin.Context) {
 
 	if fileCode.Text != "" {
 		// 文本内容
-		common.SuccessResponse(c, fileCode.Text)
+		fileName := fileCode.Prefix + ".txt"
+		c.Header("Content-Disposition", "attachment; filename=\""+fileName+"\"")
+		c.Header("Content-Type", "text/plain")
+		c.String(200, fileCode.Text)
 		return
 	}
 
-	// 文件下载
+	// 文件下载 - 通过存储管理器
 	filePath := fileCode.GetFilePath()
 	if filePath == "" {
 		common.NotFoundResponse(c, "文件路径为空")
 		return
 	}
 
-	fileName := fileCode.Prefix + fileCode.Suffix
-	c.Header("Content-Disposition", "attachment; filename=\""+fileName+"\"")
-	c.File(filePath)
+	err = h.service.ServeFile(c, fileCode)
+	if err != nil {
+		common.InternalServerErrorResponse(c, "文件下载失败: "+err.Error())
+		return
+	}
 }
 
 // ========== 用户管理相关方法 ==========
@@ -347,7 +352,7 @@ func (h *AdminHandler) getUsersFromDB(page, pageSize int, search string) ([]gin.
 
 // getUserStats 获取用户统计信息
 func (h *AdminHandler) getUserStats() (gin.H, error) {
-	stats, err := h.service.GetUserStats()
+	stats, err := h.service.GetStats()
 	if err != nil {
 		return nil, err
 	}
@@ -406,7 +411,7 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 	var userData struct {
 		Username string `json:"username" binding:"required"`
 		Email    string `json:"email" binding:"required,email"`
-		Password string `json:"password" binding:"required,min=6"`
+		Password string `json:"password" binding:"required"`
 		Nickname string `json:"nickname"`
 		IsAdmin  bool   `json:"is_admin"`
 		IsActive bool   `json:"is_active"`
@@ -559,7 +564,10 @@ func (h *AdminHandler) GetUserFiles(c *gin.Context) {
 	}
 
 	// 获取用户的文件列表
-	files, err := h.service.GetUserFiles(userID)
+	page := 1   // 默认第一页
+	limit := 20 // 默认每页20条
+
+	files, total, err := h.service.GetUserFiles(userID, page, limit)
 	if err != nil {
 		common.InternalServerErrorResponse(c, "获取用户文件失败: "+err.Error())
 		return
@@ -597,6 +605,6 @@ func (h *AdminHandler) GetUserFiles(c *gin.Context) {
 	common.SuccessResponse(c, gin.H{
 		"files":    fileList,
 		"username": user.Username,
-		"total":    len(fileList),
+		"total":    total,
 	})
 }

@@ -23,6 +23,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -156,11 +157,15 @@ func main() {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	// 启动服务器
+	// 优雅启动和关闭
 	go func() {
-		logrus.Infof("服务器启动在 %s:%d", cfg.Host, cfg.Port)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logrus.Fatal("启动服务器失败:", err)
+		logrus.Infof("HTTP服务器启动在 %s:%d", cfg.Host, cfg.Port)
+		logrus.Infof("访问地址: http://%s:%d", cfg.Host, cfg.Port)
+		logrus.Infof("管理后台: http://%s:%d/admin/", cfg.Host, cfg.Port)
+		logrus.Infof("API文档: http://%s:%d/swagger/index.html", cfg.Host, cfg.Port)
+
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logrus.Fatalf("HTTP服务器启动失败: %v", err)
 		}
 	}()
 
