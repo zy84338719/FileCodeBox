@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  filecodebox-go:
+    build: .
+    ports:
+      - "12345:12345"
+    volumes:
+      - ./data:/root/data
+      - ./themes:/root/themes
+    environment:
+      - GIN_MODE=release
+    restart: unless-stopped

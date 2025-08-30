@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <meta name="description" content="{{description}}">
+    <meta name="keywords" content="{{keywords}}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: {{opacity}};
+            background-image: {{background}};
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 2.5em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .upload-icon {
+            font-size: 3em;
+            color: #ddd;
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            color: #999;
+            font-size: 1.1em;
+        }
+        
+        .form-group {
+            margin: 20px 0;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 5px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .result {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+            border: 1px solid #e9ecef;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .result-code {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            margin: 10px 0;
+            user-select: all;
+        }
+        
+        .text-content {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            margin: 10px 0;
+        }
+        
+        .file-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+        
+        .copy-btn {
+            background: #17a2b8 !important;
+            color: white !important;
+            border: none !important;
+            padding: 8px 16px !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            transition: background-color 0.3s ease;
+        }
+        
+        .copy-btn:hover {
+            background: #138496 !important;
+        }
+        
+        .download-btn {
+            background: #28a745 !important;
+            color: white !important;
+            padding: 10px 20px !important;
+            text-decoration: none !important;
+            border-radius: 5px !important;
+            display: inline-block !important;
+            transition: background-color 0.3s ease;
+        }
+        
+        .download-btn:hover {
+            background: #218838 !important;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 0.9em;
+        }
+        
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .progress-container {
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .progress-container.show {
+            display: block;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #333;
+            font-weight: 600;
+            font-size: 12px;
+            z-index: 1;
+        }
+        
+        .upload-status {
+            text-align: center;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        
+        .status-uploading {
+            color: #667eea;
+        }
+        
+        .status-success {
+            color: #28a745;
+        }
+        
+        .status-error {
+            color: #dc3545;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn:disabled:hover {
+            transform: none;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin: 20px;
+            }
+            
+            .logo {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">📦 FileCodeBox</div>
+            <div class="subtitle">{{description}}</div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('file')">文件分享</div>
+            <div class="tab" onclick="switchTab('text')">文本分享</div>
+            <div class="tab" onclick="switchTab('get')">获取分享</div>
+        </div>
+        
+        <!-- 文件分享 -->
+        <div id="file-tab" class="tab-content active">
+            <form id="file-form">
+                <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">点击选择文件或拖拽到此处</div>
+                    <input type="file" id="file-input" style="display: none;">
+                </div>
+                
+                <div class="form-group">
+                    <label>过期时间</label>
+                    <select class="form-control" name="expire_style">
+                        <option value="day">天</option>
+                        <option value="hour">小时</option>
+                        <option value="minute">分钟</option>
+                        <option value="count">次数</option>
+                        <option value="forever">永不过期</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <input type="number" class="form-control" name="expire_value" value="1" min="1" placeholder="过期值">
+                </div>
+                
+                <!-- 进度条 -->
+                <div id="upload-progress" class="progress-container">
+                    <div class="upload-status" id="upload-status">准备上传...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                        <div class="progress-text" id="progress-text">0%</div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn" id="upload-btn">上传文件</button>
+            </form>
+        </div>
+        
+        <!-- 文本分享 -->
+        <div id="text-tab" class="tab-content">
+            <form id="text-form">
+                <div class="form-group">
+                    <label>文本内容</label>
+                    <textarea class="form-control" name="text" placeholder="输入要分享的文本内容..." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>过期时间</label>
+                    <select class="form-control" name="expire_style">
+                        <option value="day">天</option>
+                        <option value="hour">小时</option>
+                        <option value="minute">分钟</option>
+                        <option value="count">次数</option>
+                        <option value="forever">永不过期</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <input type="number" class="form-control" name="expire_value" value="1" min="1" placeholder="过期值">
+                </div>
+                
+                <button type="submit" class="btn" id="text-btn">分享文本</button>
+            </form>
+        </div>
+        
+        <!-- 获取分享 -->
+        <div id="get-tab" class="tab-content">
+            <form id="get-form">
+                <div class="form-group">
+                    <label>提取码</label>
+                    <input type="text" class="form-control" name="code" placeholder="输入提取码" required>
+                </div>
+                
+                <button type="submit" class="btn" id="get-btn">获取内容</button>
+            </form>
+        </div>
+        
+        <!-- 结果显示 -->
+        <div id="result" class="result">
+            <div id="result-content"></div>
+        </div>
+        
+        <div class="footer">
+            <p>{{page_explain}}</p>
+            <p><a href="https://github.com/zy84338719/FileCodeBox" target="_blank">GitHub</a></p>
+        </div>
+    </div>
+    
+    <script>
+        function switchTab(tab) {
+            // 隐藏所有标签页
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            // 显示当前标签页
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+            
+            // 隐藏结果
+            document.getElementById('result').classList.remove('show');
+        }
+        
+        function showResult(content) {
+            document.getElementById('result-content').innerHTML = content;
+            document.getElementById('result').classList.add('show');
+        }
+        
+        // 文件上传
+        document.getElementById('file-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('请选择文件');
+                return;
+            }
+
+            // 获取服务器配置并检查文件大小
+            try {
+                const configResponse = await fetch('/', {
+                    method: 'POST'
+                });
+                const configResult = await configResponse.json();
+                
+                if (configResult.code === 200) {
+                    const maxSize = configResult.detail.uploadSize;
+                    if (file.size > maxSize) {
+                        const maxSizeMB = (maxSize / 1024 / 1024).toFixed(2);
+                        const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                        alert(`文件大小超过限制！\n文件大小: ${fileSizeMB}MB\n最大允许: ${maxSizeMB}MB\n\n请选择更小的文件或使用管理后台调整上传大小限制。`);
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('获取配置失败:', error);
+                // 继续上传，由服务器进行最终检查
+            }
+            
+            // 显示进度条和禁用按钮
+            const progressContainer = document.getElementById('upload-progress');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            const uploadStatus = document.getElementById('upload-status');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            progressContainer.classList.add('show');
+            uploadBtn.disabled = true;
+            uploadStatus.textContent = '正在上传...';
+            uploadStatus.className = 'upload-status status-uploading';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('expire_style', e.target.expire_style.value);
+            formData.append('expire_value', e.target.expire_value.value);
+            
+            try {
+                const xhr = new XMLHttpRequest();
+                
+                // 上传进度监听
+                const uploadStartTime = Date.now();
+                let lastUpdateTime = uploadStartTime;
+                let smoothProgress = 0;
+                
+                xhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        const currentTime = Date.now();
+                        const timeDiff = currentTime - lastUpdateTime;
+                        
+                        // 计算真实进度
+                        const realProgress = (e.loaded / e.total) * 100;
+                        
+                        // 平滑进度更新，避免进度条跳跃
+                        if (timeDiff > 50) { // 每50ms最多更新一次
+                            // 如果真实进度比当前显示的进度快很多，加快追赶速度
+                            const progressDiff = realProgress - smoothProgress;
+                            if (progressDiff > 10) {
+                                smoothProgress += progressDiff * 0.5; // 快速追赶
+                            } else {
+                                smoothProgress += progressDiff * 0.3; // 平滑更新
+                            }
+                            
+                            // 确保进度不超过真实进度
+                            smoothProgress = Math.min(smoothProgress, realProgress);
+                            
+                            // 更新UI
+                            const displayProgress = Math.floor(smoothProgress);
+                            progressFill.style.width = smoothProgress + '%';
+                            progressText.textContent = displayProgress + '%';
+                            
+                            // 计算上传速度
+                            const speed = e.loaded / ((currentTime - uploadStartTime) / 1000);
+                            const speedText = formatSpeed(speed);
+                            
+                            // 估算剩余时间
+                            const remainingBytes = e.total - e.loaded;
+                            const estimatedTime = remainingBytes / speed;
+                            const timeText = formatTime(estimatedTime);
+                            
+                            if (displayProgress < 100) {
+                                uploadStatus.textContent = `正在上传... ${displayProgress}% (${speedText}, 剩余${timeText})`;
+                            } else {
+                                uploadStatus.textContent = '处理中...';
+                            }
+                            
+                            lastUpdateTime = currentTime;
+                        }
+                    }
+                });
+                
+                // 响应处理
+                xhr.addEventListener('load', function() {
+                    try {
+                        const result = JSON.parse(xhr.responseText);
+                        
+                        if (result.code === 200) {
+                            uploadStatus.textContent = '上传成功！';
+                            uploadStatus.className = 'upload-status status-success';
+                            
+                            setTimeout(() => {
+                                showResult(`
+                                    <h3>文件上传成功！</h3>
+                                    <div class="result-code">${result.detail.code}</div>
+                                    <p>文件名: ${result.detail.name}</p>
+                                    <p>文件大小: ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                    <p>请保存好提取码</p>
+                                `);
+                                
+                                // 重置表单
+                                progressContainer.classList.remove('show');
+                                uploadBtn.disabled = false;
+                                progressFill.style.width = '0%';
+                                progressText.textContent = '0%';
+                                fileInput.value = '';
+                                document.querySelector('.upload-text').textContent = '点击选择文件或拖拽到此处';
+                            }, 1000);
+                        } else {
+                            throw new Error(result.message || '上传失败');
+                        }
+                    } catch (error) {
+                        uploadStatus.textContent = '上传失败: ' + error.message;
+                        uploadStatus.className = 'upload-status status-error';
+                        uploadBtn.disabled = false;
+                        
+                        setTimeout(() => {
+                            alert('上传失败: ' + error.message);
+                        }, 500);
+                    }
+                });
+                
+                // 错误处理
+                xhr.addEventListener('error', function() {
+                    uploadStatus.textContent = '网络错误';
+                    uploadStatus.className = 'upload-status status-error';
+                    uploadBtn.disabled = false;
+                    alert('网络错误，请重试');
+                });
+                
+                // 超时处理
+                xhr.addEventListener('timeout', function() {
+                    uploadStatus.textContent = '上传超时';
+                    uploadStatus.className = 'upload-status status-error';
+                    uploadBtn.disabled = false;
+                    alert('上传超时，请重试');
+                });
+                
+                // 发送请求
+                xhr.timeout = 300000; // 5分钟超时
+                xhr.open('POST', '/share/file/');
+                xhr.send(formData);
+                
+            } catch (error) {
+                uploadStatus.textContent = '上传失败: ' + error.message;
+                uploadStatus.className = 'upload-status status-error';
+                uploadBtn.disabled = false;
+                alert('上传失败: ' + error.message);
+            }
+        });
+        
+        // 文本分享
+        document.getElementById('text-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const textBtn = document.getElementById('text-btn');
+            const originalText = textBtn.textContent;
+            
+            textBtn.disabled = true;
+            textBtn.textContent = '分享中...';
+            
+            const formData = new FormData();
+            formData.append('text', e.target.text.value);
+            formData.append('expire_style', e.target.expire_style.value);
+            formData.append('expire_value', e.target.expire_value.value);
+            
+            try {
+                const response = await fetch('/share/text/', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    showResult(`
+                        <h3>文本分享成功！</h3>
+                        <div class="result-code">${result.detail.code}</div>
+                        <p>文本长度: ${e.target.text.value.length} 字符</p>
+                        <p>请保存好提取码</p>
+                    `);
+                    
+                    // 重置表单
+                    e.target.text.value = '';
+                } else {
+                    alert(result.message || '分享失败');
+                }
+            } catch (error) {
+                alert('分享失败: ' + error.message);
+            } finally {
+                textBtn.disabled = false;
+                textBtn.textContent = originalText;
+            }
+        });
+        
+        // 获取分享
+        document.getElementById('get-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const getBtn = document.getElementById('get-btn');
+            const originalText = getBtn.textContent;
+            const code = e.target.code.value;
+            
+            getBtn.disabled = true;
+            getBtn.textContent = '获取中...';
+            
+            try {
+                const response = await fetch('/share/select/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code: code })
+                });
+                
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    const detail = result.detail;
+                    
+                    if (detail.text.startsWith('http') || detail.text.startsWith('/share/download')) {
+                        // 文件下载
+                        const fileSize = detail.size ? (detail.size / 1024 / 1024).toFixed(2) : '未知';
+                        const fileName = detail.name ? detail.name.replace(/[<>"'&]/g, function(match) {
+                            const escapeMap = {'<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;', '&': '&amp;'};
+                            return escapeMap[match];
+                        }) : '未知文件';
+                        
+                        showResult(`
+                            <h3>📁 文件信息</h3>
+                            <div style="background: white; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                                <p><strong>文件名:</strong> ${fileName}</p>
+                                <p><strong>大小:</strong> ${fileSize} MB</p>
+                                <div style="margin-top: 15px;">
+                                    <a href="${detail.text}" class="btn" download style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">📥 下载文件</a>
+                                </div>
+                            </div>
+                        `);
+                    } else {
+                        // 文本内容 - 需要转义HTML以防止XSS攻击和布局破坏
+                        const escapedText = detail.text
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&#x27;');
+                        
+                        // 限制文本长度显示
+                        const maxLength = 5000;
+                        const displayText = escapedText.length > maxLength 
+                            ? escapedText.substring(0, maxLength) + '\n\n... (文本过长，已截断)'
+                            : escapedText;
+                            
+                        showResult(`
+                            <h3>📝 文本内容</h3>
+                            <div style="background: white; padding: 15px; border-radius: 8px; white-space: pre-wrap; word-wrap: break-word; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; font-family: monospace; font-size: 14px; line-height: 1.4;">
+                                ${displayText}
+                            </div>
+                            <div style="margin-top: 10px; text-align: center;">
+                                <button onclick="copyToClipboard('${escapedText.replace(/'/g, "\\'")}', this)" class="btn" style="background: #17a2b8; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">📋 复制文本</button>
+                            </div>
+                        `);
+                    }
+                    
+                    // 清空输入框
+                    e.target.code.value = '';
+                } else {
+                    alert(result.message || '获取失败');
+                }
+            } catch (error) {
+                alert('获取失败: ' + error.message);
+            } finally {
+                getBtn.disabled = false;
+                getBtn.textContent = originalText;
+            }
+        });
+        
+        // 文件拖拽上传
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#667eea';
+            this.style.background = 'rgba(102, 126, 234, 0.1)';
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#ddd';
+            this.style.background = '';
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#ddd';
+            this.style.background = '';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('file-input').files = files;
+                const fileSizeMB = (files[0].size / 1024 / 1024).toFixed(2);
+                this.querySelector('.upload-text').textContent = `已选择: ${files[0].name} (${fileSizeMB}MB)`;
+            }
+        });
+        
+        // 文件选择器变化
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                document.querySelector('.upload-text').textContent = `已选择: ${file.name} (${fileSizeMB}MB)`;
+            }
+        });
+        
+        // 格式化上传速度
+        function formatSpeed(bytesPerSecond) {
+            if (bytesPerSecond === 0) return '0 B/s';
+            
+            const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+            let size = bytesPerSecond;
+            let unitIndex = 0;
+            
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+            
+            return size.toFixed(1) + ' ' + units[unitIndex];
+        }
+        
+        // 格式化剩余时间
+        function formatTime(seconds) {
+            if (!isFinite(seconds) || seconds <= 0) return '计算中...';
+            
+            if (seconds < 60) {
+                return Math.round(seconds) + '秒';
+            } else if (seconds < 3600) {
+                const minutes = Math.round(seconds / 60);
+                return minutes + '分钟';
+            } else {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.round((seconds % 3600) / 60);
+                return hours + '小时' + (minutes > 0 ? minutes + '分钟' : '');
+            }
+        }
+        
+        // 复制到剪贴板功能
+        function copyToClipboard(text, button) {
+            const originalText = button.textContent;
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                // 现代浏览器的 Clipboard API
+                navigator.clipboard.writeText(text).then(() => {
+                    button.textContent = '✅ 已复制';
+                    button.style.background = '#28a745';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.style.background = '#17a2b8';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    fallbackCopyTextToClipboard(text, button, originalText);
+                });
+            } else {
+                // 备用方案
+                fallbackCopyTextToClipboard(text, button, originalText);
+            }
+        }
+        
+        function fallbackCopyTextToClipboard(text, button, originalText) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    button.textContent = '✅ 已复制';
+                    button.style.background = '#28a745';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.style.background = '#17a2b8';
+                    }, 2000);
+                } else {
+                    button.textContent = '❌ 复制失败';
+                    button.style.background = '#dc3545';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.style.background = '#17a2b8';
+                    }, 2000);
+                }
+            } catch (err) {
+                console.error('备用复制方案失败:', err);
+                button.textContent = '❌ 复制失败';
+                button.style.background = '#dc3545';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#17a2b8';
+                }, 2000);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+    </script>
+</body>
+</html>

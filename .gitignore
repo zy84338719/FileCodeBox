@@ -1,0 +1,56 @@
+# 编译后的二进制文件
+filecodebox
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# 测试二进制文件，以测试* 形式构建的
+*.test
+
+# 输出目录
+*.out
+
+# 依赖模块的模块文件
+go.work
+
+# 数据目录（包含数据库等）
+data/
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.temp
+
+# IDE和编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 测试临时文件
+tests/chunk_*
+tests/test_*.txt
+tests/test_*.bin
+tests/*.tmp
+
+# 配置文件（如果包含敏感信息）
+config.json
+
+# 上传临时文件
+uploads/
+temp/
+2025/

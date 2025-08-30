@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - FileCodeBox</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .logout-btn:hover {
+            background: #c82333;
+        }
+        
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+            font-size: 1.5em;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .tabs {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-header {
+            display: flex;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .tab-content {
+            padding: 20px;
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-text {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.875em;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: background 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 500px;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+        
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+        
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tab-header {
+                flex-direction: column;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .table {
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录页面 -->
+    <div id="login-page" class="login-container">
+        <h2 class="login-title">管理员登录</h2>
+        <form id="login-form">
+            <div class="form-group">
+                <label>管理员密码</label>
+                <input type="password" class="form-control" id="admin-password" required>
+            </div>
+            <button type="submit" class="btn" style="width: 100%;">登录</button>
+        </form>
+    </div>
+
+    <!-- 管理页面 -->
+    <div id="admin-page" style="display: none;">
+        <div class="container">
+            <div class="header">
+                <div class="logo">📦 FileCodeBox 管理后台</div>
+                <button class="logout-btn" onclick="logout()">退出登录</button>
+            </div>
+
+            <div class="stats-grid" id="stats-grid">
+                <!-- 统计数据将通过JavaScript填充 -->
+            </div>
+
+            <div class="tabs">
+                <div class="tab-header">
+                    <button class="tab-btn active" onclick="switchTab('files')">文件管理</button>
+                    <button class="tab-btn" onclick="switchTab('storage')">存储管理</button>
+                    <button class="tab-btn" onclick="switchTab('config')">系统配置</button>
+                    <button class="tab-btn" onclick="switchTab('maintenance')">系统维护</button>
+                </div>
+
+                <!-- 文件管理 -->
+                <div id="files-tab" class="tab-content active">
+                    <div class="search-box">
+                        <input type="text" class="form-control" id="search-input" placeholder="搜索文件..." style="display: inline-block; width: 300px; margin-right: 10px;">
+                        <button class="btn" onclick="searchFiles()">搜索</button>
+                        <button class="btn" onclick="loadFiles()">刷新</button>
+                    </div>
+                    
+                    <div id="files-content">
+                        <div class="loading">加载中...</div>
+                    </div>
+                    
+                    <div class="pagination" id="pagination">
+                        <!-- 分页将通过JavaScript生成 -->
+                    </div>
+                </div>
+
+                <!-- 存储管理 -->
+                <div id="storage-tab" class="tab-content">
+                    <h3>存储管理</h3>
+                    <p style="color: #666; margin-bottom: 30px;">管理文件存储位置，支持本地存储和 WebDAV 远程存储</p>
+                    
+                    <!-- 存储类型卡片 -->
+                    <div class="storage-cards" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                        <!-- 本地存储卡片 -->
+                        <div class="storage-card" id="local-card" style="border: 2px solid #e9ecef; border-radius: 10px; padding: 20px; background: white; cursor: pointer; transition: all 0.3s;">
+                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                <div class="storage-icon" style="width: 40px; height: 40px; background: #28a745; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                                    <span style="color: white; font-size: 18px;">💾</span>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0;">本地存储</h4>
+                                    <p style="margin: 0; color: #666; font-size: 14px;">文件存储在服务器本地磁盘</p>
+                                </div>
+                            </div>
+                            <div class="storage-status" id="local-status">
+                                <span class="status-badge" style="display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">检查中...</span>
+                            </div>
+                            <div class="storage-config" id="local-config" style="margin-top: 15px; display: none;">
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">存储路径</label>
+                                    <input type="text" id="local-storage-path" class="form-control" placeholder="留空使用默认路径 (./data/share/data)" style="width: 100%;">
+                                    <small style="color: #666;">可以指定自定义的存储路径，留空使用默认路径</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- WebDAV 存储卡片 -->
+                        <div class="storage-card" id="webdav-card" style="border: 2px solid #e9ecef; border-radius: 10px; padding: 20px; background: white; cursor: pointer; transition: all 0.3s;">
+                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                <div class="storage-icon" style="width: 40px; height: 40px; background: #007bff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                                    <span style="color: white; font-size: 18px;">☁️</span>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0;">WebDAV 存储</h4>
+                                    <p style="margin: 0; color: #666; font-size: 14px;">文件存储在 WebDAV 远程服务器</p>
+                                </div>
+                            </div>
+                            <div class="storage-status" id="webdav-status">
+                                <span class="status-badge" style="display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">检查中...</span>
+                            </div>
+                            <div class="storage-config" id="webdav-config" style="margin-top: 15px; display: none;">
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">服务器地址</label>
+                                    <input type="text" id="webdav-hostname" class="form-control" placeholder="http://example.com:5005" style="width: 100%;">
+                                    <small style="color: #666;">WebDAV 服务器的完整地址，包含协议和端口</small>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div class="form-group">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">用户名</label>
+                                        <input type="text" id="webdav-username" class="form-control" style="width: 100%;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">密码</label>
+                                        <input type="password" id="webdav-password" class="form-control" style="width: 100%;">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">根目录</label>
+                                    <input type="text" id="webdav-root-path" class="form-control" placeholder="filebox_storage" style="width: 100%;">
+                                    <small style="color: #666;">在 WebDAV 服务器上创建的存储目录名称</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- S3 存储卡片 -->
+                        <div class="storage-card" id="s3-card" style="border: 2px solid #e9ecef; border-radius: 10px; padding: 20px; background: white; cursor: pointer; transition: all 0.3s;">
+                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                <div class="storage-icon" style="width: 40px; height: 40px; background: #ff9500; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                                    <span style="color: white; font-size: 18px;">📦</span>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0;">S3 对象存储</h4>
+                                    <p style="margin: 0; color: #666; font-size: 14px;">文件存储在 S3 兼容的对象存储服务</p>
+                                </div>
+                            </div>
+                            <div class="storage-status" id="s3-status">
+                                <span class="status-badge" style="display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">检查中...</span>
+                            </div>
+                            <div class="storage-config" id="s3-config" style="margin-top: 15px; display: none;">
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">端点地址</label>
+                                    <input type="text" id="s3-endpoint-url" class="form-control" placeholder="https://s3.amazonaws.com" style="width: 100%;">
+                                    <small style="color: #666;">S3 服务的端点地址，AWS S3 或兼容服务</small>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div class="form-group">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">访问密钥</label>
+                                        <input type="text" id="s3-access-key-id" class="form-control" placeholder="Access Key ID" style="width: 100%;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">密钥</label>
+                                        <input type="password" id="s3-secret-access-key" class="form-control" placeholder="Secret Access Key" style="width: 100%;">
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">存储桶名称</label>
+                                        <input type="text" id="s3-bucket-name" class="form-control" placeholder="my-bucket" style="width: 100%;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">区域</label>
+                                        <input type="text" id="s3-region-name" class="form-control" placeholder="us-east-1" style="width: 100%;">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">自定义域名 (可选)</label>
+                                    <input type="text" id="s3-hostname" class="form-control" placeholder="cdn.example.com" style="width: 100%;">
+                                    <small style="color: #666;">用于文件访问的自定义域名，留空使用默认域名</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="storage-actions" style="text-align: center; margin-bottom: 30px;">
+                        <button class="btn" id="config-btn" onclick="toggleStorageConfig()" style="margin-right: 10px; display: none;">
+                            <span id="config-btn-text">配置存储</span>
+                        </button>
+                        <button class="btn btn-primary" id="save-config-btn" onclick="saveStorageConfig()" style="margin-right: 10px; display: none;">保存配置</button>
+                        <button class="btn btn-success" id="test-btn" onclick="testStorageConnection()" style="margin-right: 10px; display: none;">测试连接</button>
+                        <button class="btn btn-warning" id="switch-btn" onclick="confirmStorageSwitch()" style="display: none;">切换到此存储</button>
+                    </div>
+
+                    <!-- 当前状态信息 -->
+                    <div class="current-storage-info" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                        <h4 style="margin: 0 0 10px 0;">当前使用的存储</h4>
+                        <div id="current-storage-display" style="font-size: 18px; font-weight: bold;">
+                            <span id="current-storage-name">加载中...</span>
+                            <span id="current-storage-status" style="margin-left: 10px; font-size: 14px; opacity: 0.9;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 存储切换确认对话框 -->
+                    <div id="switch-confirm-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+                        <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; text-align: center;">
+                            <h4 style="margin-bottom: 20px;">确认切换存储</h4>
+                            <p id="switch-confirm-text" style="margin-bottom: 20px; color: #666;"></p>
+                            <div>
+                                <button class="btn btn-secondary" onclick="cancelStorageSwitch()" style="margin-right: 10px;">取消</button>
+                                <button class="btn btn-primary" onclick="executeStorageSwitch()">确认切换</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统配置 -->
+                <div id="config-tab" class="tab-content">
+                    <form id="config-form">
+                        <div class="form-group">
+                            <label>站点名称</label>
+                            <input type="text" class="form-control" name="name">
+                        </div>
+                        <div class="form-group">
+                            <label>站点描述</label>
+                            <input type="text" class="form-control" name="description">
+                        </div>
+                        <div class="form-group">
+                            <label>上传大小限制 (MB)</label>
+                            <input type="number" class="form-control" name="upload_size">
+                        </div>
+                        <div class="form-group">
+                            <label>管理员密码</label>
+                            <input type="password" class="form-control" name="admin_token">
+                        </div>
+                        <div class="form-group">
+                            <label>服务器绑定地址</label>
+                            <input type="text" class="form-control" name="host" placeholder="例如: 0.0.0.0 (允许外部访问) 或 localhost (仅本地访问)">
+                            <small class="form-text">默认 0.0.0.0 允许外部访问，localhost 仅允许本地访问</small>
+                        </div>
+                        <div class="form-group">
+                            <label>分块上传大小 (MB)</label>
+                            <input type="number" class="form-control" name="chunk_size" min="1" max="100">
+                            <small class="form-text">单个分块的大小，影响大文件上传性能</small>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" name="enable_concurrent_download"> 
+                                启用并发下载
+                            </label>
+                            <small class="form-text">允许同时进行多个下载任务</small>
+                        </div>
+                        <div class="form-group">
+                            <label>最大并发下载数</label>
+                            <input type="number" class="form-control" name="max_concurrent_downloads" min="1" max="50">
+                            <small class="form-text">同时允许的最大下载连接数</small>
+                        </div>
+                        <div class="form-group">
+                            <label>下载超时时间 (秒)</label>
+                            <input type="number" class="form-control" name="download_timeout" min="60" max="3600">
+                            <small class="form-text">单个下载任务的超时时间</small>
+                        </div>
+                        <button type="submit" class="btn">保存配置</button>
+                    </form>
+                </div>
+
+                <!-- 系统维护 -->
+                <div id="maintenance-tab" class="tab-content">
+                    <h3>系统维护</h3>
+                    <p>清理过期文件和无效数据</p>
+                    <button class="btn btn-danger" onclick="cleanExpiredFiles()">清理过期文件</button>
+                    
+                    <div id="maintenance-result" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑文件模态框 -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>编辑文件信息</h3>
+            <form id="edit-form">
+                <input type="hidden" id="edit-id">
+                <div class="form-group">
+                    <label>提取码</label>
+                    <input type="text" class="form-control" id="edit-code">
+                </div>
+                <div class="form-group">
+                    <label>文件名</label>
+                    <input type="text" class="form-control" id="edit-prefix">
+                </div>
+                <div class="form-group">
+                    <label>文件扩展名</label>
+                    <input type="text" class="form-control" id="edit-suffix">
+                </div>
+                <div class="form-group">
+                    <label>过期时间</label>
+                    <input type="datetime-local" class="form-control" id="edit-expired-at">
+                </div>
+                <div class="form-group">
+                    <label>使用次数限制</label>
+                    <input type="number" class="form-control" id="edit-expired-count">
+                </div>
+                <button type="submit" class="btn">保存更改</button>
+                <button type="button" class="btn btn-danger" onclick="closeModal()">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentPage = 1;
+        let currentSearch = '';
+        let authToken = localStorage.getItem('admin_token');
+
+        // 显示提示信息
+        function showAlert(message, type = 'info') {
+            // 创建一个临时的提示框
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px;
+                border-radius: 5px;
+                color: white;
+                font-weight: bold;
+                z-index: 9999;
+                max-width: 400px;
+                word-wrap: break-word;
+            `;
+            
+            // 根据类型设置背景色
+            switch(type) {
+                case 'success':
+                    alertDiv.style.backgroundColor = '#28a745';
+                    break;
+                case 'error':
+                    alertDiv.style.backgroundColor = '#dc3545';
+                    break;
+                case 'warning':
+                    alertDiv.style.backgroundColor = '#ffc107';
+                    alertDiv.style.color = '#212529';
+                    break;
+                default:
+                    alertDiv.style.backgroundColor = '#17a2b8';
+            }
+            
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 3000);
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            if (authToken) {
+                showAdminPage();
+            } else {
+                showLoginPage();
+            }
+            
+            // 添加存储类型选择器的变化监听器
+            const storageSelect = document.getElementById('storage-type-select');
+            if (storageSelect) {
+                storageSelect.addEventListener('change', function() {
+                    const selectedType = this.value;
+                    showStorageConfig(selectedType);
+                });
+            }
+        });
+
+        // 显示登录页面
+        function showLoginPage() {
+            document.getElementById('login-page').style.display = 'block';
+            document.getElementById('admin-page').style.display = 'none';
+        }
+
+        // 显示管理页面
+        function showAdminPage() {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('admin-page').style.display = 'block';
+            loadStats();
+            loadFiles();
+            loadConfig();
+        }
+
+        // 登录
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const password = document.getElementById('admin-password').value;
+            
+            try {
+                const response = await fetch('/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password: password })
+                });
+                
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    authToken = result.detail.token;
+                    localStorage.setItem('admin_token', authToken);
+                    showAdminPage();
+                } else {
+                    alert(result.message || '登录失败');
+                }
+            } catch (error) {
+                alert('登录失败: ' + error.message);
+            }
+        });
+
+        // 退出登录
+        function logout() {
+            authToken = null;
+            localStorage.removeItem('admin_token');
+            showLoginPage();
+        }
+
+        // API请求封装
+        async function apiRequest(url, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + authToken
+                }
+            };
+            
+            const finalOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...options.headers
+                }
+            };
+            
+            const response = await fetch(url, finalOptions);
+            
+            if (response.status === 401) {
+                logout();
+                throw new Error('认证失败');
+            }
+            
+            return response.json();
+        }
+
+        // 加载统计数据
+        async function loadStats() {
+            try {
+                const result = await apiRequest('/admin/dashboard');
+                
+                if (result.code === 200) {
+                    const stats = result.detail;
+                    const statsHtml = `
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.total_files || 0}</div>
+                            <div class="stat-label">总文件数</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.today_files || 0}</div>
+                            <div class="stat-label">今日上传</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.active_files || 0}</div>
+                            <div class="stat-label">活跃文件</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${formatFileSize(stats.total_size || 0)}</div>
+                            <div class="stat-label">总存储大小</div>
+                        </div>
+                    `;
+                    document.getElementById('stats-grid').innerHTML = statsHtml;
+                }
+            } catch (error) {
+                console.error('加载统计数据失败:', error);
+            }
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 格式化时间
+        function formatDateTime(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN');
+        }
+
+        // 加载文件列表
+        async function loadFiles(page = 1) {
+            currentPage = page;
+            
+            try {
+                const result = await apiRequest(`/admin/files?page=${page}&page_size=20&search=${currentSearch}`);
+                
+                if (result.code === 200) {
+                    const data = result.detail;
+                    const files = data.files || [];
+                    
+                    let tableHtml = `
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>提取码</th>
+                                    <th>文件名</th>
+                                    <th>大小</th>
+                                    <th>创建时间</th>
+                                    <th>过期时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    files.forEach(file => {
+                        tableHtml += `
+                            <tr>
+                                <td>${file.id}</td>
+                                <td>${file.code}</td>
+                                <td>${file.prefix}${file.suffix}</td>
+                                <td>${formatFileSize(file.size)}</td>
+                                <td>${formatDateTime(file.created_at)}</td>
+                                <td>${formatDateTime(file.expired_at)}</td>
+                                <td>
+                                    <button class="btn" onclick="editFile(${file.id})">编辑</button>
+                                    <button class="btn btn-danger" onclick="deleteFile(${file.id})">删除</button>
+                                    ${file.text ? '' : `<button class="btn btn-success" onclick="downloadFile(${file.id})">下载</button>`}
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    tableHtml += '</tbody></table>';
+                    
+                    document.getElementById('files-content').innerHTML = tableHtml;
+                    
+                    // 生成分页
+                    generatePagination(data.total, data.page, data.page_size);
+                }
+            } catch (error) {
+                console.error('加载文件列表失败:', error);
+                document.getElementById('files-content').innerHTML = '<div class="alert alert-danger">加载失败</div>';
+            }
+        }
+
+        // 生成分页
+        function generatePagination(total, currentPage, pageSize) {
+            const totalPages = Math.ceil(total / pageSize);
+            let paginationHtml = '';
+            
+            if (totalPages > 1) {
+                paginationHtml += `<button class="btn" onclick="loadFiles(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
+                paginationHtml += `<span>第 ${currentPage} 页，共 ${totalPages} 页</span>`;
+                paginationHtml += `<button class="btn" onclick="loadFiles(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
+            }
+            
+            document.getElementById('pagination').innerHTML = paginationHtml;
+        }
+
+        // 搜索文件
+        function searchFiles() {
+            currentSearch = document.getElementById('search-input').value;
+            loadFiles(1);
+        }
+
+        // 删除文件
+        async function deleteFile(id) {
+            if (!confirm('确定要删除这个文件吗？')) {
+                return;
+            }
+            
+            try {
+                const result = await apiRequest(`/admin/files/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (result.code === 200) {
+                    alert('删除成功');
+                    loadFiles(currentPage);
+                    loadStats();
+                } else {
+                    alert(result.message || '删除失败');
+                }
+            } catch (error) {
+                alert('删除失败: ' + error.message);
+            }
+        }
+
+        // 编辑文件
+        async function editFile(id) {
+            try {
+                const response = await fetch(`/admin/files/${id}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const file = await response.json();
+                    
+                    // 显示编辑表单
+                    const modal = document.createElement('div');
+                    modal.className = 'modal';
+                    modal.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0,0,0,0.5);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 1000;
+                    `;
+                    
+                    modal.innerHTML = `
+                        <div class="modal-content" style="
+                            background: white;
+                            padding: 20px;
+                            border-radius: 8px;
+                            width: 90%;
+                            max-width: 500px;
+                            max-height: 80vh;
+                            overflow-y: auto;
+                        ">
+                            <h3>编辑文件</h3>
+                            <form id="editForm">
+                                <div style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px;">文件代码:</label>
+                                    <input type="text" id="fileCode" value="${file.code}" required style="
+                                        width: 100%;
+                                        padding: 8px;
+                                        border: 1px solid #ddd;
+                                        border-radius: 4px;
+                                        box-sizing: border-box;
+                                    ">
+                                </div>
+                                
+                                <div style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px;">过期时间:</label>
+                                    <input type="datetime-local" id="expiredAt" value="${new Date(file.expired_at).toISOString().slice(0, 16)}" style="
+                                        width: 100%;
+                                        padding: 8px;
+                                        border: 1px solid #ddd;
+                                        border-radius: 4px;
+                                        box-sizing: border-box;
+                                    ">
+                                </div>
+                                
+                                ${file.text ? `
+                                    <div style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 5px;">文本内容:</label>
+                                        <textarea id="textContent" rows="10" style="
+                                            width: 100%;
+                                            padding: 8px;
+                                            border: 1px solid #ddd;
+                                            border-radius: 4px;
+                                            box-sizing: border-box;
+                                            resize: vertical;
+                                        ">${file.text}</textarea>
+                                    </div>
+                                ` : ''}
+                                
+                                <div style="text-align: right;">
+                                    <button type="button" class="btn btn-danger" onclick="this.closest('.modal').remove()" style="margin-right: 10px;">取消</button>
+                                    <button type="submit" class="btn">保存</button>
+                                </div>
+                            </form>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(modal);
+                    
+                    // 处理表单提交
+                    document.getElementById('editForm').onsubmit = async (e) => {
+                        e.preventDefault();
+                        
+                        const updateData = {
+                            code: document.getElementById('fileCode').value,
+                            expired_at: document.getElementById('expiredAt').value
+                        };
+                        
+                        if (file.text) {
+                            updateData.text = document.getElementById('textContent').value;
+                        }
+                        
+                        const updateResponse = await fetch(`/admin/files/${id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${authToken}`
+                            },
+                            body: JSON.stringify(updateData)
+                        });
+                        
+                        if (updateResponse.ok) {
+                            modal.remove();
+                            loadFiles(); // 重新加载文件列表
+                            alert('文件更新成功');
+                        } else {
+                            const errorText = await updateResponse.text();
+                            alert('更新失败: ' + errorText);
+                        }
+                    };
+                    
+                    // 点击模态框外部关闭
+                    modal.onclick = (e) => {
+                        if (e.target === modal) {
+                            modal.remove();
+                        }
+                    };
+                }
+            } catch (error) {
+                alert('获取文件信息失败: ' + error.message);
+            }
+        }
+
+        // 下载文件
+        async function downloadFile(id) {
+            try {
+                const response = await fetch(`/admin/files/download?id=${id}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = 'download';
+                    
+                    if (contentDisposition) {
+                        const matches = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                        if (matches != null && matches[1]) {
+                            filename = matches[1].replace(/['"]/g, '');
+                        }
+                    }
+                    
+                    // 创建下载链接
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    const error = await response.text();
+                    alert('下载失败: ' + error);
+                }
+            } catch (error) {
+                alert('下载失败: ' + error.message);
+            }
+        }
+
+        // 切换标签页
+        function switchTab(tabName) {
+            // 更新按钮状态
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // 更新内容显示
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // 加载对应标签的数据
+            if (tabName === 'storage') {
+                loadStorageInfo();
+            }
+        }
+
+        // 加载配置
+        async function loadConfig() {
+            try {
+                const result = await apiRequest('/admin/config');
+                
+                if (result.code === 200) {
+                    const config = result.detail;
+                    const form = document.getElementById('config-form');
+                    
+                    form.name.value = config.name || '';
+                    form.description.value = config.description || '';
+                    form.upload_size.value = (config.upload_size || 0) / (1024 * 1024);
+                    form.admin_token.value = config.admin_token || '';
+                    form.host.value = config.host || '0.0.0.0';
+                    form.chunk_size.value = (config.chunk_size || 0) / (1024 * 1024);
+                    form.enable_concurrent_download.checked = config.enable_concurrent_download === 1;
+                    form.max_concurrent_downloads.value = config.max_concurrent_downloads || 10;
+                    form.download_timeout.value = config.download_timeout || 300;
+                }
+            } catch (error) {
+                console.error('加载配置失败:', error);
+            }
+        }
+
+        // 保存配置
+        document.getElementById('config-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const config = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (key === 'upload_size' || key === 'chunk_size') {
+                    config[key] = parseInt(value) * 1024 * 1024;
+                } else if (key === 'enable_concurrent_download') {
+                    config[key] = 1; // 如果勾选了，值为1
+                } else if (key === 'max_concurrent_downloads' || key === 'download_timeout') {
+                    config[key] = parseInt(value);
+                } else {
+                    config[key] = value;
+                }
+            }
+            
+            // 如果没有勾选并发下载，设置为0
+            if (!document.querySelector('input[name="enable_concurrent_download"]').checked) {
+                config.enable_concurrent_download = 0;
+            }
+            
+            try {
+                const result = await apiRequest('/admin/config', {
+                    method: 'PUT',
+                    body: JSON.stringify(config)
+                });
+                
+                if (result.code === 200) {
+                    alert('配置保存成功');
+                } else {
+                    alert(result.message || '保存失败');
+                }
+            } catch (error) {
+                alert('保存失败: ' + error.message);
+            }
+        });
+
+        // 清理过期文件
+        async function cleanExpiredFiles() {
+            if (!confirm('确定要清理过期文件吗？')) {
+                return;
+            }
+            
+            try {
+                const result = await apiRequest('/admin/clean', {
+                    method: 'POST'
+                });
+                
+                if (result.code === 200) {
+                    const count = result.detail.cleaned_count;
+                    document.getElementById('maintenance-result').innerHTML = 
+                        `<div class="alert alert-success">清理完成，共清理了 ${count} 个过期文件</div>`;
+                    loadStats();
+                    loadFiles(currentPage);
+                } else {
+                    document.getElementById('maintenance-result').innerHTML = 
+                        `<div class="alert alert-danger">清理失败: ${result.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('maintenance-result').innerHTML = 
+                    `<div class="alert alert-danger">清理失败: ${error.message}</div>`;
+            }
+        }
+
+        // 监听回车键搜索
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchFiles();
+            }
+        });
+
+        // 模态框相关
+        document.querySelector('.close').onclick = function() {
+            closeModal();
+        }
+
+        function closeModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('edit-modal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // 存储管理相关函数
+        let currentStorageType = 'local';
+        let selectedStorageType = 'local';
+        let storageData = {};
+
+        async function loadStorageInfo() {
+            try {
+                const result = await apiRequest('/admin/storage');
+                
+                if (result.code === 200) {
+                    const detail = result.detail;
+                    storageData = detail;
+                    currentStorageType = detail.current;
+                    selectedStorageType = detail.current;
+                    
+                    // 更新当前存储显示
+                    updateCurrentStorageDisplay();
+                    
+                    // 更新存储卡片状态
+                    updateStorageCards();
+                    
+                    // 加载存储配置
+                    loadStorageConfig(detail.storage_config);
+                    
+                    // 更新操作按钮
+                    updateActionButtons();
+                } else {
+                    showAlert('加载存储信息失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('加载存储信息失败: ' + error.message, 'error');
+            }
+        }
+
+        function updateCurrentStorageDisplay() {
+            const nameElement = document.getElementById('current-storage-name');
+            const statusElement = document.getElementById('current-storage-status');
+            
+            const storageNames = {
+                'local': '本地存储',
+                'webdav': 'WebDAV 存储',
+                's3': 'S3 对象存储'
+            };
+            
+            nameElement.textContent = storageNames[currentStorageType] || currentStorageType;
+            
+            if (storageData.storage_details && storageData.storage_details[currentStorageType]) {
+                const isAvailable = storageData.storage_details[currentStorageType].available;
+                statusElement.textContent = isAvailable ? '✅ 运行正常' : '❌ 连接异常';
+                statusElement.style.color = isAvailable ? '#28a745' : '#dc3545';
+            }
+        }
+
+        function updateStorageCards() {
+            const cards = ['local', 'webdav', 's3'];
+            
+            cards.forEach(type => {
+                const card = document.getElementById(type + '-card');
+                const statusElement = document.getElementById(type + '-status');
+                
+                if (!card || !statusElement) return;
+                
+                // 重置样式
+                card.style.borderColor = '#e9ecef';
+                card.style.transform = 'none';
+                
+                // 设置当前使用的存储样式
+                if (type === currentStorageType) {
+                    card.style.borderColor = '#28a745';
+                    card.style.background = 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)';
+                }
+                
+                // 设置选中的存储样式
+                if (type === selectedStorageType) {
+                    card.style.borderColor = '#007bff';
+                    card.style.transform = 'translateY(-2px)';
+                    card.style.boxShadow = '0 4px 15px rgba(0,123,255,0.3)';
+                }
+                
+                // 更新状态显示
+                if (storageData.storage_details && storageData.storage_details[type]) {
+                    const details = storageData.storage_details[type];
+                    const statusBadge = statusElement.querySelector('.status-badge');
+                    
+                    if (details.available) {
+                        statusBadge.textContent = '✅ 可用';
+                        statusBadge.style.background = '#28a745';
+                        statusBadge.style.color = 'white';
+                    } else {
+                        statusBadge.textContent = '❌ 不可用';
+                        statusBadge.style.background = '#dc3545';
+                        statusBadge.style.color = 'white';
+                        
+                        // 显示错误信息
+                        if (details.error) {
+                            const errorDiv = document.createElement('div');
+                            errorDiv.style.marginTop = '10px';
+                            errorDiv.style.padding = '8px';
+                            errorDiv.style.background = '#f8d7da';
+                            errorDiv.style.border = '1px solid #f5c6cb';
+                            errorDiv.style.borderRadius = '4px';
+                            errorDiv.style.fontSize = '12px';
+                            errorDiv.style.color = '#721c24';
+                            errorDiv.textContent = '错误: ' + getUserFriendlyError(details.error);
+                            
+                            // 移除旧的错误信息
+                            const oldError = statusElement.querySelector('.error-info');
+                            if (oldError) oldError.remove();
+                            
+                            errorDiv.className = 'error-info';
+                            statusElement.appendChild(errorDiv);
+                        }
+                    }
+                } else {
+                    const statusBadge = statusElement.querySelector('.status-badge');
+                    statusBadge.textContent = '⏳ 未检查';
+                    statusBadge.style.background = '#6c757d';
+                    statusBadge.style.color = 'white';
+                }
+            });
+        }
+
+        function getUserFriendlyError(error) {
+            if (error.includes('403')) {
+                return '没有写入权限，请检查用户名密码或服务器权限设置';
+            } else if (error.includes('401')) {
+                return '认证失败，请检查用户名和密码';
+            } else if (error.includes('404')) {
+                return '路径不存在，请检查服务器地址和根目录';
+            } else if (error.includes('timeout') || error.includes('connection')) {
+                return '连接超时，请检查服务器地址和网络连接';
+            } else if (error.includes('hostname') || error.includes('resolve')) {
+                return '无法解析服务器地址，请检查域名或IP';
+            } else {
+                return error;
+            }
+        }
+
+        function selectStorageCard(type) {
+            selectedStorageType = type;
+            updateStorageCards();
+            updateActionButtons();
+        }
+
+        function updateActionButtons() {
+            const configBtn = document.getElementById('config-btn');
+            const saveConfigBtn = document.getElementById('save-config-btn');
+            const testBtn = document.getElementById('test-btn');
+            const switchBtn = document.getElementById('switch-btn');
+            
+            // 显示所有按钮
+            configBtn.style.display = 'inline-block';
+            testBtn.style.display = 'inline-block';
+            
+            // 如果选中的不是当前存储，显示切换按钮
+            if (selectedStorageType !== currentStorageType) {
+                switchBtn.style.display = 'inline-block';
+                const storageNames = {
+                    'local': '本地存储',
+                    'webdav': 'WebDAV 存储',
+                    's3': 'S3 对象存储'
+                };
+                switchBtn.textContent = `切换到${storageNames[selectedStorageType]}`;
+            } else {
+                switchBtn.style.display = 'none';
+            }
+        }
+
+        function toggleStorageConfig() {
+            const configDiv = document.getElementById(selectedStorageType + '-config');
+            const configBtn = document.getElementById('config-btn');
+            const saveConfigBtn = document.getElementById('save-config-btn');
+            const configBtnText = document.getElementById('config-btn-text');
+            
+            if (configDiv.style.display === 'none' || !configDiv.style.display) {
+                configDiv.style.display = 'block';
+                configBtnText.textContent = '隐藏配置';
+                saveConfigBtn.style.display = 'inline-block';
+            } else {
+                configDiv.style.display = 'none';
+                configBtnText.textContent = '配置存储';
+                saveConfigBtn.style.display = 'none';
+            }
+        }
+
+        function loadStorageConfig(config) {
+            // 加载本地存储配置
+            if (config.local) {
+                document.getElementById('local-storage-path').value = config.local.storage_path || '';
+            }
+            
+            // 加载 WebDAV 配置
+            if (config.webdav) {
+                document.getElementById('webdav-hostname').value = config.webdav.hostname || '';
+                document.getElementById('webdav-username').value = config.webdav.username || '';
+                document.getElementById('webdav-root-path').value = config.webdav.root_path || '';
+                // 不加载密码，保持为空
+                document.getElementById('webdav-password').value = '';
+            }
+            
+            // 加载 S3 配置
+            if (config.s3) {
+                document.getElementById('s3-endpoint-url').value = config.s3.endpoint_url || '';
+                document.getElementById('s3-access-key-id').value = config.s3.access_key_id || '';
+                document.getElementById('s3-bucket-name').value = config.s3.bucket_name || '';
+                document.getElementById('s3-region-name').value = config.s3.region_name || '';
+                document.getElementById('s3-hostname').value = config.s3.hostname || '';
+                // 不加载密钥，保持为空
+                document.getElementById('s3-secret-access-key').value = '';
+            }
+        }
+
+        async function testStorageConnection() {
+            const testBtn = document.getElementById('test-btn');
+            const originalText = testBtn.textContent;
+            
+            testBtn.textContent = '测试中...';
+            testBtn.disabled = true;
+            
+            try {
+                const result = await apiRequest(`/admin/storage/test/${selectedStorageType}`);
+                
+                if (result.code === 200) {
+                    showAlert('✅ 连接测试成功！存储可以正常使用', 'success');
+                    // 重新加载存储信息以更新状态
+                    await loadStorageInfo();
+                } else {
+                    const friendlyError = getUserFriendlyError(result.message);
+                    showAlert('❌ 连接测试失败: ' + friendlyError, 'error');
+                }
+            } catch (error) {
+                const friendlyError = getUserFriendlyError(error.message);
+                showAlert('❌ 连接测试失败: ' + friendlyError, 'error');
+            } finally {
+                testBtn.textContent = originalText;
+                testBtn.disabled = false;
+            }
+        }
+
+        async function saveStorageConfig() {
+            const saveBtn = document.getElementById('save-config-btn');
+            const originalText = saveBtn.textContent;
+            
+            saveBtn.textContent = '保存中...';
+            saveBtn.disabled = true;
+            
+            let config = {};
+            
+            if (selectedStorageType === 'local') {
+                config = {
+                    storage_path: document.getElementById('local-storage-path').value.trim()
+                };
+            } else if (selectedStorageType === 'webdav') {
+                const hostname = document.getElementById('webdav-hostname').value.trim();
+                const username = document.getElementById('webdav-username').value.trim();
+                const password = document.getElementById('webdav-password').value;
+                const rootPath = document.getElementById('webdav-root-path').value.trim();
+                
+                if (!hostname || !username) {
+                    showAlert('请填写服务器地址和用户名', 'error');
+                    saveBtn.textContent = originalText;
+                    saveBtn.disabled = false;
+                    return;
+                }
+                
+                config = {
+                    hostname: hostname,
+                    username: username,
+                    root_path: rootPath || 'filebox_storage'
+                };
+                
+                // 只有填写了密码才发送
+                if (password) {
+                    config.password = password;
+                }
+            } else if (selectedStorageType === 's3') {
+                const endpointUrl = document.getElementById('s3-endpoint-url').value.trim();
+                const accessKeyId = document.getElementById('s3-access-key-id').value.trim();
+                const secretAccessKey = document.getElementById('s3-secret-access-key').value;
+                const bucketName = document.getElementById('s3-bucket-name').value.trim();
+                const regionName = document.getElementById('s3-region-name').value.trim();
+                const hostname = document.getElementById('s3-hostname').value.trim();
+                
+                if (!endpointUrl || !accessKeyId || !bucketName) {
+                    showAlert('请填写端点地址、访问密钥和存储桶名称', 'error');
+                    saveBtn.textContent = originalText;
+                    saveBtn.disabled = false;
+                    return;
+                }
+                
+                config = {
+                    endpoint_url: endpointUrl,
+                    access_key_id: accessKeyId,
+                    bucket_name: bucketName,
+                    region_name: regionName || 'us-east-1',
+                    hostname: hostname
+                };
+                
+                // 只有填写了密钥才发送
+                if (secretAccessKey) {
+                    config.secret_access_key = secretAccessKey;
+                }
+            }
+            
+            try {
+                const result = await apiRequest('/admin/storage/config', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        storage_type: selectedStorageType,
+                        config: config
+                    })
+                });
+                
+                if (result.code === 200) {
+                    showAlert('✅ 存储配置保存成功', 'success');
+                    // 清空密码字段
+                    const passwordField = document.getElementById('webdav-password');
+                    if (passwordField) passwordField.value = '';
+                    // 隐藏配置面板
+                    document.getElementById(selectedStorageType + '-config').style.display = 'none';
+                    document.getElementById('config-btn-text').textContent = '配置存储';
+                    document.getElementById('save-config-btn').style.display = 'none';
+                    // 重新加载信息
+                    await loadStorageInfo();
+                } else {
+                    showAlert('❌ 存储配置保存失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('❌ 存储配置保存失败: ' + error.message, 'error');
+            } finally {
+                saveBtn.textContent = originalText;
+                saveBtn.disabled = false;
+            }
+        }
+
+        function confirmStorageSwitch() {
+            const modal = document.getElementById('switch-confirm-modal');
+            const confirmText = document.getElementById('switch-confirm-text');
+            
+            const storageNames = {
+                'local': '本地存储',
+                'webdav': 'WebDAV 存储',
+                's3': 'S3 对象存储'
+            };
+            
+            const currentName = storageNames[currentStorageType];
+            const targetName = storageNames[selectedStorageType];
+            
+            confirmText.textContent = `确定要从「${currentName}」切换到「${targetName}」吗？切换后新上传的文件将保存到新的存储位置。`;
+            modal.style.display = 'flex';
+        }
+
+        function cancelStorageSwitch() {
+            const modal = document.getElementById('switch-confirm-modal');
+            modal.style.display = 'none';
+        }
+
+        async function executeStorageSwitch() {
+            const modal = document.getElementById('switch-confirm-modal');
+            modal.style.display = 'none';
+            
+            const switchBtn = document.getElementById('switch-btn');
+            const originalText = switchBtn.textContent;
+            
+            switchBtn.textContent = '切换中...';
+            switchBtn.disabled = true;
+            
+            try {
+                const result = await apiRequest('/admin/storage/switch', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        storage_type: selectedStorageType
+                    })
+                });
+                
+                if (result.code === 200) {
+                    showAlert('✅ 存储切换成功！', 'success');
+                    currentStorageType = selectedStorageType;
+                    await loadStorageInfo(); // 重新加载信息
+                } else {
+                    showAlert('❌ 存储切换失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('❌ 存储切换失败: ' + error.message, 'error');
+            } finally {
+                switchBtn.textContent = originalText;
+                switchBtn.disabled = false;
+            }
+        }
+
+        // 添加卡片点击事件
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('local-card').addEventListener('click', () => selectStorageCard('local'));
+            document.getElementById('webdav-card').addEventListener('click', () => selectStorageCard('webdav'));
+            document.getElementById('s3-card').addEventListener('click', () => selectStorageCard('s3'));
+        });
+    </script>
+</body>
+</html>

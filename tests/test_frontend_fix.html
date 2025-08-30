@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>存储切换前端测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            z-index: 9999;
+            max-width: 400px;
+            word-wrap: break-word;
+        }
+        .alert-success {
+            background-color: #28a745;
+        }
+        .alert-error {
+            background-color: #dc3545;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>存储切换前端测试</h1>
+        
+        <div>
+            <h3>管理员登录</h3>
+            <input type="password" id="password" class="form-control" placeholder="管理员密码" value="FileCodeBox2025">
+            <button class="btn" onclick="login()">登录</button>
+        </div>
+        
+        <div id="logged-in" style="display: none;">
+            <h3>存储切换测试</h3>
+            <select id="storage-type" class="form-control" style="width: 200px; display: inline-block;">
+                <option value="local">本地存储</option>
+                <option value="webdav">WebDAV</option>
+            </select>
+            <button class="btn" onclick="switchStorage()">切换存储</button>
+            <button class="btn" onclick="loadStorageInfo()">加载存储信息</button>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let authToken = '';
+        
+        // 显示提示信息
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 3000);
+        }
+        
+        // 显示结果
+        function showResult(message, type = 'info') {
+            const result = document.getElementById('result');
+            result.innerHTML = `<div style="color: ${type === 'error' ? 'red' : 'green'}">${message}</div>`;
+        }
+        
+        // API请求函数（模拟admin.html中的apiRequest）
+        async function apiRequest(url, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + authToken
+                }
+            };
+            
+            const finalOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...options.headers
+                }
+            };
+            
+            console.log('API Request:', url, finalOptions);
+            
+            const response = await fetch(url, finalOptions);
+            
+            if (response.status === 401) {
+                throw new Error('认证失败');
+            }
+            
+            const result = await response.json();
+            console.log('API Response:', result);
+            return result;
+        }
+        
+        // 登录
+        async function login() {
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://localhost:12345/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password: password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.code === 200) {
+                    authToken = data.detail.token;
+                    document.getElementById('logged-in').style.display = 'block';
+                    showAlert('登录成功！', 'success');
+                    showResult('登录成功！');
+                    loadStorageInfo(); // 登录后自动加载存储信息
+                } else {
+                    showAlert('登录失败: ' + data.message, 'error');
+                    showResult('登录失败: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showAlert('登录失败: ' + error.message, 'error');
+                showResult('登录失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 切换存储（模拟admin.html中的switchStorageType）
+        async function switchStorage() {
+            const storageType = document.getElementById('storage-type').value;
+            
+            try {
+                const result = await apiRequest('/admin/storage/switch', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        storage_type: storageType
+                    })
+                });
+                
+                if (result.code === 200) {
+                    showAlert('存储切换成功', 'success');
+                    showResult(`存储切换成功！当前存储: ${result.detail.current}`);
+                    loadStorageInfo(); // 切换后重新加载信息
+                } else {
+                    showAlert('存储切换失败: ' + result.message, 'error');
+                    showResult('存储切换失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('存储切换失败: ' + error.message, 'error');
+                showResult('存储切换失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 加载存储信息
+        async function loadStorageInfo() {
+            try {
+                const result = await apiRequest('/admin/storage');
+                
+                if (result.code === 200) {
+                    const detail = result.detail;
+                    const info = JSON.stringify(detail, null, 2);
+                    showResult(`存储信息加载成功:\n${info}`);
+                    
+                    // 更新选择器
+                    document.getElementById('storage-type').value = detail.current;
+                } else {
+                    showAlert('加载存储信息失败: ' + result.message, 'error');
+                    showResult('加载存储信息失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('加载存储信息失败: ' + error.message, 'error');
+                showResult('加载存储信息失败: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
