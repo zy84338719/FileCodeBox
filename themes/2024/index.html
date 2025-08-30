@@ -120,7 +120,7 @@
             margin-top: 5px;
         }
         
-        .dropdown:hover .dropdown-content {
+        .dropdown-content.show {
             display: block;
         }
         
@@ -1197,9 +1197,53 @@
             }, 3000);
         }
         
+        // 下拉菜单控制逻辑
+        let dropdownTimer = null;
+        
+        function setupDropdownEvents() {
+            const dropdown = document.querySelector('.dropdown');
+            const dropdownContent = document.querySelector('.dropdown-content');
+            
+            if (!dropdown || !dropdownContent) return;
+            
+            // 鼠标进入下拉菜单区域
+            dropdown.addEventListener('mouseenter', function() {
+                if (dropdownTimer) {
+                    clearTimeout(dropdownTimer);
+                    dropdownTimer = null;
+                }
+                dropdownContent.classList.add('show');
+            });
+            
+            // 鼠标离开下拉菜单区域
+            dropdown.addEventListener('mouseleave', function() {
+                // 设置延迟隐藏，给用户时间移动到菜单项
+                dropdownTimer = setTimeout(function() {
+                    dropdownContent.classList.remove('show');
+                }, 200); // 200ms延迟
+            });
+            
+            // 鼠标进入下拉菜单内容区域
+            dropdownContent.addEventListener('mouseenter', function() {
+                if (dropdownTimer) {
+                    clearTimeout(dropdownTimer);
+                    dropdownTimer = null;
+                }
+            });
+            
+            // 鼠标离开下拉菜单内容区域
+            dropdownContent.addEventListener('mouseleave', function() {
+                dropdownTimer = setTimeout(function() {
+                    dropdownContent.classList.remove('show');
+                }, 200); // 200ms延迟
+            });
+        }
+        
         // 页面加载时检查用户登录状态
         document.addEventListener('DOMContentLoaded', function() {
             checkUserLogin();
+            // 设置下拉菜单事件
+            setupDropdownEvents();
         });
     </script>
 </body>
