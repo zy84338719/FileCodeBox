@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户登录 - FileCodeBox</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 2.5em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 5px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin: 20px 0;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .success-message {
+            color: #28a745;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 600px) {
+            .login-container {
+                padding: 20px;
+                margin: 20px;
+            }
+            
+            .logo {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="header">
+            <div class="logo">📦 FileCodeBox</div>
+            <div class="subtitle">用户中心</div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('login')">登录</div>
+            <div class="tab" onclick="switchTab('register')">注册</div>
+        </div>
+        
+        <!-- 登录表单 -->
+        <div id="login-tab" class="tab-content active">
+            <form id="login-form">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" class="form-control" name="username" placeholder="请输入用户名" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" class="form-control" name="password" placeholder="请输入密码" required>
+                </div>
+                
+                <button type="submit" class="btn" id="login-btn">登录</button>
+                
+                <div id="login-message"></div>
+            </form>
+        </div>
+        
+        <!-- 注册表单 -->
+        <div id="register-tab" class="tab-content">
+            <form id="register-form">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" class="form-control" name="username" placeholder="请输入用户名" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>邮箱</label>
+                    <input type="email" class="form-control" name="email" placeholder="请输入邮箱" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>昵称</label>
+                    <input type="text" class="form-control" name="nickname" placeholder="请输入昵称（可选）">
+                </div>
+                
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" class="form-control" name="password" placeholder="请输入密码" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>确认密码</label>
+                    <input type="password" class="form-control" name="confirm_password" placeholder="请确认密码" required>
+                </div>
+                
+                <button type="submit" class="btn" id="register-btn">注册</button>
+                
+                <div id="register-message"></div>
+            </form>
+        </div>
+        
+        <div class="back-link">
+            <a href="/">← 返回首页</a>
+        </div>
+    </div>
+    
+    <script>
+        // 切换标签页
+        function switchTab(tab) {
+            // 隐藏所有标签页
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            // 显示当前标签页
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+            
+            // 清除消息
+            document.getElementById('login-message').innerHTML = '';
+            document.getElementById('register-message').innerHTML = '';
+        }
+        
+        // 显示消息
+        function showMessage(elementId, message, isError = true) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.className = isError ? 'error-message' : 'success-message';
+        }
+        
+        // 检查用户系统是否启用
+        async function checkUserSystem() {
+            try {
+                const response = await fetch('/user/system-info');
+                const result = await response.json();
+                
+                if (result.code !== 200) {
+                    showMessage('login-message', '用户系统未启用');
+                    showMessage('register-message', '用户系统未启用');
+                    document.getElementById('login-btn').disabled = true;
+                    document.getElementById('register-btn').disabled = true;
+                    return false;
+                }
+                
+                if (!result.detail.allow_registration) {
+                    document.getElementById('register-btn').disabled = true;
+                    showMessage('register-message', '当前不允许注册新用户');
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('检查用户系统状态失败:', error);
+                return false;
+            }
+        }
+        
+        // 登录表单处理
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loginBtn = document.getElementById('login-btn');
+            const originalText = loginBtn.textContent;
+            
+            loginBtn.disabled = true;
+            loginBtn.textContent = '登录中...';
+            
+            const formData = new FormData(e.target);
+            const data = {
+                username: formData.get('username'),
+                password: formData.get('password')
+            };
+            
+            try {
+                const response = await fetch('/user/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    // 保存token
+                    localStorage.setItem('user_token', result.detail.token);
+                    localStorage.setItem('user_info', JSON.stringify(result.detail.user));
+                    
+                    showMessage('login-message', '登录成功，正在跳转...', false);
+                    
+                    // 跳转到用户中心
+                    setTimeout(() => {
+                        window.location.href = '/user/dashboard';
+                    }, 1000);
+                } else {
+                    showMessage('login-message', result.message || '登录失败');
+                }
+            } catch (error) {
+                showMessage('login-message', '网络错误，请重试');
+                console.error('登录失败:', error);
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = originalText;
+            }
+        });
+        
+        // 注册表单处理
+        document.getElementById('register-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const registerBtn = document.getElementById('register-btn');
+            const originalText = registerBtn.textContent;
+            
+            registerBtn.disabled = true;
+            registerBtn.textContent = '注册中...';
+            
+            const formData = new FormData(e.target);
+            const password = formData.get('password');
+            const confirmPassword = formData.get('confirm_password');
+            
+            // 验证密码
+            if (password !== confirmPassword) {
+                showMessage('register-message', '两次输入的密码不一致');
+                registerBtn.disabled = false;
+                registerBtn.textContent = originalText;
+                return;
+            }
+            
+            const data = {
+                username: formData.get('username'),
+                email: formData.get('email'),
+                password: password,
+                nickname: formData.get('nickname') || formData.get('username')
+            };
+            
+            try {
+                const response = await fetch('/user/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    showMessage('register-message', '注册成功！请登录', false);
+                    
+                    // 切换到登录标签页
+                    setTimeout(() => {
+                        document.querySelector('.tab:first-child').click();
+                        document.querySelector('#login-form input[name="username"]').value = data.username;
+                    }, 1000);
+                } else {
+                    showMessage('register-message', result.message || '注册失败');
+                }
+            } catch (error) {
+                showMessage('register-message', '网络错误，请重试');
+                console.error('注册失败:', error);
+            } finally {
+                registerBtn.disabled = false;
+                registerBtn.textContent = originalText;
+            }
+        });
+        
+        // 页面加载时检查用户系统状态
+        window.addEventListener('load', function() {
+            checkUserSystem();
+            
+            // 如果已经登录，直接跳转到用户中心
+            const token = localStorage.getItem('user_token');
+            if (token) {
+                window.location.href = '/user/dashboard';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -28,6 +28,12 @@ type FileCode struct {
 	FileHash     string         `gorm:"size:64" json:"file_hash"`
 	IsChunked    bool           `gorm:"default:false" json:"is_chunked"`
 	UploadID     string         `gorm:"size:36" json:"upload_id"`
+
+	// 新增：用户认证相关字段
+	UserID      *uint  `gorm:"index" json:"user_id"`                           // 上传用户ID，为null表示匿名上传
+	UploadType  string `gorm:"size:20;default:'anonymous'" json:"upload_type"` // anonymous, authenticated
+	RequireAuth bool   `gorm:"default:false" json:"require_auth"`              // 是否需要登录才能下载
+	OwnerIP     string `gorm:"size:45" json:"owner_ip"`                        // 上传者IP地址
 }
 
 // IsExpired 检查是否过期
@@ -110,4 +116,43 @@ type KeyValue struct {
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+}
+
+// User 用户模型
+type User struct {
+	ID            uint           `gorm:"primarykey" json:"id"`
+	Username      string         `gorm:"uniqueIndex;size:50" json:"username"`
+	Email         string         `gorm:"uniqueIndex;size:100" json:"email"`
+	PasswordHash  string         `gorm:"size:128" json:"-"`                      // 密码哈希，不返回给前端
+	Nickname      string         `gorm:"size:50" json:"nickname"`                // 用户昵称
+	Avatar        string         `gorm:"size:255" json:"avatar"`                 // 头像URL
+	Role          string         `gorm:"size:20;default:'user'" json:"role"`     // admin, user
+	Status        string         `gorm:"size:20;default:'active'" json:"status"` // active, inactive, banned
+	EmailVerified bool           `gorm:"default:false" json:"email_verified"`    // 邮箱是否验证
+	LastLoginAt   *time.Time     `json:"last_login_at"`                          // 最后登录时间
+	LastLoginIP   string         `gorm:"size:45" json:"last_login_ip"`           // 最后登录IP
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+
+	// 用户上传统计
+	TotalUploads    int   `gorm:"default:0" json:"total_uploads"`     // 总上传次数
+	TotalDownloads  int   `gorm:"default:0" json:"total_downloads"`   // 总下载次数
+	TotalStorage    int64 `gorm:"default:0" json:"total_storage"`     // 总存储大小(字节)
+	MaxUploadSize   int64 `gorm:"default:0" json:"max_upload_size"`   // 最大单次上传大小(字节)，0表示使用系统默认
+	MaxStorageQuota int64 `gorm:"default:0" json:"max_storage_quota"` // 最大存储配额(字节)，0表示无限制
+}
+
+// UserSession 用户会话模型
+type UserSession struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	UserID    uint           `gorm:"index" json:"user_id"`
+	SessionID string         `gorm:"uniqueIndex;size:128" json:"session_id"` // JWT token ID
+	IPAddress string         `gorm:"size:45" json:"ip_address"`              // 登录IP
+	UserAgent string         `gorm:"size:500" json:"user_agent"`             // 用户代理
+	ExpiresAt time.Time      `json:"expires_at"`                             // 过期时间
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	IsActive  bool           `gorm:"default:true" json:"is_active"` // 是否活跃
 }

@@ -24,6 +24,7 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 	text := c.PostForm("text")
 	expireValueStr := c.DefaultPostForm("expire_value", "1")
 	expireStyle := c.DefaultPostForm("expire_style", "day")
+	requireAuthStr := c.DefaultPostForm("require_auth", "false")
 
 	expireValue, err := strconv.Atoi(expireValueStr)
 	if err != nil || expireValue <= 0 {
@@ -42,7 +43,25 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 		return
 	}
 
-	fileCode, err := h.service.ShareText(text, expireValue, expireStyle)
+	// 检查是否需要登录才能下载
+	requireAuth := requireAuthStr == "true"
+
+	// 构建请求
+	req := services.ShareTextRequest{
+		Text:        text,
+		ExpireValue: expireValue,
+		ExpireStyle: expireStyle,
+		RequireAuth: requireAuth,
+		ClientIP:    c.ClientIP(),
+	}
+
+	// 检查是否为认证用户上传
+	if userID, exists := c.Get("user_id"); exists {
+		uid := userID.(uint)
+		req.UserID = &uid
+	}
+
+	fileCode, err := h.service.ShareTextWithAuth(req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -55,7 +74,8 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 		"code":    200,
 		"message": "success",
 		"detail": gin.H{
-			"code": fileCode.Code,
+			"code":        fileCode.Code,
+			"upload_type": fileCode.UploadType,
 		},
 	})
 }
@@ -64,6 +84,7 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 func (h *ShareHandler) ShareFile(c *gin.Context) {
 	expireValueStr := c.DefaultPostForm("expire_value", "1")
 	expireStyle := c.DefaultPostForm("expire_style", "day")
+	requireAuthStr := c.DefaultPostForm("require_auth", "false")
 
 	expireValue, err := strconv.Atoi(expireValueStr)
 	if err != nil || expireValue <= 0 {
@@ -83,7 +104,25 @@ func (h *ShareHandler) ShareFile(c *gin.Context) {
 		return
 	}
 
-	fileCode, err := h.service.ShareFile(file, expireValue, expireStyle)
+	// 检查是否需要登录才能下载
+	requireAuth := requireAuthStr == "true"
+
+	// 构建请求
+	req := services.ShareFileRequest{
+		File:        file,
+		ExpireValue: expireValue,
+		ExpireStyle: expireStyle,
+		RequireAuth: requireAuth,
+		ClientIP:    c.ClientIP(),
+	}
+
+	// 检查是否为认证用户上传
+	if userID, exists := c.Get("user_id"); exists {
+		uid := userID.(uint)
+		req.UserID = &uid
+	}
+
+	fileCode, err := h.service.ShareFileWithAuth(req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -96,8 +135,9 @@ func (h *ShareHandler) ShareFile(c *gin.Context) {
 		"code":    200,
 		"message": "success",
 		"detail": gin.H{
-			"code": fileCode.Code,
-			"name": file.Filename,
+			"code":        fileCode.Code,
+			"name":        file.Filename,
+			"upload_type": fileCode.UploadType,
 		},
 	})
 }
@@ -129,7 +169,14 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 		return
 	}
 
-	fileCode, err := h.service.GetFileByCode(code, true)
+	// 获取用户ID（如果已登录）
+	var userID *uint
+	if uid, exists := c.Get("user_id"); exists {
+		id := uid.(uint)
+		userID = &id
+	}
+
+	fileCode, err := h.service.GetFileByCodeWithAuth(code, true, userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
@@ -150,10 +197,12 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 			"code":    200,
 			"message": "success",
 			"detail": gin.H{
-				"code": fileCode.Code,
-				"name": fileCode.Prefix + fileCode.Suffix,
-				"size": fileCode.Size,
-				"text": fileCode.Text,
+				"code":         fileCode.Code,
+				"name":         fileCode.Prefix + fileCode.Suffix,
+				"size":         fileCode.Size,
+				"text":         fileCode.Text,
+				"upload_type":  fileCode.UploadType,
+				"require_auth": fileCode.RequireAuth,
 			},
 		})
 	} else {
@@ -162,10 +211,12 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 			"code":    200,
 			"message": "success",
 			"detail": gin.H{
-				"code": fileCode.Code,
-				"name": fileCode.Prefix + fileCode.Suffix,
-				"size": fileCode.Size,
-				"text": "/share/download?code=" + fileCode.Code,
+				"code":         fileCode.Code,
+				"name":         fileCode.Prefix + fileCode.Suffix,
+				"size":         fileCode.Size,
+				"text":         "/share/download?code=" + fileCode.Code,
+				"upload_type":  fileCode.UploadType,
+				"require_auth": fileCode.RequireAuth,
 			},
 		})
 	}
@@ -182,11 +233,18 @@ func (h *ShareHandler) DownloadFile(c *gin.Context) {
 		return
 	}
 
-	fileCode, err := h.service.GetFileByCode(code, false)
+	// 获取用户ID（如果已登录）
+	var userID *uint
+	if uid, exists := c.Get("user_id"); exists {
+		id := uid.(uint)
+		userID = &id
+	}
+
+	fileCode, err := h.service.GetFileByCodeWithAuth(code, false, userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
-			"message": "文件不存在",
+			"message": err.Error(),
 		})
 		return
 	}

@@ -90,6 +90,18 @@ type Config struct {
 	ShowAdminAddr int    `json:"show_admin_address"`
 	RobotsText    string `json:"robots_text"`
 
+	// 用户系统配置 (新增)
+	EnableUserSystem      int   `json:"enable_user_system"`      // 是否启用用户系统 0-禁用 1-启用
+	AllowUserRegistration int   `json:"allow_user_registration"` // 是否允许用户注册 0-禁用 1-启用
+	RequireEmailVerify    int   `json:"require_email_verify"`    // 是否需要邮箱验证 0-不需要 1-需要
+	UserUploadSize        int64 `json:"user_upload_size"`        // 用户上传文件大小限制(字节)
+	UserStorageQuota      int64 `json:"user_storage_quota"`      // 用户存储配额(字节) 0-无限制
+	SessionExpiryHours    int   `json:"session_expiry_hours"`    // 用户会话过期时间(小时)
+	MaxSessionsPerUser    int   `json:"max_sessions_per_user"`   // 每个用户最大会话数
+
+	// JWT 密钥配置
+	JWTSecret string `json:"jwt_secret"` // JWT签名密钥
+
 	// 数据库连接（内部使用，不保存到JSON）
 	db *gorm.DB `json:"-"`
 }
@@ -152,6 +164,16 @@ var defaultConfig = Config{
 	AdminToken:    "FileCodeBox2025",
 	ShowAdminAddr: 0,
 	RobotsText:    "User-agent: *\nDisallow: /",
+
+	// 用户系统默认配置
+	EnableUserSystem:      0,                    // 默认禁用用户系统
+	AllowUserRegistration: 1,                    // 允许用户注册
+	RequireEmailVerify:    0,                    // 不要求邮箱验证
+	UserUploadSize:        50 * 1024 * 1024,     // 用户上传限制50MB
+	UserStorageQuota:      1024 * 1024 * 1024,   // 用户存储配额1GB
+	SessionExpiryHours:    24 * 7,               // 会话7天过期
+	MaxSessionsPerUser:    5,                    // 每用户最多5个会话
+	JWTSecret:             "FileCodeBox2025JWT", // JWT密钥
 }
 
 func Init() *Config {
@@ -217,6 +239,16 @@ func (c *Config) buildConfigMap() map[string]string {
 		"s3_hostname":                c.S3Hostname,
 		"s3_signature_version":       c.S3SignatureVersion,
 		"s3_proxy":                   fmt.Sprintf("%d", c.S3Proxy),
+
+		// 用户系统配置
+		"enable_user_system":      fmt.Sprintf("%d", c.EnableUserSystem),
+		"allow_user_registration": fmt.Sprintf("%d", c.AllowUserRegistration),
+		"require_email_verify":    fmt.Sprintf("%d", c.RequireEmailVerify),
+		"user_upload_size":        fmt.Sprintf("%d", c.UserUploadSize),
+		"user_storage_quota":      fmt.Sprintf("%d", c.UserStorageQuota),
+		"session_expiry_hours":    fmt.Sprintf("%d", c.SessionExpiryHours),
+		"max_sessions_per_user":   fmt.Sprintf("%d", c.MaxSessionsPerUser),
+		"jwt_secret":              c.JWTSecret,
 	}
 }
 
@@ -380,6 +412,37 @@ func (c *Config) LoadFromDatabase() error {
 			if val, err := strconv.Atoi(kv.Value); err == nil {
 				c.DownloadTimeout = val
 			}
+		// 用户系统配置加载
+		case "enable_user_system":
+			if val, err := strconv.Atoi(kv.Value); err == nil {
+				c.EnableUserSystem = val
+			}
+		case "allow_user_registration":
+			if val, err := strconv.Atoi(kv.Value); err == nil {
+				c.AllowUserRegistration = val
+			}
+		case "require_email_verify":
+			if val, err := strconv.Atoi(kv.Value); err == nil {
+				c.RequireEmailVerify = val
+			}
+		case "user_upload_size":
+			if size, err := strconv.ParseInt(kv.Value, 10, 64); err == nil {
+				c.UserUploadSize = size
+			}
+		case "user_storage_quota":
+			if size, err := strconv.ParseInt(kv.Value, 10, 64); err == nil {
+				c.UserStorageQuota = size
+			}
+		case "session_expiry_hours":
+			if val, err := strconv.Atoi(kv.Value); err == nil {
+				c.SessionExpiryHours = val
+			}
+		case "max_sessions_per_user":
+			if val, err := strconv.Atoi(kv.Value); err == nil {
+				c.MaxSessionsPerUser = val
+			}
+		case "jwt_secret":
+			c.JWTSecret = kv.Value
 		}
 	}
 

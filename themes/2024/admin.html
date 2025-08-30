@@ -307,6 +307,198 @@
                 font-size: 0.8em;
             }
         }
+        
+        /* 用户管理样式 */
+        .user-stats {
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .stat-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .user-email {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .user-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .role-admin {
+            background: #667eea;
+            color: white;
+        }
+        
+        .role-user {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .user-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-title {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+        
+        .close {
+            font-size: 24px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .modal-form .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .modal-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .modal-form .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .modal-form .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+        
+        .modal-form select.form-control {
+            cursor: pointer;
+        }
+        
+        .modal-form .btn {
+            margin-right: 10px;
+        }
+        
+        .user-row {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .user-row:hover {
+            background: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -337,6 +529,7 @@
             <div class="tabs">
                 <div class="tab-header">
                     <button class="tab-btn active" onclick="switchTab('files')">文件管理</button>
+                    <button class="tab-btn" onclick="switchTab('users')">用户管理</button>
                     <button class="tab-btn" onclick="switchTab('storage')">存储管理</button>
                     <button class="tab-btn" onclick="switchTab('config')">系统配置</button>
                     <button class="tab-btn" onclick="switchTab('maintenance')">系统维护</button>
@@ -355,6 +548,36 @@
                     </div>
                     
                     <div class="pagination" id="pagination">
+                        <!-- 分页将通过JavaScript生成 -->
+                    </div>
+                </div>
+
+                <!-- 用户管理 -->
+                <div id="users-tab" class="tab-content">
+                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>用户管理</h3>
+                        <button class="btn" onclick="loadUsers()">刷新</button>
+                    </div>
+                    
+                    <!-- 用户统计 -->
+                    <div class="user-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;" id="user-stats">
+                        <!-- 统计卡片将动态加载 -->
+                    </div>
+                    
+                    <!-- 用户搜索 -->
+                    <div class="search-box">
+                        <input type="text" class="form-control" id="user-search-input" placeholder="搜索用户名或邮箱..." style="display: inline-block; width: 300px; margin-right: 10px;">
+                        <button class="btn" onclick="searchUsers()">搜索</button>
+                        <button class="btn" onclick="showCreateUserModal()">添加用户</button>
+                    </div>
+                    
+                    <!-- 用户列表 -->
+                    <div id="users-content">
+                        <div class="loading">加载中...</div>
+                    </div>
+                    
+                    <!-- 分页 -->
+                    <div class="pagination" id="user-pagination">
                         <!-- 分页将通过JavaScript生成 -->
                     </div>
                 </div>
@@ -554,6 +777,50 @@
                             <input type="number" class="form-control" name="download_timeout" min="60" max="3600">
                             <small class="form-text">单个下载任务的超时时间</small>
                         </div>
+                        <div class="form-group">
+                            <h4 style="color: #667eea; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #e0e7ff; padding-bottom: 5px;">用户系统设置</h4>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" name="enable_user_system" id="enable_user_system"> 
+                                启用用户系统
+                            </label>
+                            <small class="form-text">启用后用户可以注册账号并管理自己的文件</small>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" name="allow_user_registration" id="allow_user_registration"> 
+                                允许用户注册
+                            </label>
+                            <small class="form-text">允许新用户自主注册账号</small>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" name="require_email_verify"> 
+                                需要邮箱验证
+                            </label>
+                            <small class="form-text">新用户注册后需要验证邮箱才能使用</small>
+                        </div>
+                        <div class="form-group">
+                            <label>用户单次上传大小限制 (MB)</label>
+                            <input type="number" class="form-control" name="user_upload_size" min="1" max="1000">
+                            <small class="form-text">普通用户单个文件的上传大小限制</small>
+                        </div>
+                        <div class="form-group">
+                            <label>用户存储配额 (MB)</label>
+                            <input type="number" class="form-control" name="user_storage_quota" min="0">
+                            <small class="form-text">每个用户的总存储空间限制，0 表示无限制</small>
+                        </div>
+                        <div class="form-group">
+                            <label>会话过期时间 (小时)</label>
+                            <input type="number" class="form-control" name="session_expiry_hours" min="1" max="720">
+                            <small class="form-text">用户登录会话的有效期</small>
+                        </div>
+                        <div class="form-group">
+                            <label>单用户最大会话数</label>
+                            <input type="number" class="form-control" name="max_sessions_per_user" min="1" max="10">
+                            <small class="form-text">每个用户同时允许的最大登录会话数</small>
+                        </div>
                         <button type="submit" class="btn">保存配置</button>
                     </form>
                 </div>
@@ -669,6 +936,12 @@
                     const selectedType = this.value;
                     showStorageConfig(selectedType);
                 });
+            }
+            
+            // 添加用户系统开关的监听器
+            const enableUserSystem = document.getElementById('enable_user_system');
+            if (enableUserSystem) {
+                enableUserSystem.addEventListener('change', toggleUserSystemOptions);
             }
         });
 
@@ -1078,6 +1351,8 @@
             // 加载对应标签的数据
             if (tabName === 'storage') {
                 loadStorageInfo();
+            } else if (tabName === 'users') {
+                loadUsers();
             }
         }
 
@@ -1099,6 +1374,18 @@
                     form.enable_concurrent_download.checked = config.enable_concurrent_download === 1;
                     form.max_concurrent_downloads.value = config.max_concurrent_downloads || 10;
                     form.download_timeout.value = config.download_timeout || 300;
+                    
+                    // 用户系统配置
+                    form.enable_user_system.checked = config.enable_user_system === 1;
+                    form.allow_user_registration.checked = config.allow_user_registration === 1;
+                    form.require_email_verify.checked = config.require_email_verify === 1;
+                    form.user_upload_size.value = (config.user_upload_size || 0) / (1024 * 1024);
+                    form.user_storage_quota.value = (config.user_storage_quota || 0) / (1024 * 1024);
+                    form.session_expiry_hours.value = config.session_expiry_hours || 24;
+                    form.max_sessions_per_user.value = config.max_sessions_per_user || 3;
+                    
+                    // 根据用户系统启用状态控制相关选项
+                    toggleUserSystemOptions();
                 }
             } catch (error) {
                 console.error('加载配置失败:', error);
@@ -1113,20 +1400,31 @@
             const config = {};
             
             for (let [key, value] of formData.entries()) {
-                if (key === 'upload_size' || key === 'chunk_size') {
+                if (key === 'upload_size' || key === 'chunk_size' || key === 'user_upload_size' || key === 'user_storage_quota') {
                     config[key] = parseInt(value) * 1024 * 1024;
-                } else if (key === 'enable_concurrent_download') {
+                } else if (key === 'enable_concurrent_download' || key === 'enable_user_system' || 
+                          key === 'allow_user_registration' || key === 'require_email_verify') {
                     config[key] = 1; // 如果勾选了，值为1
-                } else if (key === 'max_concurrent_downloads' || key === 'download_timeout') {
+                } else if (key === 'max_concurrent_downloads' || key === 'download_timeout' || 
+                          key === 'session_expiry_hours' || key === 'max_sessions_per_user') {
                     config[key] = parseInt(value);
                 } else {
                     config[key] = value;
                 }
             }
             
-            // 如果没有勾选并发下载，设置为0
+            // 如果没有勾选相关选项，设置为0
             if (!document.querySelector('input[name="enable_concurrent_download"]').checked) {
                 config.enable_concurrent_download = 0;
+            }
+            if (!document.querySelector('input[name="enable_user_system"]').checked) {
+                config.enable_user_system = 0;
+            }
+            if (!document.querySelector('input[name="allow_user_registration"]').checked) {
+                config.allow_user_registration = 0;
+            }
+            if (!document.querySelector('input[name="require_email_verify"]').checked) {
+                config.require_email_verify = 0;
             }
             
             try {
@@ -1144,6 +1442,29 @@
                 alert('保存失败: ' + error.message);
             }
         });
+
+        // 控制用户系统相关选项的启用状态
+        function toggleUserSystemOptions() {
+            const enableUserSystem = document.getElementById('enable_user_system');
+            const userSystemFields = [
+                'allow_user_registration',
+                'require_email_verify',
+                'user_upload_size',
+                'user_storage_quota',
+                'session_expiry_hours',
+                'max_sessions_per_user'
+            ];
+            
+            userSystemFields.forEach(fieldName => {
+                const field = document.querySelector(`[name="${fieldName}"]`);
+                if (field) {
+                    field.disabled = !enableUserSystem.checked;
+                    if (field.type === 'checkbox' && !enableUserSystem.checked) {
+                        field.checked = false;
+                    }
+                }
+            });
+        }
 
         // 清理过期文件
         async function cleanExpiredFiles() {
@@ -1591,6 +1912,452 @@
             document.getElementById('webdav-card').addEventListener('click', () => selectStorageCard('webdav'));
             document.getElementById('s3-card').addEventListener('click', () => selectStorageCard('s3'));
         });
+
+        // ========== 用户管理功能 ==========
+        
+        let currentUserPage = 1;
+        let currentUserSearch = '';
+        
+        // 加载用户列表
+        async function loadUsers(page = 1, search = '') {
+            currentUserPage = page;
+            currentUserSearch = search;
+            
+            try {
+                const params = new URLSearchParams({
+                    page: page,
+                    page_size: 20
+                });
+                
+                if (search) {
+                    params.append('search', search);
+                }
+                
+                const result = await apiRequest(`/admin/users?${params}`);
+                
+                if (result.code === 200) {
+                    const data = result.detail;
+                    renderUsersList(data.users);
+                    renderUserPagination(data.pagination);
+                    renderUserStats(data.stats);
+                } else {
+                    showAlert('加载用户列表失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('加载用户列表失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 渲染用户统计
+        function renderUserStats(stats) {
+            const container = document.getElementById('user-stats');
+            container.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-value">${stats.total_users}</div>
+                    <div class="stat-label">总用户数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value">${stats.active_users}</div>
+                    <div class="stat-label">活跃用户</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-value">${stats.today_registrations}</div>
+                    <div class="stat-label">今日注册</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📤</div>
+                    <div class="stat-value">${stats.today_uploads}</div>
+                    <div class="stat-label">今日上传</div>
+                </div>
+            `;
+        }
+        
+        // 渲染用户列表
+        function renderUsersList(users) {
+            const container = document.getElementById('users-content');
+            
+            if (users.length === 0) {
+                container.innerHTML = '<div class="loading">没有找到用户</div>';
+                return;
+            }
+            
+            let html = '';
+            users.forEach(user => {
+                const statusClass = user.is_active ? 'status-active' : 'status-inactive';
+                const statusText = user.is_active ? '活跃' : '已禁用';
+                const roleClass = user.is_admin ? 'role-admin' : 'role-user';
+                const roleText = user.is_admin ? '管理员' : '用户';
+                
+                html += `
+                    <div class="user-row">
+                        <div class="user-avatar">${(user.nickname || user.username).charAt(0).toUpperCase()}</div>
+                        <div class="user-info">
+                            <div class="user-name">${user.nickname || user.username}</div>
+                            <div class="user-email">${user.email}</div>
+                            <div style="font-size: 0.8em; color: #999; margin-top: 2px;">
+                                注册: ${formatDate(user.created_at)} | 
+                                最后登录: ${user.last_login_at ? formatDate(user.last_login_at) : '从未登录'}
+                            </div>
+                        </div>
+                        <div class="user-status">
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                            <span class="role-badge ${roleClass}">${roleText}</span>
+                        </div>
+                        <div class="user-actions">
+                            <button class="btn-sm" onclick="showEditUserModal('${user.id}')" style="background: #007bff; color: white;">编辑</button>
+                            <button class="btn-sm" onclick="toggleUserStatus('${user.id}', ${!user.is_active})" 
+                                    style="background: ${user.is_active ? '#dc3545' : '#28a745'}; color: white;">
+                                ${user.is_active ? '禁用' : '启用'}
+                            </button>
+                            <button class="btn-sm" onclick="showUserFiles('${user.id}')" style="background: #17a2b8; color: white;">文件</button>
+                            ${!user.is_admin ? `<button class="btn-sm" onclick="deleteUser('${user.id}')" style="background: #dc3545; color: white;">删除</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // 渲染用户分页
+        function renderUserPagination(pagination) {
+            const container = document.getElementById('user-pagination');
+            
+            if (pagination.pages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            
+            // 上一页
+            if (pagination.page > 1) {
+                html += `<button class="btn-sm" onclick="loadUsers(${pagination.page - 1}, '${currentUserSearch}')">上一页</button>`;
+            }
+            
+            // 页码
+            for (let i = 1; i <= pagination.pages; i++) {
+                const active = i === pagination.page ? 'active' : '';
+                html += `<button class="btn-sm ${active}" onclick="loadUsers(${i}, '${currentUserSearch}')">${i}</button>`;
+            }
+            
+            // 下一页
+            if (pagination.page < pagination.pages) {
+                html += `<button class="btn-sm" onclick="loadUsers(${pagination.page + 1}, '${currentUserSearch}')">下一页</button>`;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // 搜索用户
+        function searchUsers() {
+            const search = document.getElementById('user-search-input').value;
+            loadUsers(1, search);
+        }
+        
+        // 显示创建用户模态框
+        function showCreateUserModal() {
+            showUserModal('create');
+        }
+        
+        // 显示编辑用户模态框
+        async function showEditUserModal(userId) {
+            try {
+                const result = await apiRequest(`/admin/users/${userId}`);
+                if (result.code === 200) {
+                    showUserModal('edit', result.detail);
+                } else {
+                    showAlert('获取用户信息失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('获取用户信息失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 显示用户模态框
+        function showUserModal(mode, user = null) {
+            const isEdit = mode === 'edit';
+            const title = isEdit ? '编辑用户' : '添加用户';
+            
+            const modalHTML = `
+                <div class="modal" id="user-modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div class="modal-title">${title}</div>
+                            <span class="close" onclick="closeUserModal()">&times;</span>
+                        </div>
+                        <form class="modal-form" id="user-form">
+                            <div class="form-group">
+                                <label>用户名</label>
+                                <input type="text" name="username" class="form-control" required 
+                                       value="${user ? user.username : ''}" ${isEdit ? 'readonly' : ''}>
+                            </div>
+                            <div class="form-group">
+                                <label>邮箱</label>
+                                <input type="email" name="email" class="form-control" required 
+                                       value="${user ? user.email : ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>昵称</label>
+                                <input type="text" name="nickname" class="form-control" 
+                                       value="${user ? user.nickname : ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>密码 ${isEdit ? '(留空则不修改)' : ''}</label>
+                                <input type="password" name="password" class="form-control" 
+                                       ${!isEdit ? 'required' : ''} minlength="6">
+                            </div>
+                            <div class="form-group">
+                                <label>角色</label>
+                                <select name="is_admin" class="form-control">
+                                    <option value="false" ${user && !user.is_admin ? 'selected' : ''}>普通用户</option>
+                                    <option value="true" ${user && user.is_admin ? 'selected' : ''}>管理员</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>状态</label>
+                                <select name="is_active" class="form-control">
+                                    <option value="true" ${!user || user.is_active ? 'selected' : ''}>启用</option>
+                                    <option value="false" ${user && !user.is_active ? 'selected' : ''}>禁用</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn">${isEdit ? '更新' : '创建'}</button>
+                                <button type="button" class="btn btn-secondary" onclick="closeUserModal()">取消</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            // 移除现有模态框
+            const existingModal = document.getElementById('user-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // 显示模态框
+            const modal = document.getElementById('user-modal');
+            modal.style.display = 'block';
+            
+            // 绑定表单提交事件
+            document.getElementById('user-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await handleUserFormSubmit(isEdit, user ? user.id : null);
+            });
+            
+            // 点击外部关闭模态框
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeUserModal();
+                }
+            });
+        }
+        
+        // 关闭用户模态框
+        function closeUserModal() {
+            const modal = document.getElementById('user-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // 处理用户表单提交
+        async function handleUserFormSubmit(isEdit, userId) {
+            const form = document.getElementById('user-form');
+            const formData = new FormData(form);
+            
+            const data = {
+                username: formData.get('username'),
+                email: formData.get('email'),
+                nickname: formData.get('nickname'),
+                is_admin: formData.get('is_admin') === 'true',
+                is_active: formData.get('is_active') === 'true'
+            };
+            
+            const password = formData.get('password');
+            if (password) {
+                data.password = password;
+            }
+            
+            try {
+                let result;
+                if (isEdit) {
+                    result = await apiRequest(`/admin/users/${userId}`, 'PUT', data);
+                } else {
+                    result = await apiRequest('/admin/users', 'POST', data);
+                }
+                
+                if (result.code === 200) {
+                    showAlert(isEdit ? '用户更新成功' : '用户创建成功', 'success');
+                    closeUserModal();
+                    loadUsers(currentUserPage, currentUserSearch);
+                } else {
+                    showAlert((isEdit ? '更新' : '创建') + '失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert((isEdit ? '更新' : '创建') + '失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 切换用户状态
+        async function toggleUserStatus(userId, isActive) {
+            if (!confirm(`确定要${isActive ? '启用' : '禁用'}此用户吗？`)) {
+                return;
+            }
+            
+            try {
+                const result = await apiRequest(`/admin/users/${userId}/status`, 'PUT', {
+                    is_active: isActive
+                });
+                
+                if (result.code === 200) {
+                    showAlert('用户状态更新成功', 'success');
+                    loadUsers(currentUserPage, currentUserSearch);
+                } else {
+                    showAlert('状态更新失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('状态更新失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 删除用户
+        async function deleteUser(userId) {
+            if (!confirm('确定要删除此用户吗？这将同时删除用户的所有文件！')) {
+                return;
+            }
+            
+            try {
+                const result = await apiRequest(`/admin/users/${userId}`, 'DELETE');
+                
+                if (result.code === 200) {
+                    showAlert('用户删除成功', 'success');
+                    loadUsers(currentUserPage, currentUserSearch);
+                } else {
+                    showAlert('删除失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('删除失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 显示用户文件
+        async function showUserFiles(userId) {
+            try {
+                const result = await apiRequest(`/admin/users/${userId}/files`);
+                
+                if (result.code === 200) {
+                    const files = result.detail.files;
+                    showUserFilesModal(files);
+                } else {
+                    showAlert('获取用户文件失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('获取用户文件失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 显示用户文件模态框
+        function showUserFilesModal(files) {
+            let filesHTML = '';
+            if (files.length === 0) {
+                filesHTML = '<p style="text-align: center; color: #666;">该用户还没有上传任何文件</p>';
+            } else {
+                filesHTML = `
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>文件名</th>
+                                    <th>大小</th>
+                                    <th>上传时间</th>
+                                    <th>下载次数</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                files.forEach(file => {
+                    const fileName = file.prefix + file.suffix;
+                    filesHTML += `
+                        <tr>
+                            <td>${fileName}</td>
+                            <td>${formatFileSize(file.size)}</td>
+                            <td>${formatDate(file.created_at)}</td>
+                            <td>${file.used_count}</td>
+                            <td>
+                                <button class="btn-sm" onclick="deleteFile('${file.id}')" style="background: #dc3545; color: white;">删除</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                filesHTML += '</tbody></table></div>';
+            }
+            
+            const modalHTML = `
+                <div class="modal" id="user-files-modal">
+                    <div class="modal-content" style="max-width: 800px;">
+                        <div class="modal-header">
+                            <div class="modal-title">用户文件列表</div>
+                            <span class="close" onclick="closeUserFilesModal()">&times;</span>
+                        </div>
+                        <div style="padding: 20px;">
+                            ${filesHTML}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 移除现有模态框
+            const existingModal = document.getElementById('user-files-modal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // 显示模态框
+            const modal = document.getElementById('user-files-modal');
+            modal.style.display = 'block';
+            
+            // 点击外部关闭模态框
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeUserFilesModal();
+                }
+            });
+        }
+        
+        // 关闭用户文件模态框
+        function closeUserFilesModal() {
+            const modal = document.getElementById('user-files-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // 格式化日期
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN');
+        }
+        
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
     </script>
 </body>
 </html>

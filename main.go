@@ -61,7 +61,8 @@ func main() {
 	}
 
 	// 自动迁移（需要在配置初始化前进行）
-	err = db.AutoMigrate(&models.FileCode{}, &models.UploadChunk{}, &models.KeyValue{})
+	err = db.AutoMigrate(&models.FileCode{},
+		&models.UploadChunk{}, &models.KeyValue{}, &models.User{}, &models.UserSession{})
 	if err != nil {
 		logrus.Fatal("数据库迁移失败:", err)
 	}
@@ -75,7 +76,8 @@ func main() {
 	storageManager := storage.NewStorageManager(cfg)
 
 	// 初始化服务
-	shareService := services.NewShareService(db, storageManager, cfg)
+	userService := services.NewUserService(db, cfg)                                // 先初始化用户服务
+	shareService := services.NewShareService(db, storageManager, cfg, userService) // 传入用户服务
 	chunkService := services.NewChunkService(db, storageManager, cfg)
 	adminService := services.NewAdminService(db, cfg, storageManager)
 
@@ -84,6 +86,7 @@ func main() {
 	chunkHandler := handlers.NewChunkHandler(chunkService)
 	adminHandler := handlers.NewAdminHandler(adminService, cfg)
 	storageHandler := handlers.NewStorageHandler(storageManager, cfg)
+	userHandler := handlers.NewUserHandler(userService) // 新增用户处理器
 
 	// 初始化清理任务
 	taskManager := tasks.NewTaskManager(db, storageManager, cfg.DataPath)
@@ -108,7 +111,7 @@ func main() {
 	router.Static("/assets", fmt.Sprintf("./%s/assets", cfg.ThemesSelect))
 
 	// 设置路由
-	routes.SetupRoutes(router, shareHandler, chunkHandler, adminHandler, storageHandler, cfg)
+	routes.SetupRoutes(router, shareHandler, chunkHandler, adminHandler, storageHandler, userHandler, cfg, userService)
 
 	logrus.Info("应用初始化完成")
 

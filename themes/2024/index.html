@@ -34,6 +34,112 @@
             backdrop-filter: blur(10px);
             max-width: 500px;
             width: 90%;
+            position: relative;
+        }
+        
+        .user-links {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .user-link {
+            padding: 6px 12px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .user-link.login {
+            color: #667eea;
+            border: 1px solid #667eea;
+            background: transparent;
+        }
+        
+        .user-link.login:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .user-link.register {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+        }
+        
+        .user-link.register:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9em;
+        }
+        
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: white;
+            min-width: 160px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            z-index: 1;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-item {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s;
+            font-size: 0.9em;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .dropdown-item.logout {
+            color: #dc3545;
+            border-top: 1px solid #eee;
         }
         
         .header {
@@ -333,6 +439,29 @@
 </head>
 <body>
     <div class="container">
+        <!-- 用户链接区域 -->
+        <div class="user-links" id="user-links">
+            <!-- 未登录状态 -->
+            <div id="guest-links" style="display: flex; gap: 10px;">
+                <a href="/user/login" class="user-link login">登录</a>
+                <a href="/user/register" class="user-link register">注册</a>
+            </div>
+            
+            <!-- 已登录状态 -->
+            <div id="user-logged-in" style="display: none;">
+                <div class="dropdown">
+                    <div class="user-info" style="cursor: pointer;">
+                        <div class="user-avatar" id="user-avatar"></div>
+                        <div class="user-name" id="user-name"></div>
+                    </div>
+                    <div class="dropdown-content">
+                        <a href="/user/dashboard" class="dropdown-item">用户中心</a>
+                        <a href="#" class="dropdown-item logout" onclick="logout()">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="header">
             <div class="logo">📦 FileCodeBox</div>
             <div class="subtitle">{{description}}</div>
@@ -432,6 +561,80 @@
     </div>
     
     <script>
+        // ========== 用户系统功能 ==========
+        
+        // 获取用户token
+        function getUserToken() {
+            return localStorage.getItem('user_token');
+        }
+        
+        // 获取用户信息
+        function getUserInfo() {
+            const userInfo = localStorage.getItem('user_info');
+            return userInfo ? JSON.parse(userInfo) : null;
+        }
+        
+        // 检查登录状态
+        function checkUserLogin() {
+            const token = getUserToken();
+            const userInfo = getUserInfo();
+            
+            if (token && userInfo) {
+                // 显示已登录状态
+                document.getElementById('guest-links').style.display = 'none';
+                document.getElementById('user-logged-in').style.display = 'block';
+                
+                // 更新用户信息显示
+                document.getElementById('user-name').textContent = userInfo.nickname || userInfo.username;
+                document.getElementById('user-avatar').textContent = (userInfo.nickname || userInfo.username).charAt(0).toUpperCase();
+                
+                return true;
+            } else {
+                // 显示未登录状态
+                document.getElementById('guest-links').style.display = 'flex';
+                document.getElementById('user-logged-in').style.display = 'none';
+                
+                return false;
+            }
+        }
+        
+        // 退出登录
+        async function logout() {
+            try {
+                const token = getUserToken();
+                if (token) {
+                    await fetch('/user/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + token
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('退出登录失败:', error);
+            }
+            
+            localStorage.removeItem('user_token');
+            localStorage.removeItem('user_info');
+            checkUserLogin();
+        }
+        
+        // 在API请求中添加认证头
+        function getAuthHeaders() {
+            const token = getUserToken();
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (token) {
+                headers['Authorization'] = 'Bearer ' + token;
+            }
+            
+            return headers;
+        }
+        
+        // ========== 原有功能 ==========
+        
         function switchTab(tab) {
             // 隐藏所有标签页
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -613,6 +816,13 @@
                 // 发送请求
                 xhr.timeout = 300000; // 5分钟超时
                 xhr.open('POST', '/share/file/');
+                
+                // 添加认证头
+                const token = getUserToken();
+                if (token) {
+                    xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+                }
+                
                 xhr.send(formData);
                 
             } catch (error) {
@@ -639,8 +849,15 @@
             formData.append('expire_value', e.target.expire_value.value);
             
             try {
+                const token = getUserToken();
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = 'Bearer ' + token;
+                }
+                
                 const response = await fetch('/share/text/', {
                     method: 'POST',
+                    headers: headers,
                     body: formData
                 });
                 
@@ -679,11 +896,17 @@
             getBtn.textContent = '获取中...';
             
             try {
+                const token = getUserToken();
+                const headers = {
+                    'Content-Type': 'application/json',
+                };
+                if (token) {
+                    headers['Authorization'] = 'Bearer ' + token;
+                }
+                
                 const response = await fetch('/share/select/', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: headers,
                     body: JSON.stringify({ code: code })
                 });
                 
@@ -880,6 +1103,11 @@
             
             document.body.removeChild(textArea);
         }
+        
+        // 页面加载时检查用户登录状态
+        document.addEventListener('DOMContentLoaded', function() {
+            checkUserLogin();
+        });
     </script>
 </body>
 </html>

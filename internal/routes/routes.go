@@ -21,7 +21,11 @@ func SetupRoutes(
 	chunkHandler *handlers.ChunkHandler,
 	adminHandler *handlers.AdminHandler,
 	storageHandler *handlers.StorageHandler,
+	userHandler *handlers.UserHandler, // 新增用户处理器
 	cfg *config.Config,
+	userService interface { // 新增用户服务接口
+		ValidateToken(string) (interface{}, error)
+	},
 ) {
 	// API文档和健康检查
 	apiHandler := handlers.NewAPIHandler()
@@ -67,12 +71,36 @@ func SetupRoutes(
 	// 分享相关路由
 	shareGroup := router.Group("/share")
 	shareGroup.Use(middleware.ShareAuth(cfg))
+	shareGroup.Use(middleware.OptionalUserAuth(cfg, userService)) // 使用可选用户认证
 	{
 		shareGroup.POST("/text/", shareHandler.ShareText)
 		shareGroup.POST("/file/", shareHandler.ShareFile)
 		shareGroup.GET("/select/", shareHandler.GetFile)
 		shareGroup.POST("/select/", shareHandler.GetFile)
 		shareGroup.GET("/download", shareHandler.DownloadFile)
+	}
+
+	// 用户系统路由
+	userGroup := router.Group("/user")
+	{
+		// 公开路由（不需要认证）
+		userGroup.POST("/register", userHandler.Register)
+		userGroup.POST("/login", userHandler.Login)
+		userGroup.GET("/system-info", userHandler.GetSystemInfo)
+
+		// 需要认证的路由
+		authGroup := userGroup.Group("/")
+		authGroup.Use(middleware.UserAuth(cfg, userService))
+		{
+			authGroup.POST("/logout", userHandler.Logout)
+			authGroup.GET("/profile", userHandler.GetProfile)
+			authGroup.PUT("/profile", userHandler.UpdateProfile)
+			authGroup.POST("/change-password", userHandler.ChangePassword)
+			authGroup.GET("/files", userHandler.GetUserFiles)
+			authGroup.GET("/stats", userHandler.GetUserStats)
+			authGroup.GET("/check-auth", userHandler.CheckAuth)
+			authGroup.DELETE("/files/:id", userHandler.DeleteFile)
+		}
 	}
 
 	// 分片上传相关路由
@@ -115,12 +143,38 @@ func SetupRoutes(
 			authGroup.PUT("/config", adminHandler.UpdateConfig)
 			authGroup.POST("/clean", adminHandler.CleanExpiredFiles)
 
+			// 用户管理相关路由
+			authGroup.GET("/users", adminHandler.GetUsers)
+			authGroup.GET("/users/:id", adminHandler.GetUser)
+			authGroup.POST("/users", adminHandler.CreateUser)
+			authGroup.PUT("/users/:id", adminHandler.UpdateUser)
+			authGroup.DELETE("/users/:id", adminHandler.DeleteUser)
+			authGroup.PUT("/users/:id/status", adminHandler.UpdateUserStatus)
+			authGroup.GET("/users/:id/files", adminHandler.GetUserFiles)
+
 			// 存储管理相关路由
 			authGroup.GET("/storage", storageHandler.GetStorageInfo)
 			authGroup.POST("/storage/switch", storageHandler.SwitchStorage)
 			authGroup.GET("/storage/test/:type", storageHandler.TestStorageConnection)
 			authGroup.PUT("/storage/config", storageHandler.UpdateStorageConfig)
 		}
+	}
+
+	// 用户页面路由
+	userPageGroup := router.Group("/user")
+	{
+		userPageGroup.GET("/login", func(c *gin.Context) {
+			serveUserPage(c, cfg, "login.html")
+		})
+		userPageGroup.GET("/register", func(c *gin.Context) {
+			serveUserPage(c, cfg, "register.html")
+		})
+		userPageGroup.GET("/dashboard", func(c *gin.Context) {
+			serveUserPage(c, cfg, "dashboard.html")
+		})
+		userPageGroup.GET("/forgot-password", func(c *gin.Context) {
+			serveUserPage(c, cfg, "forgot-password.html")
+		})
 	}
 }
 
@@ -156,6 +210,21 @@ func serveAdminPage(c *gin.Context, cfg *config.Config) {
 	content, err := os.ReadFile(adminPath)
 	if err != nil {
 		c.String(http.StatusNotFound, "Admin page not found")
+		return
+	}
+
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	c.String(http.StatusOK, string(content))
+}
+
+// serveUserPage 服务用户页面
+func serveUserPage(c *gin.Context, cfg *config.Config, pageName string) {
+	userPagePath := filepath.Join(".", cfg.ThemesSelect, pageName)
+
+	content, err := os.ReadFile(userPagePath)
+	if err != nil {
+		c.String(http.StatusNotFound, "User page not found: "+pageName)
 		return
 	}
 

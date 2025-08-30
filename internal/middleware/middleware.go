@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/services"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -191,6 +192,126 @@ func ShareAuth(cfg *config.Config) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		c.Next()
+	}
+}
+
+// UserAuth 用户认证中间件
+func UserAuth(cfg *config.Config, userService interface {
+	ValidateToken(string) (interface{}, error)
+}) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 如果用户系统未启用，直接跳过
+		if cfg.EnableUserSystem == 0 {
+			c.Next()
+			return
+		}
+
+		// 获取Authorization头
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":    401,
+				"message": "缺少认证信息",
+			})
+			c.Abort()
+			return
+		}
+
+		// 检查Bearer前缀
+		tokenParts := strings.SplitN(authHeader, " ", 2)
+		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":    401,
+				"message": "认证格式错误",
+			})
+			c.Abort()
+			return
+		}
+
+		// 验证token
+		claimsInterface, err := userService.ValidateToken(tokenParts[1])
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":    401,
+				"message": "认证失败: " + err.Error(),
+			})
+			c.Abort()
+			return
+		}
+
+		// 类型断言获取claims
+		if claims, ok := claimsInterface.(*services.UserClaims); ok {
+			// 将用户信息设置到上下文
+			c.Set("user_id", claims.UserID)
+			c.Set("username", claims.Username)
+			c.Set("role", claims.Role)
+			c.Set("session_id", claims.SessionID)
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":    401,
+				"message": "token格式错误",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// UserClaims JWT claims 结构体定义
+// OptionalUserAuth 可选用户认证中间件（支持匿名和登录用户）
+func OptionalUserAuth(cfg *config.Config, userService interface {
+	ValidateToken(string) (interface{}, error)
+}) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 如果用户系统未启用，直接跳过
+		if cfg.EnableUserSystem == 0 {
+			c.Next()
+			return
+		}
+
+		// 获取Authorization头
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			// 没有认证信息，允许匿名访问
+			c.Set("is_anonymous", true)
+			c.Next()
+			return
+		}
+
+		// 检查Bearer前缀
+		tokenParts := strings.SplitN(authHeader, " ", 2)
+		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+			// 认证格式错误，但仍允许匿名访问
+			c.Set("is_anonymous", true)
+			c.Next()
+			return
+		}
+
+		// 尝试验证token
+		claimsInterface, err := userService.ValidateToken(tokenParts[1])
+		if err != nil {
+			// token验证失败，但仍允许匿名访问
+			c.Set("is_anonymous", true)
+			c.Next()
+			return
+		}
+
+		// 类型断言获取claims
+		if claims, ok := claimsInterface.(*services.UserClaims); ok {
+			// 将用户信息设置到上下文
+			c.Set("user_id", claims.UserID)
+			c.Set("username", claims.Username)
+			c.Set("role", claims.Role)
+			c.Set("session_id", claims.SessionID)
+			c.Set("is_anonymous", false)
+		} else {
+			// claims格式错误，但仍允许匿名访问
+			c.Set("is_anonymous", true)
+		}
+
 		c.Next()
 	}
 }

@@ -17,22 +17,56 @@ import (
 
 // ShareService 分享服务
 type ShareService struct {
-	db      *gorm.DB
-	storage *storage.StorageManager
-	config  *config.Config
+	db          *gorm.DB
+	storage     *storage.StorageManager
+	config      *config.Config
+	userService *UserService
 }
 
-func NewShareService(db *gorm.DB, storageManager *storage.StorageManager, config *config.Config) *ShareService {
+func NewShareService(db *gorm.DB, storageManager *storage.StorageManager, config *config.Config, userService *UserService) *ShareService {
 	return &ShareService{
-		db:      db,
-		storage: storageManager,
-		config:  config,
+		db:          db,
+		storage:     storageManager,
+		config:      config,
+		userService: userService,
 	}
+}
+
+// ShareTextRequest 分享文本请求
+type ShareTextRequest struct {
+	Text        string
+	ExpireValue int
+	ExpireStyle string
+	UserID      *uint  // 用户ID，nil表示匿名上传
+	RequireAuth bool   // 是否需要登录才能下载
+	ClientIP    string // 客户端IP
+}
+
+// ShareFileRequest 分享文件请求
+type ShareFileRequest struct {
+	File        *multipart.FileHeader
+	ExpireValue int
+	ExpireStyle string
+	UserID      *uint  // 用户ID，nil表示匿名上传
+	RequireAuth bool   // 是否需要登录才能下载
+	ClientIP    string // 客户端IP
 }
 
 // ShareText 分享文本
 func (s *ShareService) ShareText(text string, expireValue int, expireStyle string) (*models.FileCode, error) {
-	textSize := len([]byte(text))
+	return s.ShareTextWithAuth(ShareTextRequest{
+		Text:        text,
+		ExpireValue: expireValue,
+		ExpireStyle: expireStyle,
+		UserID:      nil, // 匿名上传
+		RequireAuth: false,
+		ClientIP:    "",
+	})
+}
+
+// ShareTextWithAuth 带认证的分享文本
+func (s *ShareService) ShareTextWithAuth(req ShareTextRequest) (*models.FileCode, error) {
+	textSize := len([]byte(req.Text))
 	maxTextSize := 222 * 1024 // 222KB
 
 	if textSize > maxTextSize {
@@ -40,15 +74,25 @@ func (s *ShareService) ShareText(text string, expireValue int, expireStyle strin
 	}
 
 	code := s.generateCode()
-	expiredAt, expiredCount, usedCount := s.parseExpireInfo(expireValue, expireStyle)
+	expiredAt, expiredCount, usedCount := s.parseExpireInfo(req.ExpireValue, req.ExpireStyle)
+
+	// 确定上传类型
+	uploadType := "anonymous"
+	if req.UserID != nil {
+		uploadType = "authenticated"
+	}
 
 	fileCode := &models.FileCode{
 		Code:         code,
-		Text:         text,
+		Text:         req.Text,
 		ExpiredAt:    expiredAt,
 		ExpiredCount: expiredCount,
 		UsedCount:    usedCount,
 		Size:         int64(textSize),
+		UserID:       req.UserID,
+		UploadType:   uploadType,
+		RequireAuth:  req.RequireAuth,
+		OwnerIP:      req.ClientIP,
 		Prefix:       "Text",
 	}
 
@@ -56,19 +100,46 @@ func (s *ShareService) ShareText(text string, expireValue int, expireStyle strin
 		return nil, err
 	}
 
+	// 如果是认证用户上传，更新用户统计信息
+	if req.UserID != nil {
+		if err := s.userService.UpdateUserUploadStats(*req.UserID, int64(textSize)); err != nil {
+			// 记录错误但不影响上传成功
+			// 可以考虑使用日志记录这个错误
+		}
+	}
+
 	return fileCode, nil
 }
 
 // ShareFile 分享文件
 func (s *ShareService) ShareFile(file *multipart.FileHeader, expireValue int, expireStyle string) (*models.FileCode, error) {
+	return s.ShareFileWithAuth(ShareFileRequest{
+		File:        file,
+		ExpireValue: expireValue,
+		ExpireStyle: expireStyle,
+		UserID:      nil, // 匿名上传
+		RequireAuth: false,
+		ClientIP:    "",
+	})
+}
+
+// ShareFileWithAuth 带认证的分享文件
+func (s *ShareService) ShareFileWithAuth(req ShareFileRequest) (*models.FileCode, error) {
+	// 确定上传大小限制
+	uploadSizeLimit := s.config.UploadSize
+	if req.UserID != nil {
+		// 用户上传，使用用户专属限制
+		uploadSizeLimit = s.config.UserUploadSize
+	}
+
 	// 验证文件大小
-	if err := storage.ValidateFileSize(file, s.config.UploadSize); err != nil {
+	if err := storage.ValidateFileSize(req.File, uploadSizeLimit); err != nil {
 		return nil, err
 	}
 
 	// 生成文件路径信息
 	uploadID := s.generateUploadID()
-	path, suffix, prefix, uuidFileName := storage.GenerateFileInfo(file.Filename, uploadID)
+	path, suffix, prefix, uuidFileName := storage.GenerateFileInfo(req.File.Filename, uploadID)
 
 	// 构建完整的保存路径 - 使用绝对路径
 	basePath := s.config.StoragePath
@@ -79,18 +150,24 @@ func (s *ShareService) ShareFile(file *multipart.FileHeader, expireValue int, ex
 
 	// 保存文件
 	storageInterface := s.storage.GetStorage()
-	if err := storageInterface.SaveFile(file, savePath); err != nil {
+	if err := storageInterface.SaveFile(req.File, savePath); err != nil {
 		return nil, fmt.Errorf("保存文件失败: %v", err)
 	}
 
 	// 计算文件哈希
-	fileHash, err := storage.CalculateFileHash(file)
+	fileHash, err := storage.CalculateFileHash(req.File)
 	if err != nil {
 		return nil, fmt.Errorf("计算文件哈希失败: %v", err)
 	}
 
 	code := s.generateCode()
-	expiredAt, expiredCount, usedCount := s.parseExpireInfo(expireValue, expireStyle)
+	expiredAt, expiredCount, usedCount := s.parseExpireInfo(req.ExpireValue, req.ExpireStyle)
+
+	// 确定上传类型
+	uploadType := "anonymous"
+	if req.UserID != nil {
+		uploadType = "authenticated"
+	}
 
 	fileCode := &models.FileCode{
 		Code:         code,
@@ -98,15 +175,27 @@ func (s *ShareService) ShareFile(file *multipart.FileHeader, expireValue int, ex
 		Suffix:       suffix,
 		UUIDFileName: uuidFileName,
 		FilePath:     path,
-		Size:         file.Size,
+		Size:         req.File.Size,
 		ExpiredAt:    expiredAt,
 		ExpiredCount: expiredCount,
 		UsedCount:    usedCount,
 		FileHash:     fileHash,
+		UserID:       req.UserID,
+		UploadType:   uploadType,
+		RequireAuth:  req.RequireAuth,
+		OwnerIP:      req.ClientIP,
 	}
 
 	if err := s.db.Create(fileCode).Error; err != nil {
 		return nil, err
+	}
+
+	// 如果是认证用户上传，更新用户统计信息
+	if req.UserID != nil {
+		if err := s.userService.UpdateUserUploadStats(*req.UserID, req.File.Size); err != nil {
+			// 记录错误但不影响上传成功
+			// 可以考虑使用日志记录这个错误
+		}
 	}
 
 	return fileCode, nil
@@ -114,6 +203,11 @@ func (s *ShareService) ShareFile(file *multipart.FileHeader, expireValue int, ex
 
 // GetFileByCode 根据代码获取文件
 func (s *ShareService) GetFileByCode(code string, checkExpire bool) (*models.FileCode, error) {
+	return s.GetFileByCodeWithAuth(code, checkExpire, nil)
+}
+
+// GetFileByCodeWithAuth 根据代码获取文件（带认证检查）
+func (s *ShareService) GetFileByCodeWithAuth(code string, checkExpire bool, userID *uint) (*models.FileCode, error) {
 	var fileCode models.FileCode
 	if err := s.db.Where("code = ?", code).First(&fileCode).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -124,6 +218,17 @@ func (s *ShareService) GetFileByCode(code string, checkExpire bool) (*models.Fil
 
 	if checkExpire && fileCode.IsExpired() {
 		return nil, fmt.Errorf("文件已过期")
+	}
+
+	// 检查是否需要登录才能访问
+	if fileCode.RequireAuth {
+		if userID == nil {
+			return nil, fmt.Errorf("该文件需要登录后才能访问")
+		}
+
+		// 如果是用户自己上传的文件，允许访问
+		// 如果不是，也允许访问（公开的认证文件）
+		// 这里可以根据业务需求调整权限控制逻辑
 	}
 
 	return &fileCode, nil

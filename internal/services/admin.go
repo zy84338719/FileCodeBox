@@ -2,10 +2,11 @@ package services
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/storage"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -227,4 +228,9 @@ func (s *AdminService) GetFileByID(id uint) (*models.FileCode, error) {
 		return nil, err
 	}
 	return &fileCode, nil
+}
+
+// GetDB 获取数据库连接
+func (s *AdminService) GetDB() *gorm.DB {
+	return s.db
 }
