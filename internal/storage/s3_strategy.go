@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"strings"
@@ -101,7 +102,11 @@ func (ss *S3StorageStrategy) ReadFile(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer result.Body.Close()
+	defer func() {
+		if cerr := result.Body.Close(); cerr != nil {
+			log.Printf("Error closing response body: %v", cerr)
+		}
+	}()
 
 	return io.ReadAll(result.Body)
 }
@@ -173,7 +178,11 @@ func (ss *S3StorageStrategy) SaveUploadFile(file *multipart.FileHeader, savePath
 	if err != nil {
 		return err
 	}
-	defer src.Close()
+	defer func() {
+		if cerr := src.Close(); cerr != nil {
+			log.Printf("Error closing source file: %v", cerr)
+		}
+	}()
 
 	data, err := io.ReadAll(src)
 	if err != nil {

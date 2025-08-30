@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"path/filepath"
 	"time"
@@ -200,7 +201,11 @@ func CalculateFileHash(file *multipart.FileHeader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer src.Close()
+	defer func() {
+		if cerr := src.Close(); cerr != nil {
+			log.Printf("Error closing source file: %v", cerr)
+		}
+	}()
 
 	hash := sha256.New()
 	if _, err := io.Copy(hash, src); err != nil {

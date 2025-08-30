@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
@@ -161,7 +162,11 @@ func (ws *WebDAVStorageStrategy) SaveUploadFile(file *multipart.FileHeader, save
 	if err != nil {
 		return err
 	}
-	defer src.Close()
+	defer func() {
+		if cerr := src.Close(); cerr != nil {
+			log.Printf("Error closing source file: %v", cerr)
+		}
+	}()
 
 	data, err := io.ReadAll(src)
 	if err != nil {

@@ -3,6 +3,7 @@ package services
 import (
 	"crypto/sha256"
 	"fmt"
+	"log"
 	"mime/multipart"
 	"path/filepath"
 
@@ -149,7 +150,11 @@ func (s *ChunkService) UploadChunk(uploadID string, chunkIndex int, file *multip
 	if err != nil {
 		return "", fmt.Errorf("打开文件失败: %v", err)
 	}
-	defer src.Close()
+	defer func() {
+		if cerr := src.Close(); cerr != nil {
+			log.Printf("Error closing source file: %v", cerr)
+		}
+	}()
 
 	data := make([]byte, file.Size)
 	_, err = src.Read(data)

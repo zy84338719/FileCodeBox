@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -77,14 +78,22 @@ func (ls *LocalStorageStrategy) SaveUploadFile(file *multipart.FileHeader, saveP
 	if err != nil {
 		return fmt.Errorf("打开上传文件失败: %w", err)
 	}
-	defer src.Close()
+	defer func() {
+		if cerr := src.Close(); cerr != nil {
+			log.Printf("Error closing source file: %v", cerr)
+		}
+	}()
 
 	// 创建目标文件
 	dst, err := os.Create(savePath)
 	if err != nil {
 		return fmt.Errorf("创建目标文件失败: %w", err)
 	}
-	defer dst.Close()
+	defer func() {
+		if cerr := dst.Close(); cerr != nil {
+			log.Printf("Error closing destination file: %v", cerr)
+		}
+	}()
 
 	// 复制文件内容
 	_, err = io.Copy(dst, src)
