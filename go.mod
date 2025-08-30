@@ -2,6 +2,8 @@ module filecodebox
 
 go 1.23.0
 
+toolchain go1.24.4
+
 require (
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/gin-contrib/cors v1.7.6
