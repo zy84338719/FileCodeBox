@@ -1,0 +1,268 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build for multiple platforms
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            output: filecodebox-linux-amd64
+          - goos: linux
+            goarch: arm64
+            output: filecodebox-linux-arm64
+          - goos: darwin
+            goarch: amd64
+            output: filecodebox-darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            output: filecodebox-darwin-arm64
+          - goos: windows
+            goarch: amd64
+            output: filecodebox-windows-amd64.exe
+          - goos: windows
+            goarch: arm64
+            output: filecodebox-windows-arm64.exe
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run tests
+      run: go test ./...
+
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 0
+      run: |
+        # 设置版本信息
+        VERSION=${{ github.ref_name }}
+        if [ "$VERSION" = "main" ]; then
+          VERSION="dev-$(git rev-parse --short HEAD)"
+        fi
+        
+        COMMIT=$(git rev-parse HEAD)
+        DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        
+        go build \
+          -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
+          -o ${{ matrix.output }} .
+        
+    - name: Create build info
+      run: |
+        echo "Build Info:" > build-info-${{ matrix.goos }}-${{ matrix.goarch }}.txt
+        echo "Platform: ${{ matrix.goos }}/${{ matrix.goarch }}" >> build-info-${{ matrix.goos }}-${{ matrix.goarch }}.txt
+        echo "Go Version: $(go version)" >> build-info-${{ matrix.goos }}-${{ matrix.goarch }}.txt
+        echo "Build Time: $(date)" >> build-info-${{ matrix.goos }}-${{ matrix.goarch }}.txt
+        echo "Commit: ${{ github.sha }}" >> build-info-${{ matrix.goos }}-${{ matrix.goarch }}.txt
+        echo "Branch: ${{ github.ref_name }}" >> build-info-${{ matrix.goos }}-${{ matrix.goarch }}.txt
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: filecodebox-${{ matrix.goos }}-${{ matrix.goarch }}
+        path: |
+          ${{ matrix.output }}
+          build-info-${{ matrix.goos }}-${{ matrix.goarch }}.txt
+
+  docker:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          filecodebox/filecodebox
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: ${{ startsWith(github.ref, 'refs/tags/') }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build, docker]
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts/
+
+    - name: Prepare release assets
+      run: |
+        mkdir -p release-assets
+        
+        # 处理每个平台的构建产物
+        for dir in artifacts/*/; do
+          if [ -d "$dir" ]; then
+            platform=$(basename "$dir" | sed 's/filecodebox-//')
+            echo "Processing $platform"
+            
+            # 创建发布包
+            cd "$dir"
+            
+            # 找到可执行文件
+            executable=$(find . -name "filecodebox*" -executable -type f | head -1)
+            if [ -n "$executable" ]; then
+              # 创建发布目录
+              release_name="filecodebox-${platform}"
+              mkdir -p "../release-assets/$release_name"
+              
+              # 复制文件
+              cp "$executable" "../release-assets/$release_name/"
+              cp build-info-*.txt "../release-assets/$release_name/" 2>/dev/null || true
+              
+              # 创建README
+              cat > "../release-assets/$release_name/README.txt" << EOF
+        FileCodeBox - 文件分享服务
+        
+        平台: $platform
+        版本: ${{ github.ref_name }}
+        构建时间: $(date)
+        
+        使用方法:
+        1. 运行可执行文件启动服务
+        2. 访问 http://localhost:12345
+        3. 管理员访问 http://localhost:12345/admin
+        
+        更多信息: https://github.com/${{ github.repository }}
+        EOF
+              
+              # 打包
+              cd "../release-assets"
+              if [[ "$platform" == *"windows"* ]]; then
+                zip -r "${release_name}.zip" "$release_name/"
+              else
+                tar -czf "${release_name}.tar.gz" "$release_name/"
+              fi
+              rm -rf "$release_name"
+            fi
+            
+            cd - > /dev/null
+          fi
+        done
+
+    - name: Generate release notes
+      run: |
+        cat > release-notes.md << EOF
+        ## FileCodeBox ${{ github.ref_name }}
+        
+        ### 🚀 新特性
+        - 多平台可执行文件支持 (Linux, macOS, Windows)
+        - 支持 AMD64 和 ARM64 架构
+        - Docker 镜像自动构建
+        
+        ### 📦 下载说明
+        
+        **可执行文件:**
+        - \`filecodebox-linux-amd64.tar.gz\` - Linux x64
+        - \`filecodebox-linux-arm64.tar.gz\` - Linux ARM64
+        - \`filecodebox-darwin-amd64.tar.gz\` - macOS Intel
+        - \`filecodebox-darwin-arm64.tar.gz\` - macOS Apple Silicon
+        - \`filecodebox-windows-amd64.zip\` - Windows x64
+        - \`filecodebox-windows-arm64.zip\` - Windows ARM64
+        
+        **Docker 镜像:**
+        \`\`\`bash
+        docker pull filecodebox/filecodebox:${{ github.ref_name }}
+        \`\`\`
+        
+        ### 🔧 快速开始
+        
+        1. 下载对应平台的可执行文件
+        2. 解压后运行 filecodebox
+        3. 访问 http://localhost:12345
+        4. 管理员界面: http://localhost:12345/admin (默认密码: admin)
+        
+        ### 📋 系统要求
+        - 无特殊依赖
+        - 支持所有主流操作系统
+        - 最小内存: 64MB
+        - 推荐内存: 256MB+
+        
+        ---
+        
+        **完整更新日志和文档:** https://github.com/${{ github.repository }}
+        EOF
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: release-assets/*
+        name: FileCodeBox ${{ github.ref_name }}
+        body_path: release-notes.md
+        draft: false
+        prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

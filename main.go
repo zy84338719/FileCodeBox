@@ -11,6 +11,7 @@ import (
 	"filecodebox/internal/services"
 	"filecodebox/internal/storage"
 	"filecodebox/internal/tasks"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -22,7 +23,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	version = "dev"
+	commit  = "unknown"
+	date    = "unknown"
+)
+
 func main() {
+	// 解析命令行参数
+	var showVersion = flag.Bool("version", false, "show version information")
+	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("FileCodeBox %s\n", version)
+		fmt.Printf("Commit: %s\n", commit)
+		fmt.Printf("Built: %s\n", date)
+		fmt.Printf("Go Version: %s\n", fmt.Sprintf("%s", "go1.21+"))
+		return
+	}
+
 	// 初始化配置
 	cfg := config.Init()
 

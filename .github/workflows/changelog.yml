@@ -1,0 +1,54 @@
+name: Release Changelog
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate Changelog
+      run: |
+        # 创建变更日志
+        echo "# Changelog" > CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        
+        # 获取所有标签
+        tags=($(git tag --sort=-version:refname))
+        
+        for i in "${!tags[@]}"; do
+          current_tag="${tags[$i]}"
+          if [ $i -eq $((${#tags[@]} - 1)) ]; then
+            # 最后一个标签，比较到第一个提交
+            previous_tag=$(git rev-list --max-parents=0 HEAD)
+          else
+            previous_tag="${tags[$((i + 1))]}"
+          fi
+          
+          echo "## [$current_tag] - $(git log -1 --format=%ai $current_tag | cut -d' ' -f1)" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          
+          # 获取提交信息
+          git log --pretty=format:"- %s" $previous_tag..$current_tag >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+        done
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "docs: update CHANGELOG.md for ${{ github.event.release.tag_name }}"
+        title: "Update CHANGELOG for ${{ github.event.release.tag_name }}"
+        body: |
+          Auto-generated changelog update for release ${{ github.event.release.tag_name }}.
+          
+          This PR updates the CHANGELOG.md file with the latest release information.
+        branch: update-changelog-${{ github.event.release.tag_name }}
+        delete-branch: true
