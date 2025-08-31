@@ -33,6 +33,7 @@ import (
 	"time"
 
 	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/dao"
 	"github.com/zy84338719/filecodebox/internal/database"
 	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/middleware"
@@ -104,6 +105,9 @@ func main() {
 	// 初始化存储
 	storageManager := storage.NewStorageManager(cfg)
 
+	// 初始化 DAO 管理器
+	daoManager := dao.NewDAOManager(db)
+
 	// 初始化服务
 	userService := services.NewUserService(db, cfg)                                // 先初始化用户服务
 	shareService := services.NewShareService(db, storageManager, cfg, userService) // 传入用户服务
@@ -118,7 +122,7 @@ func main() {
 	userHandler := handlers.NewUserHandler(userService) // 新增用户处理器
 
 	// 初始化清理任务
-	taskManager := tasks.NewTaskManager(db, storageManager, cfg.DataPath)
+	taskManager := tasks.NewTaskManager(daoManager, storageManager, cfg.DataPath)
 	taskManager.Start()
 	defer taskManager.Stop()
 

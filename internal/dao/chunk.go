@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"time"
+
 	"github.com/zy84338719/filecodebox/internal/models"
 	"gorm.io/gorm"
 )
@@ -110,6 +112,29 @@ func (dao *ChunkDAO) GetIncompleteUploads(olderThan int) ([]models.UploadChunk, 
 	err := dao.db.Where("chunk_index = -1 AND status != 'completed' AND created_at < datetime('now', '-' || ? || ' hours')", olderThan).
 		Find(&chunks).Error
 	return chunks, err
+}
+
+// GetOldChunks 获取超过指定时间的未完成分片上传
+func (dao *ChunkDAO) GetOldChunks(cutoffTime time.Time) ([]models.UploadChunk, error) {
+	var oldChunks []models.UploadChunk
+	err := dao.db.Where("created_at < ? AND chunk_index = -1", cutoffTime).Find(&oldChunks).Error
+	return oldChunks, err
+}
+
+// DeleteChunksByUploadIDs 批量删除指定上传ID的所有分片记录
+func (dao *ChunkDAO) DeleteChunksByUploadIDs(uploadIDs []string) (int, error) {
+	if len(uploadIDs) == 0 {
+		return 0, nil
+	}
+
+	count := 0
+	for _, uploadID := range uploadIDs {
+		if err := dao.db.Where("upload_id = ?", uploadID).Delete(&models.UploadChunk{}).Error; err != nil {
+			continue // 记录错误但继续处理其他上传
+		}
+		count++
+	}
+	return count, nil
 }
 
 // GetUploadedChunkIndexes 获取已上传分片的索引列表

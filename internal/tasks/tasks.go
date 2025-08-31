@@ -3,28 +3,27 @@ package tasks
 import (
 	"time"
 
-	"github.com/zy84338719/filecodebox/internal/models"
+	"github.com/zy84338719/filecodebox/internal/dao"
 	"github.com/zy84338719/filecodebox/internal/storage"
 
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 // TaskManager 任务管理器
 type TaskManager struct {
-	db          *gorm.DB
+	daoManager  *dao.DAOManager
 	storage     *storage.StorageManager
 	cron        *cron.Cron
 	pathManager *storage.PathManager
 }
 
-func NewTaskManager(db *gorm.DB, storageManager *storage.StorageManager, dataPath string) *TaskManager {
+func NewTaskManager(daoManager *dao.DAOManager, storageManager *storage.StorageManager, dataPath string) *TaskManager {
 	// 创建路径管理器
 	pathManager := storage.NewPathManager(dataPath)
 
 	return &TaskManager{
-		db:          db,
+		daoManager:  daoManager,
 		storage:     storageManager,
 		cron:        cron.New(),
 		pathManager: pathManager,
@@ -57,34 +56,35 @@ func (tm *TaskManager) Stop() {
 func (tm *TaskManager) cleanExpiredFiles() {
 	logrus.Info("开始清理过期文件")
 
-	var expiredFiles []models.FileCode
-	now := time.Now()
-
-	// 查找过期文件
-	err := tm.db.Where("(expired_at IS NOT NULL AND expired_at < ?) OR expired_count = 0", now).Find(&expiredFiles).Error
+	// 使用 DAO 获取过期文件
+	expiredFiles, err := tm.daoManager.FileCode.GetExpiredFiles()
 	if err != nil {
 		logrus.Error("查找过期文件失败:", err)
 		return
 	}
 
-	count := 0
+	if len(expiredFiles) == 0 {
+		logrus.Info("没有发现过期文件")
+		return
+	}
+
 	storageInterface := tm.storage.GetStorage()
+	successCount := 0
 
 	for _, file := range expiredFiles {
 		// 删除实际文件
 		if err := storageInterface.DeleteFile(&file); err != nil {
 			logrus.Warnf("删除文件失败 %s: %v", file.Code, err)
 		}
-
-		// 删除数据库记录
-		if err := tm.db.Delete(&file).Error; err != nil {
-			logrus.Warnf("删除数据库记录失败 %s: %v", file.Code, err)
-		} else {
-			count++
-		}
 	}
 
-	logrus.Infof("清理过期文件完成，共清理 %d 个文件", count)
+	// 使用 DAO 批量删除数据库记录
+	successCount, err = tm.daoManager.FileCode.DeleteExpiredFiles(expiredFiles)
+	if err != nil {
+		logrus.Errorf("批量删除过期文件失败: %v", err)
+	}
+
+	logrus.Infof("清理过期文件完成，共清理 %d 个文件", successCount)
 }
 
 // cleanTempFiles 清理临时文件
@@ -93,30 +93,35 @@ func (tm *TaskManager) cleanTempFiles() {
 
 	// 清理超过24小时的未完成上传
 	cutoff := time.Now().Add(-24 * time.Hour)
-	var oldChunks []models.UploadChunk
 
-	err := tm.db.Where("created_at < ? AND chunk_index = -1", cutoff).Find(&oldChunks).Error
+	// 使用 DAO 获取旧分片记录
+	oldChunks, err := tm.daoManager.Chunk.GetOldChunks(cutoff)
 	if err != nil {
 		logrus.Error("查找旧分片记录失败:", err)
 		return
 	}
 
-	count := 0
+	if len(oldChunks) == 0 {
+		logrus.Info("没有发现需要清理的临时文件")
+		return
+	}
+
 	storageInterface := tm.storage.GetStorage()
+	uploadIDs := make([]string, 0, len(oldChunks))
 
 	for _, chunk := range oldChunks {
 		// 清理分片文件
 		if err := storageInterface.CleanChunks(chunk.UploadID); err != nil {
 			logrus.Warnf("清理分片文件失败 %s: %v", chunk.UploadID, err)
 		}
-
-		// 删除相关的所有分片记录
-		if err := tm.db.Where("upload_id = ?", chunk.UploadID).Delete(&models.UploadChunk{}).Error; err != nil {
-			logrus.Warnf("删除分片记录失败 %s: %v", chunk.UploadID, err)
-		} else {
-			count++
-		}
+		uploadIDs = append(uploadIDs, chunk.UploadID)
 	}
 
-	logrus.Infof("清理临时文件完成，共清理 %d 个上传会话", count)
+	// 使用 DAO 批量删除分片记录
+	successCount, err := tm.daoManager.Chunk.DeleteChunksByUploadIDs(uploadIDs)
+	if err != nil {
+		logrus.Errorf("批量删除分片记录失败: %v", err)
+	}
+
+	logrus.Infof("清理临时文件完成，共清理 %d 个上传会话", successCount)
 }

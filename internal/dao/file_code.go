@@ -137,6 +137,22 @@ func (dao *FileCodeDAO) GetExpiredFiles() ([]models.FileCode, error) {
 	return expiredFiles, err
 }
 
+// DeleteExpiredFiles 批量删除过期文件
+func (dao *FileCodeDAO) DeleteExpiredFiles(expiredFiles []models.FileCode) (int, error) {
+	if len(expiredFiles) == 0 {
+		return 0, nil
+	}
+
+	count := 0
+	for _, file := range expiredFiles {
+		if err := dao.db.Delete(&file).Error; err != nil {
+			continue // 记录错误但继续处理其他文件
+		}
+		count++
+	}
+	return count, nil
+}
+
 // CheckCodeExists 检查代码是否存在（排除指定ID）
 func (dao *FileCodeDAO) CheckCodeExists(code string, excludeID uint) (bool, error) {
 	var existingFile models.FileCode
