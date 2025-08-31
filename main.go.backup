@@ -32,7 +32,6 @@ import (
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/dao"
 	"github.com/zy84338719/filecodebox/internal/database"
-	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/mcp"
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/routes"
@@ -110,25 +109,28 @@ func main() {
 	taskManager.Start()
 	defer taskManager.Stop()
 
-	// 初始化 MCP 管理器
-	mcpManager := mcp.NewMCPManager(cfg, daoManager, storageManager, shareService, adminService, userService)
-
-	// 设置全局 MCP 管理器（供 admin handler 使用）
-	handlers.SetMCPManager(mcpManager)
-
 	// 创建并配置路由（包含Gin初始化、中间件、路由设置）
 	srv, err := routes.CreateAndStartServer(cfg, daoManager, storageManager)
 	if err != nil {
 		logrus.Fatal("创建服务器失败:", err)
 	}
 
-	// 根据配置启动 MCP 服务器
-	if cfg.EnableMCPServer == 1 {
-		if err := mcpManager.StartMCPServer(cfg.MCPPort); err != nil {
-			logrus.Errorf("启动 MCP 服务器失败: %v", err)
-		} else {
-			logrus.Info("MCP 服务器已在主程序启动时自动启动")
+	// 启动 MCP 服务器（可选，通过环境变量控制）
+	if os.Getenv("ENABLE_MCP_SERVER") == "true" {
+		mcpPort := os.Getenv("MCP_PORT")
+		if mcpPort == "" {
+			mcpPort = "8081" // 默认端口
 		}
+		
+		mcpServer := mcp.NewFileCodeBoxMCPServer(cfg, daoManager, storageManager, shareService, adminService, userService)
+		
+		// 在后台启动 MCP 服务器
+		go func() {
+			logrus.Infof("启动 MCP 服务器，监听端口: %s", mcpPort)
+			if err := mcpServer.ServeTCP(":" + mcpPort); err != nil {
+				logrus.Errorf("MCP 服务器启动失败: %v", err)
+			}
+		}()
 	}
 
 	logrus.Info("应用初始化完成")

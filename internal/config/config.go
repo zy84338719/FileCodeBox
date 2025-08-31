@@ -22,6 +22,15 @@ type Config struct {
 	DataPath    string `json:"data_path"`
 	Production  bool   `json:"production"`
 
+	// 数据库配置
+	DatabaseType string `json:"database_type"` // sqlite, mysql, postgres
+	DatabaseHost string `json:"database_host"`
+	DatabasePort int    `json:"database_port"`
+	DatabaseName string `json:"database_name"`
+	DatabaseUser string `json:"database_user"`
+	DatabasePass string `json:"database_pass"`
+	DatabaseSSL  string `json:"database_ssl"` // disable, require, verify-full (for postgres)
+
 	// 通知配置
 	NotifyTitle   string `json:"notify_title"`
 	NotifyContent string `json:"notify_content"`
@@ -85,6 +94,17 @@ type Config struct {
 	OneDriveRootPath string `json:"onedrive_root_path"`
 	OneDriveProxy    int    `json:"onedrive_proxy"`
 
+	// NFS配置
+	NFSServer     string `json:"nfs_server"`      // NFS服务器地址 (例如: 192.168.1.100)
+	NFSPath       string `json:"nfs_path"`        // NFS路径 (例如: /nfs/storage)
+	NFSMountPoint string `json:"nfs_mount_point"` // 本地挂载点 (例如: /mnt/nfs)
+	NFSVersion    string `json:"nfs_version"`     // NFS版本 (3, 4, 4.1)
+	NFSOptions    string `json:"nfs_options"`     // 挂载选项 (例如: rw,sync,hard,intr)
+	NFSTimeout    int    `json:"nfs_timeout"`     // 超时时间(秒)
+	NFSAutoMount  int    `json:"nfs_auto_mount"`  // 是否自动挂载 0-禁用 1-启用
+	NFSRetryCount int    `json:"nfs_retry_count"` // 重试次数
+	NFSSubPath    string `json:"nfs_sub_path"`    // NFS存储子路径 (在挂载点下的相对路径)
+
 	// 管理配置
 	AdminToken    string `json:"admin_token"`
 	ShowAdminAddr int    `json:"show_admin_address"`
@@ -101,6 +121,11 @@ type Config struct {
 
 	// JWT 密钥配置
 	JWTSecret string `json:"jwt_secret"` // JWT签名密钥
+
+	// MCP 服务器配置 (新增)
+	EnableMCPServer int    `json:"enable_mcp_server"` // 是否启用 MCP 服务器 0-禁用 1-启用
+	MCPPort         string `json:"mcp_port"`          // MCP 服务器端口，默认 8081
+	MCPHost         string `json:"mcp_host"`          // MCP 服务器绑定地址，默认 0.0.0.0
 
 	// 数据库连接（内部使用，不保存到JSON）
 	db *gorm.DB `json:"-"`
@@ -121,6 +146,15 @@ var defaultConfig = Config{
 	Host:        "0.0.0.0", // 默认绑定所有IP
 	DataPath:    "./data",
 	Production:  false,
+
+	// 数据库配置默认值
+	DatabaseType: "sqlite",
+	DatabaseHost: "localhost",
+	DatabasePort: 3306,
+	DatabaseName: "filecodebox",
+	DatabaseUser: "root",
+	DatabasePass: "",
+	DatabaseSSL:  "disable",
 
 	NotifyTitle:   "系统通知",
 	NotifyContent: `欢迎使用 FileCodeBox，本程序开源于 <a href="https://github.com/vastsa/FileCodeBox" target="_blank">Github</a> ，欢迎Star和Fork。`,
@@ -161,6 +195,17 @@ var defaultConfig = Config{
 	OneDriveRootPath: "filebox_storage",
 	WebDAVRootPath:   "filebox_storage",
 
+	// NFS默认配置
+	NFSServer:     "",
+	NFSPath:       "/nfs/storage",
+	NFSMountPoint: "/mnt/nfs",
+	NFSVersion:    "4",
+	NFSOptions:    "rw,sync,hard,intr",
+	NFSTimeout:    30,
+	NFSAutoMount:  0, // 默认不自动挂载
+	NFSRetryCount: 3,
+	NFSSubPath:    "filebox_storage",
+
 	AdminToken:    "FileCodeBox2025",
 	ShowAdminAddr: 0,
 	RobotsText:    "User-agent: *\nDisallow: /",
@@ -174,14 +219,46 @@ var defaultConfig = Config{
 	SessionExpiryHours:    24 * 7,               // 会话7天过期
 	MaxSessionsPerUser:    5,                    // 每用户最多5个会话
 	JWTSecret:             "FileCodeBox2025JWT", // JWT密钥
+
+	// MCP服务器默认配置
+	EnableMCPServer: 0,         // 默认禁用MCP服务器
+	MCPPort:         "8081",    // 默认端口8081
+	MCPHost:         "0.0.0.0", // 默认绑定所有IP
 }
 
 func Init() *Config {
 	config := defaultConfig
 
-	// 创建数据目录
-	if err := os.MkdirAll(config.DataPath, 0750); err != nil {
-		panic("创建数据目录失败: " + err.Error())
+	// 从环境变量读取数据库配置
+	if dbType := os.Getenv("DB_TYPE"); dbType != "" {
+		config.DatabaseType = dbType
+	}
+	if dbHost := os.Getenv("DB_HOST"); dbHost != "" {
+		config.DatabaseHost = dbHost
+	}
+	if dbPort := os.Getenv("DB_PORT"); dbPort != "" {
+		if port, err := strconv.Atoi(dbPort); err == nil {
+			config.DatabasePort = port
+		}
+	}
+	if dbName := os.Getenv("DB_NAME"); dbName != "" {
+		config.DatabaseName = dbName
+	}
+	if dbUser := os.Getenv("DB_USER"); dbUser != "" {
+		config.DatabaseUser = dbUser
+	}
+	if dbPass := os.Getenv("DB_PASS"); dbPass != "" {
+		config.DatabasePass = dbPass
+	}
+	if dbSSL := os.Getenv("DB_SSL"); dbSSL != "" {
+		config.DatabaseSSL = dbSSL
+	}
+
+	// 创建数据目录（仅SQLite需要）
+	if config.DatabaseType == "sqlite" {
+		if err := os.MkdirAll(config.DataPath, 0750); err != nil {
+			panic("创建数据目录失败: " + err.Error())
+		}
 	}
 
 	return &config
@@ -209,9 +286,18 @@ func (c *Config) InitWithDB(db *gorm.DB) error {
 // buildConfigMap 构建配置映射表
 func (c *Config) buildConfigMap() map[string]string {
 	return map[string]string{
-		"name":                       c.Name,
-		"description":                c.Description,
-		"host":                       c.Host,
+		"name":        c.Name,
+		"description": c.Description,
+		"host":        c.Host,
+
+		// 数据库配置（敏感信息不存储在数据库中）
+		"database_type": c.DatabaseType,
+		"database_host": c.DatabaseHost,
+		"database_port": fmt.Sprintf("%d", c.DatabasePort),
+		"database_name": c.DatabaseName,
+		"database_user": c.DatabaseUser,
+		// database_pass 和 database_ssl 出于安全考虑不存储在数据库中
+
 		"upload_size":                fmt.Sprintf("%d", c.UploadSize),
 		"admin_token":                c.AdminToken,
 		"storage_path":               c.StoragePath,
@@ -346,6 +432,23 @@ func (c *Config) LoadFromDatabase() error {
 			c.Name = kv.Value
 		case "description":
 			c.Description = kv.Value
+		case "host":
+			c.Host = kv.Value
+
+		// 数据库配置（运行时从数据库加载，但密码等敏感信息从环境变量读取）
+		case "database_type":
+			c.DatabaseType = kv.Value
+		case "database_host":
+			c.DatabaseHost = kv.Value
+		case "database_port":
+			if port, err := strconv.Atoi(kv.Value); err == nil {
+				c.DatabasePort = port
+			}
+		case "database_name":
+			c.DatabaseName = kv.Value
+		case "database_user":
+			c.DatabaseUser = kv.Value
+
 		case "upload_size":
 			if size, err := strconv.ParseInt(kv.Value, 10, 64); err == nil {
 				c.UploadSize = size
@@ -394,8 +497,6 @@ func (c *Config) LoadFromDatabase() error {
 			c.S3RegionName = kv.Value
 		case "s3_hostname":
 			c.S3Hostname = kv.Value
-		case "host":
-			c.Host = kv.Value
 		case "chunk_size":
 			if size, err := strconv.ParseInt(kv.Value, 10, 64); err == nil {
 				c.ChunkSize = size
@@ -443,6 +544,15 @@ func (c *Config) LoadFromDatabase() error {
 			}
 		case "jwt_secret":
 			c.JWTSecret = kv.Value
+		// MCP服务器配置加载
+		case "enable_mcp_server":
+			if val, err := strconv.Atoi(kv.Value); err == nil {
+				c.EnableMCPServer = val
+			}
+		case "mcp_port":
+			c.MCPPort = kv.Value
+		case "mcp_host":
+			c.MCPHost = kv.Value
 		}
 	}
 

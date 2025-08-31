@@ -80,6 +80,24 @@ func NewStorageManager(cfg *config.Config) *StorageManager {
 		}
 	}
 
+	// 注册 NFS 存储 - 使用新的策略模式
+	if cfg.NFSServer != "" {
+		nfsStrategy, err := NewNFSStorageStrategy(
+			cfg.NFSServer,
+			cfg.NFSPath,
+			cfg.NFSMountPoint,
+			cfg.NFSVersion,
+			cfg.NFSOptions,
+			cfg.NFSTimeout,
+			cfg.NFSAutoMount == 1,
+			cfg.NFSRetryCount,
+			cfg.NFSSubPath,
+		)
+		if err == nil {
+			sm.storages["nfs"] = NewStrategyBasedStorage(nfsStrategy, pathManager)
+		}
+	}
+
 	return sm
 }
 
@@ -152,6 +170,33 @@ func (sm *StorageManager) ReconfigureWebDAV(hostname, username, password, rootPa
 
 	// 重新注册 WebDAV 存储
 	sm.storages["webdav"] = NewStrategyBasedStorage(webdavStrategy, pathManager)
+
+	return nil
+}
+
+// ReconfigureNFS 重新配置 NFS 存储
+func (sm *StorageManager) ReconfigureNFS(server, nfsPath, mountPoint, version, options string, timeout int, autoMount bool, retryCount int, subPath string) error {
+	// 获取现有的存储适配器中的 PathManager
+	var pathManager *PathManager
+	if existingStorage, exists := sm.storages["nfs"]; exists {
+		if strategyBased, ok := existingStorage.(*StrategyBasedStorage); ok {
+			pathManager = strategyBased.operator.pathManager
+		}
+	}
+
+	// 如果没有找到 PathManager，创建一个默认的
+	if pathManager == nil {
+		pathManager = NewPathManager("./data")
+	}
+
+	// 创建新的 NFS 策略
+	nfsStrategy, err := NewNFSStorageStrategy(server, nfsPath, mountPoint, version, options, timeout, autoMount, retryCount, subPath)
+	if err != nil {
+		return fmt.Errorf("创建 NFS 策略失败: %v", err)
+	}
+
+	// 重新注册 NFS 存储
+	sm.storages["nfs"] = NewStrategyBasedStorage(nfsStrategy, pathManager)
 
 	return nil
 }

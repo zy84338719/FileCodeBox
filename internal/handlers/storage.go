@@ -59,6 +59,17 @@ func (sh *StorageHandler) GetStorageInfo(c *gin.Context) {
 				"root_path": sh.config.WebDAVRootPath,
 				"url":       sh.config.WebDAVURL,
 			},
+			"nfs": gin.H{
+				"server":      sh.config.NFSServer,
+				"nfs_path":    sh.config.NFSPath,
+				"mount_point": sh.config.NFSMountPoint,
+				"version":     sh.config.NFSVersion,
+				"options":     sh.config.NFSOptions,
+				"timeout":     sh.config.NFSTimeout,
+				"auto_mount":  sh.config.NFSAutoMount,
+				"retry_count": sh.config.NFSRetryCount,
+				"sub_path":    sh.config.NFSSubPath,
+			},
 		},
 	})
 }
@@ -185,6 +196,55 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 			} else {
 				sh.config.S3Proxy = 0
 			}
+		}
+
+	case "nfs":
+		if server, ok := req.Config["server"].(string); ok {
+			sh.config.NFSServer = server
+		}
+		if nfsPath, ok := req.Config["nfs_path"].(string); ok {
+			sh.config.NFSPath = nfsPath
+		}
+		if mountPoint, ok := req.Config["mount_point"].(string); ok {
+			sh.config.NFSMountPoint = mountPoint
+		}
+		if version, ok := req.Config["version"].(string); ok {
+			sh.config.NFSVersion = version
+		}
+		if options, ok := req.Config["options"].(string); ok {
+			sh.config.NFSOptions = options
+		}
+		if timeout, ok := req.Config["timeout"].(float64); ok {
+			sh.config.NFSTimeout = int(timeout)
+		}
+		if autoMount, ok := req.Config["auto_mount"].(bool); ok {
+			if autoMount {
+				sh.config.NFSAutoMount = 1
+			} else {
+				sh.config.NFSAutoMount = 0
+			}
+		}
+		if retryCount, ok := req.Config["retry_count"].(float64); ok {
+			sh.config.NFSRetryCount = int(retryCount)
+		}
+		if subPath, ok := req.Config["sub_path"].(string); ok {
+			sh.config.NFSSubPath = subPath
+		}
+
+		// 重新创建 NFS 存储以应用新配置
+		if err := sh.storageManager.ReconfigureNFS(
+			sh.config.NFSServer,
+			sh.config.NFSPath,
+			sh.config.NFSMountPoint,
+			sh.config.NFSVersion,
+			sh.config.NFSOptions,
+			sh.config.NFSTimeout,
+			sh.config.NFSAutoMount == 1,
+			sh.config.NFSRetryCount,
+			sh.config.NFSSubPath,
+		); err != nil {
+			common.InternalServerErrorResponse(c, "重新配置NFS存储失败: "+err.Error())
+			return
 		}
 
 	default:

@@ -59,6 +59,13 @@ func SetupAdminRoutes(
 			authGroup.POST("/storage/switch", storageHandler.SwitchStorage)
 			authGroup.GET("/storage/test/:type", storageHandler.TestStorageConnection)
 			authGroup.PUT("/storage/config", storageHandler.UpdateStorageConfig)
+
+			// MCP 服务器管理相关路由
+			authGroup.GET("/mcp/config", adminHandler.GetMCPConfig)
+			authGroup.PUT("/mcp/config", adminHandler.UpdateMCPConfig)
+			authGroup.GET("/mcp/status", adminHandler.GetMCPStatus)
+			authGroup.POST("/mcp/restart", adminHandler.RestartMCPServer)
+			authGroup.POST("/mcp/control", adminHandler.ControlMCPServer)
 		}
 	}
 }

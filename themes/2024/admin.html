@@ -560,6 +560,7 @@
                     <button class="tab-btn active" onclick="switchTab('files')">文件管理</button>
                     <button class="tab-btn" onclick="switchTab('users')">用户管理</button>
                     <button class="tab-btn" onclick="switchTab('storage')">存储管理</button>
+                    <button class="tab-btn" onclick="switchTab('mcp')">MCP 服务器</button>
                     <button class="tab-btn" onclick="switchTab('config')">系统配置</button>
                     <button class="tab-btn" onclick="switchTab('maintenance')">系统维护</button>
                 </div>
@@ -617,7 +618,7 @@
                     <p style="color: #666; margin-bottom: 30px;">管理文件存储位置，支持本地存储和 WebDAV 远程存储</p>
                     
                     <!-- 存储类型卡片 -->
-                    <div class="storage-cards" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                    <div class="storage-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px;">
                         <!-- 本地存储卡片 -->
                         <div class="storage-card" id="local-card" style="border: 2px solid #e9ecef; border-radius: 10px; padding: 20px; background: white; cursor: pointer; transition: all 0.3s;">
                             <div style="display: flex; align-items: center; margin-bottom: 15px;">
@@ -675,6 +676,78 @@
                                     <label style="display: block; margin-bottom: 5px; font-weight: bold;">根目录</label>
                                     <input type="text" id="webdav-root-path" class="form-control" placeholder="filebox_storage" style="width: 100%;">
                                     <small style="color: #666;">在 WebDAV 服务器上创建的存储目录名称</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NFS 存储卡片 -->
+                        <div class="storage-card" id="nfs-card" style="border: 2px solid #e9ecef; border-radius: 10px; padding: 20px; background: white; cursor: pointer; transition: all 0.3s;">
+                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                <div class="storage-icon" style="width: 40px; height: 40px; background: #6f42c1; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                                    <span style="color: white; font-size: 18px;">🗂️</span>
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0;">NFS 网络存储</h4>
+                                    <p style="margin: 0; color: #666; font-size: 14px;">文件存储在 NFS 网络文件系统</p>
+                                </div>
+                            </div>
+                            <div class="storage-status" id="nfs-status">
+                                <span class="status-badge" style="display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">检查中...</span>
+                            </div>
+                            <div class="storage-config" id="nfs-config" style="margin-top: 15px; display: none;">
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">NFS 服务器地址</label>
+                                    <input type="text" id="nfs-server" class="form-control" placeholder="192.168.1.100" style="width: 100%;">
+                                    <small style="color: #666;">NFS 服务器的 IP 地址或域名</small>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div class="form-group">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">NFS 路径</label>
+                                        <input type="text" id="nfs-path" class="form-control" placeholder="/nfs/storage" style="width: 100%;">
+                                        <small style="color: #666;">服务器导出的路径</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">挂载点</label>
+                                        <input type="text" id="nfs-mount-point" class="form-control" placeholder="/mnt/nfs" style="width: 100%;">
+                                        <small style="color: #666;">本地挂载目录</small>
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div class="form-group">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">NFS 版本</label>
+                                        <select id="nfs-version" class="form-control" style="width: 100%;">
+                                            <option value="3">NFSv3</option>
+                                            <option value="4" selected>NFSv4</option>
+                                            <option value="4.1">NFSv4.1</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">超时时间(秒)</label>
+                                        <input type="number" id="nfs-timeout" class="form-control" placeholder="30" min="10" max="300" style="width: 100%;">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">挂载选项</label>
+                                    <input type="text" id="nfs-options" class="form-control" placeholder="rw,sync,hard,intr" style="width: 100%;">
+                                    <small style="color: #666;">NFS 挂载选项，多个选项用逗号分隔</small>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div class="form-group">
+                                        <label style="display: flex; align-items: center;">
+                                            <input type="checkbox" id="nfs-auto-mount" style="margin-right: 8px;">
+                                            自动挂载
+                                        </label>
+                                        <small style="color: #666;">启动时自动挂载 NFS</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">重试次数</label>
+                                        <input type="number" id="nfs-retry-count" class="form-control" placeholder="3" min="1" max="10" style="width: 100%;">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">存储子路径</label>
+                                    <input type="text" id="nfs-sub-path" class="form-control" placeholder="filebox_storage" style="width: 100%;">
+                                    <small style="color: #666;">在挂载点下创建的存储目录</small>
                                 </div>
                             </div>
                         </div>
@@ -755,6 +828,131 @@
                             <div>
                                 <button class="btn btn-secondary" onclick="cancelStorageSwitch()" style="margin-right: 10px;">取消</button>
                                 <button class="btn btn-primary" onclick="executeStorageSwitch()">确认切换</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MCP 服务器管理 -->
+                <div id="mcp-tab" class="tab-content">
+                    <h3>MCP 服务器管理</h3>
+                    <p style="color: #666; margin-bottom: 30px;">Model Context Protocol (MCP) 服务器允许 AI 工具与 FileCodeBox 进行集成</p>
+                    
+                    <!-- 服务器状态卡片 -->
+                    <div class="mcp-status-card" style="background: white; border-radius: 10px; padding: 25px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center;">
+                                <div class="mcp-status-icon" id="mcp-status-icon" style="width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 20px; font-size: 24px;">
+                                    ⏳
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0; color: #333;" id="mcp-status-title">MCP 服务器状态</h4>
+                                    <p style="margin: 5px 0 0 0; color: #666;" id="mcp-status-desc">正在检查服务器状态...</p>
+                                </div>
+                            </div>
+                            <div class="mcp-control-buttons" id="mcp-control-buttons">
+                                <button class="btn" id="mcp-toggle-btn" onclick="toggleMCPServer()" disabled>启动服务器</button>
+                                <button class="btn btn-secondary" id="mcp-restart-btn" onclick="restartMCPServer()" disabled>重启服务器</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MCP 配置面板 -->
+                    <div class="mcp-config-panel" style="background: white; border-radius: 10px; padding: 25px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+                        <h4 style="margin-bottom: 20px; color: #667eea;">MCP 服务器配置</h4>
+                        
+                        <form id="mcp-config-form">
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center; font-weight: bold;">
+                                    <input type="checkbox" id="enable_mcp_server" style="margin-right: 10px;">
+                                    启用 MCP 服务器
+                                </label>
+                                <small class="form-text">启用后，AI 工具可以通过 MCP 协议与 FileCodeBox 进行交互</small>
+                            </div>
+                            
+                            <div class="mcp-config-details" id="mcp-config-details" style="display: none;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                    <div class="form-group">
+                                        <label>服务器端口</label>
+                                        <input type="text" id="mcp_port" class="form-control" placeholder="8081">
+                                        <small class="form-text">MCP 服务器监听的端口号</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>绑定地址</label>
+                                        <input type="text" id="mcp_host" class="form-control" placeholder="0.0.0.0">
+                                        <small class="form-text">服务器绑定的IP地址，0.0.0.0表示绑定所有网络接口</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 25px;">
+                                <button type="submit" class="btn" id="save-mcp-config-btn">保存配置</button>
+                                <button type="button" class="btn btn-secondary" onclick="loadMCPConfig()">重置</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- MCP 工具和资源信息 -->
+                    <div class="mcp-features" style="background: white; border-radius: 10px; padding: 25px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+                        <h4 style="margin-bottom: 20px; color: #667eea;">MCP 功能特性</h4>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                            <!-- 工具列表 -->
+                            <div>
+                                <h5 style="color: #333; margin-bottom: 15px;">🔧 可用工具 (Tools)</h5>
+                                <ul style="list-style: none; padding: 0; margin: 0;">
+                                    <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                        <strong>upload_file</strong> - 上传文件
+                                    </li>
+                                    <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                        <strong>download_file</strong> - 下载文件
+                                    </li>
+                                    <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                        <strong>list_files</strong> - 列出文件
+                                    </li>
+                                    <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                        <strong>delete_file</strong> - 删除文件
+                                    </li>
+                                    <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                        <strong>search_files</strong> - 搜索文件
+                                    </li>
+                                    <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                        <strong>get_file_info</strong> - 获取文件信息
+                                    </li>
+                                    <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                        <strong>set_file_permissions</strong> - 设置文件权限
+                                    </li>
+                                    <li style="padding: 8px 0;">
+                                        <strong>get_system_stats</strong> - 获取系统统计
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <!-- 资源列表 -->
+                            <div>
+                                <h5 style="color: #333; margin-bottom: 15px;">📁 可用资源 (Resources)</h5>
+                                <ul style="list-style: none; padding: 0; margin: 0;">
+                                    <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                        <strong>file://content</strong> - 文件内容
+                                    </li>
+                                    <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                        <strong>file://list</strong> - 文件列表
+                                    </li>
+                                    <li style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                        <strong>file://info</strong> - 文件信息
+                                    </li>
+                                    <li style="padding: 8px 0;">
+                                        <strong>file://search</strong> - 搜索结果
+                                    </li>
+                                </ul>
+                                
+                                <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 8px; border-left: 4px solid #007bff;">
+                                    <h6 style="margin: 0 0 10px 0; color: #0056b3;">连接信息</h6>
+                                    <p style="margin: 0; font-size: 14px; color: #004085;">
+                                        启用 MCP 服务器后，AI 工具可以通过 stdio 连接到：<br>
+                                        <code style="background: #fff; padding: 2px 6px; border-radius: 3px;">localhost:<span id="mcp-port-display">8081</span></code>
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1066,7 +1264,7 @@
                             <div class="stat-label">总文件数</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number">${stats.today_files || 0}</div>
+                            <div class="stat-number">${stats.today_uploads || 0}</div>
                             <div class="stat-label">今日上传</div>
                         </div>
                         <div class="stat-card">
@@ -1417,6 +1615,9 @@
                 loadStorageInfo();
             } else if (tabName === 'users') {
                 loadUsers();
+            } else if (tabName === 'mcp') {
+                loadMCPConfig();
+                loadMCPStatus();
             }
         }
 
@@ -1634,7 +1835,7 @@
         }
 
         function updateStorageCards() {
-            const cards = ['local', 'webdav', 's3'];
+            const cards = ['local', 'webdav', 'nfs', 's3'];
             
             cards.forEach(type => {
                 const card = document.getElementById(type + '-card');
@@ -1713,6 +1914,12 @@
                 return '连接超时，请检查服务器地址和网络连接';
             } else if (error.includes('hostname') || error.includes('resolve')) {
                 return '无法解析服务器地址，请检查域名或IP';
+            } else if (error.includes('mount') || error.includes('NFS')) {
+                return 'NFS挂载失败，请检查服务器配置和挂载参数';
+            } else if (error.includes('permission denied')) {
+                return '权限被拒绝，请检查NFS导出权限和本地挂载权限';
+            } else if (error.includes('no such file or directory')) {
+                return '路径不存在，请检查NFS服务器路径或本地挂载点';
             } else {
                 return error;
             }
@@ -1740,6 +1947,7 @@
                 const storageNames = {
                     'local': '本地存储',
                     'webdav': 'WebDAV 存储',
+                    'nfs': 'NFS 网络存储',
                     's3': 'S3 对象存储'
                 };
                 switchBtn.textContent = `切换到${storageNames[selectedStorageType]}`;
@@ -1778,6 +1986,19 @@
                 document.getElementById('webdav-root-path').value = config.webdav.root_path || '';
                 // 不加载密码，保持为空
                 document.getElementById('webdav-password').value = '';
+            }
+            
+            // 加载 NFS 配置
+            if (config.nfs) {
+                document.getElementById('nfs-server').value = config.nfs.server || '';
+                document.getElementById('nfs-path').value = config.nfs.path || '';
+                document.getElementById('nfs-mount-point').value = config.nfs.mount_point || '';
+                document.getElementById('nfs-version').value = config.nfs.version || '4';
+                document.getElementById('nfs-timeout').value = config.nfs.timeout || '30';
+                document.getElementById('nfs-options').value = config.nfs.options || '';
+                document.getElementById('nfs-auto-mount').checked = config.nfs.auto_mount || false;
+                document.getElementById('nfs-retry-count').value = config.nfs.retry_count || '3';
+                document.getElementById('nfs-sub-path').value = config.nfs.sub_path || '';
             }
             
             // 加载 S3 配置
@@ -1855,6 +2076,29 @@
                 if (password) {
                     config.password = password;
                 }
+            } else if (selectedStorageType === 'nfs') {
+                const server = document.getElementById('nfs-server').value.trim();
+                const path = document.getElementById('nfs-path').value.trim();
+                const mountPoint = document.getElementById('nfs-mount-point').value.trim();
+                
+                if (!server || !path || !mountPoint) {
+                    showAlert('请填写 NFS 服务器、路径和挂载点', 'error');
+                    saveBtn.textContent = originalText;
+                    saveBtn.disabled = false;
+                    return;
+                }
+                
+                config = {
+                    server: server,
+                    path: path,
+                    mount_point: mountPoint,
+                    version: document.getElementById('nfs-version').value || '4',
+                    timeout: parseInt(document.getElementById('nfs-timeout').value) || 30,
+                    options: document.getElementById('nfs-options').value.trim() || 'rw,sync,hard,intr',
+                    auto_mount: document.getElementById('nfs-auto-mount').checked,
+                    retry_count: parseInt(document.getElementById('nfs-retry-count').value) || 3,
+                    sub_path: document.getElementById('nfs-sub-path').value.trim() || 'filebox_storage'
+                };
             } else if (selectedStorageType === 's3') {
                 const endpointUrl = document.getElementById('s3-endpoint-url').value.trim();
                 const accessKeyId = document.getElementById('s3-access-key-id').value.trim();
@@ -1898,6 +2142,8 @@
                     // 清空密码字段
                     const passwordField = document.getElementById('webdav-password');
                     if (passwordField) passwordField.value = '';
+                    const s3SecretField = document.getElementById('s3-secret-access-key');
+                    if (s3SecretField) s3SecretField.value = '';
                     // 隐藏配置面板
                     document.getElementById(selectedStorageType + '-config').style.display = 'none';
                     document.getElementById('config-btn-text').textContent = '配置存储';
@@ -1974,6 +2220,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('local-card').addEventListener('click', () => selectStorageCard('local'));
             document.getElementById('webdav-card').addEventListener('click', () => selectStorageCard('webdav'));
+            document.getElementById('nfs-card').addEventListener('click', () => selectStorageCard('nfs'));
             document.getElementById('s3-card').addEventListener('click', () => selectStorageCard('s3'));
         });
 
@@ -2368,7 +2615,7 @@
                             <td>${formatDate(file.created_at)}</td>
                             <td>${file.used_count}</td>
                             <td>
-                                <button class="btn-sm" onclick="deleteFile('${file.id}')" style="background: #dc3545; color: white;">删除</button>
+                                <button class="btn-sm" onclick="deleteFile('${file.code}')" style="background: #dc3545; color: white;">删除</button>
                             </td>
                         </tr>
                     `;
@@ -2433,6 +2680,246 @@
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
+        
+        // ========== MCP 服务器管理功能 ==========
+        
+        // 加载 MCP 配置
+        async function loadMCPConfig() {
+            try {
+                const result = await apiRequest('/admin/mcp/config');
+                
+                if (result.code === 200) {
+                    const config = result.detail;
+                    
+                    // 更新表单字段
+                    document.getElementById('enable_mcp_server').checked = config.enable_mcp_server === 1;
+                    document.getElementById('mcp_port').value = config.mcp_port || '8081';
+                    document.getElementById('mcp_host').value = config.mcp_host || '0.0.0.0';
+                    
+                    // 更新端口显示
+                    document.getElementById('mcp-port-display').textContent = config.mcp_port || '8081';
+                    
+                    // 切换配置详情显示
+                    toggleMCPConfigDetails();
+                } else {
+                    showAlert('加载 MCP 配置失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('加载 MCP 配置失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 加载 MCP 状态
+        async function loadMCPStatus() {
+            try {
+                const result = await apiRequest('/admin/mcp/status');
+                
+                if (result.code === 200) {
+                    const status = result.detail;
+                    updateMCPStatusDisplay(status);
+                } else {
+                    showMCPError('获取状态失败: ' + result.message);
+                }
+            } catch (error) {
+                showMCPError('获取状态失败: ' + error.message);
+            }
+        }
+        
+        // 更新 MCP 状态显示
+        function updateMCPStatusDisplay(status) {
+            const icon = document.getElementById('mcp-status-icon');
+            const title = document.getElementById('mcp-status-title');
+            const desc = document.getElementById('mcp-status-desc');
+            const toggleBtn = document.getElementById('mcp-toggle-btn');
+            const restartBtn = document.getElementById('mcp-restart-btn');
+            
+            if (status.running) {
+                // 服务器运行中
+                icon.style.background = '#28a745';
+                icon.style.color = 'white';
+                icon.textContent = '✅';
+                
+                title.textContent = 'MCP 服务器运行中';
+                desc.textContent = `服务器正在端口 ${status.port || '8081'} 上运行`;
+                
+                toggleBtn.textContent = '停止服务器';
+                toggleBtn.className = 'btn btn-danger';
+                toggleBtn.disabled = false;
+                
+                restartBtn.disabled = false;
+            } else {
+                // 服务器已停止
+                icon.style.background = '#6c757d';
+                icon.style.color = 'white';
+                icon.textContent = '⏸️';
+                
+                title.textContent = 'MCP 服务器已停止';
+                
+                if (status.config && status.config.enabled) {
+                    desc.textContent = '服务器已启用但未运行，点击启动按钮开始服务';
+                    toggleBtn.textContent = '启动服务器';
+                    toggleBtn.className = 'btn btn-success';
+                    toggleBtn.disabled = false;
+                } else {
+                    desc.textContent = '服务器未启用，请先在配置中启用MCP服务器';
+                    toggleBtn.textContent = '启动服务器';
+                    toggleBtn.className = 'btn btn-secondary';
+                    toggleBtn.disabled = true;
+                }
+                
+                restartBtn.disabled = true;
+            }
+        }
+        
+        // 显示 MCP 错误状态
+        function showMCPError(errorMessage) {
+            const icon = document.getElementById('mcp-status-icon');
+            const title = document.getElementById('mcp-status-title');
+            const desc = document.getElementById('mcp-status-desc');
+            const toggleBtn = document.getElementById('mcp-toggle-btn');
+            const restartBtn = document.getElementById('mcp-restart-btn');
+            
+            icon.style.background = '#dc3545';
+            icon.style.color = 'white';
+            icon.textContent = '❌';
+            
+            title.textContent = 'MCP 服务器状态异常';
+            desc.textContent = errorMessage;
+            
+            toggleBtn.disabled = true;
+            restartBtn.disabled = true;
+        }
+        
+        // 切换 MCP 配置详情显示
+        function toggleMCPConfigDetails() {
+            const checkbox = document.getElementById('enable_mcp_server');
+            const details = document.getElementById('mcp-config-details');
+            
+            if (checkbox.checked) {
+                details.style.display = 'block';
+            } else {
+                details.style.display = 'none';
+            }
+        }
+        
+        // 切换 MCP 服务器
+        async function toggleMCPServer() {
+            const toggleBtn = document.getElementById('mcp-toggle-btn');
+            const isRunning = toggleBtn.textContent.includes('停止');
+            
+            const originalText = toggleBtn.textContent;
+            toggleBtn.textContent = isRunning ? '停止中...' : '启动中...';
+            toggleBtn.disabled = true;
+            
+            try {
+                const action = isRunning ? 'stop' : 'start';
+                const result = await apiRequest('/admin/mcp/control', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: action })
+                });
+                
+                if (result.code === 200) {
+                    showAlert(result.message, 'success');
+                    // 延迟一秒后刷新状态
+                    setTimeout(() => {
+                        loadMCPStatus();
+                    }, 1000);
+                } else {
+                    showAlert(result.message, 'error');
+                    toggleBtn.textContent = originalText;
+                    toggleBtn.disabled = false;
+                }
+            } catch (error) {
+                showAlert('操作失败: ' + error.message, 'error');
+                toggleBtn.textContent = originalText;
+                toggleBtn.disabled = false;
+            }
+        }
+        
+        // 重启 MCP 服务器
+        async function restartMCPServer() {
+            const restartBtn = document.getElementById('mcp-restart-btn');
+            const originalText = restartBtn.textContent;
+            
+            restartBtn.textContent = '重启中...';
+            restartBtn.disabled = true;
+            
+            try {
+                const result = await apiRequest('/admin/mcp/restart', {
+                    method: 'POST'
+                });
+                
+                if (result.code === 200) {
+                    showAlert(result.message, 'success');
+                    // 延迟一秒后刷新状态
+                    setTimeout(() => {
+                        loadMCPStatus();
+                    }, 1000);
+                } else {
+                    showAlert(result.message, 'error');
+                }
+            } catch (error) {
+                showAlert('重启失败: ' + error.message, 'error');
+            } finally {
+                restartBtn.textContent = originalText;
+                restartBtn.disabled = false;
+            }
+        }
+        
+        // 初始化 MCP 相关事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            // 监听 MCP 启用状态变化
+            const enableMCPCheckbox = document.getElementById('enable_mcp_server');
+            if (enableMCPCheckbox) {
+                enableMCPCheckbox.addEventListener('change', toggleMCPConfigDetails);
+            }
+            
+            // MCP 配置表单提交
+            const mcpConfigForm = document.getElementById('mcp-config-form');
+            if (mcpConfigForm) {
+                mcpConfigForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const saveBtn = document.getElementById('save-mcp-config-btn');
+                    const originalText = saveBtn.textContent;
+                    
+                    saveBtn.textContent = '保存中...';
+                    saveBtn.disabled = true;
+                    
+                    try {
+                        const config = {
+                            enable_mcp_server: document.getElementById('enable_mcp_server').checked ? 1 : 0,
+                            mcp_port: document.getElementById('mcp_port').value.trim() || '8081',
+                            mcp_host: document.getElementById('mcp_host').value.trim() || '0.0.0.0'
+                        };
+                        
+                        const result = await apiRequest('/admin/mcp/config', {
+                            method: 'PUT',
+                            body: JSON.stringify(config)
+                        });
+                        
+                        if (result.code === 200) {
+                            showAlert('MCP 配置保存成功', 'success');
+                            
+                            // 更新端口显示
+                            document.getElementById('mcp-port-display').textContent = config.mcp_port;
+                            
+                            // 延迟一秒后刷新状态
+                            setTimeout(() => {
+                                loadMCPStatus();
+                            }, 1000);
+                        } else {
+                            showAlert('保存失败: ' + result.message, 'error');
+                        }
+                    } catch (error) {
+                        showAlert('保存失败: ' + error.message, 'error');
+                    } finally {
+                        saveBtn.textContent = originalText;
+                        saveBtn.disabled = false;
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>

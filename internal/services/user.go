@@ -190,15 +190,21 @@ func (s *UserService) GetUserStats(userID uint) (map[string]interface{}, error) 
 	}
 
 	stats := map[string]interface{}{
-		"total_uploads":      user.TotalUploads,
-		"total_downloads":    user.TotalDownloads,
-		"total_storage":      user.TotalStorage,
-		"total_files":        fileCount,
-		"today_uploads":      todayUploads,
-		"max_upload_size":    user.MaxUploadSize,
-		"max_storage_quota":  user.MaxStorageQuota,
-		"storage_usage":      user.TotalStorage,                                                // 实际使用的字节数
-		"storage_percentage": float64(user.TotalStorage) / float64(user.MaxStorageQuota) * 100, // 使用百分比
+		"total_uploads":     user.TotalUploads,
+		"total_downloads":   user.TotalDownloads,
+		"total_storage":     user.TotalStorage,
+		"total_files":       fileCount,
+		"today_uploads":     todayUploads,
+		"max_upload_size":   user.MaxUploadSize,
+		"max_storage_quota": user.MaxStorageQuota,
+		"storage_usage":     user.TotalStorage, // 实际使用的字节数
+	}
+
+	// 计算存储使用百分比（避免除以零错误）
+	if user.MaxStorageQuota > 0 {
+		stats["storage_percentage"] = float64(user.TotalStorage) / float64(user.MaxStorageQuota) * 100
+	} else {
+		stats["storage_percentage"] = 0.0 // 无限制时设为0
 	}
 
 	return stats, nil

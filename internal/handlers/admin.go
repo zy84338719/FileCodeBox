@@ -608,3 +608,154 @@ func (h *AdminHandler) GetUserFiles(c *gin.Context) {
 		"total":    total,
 	})
 }
+
+// GetMCPConfig 获取 MCP 配置
+func (h *AdminHandler) GetMCPConfig(c *gin.Context) {
+	mcpConfig := map[string]interface{}{
+		"enable_mcp_server": h.config.EnableMCPServer,
+		"mcp_port":          h.config.MCPPort,
+		"mcp_host":          h.config.MCPHost,
+	}
+
+	common.SuccessResponse(c, mcpConfig)
+}
+
+// UpdateMCPConfig 更新 MCP 配置
+func (h *AdminHandler) UpdateMCPConfig(c *gin.Context) {
+	var mcpConfig struct {
+		EnableMCPServer *int    `json:"enable_mcp_server"`
+		MCPPort         *string `json:"mcp_port"`
+		MCPHost         *string `json:"mcp_host"`
+	}
+
+	if err := c.ShouldBindJSON(&mcpConfig); err != nil {
+		common.BadRequestResponse(c, "MCP配置参数错误: "+err.Error())
+		return
+	}
+
+	// 构建配置更新映射
+	configUpdates := make(map[string]interface{})
+
+	if mcpConfig.EnableMCPServer != nil {
+		configUpdates["enable_mcp_server"] = *mcpConfig.EnableMCPServer
+	}
+	if mcpConfig.MCPPort != nil {
+		configUpdates["mcp_port"] = *mcpConfig.MCPPort
+	}
+	if mcpConfig.MCPHost != nil {
+		configUpdates["mcp_host"] = *mcpConfig.MCPHost
+	}
+
+	// 更新配置
+	err := h.service.UpdateConfig(configUpdates)
+	if err != nil {
+		common.InternalServerErrorResponse(c, "更新MCP配置失败: "+err.Error())
+		return
+	}
+
+	// 重新加载配置
+	err = h.config.LoadFromDatabase()
+	if err != nil {
+		common.InternalServerErrorResponse(c, "重新加载配置失败: "+err.Error())
+		return
+	}
+
+	// 应用MCP配置更改
+	mcpManager := GetMCPManager()
+	if mcpManager != nil {
+		enableMCP := h.config.EnableMCPServer == 1
+		port := h.config.MCPPort
+
+		err = mcpManager.ApplyConfig(enableMCP, port)
+		if err != nil {
+			common.InternalServerErrorResponse(c, "应用MCP配置失败: "+err.Error())
+			return
+		}
+	}
+
+	common.SuccessWithMessage(c, "MCP配置更新成功", nil)
+}
+
+// GetMCPStatus 获取 MCP 服务器状态
+func (h *AdminHandler) GetMCPStatus(c *gin.Context) {
+	mcpManager := GetMCPManager()
+	if mcpManager == nil {
+		common.InternalServerErrorResponse(c, "MCP管理器未初始化")
+		return
+	}
+
+	status := mcpManager.GetStatus()
+	status["config"] = map[string]interface{}{
+		"enabled": h.config.EnableMCPServer == 1,
+		"port":    h.config.MCPPort,
+		"host":    h.config.MCPHost,
+	}
+
+	common.SuccessResponse(c, status)
+}
+
+// RestartMCPServer 重启 MCP 服务器
+func (h *AdminHandler) RestartMCPServer(c *gin.Context) {
+	mcpManager := GetMCPManager()
+	if mcpManager == nil {
+		common.InternalServerErrorResponse(c, "MCP管理器未初始化")
+		return
+	}
+
+	// 检查是否启用了MCP服务器
+	if h.config.EnableMCPServer != 1 {
+		common.BadRequestResponse(c, "MCP服务器未启用")
+		return
+	}
+
+	err := mcpManager.RestartMCPServer(h.config.MCPPort)
+	if err != nil {
+		common.InternalServerErrorResponse(c, "重启MCP服务器失败: "+err.Error())
+		return
+	}
+
+	common.SuccessWithMessage(c, "MCP服务器重启成功", nil)
+}
+
+// ControlMCPServer 控制 MCP 服务器（启动/停止）
+func (h *AdminHandler) ControlMCPServer(c *gin.Context) {
+	var controlData struct {
+		Action string `json:"action" binding:"required"` // "start" 或 "stop"
+	}
+
+	if err := c.ShouldBindJSON(&controlData); err != nil {
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
+		return
+	}
+
+	mcpManager := GetMCPManager()
+	if mcpManager == nil {
+		common.InternalServerErrorResponse(c, "MCP管理器未初始化")
+		return
+	}
+
+	switch controlData.Action {
+	case "start":
+		if h.config.EnableMCPServer != 1 {
+			common.BadRequestResponse(c, "MCP服务器未启用，请先在配置中启用")
+			return
+		}
+		err := mcpManager.StartMCPServer(h.config.MCPPort)
+		if err != nil {
+			common.InternalServerErrorResponse(c, "启动MCP服务器失败: "+err.Error())
+			return
+		}
+		common.SuccessWithMessage(c, "MCP服务器启动成功", nil)
+
+	case "stop":
+		err := mcpManager.StopMCPServer()
+		if err != nil {
+			common.InternalServerErrorResponse(c, "停止MCP服务器失败: "+err.Error())
+			return
+		}
+		common.SuccessWithMessage(c, "MCP服务器停止成功", nil)
+
+	default:
+		common.BadRequestResponse(c, "无效的操作，只支持 start 或 stop")
+	}
+}

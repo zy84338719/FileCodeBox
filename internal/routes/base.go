@@ -12,10 +12,18 @@ import (
 	"github.com/zy84338719/filecodebox/internal/handlers"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// SetupBaseRoutes 设置基础路由（首页、健康检查等）
+// SetupBaseRoutes 设置基础路由（首页、健康检查、静态文件等）
 func SetupBaseRoutes(router *gin.Engine, cfg *config.Config) {
+	// 静态文件服务
+	router.Static("/assets", fmt.Sprintf("./%s/assets", cfg.ThemesSelect))
+
+	// Swagger 文档路由
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	// API文档和健康检查
 	apiHandler := handlers.NewAPIHandler()
 	router.GET("/health", apiHandler.GetHealth)
