@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SetupRoutes 设置路由 (保持兼容性)
-func SetupRoutes(
+// SetupAllRoutes 设置所有路由
+func SetupAllRoutes(
 	router *gin.Engine,
 	shareHandler *handlers.ShareHandler,
 	chunkHandler *handlers.ChunkHandler,
@@ -20,6 +20,18 @@ func SetupRoutes(
 		ValidateToken(string) (interface{}, error)
 	},
 ) {
-	// 使用新的路由设置函数
-	SetupAllRoutes(router, shareHandler, chunkHandler, adminHandler, storageHandler, userHandler, cfg, userService)
+	// 设置基础路由
+	SetupBaseRoutes(router, cfg)
+
+	// 设置分享路由
+	SetupShareRoutes(router, shareHandler, cfg, userService)
+
+	// 设置用户路由
+	SetupUserRoutes(router, userHandler, cfg, userService)
+
+	// 设置分片上传路由
+	SetupChunkRoutes(router, chunkHandler, cfg)
+
+	// 设置管理员路由
+	SetupAdminRoutes(router, adminHandler, storageHandler, cfg)
 }

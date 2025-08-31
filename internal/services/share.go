@@ -24,12 +24,12 @@ type ShareService struct {
 	daoManager  *dao.DAOManager
 }
 
-func NewShareService(db *gorm.DB, storageManager *storage.StorageManager, config *config.Config, userService *UserService) *ShareService {
+func NewShareService(daoManager *dao.DAOManager, config *config.Config, storageManager *storage.StorageManager, userService *UserService) *ShareService {
 	return &ShareService{
 		storage:     storageManager,
 		config:      config,
 		userService: userService,
-		daoManager:  dao.NewDAOManager(db),
+		daoManager:  daoManager,
 	}
 }
 

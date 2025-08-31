@@ -25,9 +25,9 @@ type ChunkService struct {
 	config     *config.Config
 }
 
-func NewChunkService(db *gorm.DB, storageManager *storage.StorageManager, config *config.Config) *ChunkService {
+func NewChunkService(daoManager *dao.DAOManager, config *config.Config, storageManager *storage.StorageManager) *ChunkService {
 	return &ChunkService{
-		daoManager: dao.NewDAOManager(db),
+		daoManager: daoManager,
 		storage:    storageManager,
 		config:     config,
 	}

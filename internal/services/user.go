@@ -20,11 +20,11 @@ type UserService struct {
 }
 
 // NewUserService 创建用户服务
-func NewUserService(db *gorm.DB, cfg *config.Config) *UserService {
+func NewUserService(daoManager *dao.DAOManager, cfg *config.Config) *UserService {
 	return &UserService{
 		cfg:         cfg,
-		daoManager:  dao.NewDAOManager(db),
-		authService: NewAuthService(db, cfg),
+		daoManager:  daoManager,
+		authService: NewAuthService(daoManager, cfg),
 	}
 }
 

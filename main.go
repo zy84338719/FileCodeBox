@@ -109,10 +109,10 @@ func main() {
 	daoManager := dao.NewDAOManager(db)
 
 	// 初始化服务
-	userService := services.NewUserService(db, cfg)                                // 先初始化用户服务
-	shareService := services.NewShareService(db, storageManager, cfg, userService) // 传入用户服务
-	chunkService := services.NewChunkService(db, storageManager, cfg)
-	adminService := services.NewAdminService(db, cfg, storageManager)
+	userService := services.NewUserService(daoManager, cfg)                                // 先初始化用户服务
+	shareService := services.NewShareService(daoManager, cfg, storageManager, userService) // 传入用户服务
+	chunkService := services.NewChunkService(daoManager, cfg, storageManager)
+	adminService := services.NewAdminService(daoManager, cfg, storageManager)
 
 	// 初始化处理器
 	shareHandler := handlers.NewShareHandler(shareService)

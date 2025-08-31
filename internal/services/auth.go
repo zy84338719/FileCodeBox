@@ -27,10 +27,10 @@ type AuthService struct {
 }
 
 // NewAuthService 创建认证服务
-func NewAuthService(db *gorm.DB, cfg *config.Config) *AuthService {
+func NewAuthService(daoManager *dao.DAOManager, cfg *config.Config) *AuthService {
 	return &AuthService{
 		cfg:        cfg,
-		daoManager: dao.NewDAOManager(db),
+		daoManager: daoManager,
 	}
 }
 

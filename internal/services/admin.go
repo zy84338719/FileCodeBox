@@ -26,12 +26,12 @@ type AdminService struct {
 }
 
 // NewAdminService 创建管理员服务
-func NewAdminService(db *gorm.DB, config *config.Config, storageManager *storage.StorageManager) *AdminService {
+func NewAdminService(daoManager *dao.DAOManager, config *config.Config, storageManager *storage.StorageManager) *AdminService {
 	return &AdminService{
 		config:         config,
 		storageManager: storageManager,
-		daoManager:     dao.NewDAOManager(db),
-		authService:    NewAuthService(db, config),
+		daoManager:     daoManager,
+		authService:    NewAuthService(daoManager, config),
 	}
 }
 
