@@ -161,11 +161,15 @@ jobs:
 
     - name: Run Gosec Security Scanner
       run: |
-        # 下载并安装 gosec 二进制文件
-        GOSEC_VERSION=$(curl -s "https://api.github.com/repos/securecodewarrior/gosec/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-        wget "https://github.com/securecodewarrior/gosec/releases/download/${GOSEC_VERSION}/gosec_${GOSEC_VERSION#v}_linux_amd64.tar.gz"
-        tar -xzf "gosec_${GOSEC_VERSION#v}_linux_amd64.tar.gz"
+        # 获取最新版本号
+        VERSION=$(curl -s https://api.github.com/repos/securecodewarrior/gosec/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        echo "安装 gosec 版本: $VERSION"
+        
+        # 下载二进制文件
+        curl -sfL "https://github.com/securecodewarrior/gosec/releases/download/${VERSION}/gosec_${VERSION#v}_linux_amd64.tar.gz" | tar xz
         chmod +x gosec
+        
+        # 运行扫描
         ./gosec -fmt json -out gosec-report.json ./...
 
     - name: Upload Gosec report

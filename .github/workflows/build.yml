@@ -283,47 +283,126 @@ jobs:
 
     - name: Generate release notes
       run: |
+        # 获取当前和前一个标签
+        CURRENT_TAG="${{ github.ref_name }}"
+        PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -A1 "$CURRENT_TAG" | tail -1)
+        
+        # 如果没有前一个标签，使用第一个提交
+        if [ -z "$PREVIOUS_TAG" ] || [ "$PREVIOUS_TAG" = "$CURRENT_TAG" ]; then
+          PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+        fi
+        
+        echo "生成从 $PREVIOUS_TAG 到 $CURRENT_TAG 的变更日志"
+        
+        # 获取提交信息
+        COMMITS=$(git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..$CURRENT_TAG 2>/dev/null || git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD)
+        
+        # 获取文件变更统计
+        STATS=$(git diff --stat $PREVIOUS_TAG..$CURRENT_TAG 2>/dev/null || git diff --stat $PREVIOUS_TAG..HEAD || echo "首次发布")
+        
         cat > release-notes.md << EOF
-        ## FileCodeBox ${{ github.ref_name }}
+        ## FileCodeBox $CURRENT_TAG
         
-        ### 🚀 新特性
-        - 多平台可执行文件支持 (Linux, macOS, Windows)
-        - 支持 AMD64 和 ARM64 架构
-        - Docker 镜像自动构建
+        ### 📝 本次更新
         
-        ### 📦 下载说明
+        $COMMITS
         
-        **可执行文件:**
-        - \`filecodebox-linux-amd64.tar.gz\` - Linux x64
-        - \`filecodebox-linux-arm64.tar.gz\` - Linux ARM64
-        - \`filecodebox-darwin-amd64.tar.gz\` - macOS Intel
-        - \`filecodebox-darwin-arm64.tar.gz\` - macOS Apple Silicon
-        - \`filecodebox-windows-amd64.zip\` - Windows x64
-        - \`filecodebox-windows-arm64.zip\` - Windows ARM64
+        ### � 变更统计
+        \`\`\`
+        $STATS
+        \`\`\`
         
-        **Docker 镜像:**
+        ### �🚀 功能特性
+        - ✅ 多平台可执行文件支持 (Linux, macOS, Windows)
+        - ✅ 支持 AMD64 和 ARM64 架构
+        - ✅ Docker 镜像自动构建和发布
+        - ✅ 文件上传下载服务
+        - ✅ 用户认证系统
+        - ✅ 管理员控制面板
+        - ✅ 多种存储后端支持 (本地/S3/WebDAV)
+        
+        ### 📦 安装方式
+        
+        #### 方式一：直接下载可执行文件
+        
+        选择对应平台的文件下载：
+        - 🐧 **Linux x64**: \`filecodebox-linux-amd64.tar.gz\`
+        - 🐧 **Linux ARM64**: \`filecodebox-linux-arm64.tar.gz\`
+        - 🍎 **macOS Intel**: \`filecodebox-darwin-amd64.tar.gz\`
+        - 🍎 **macOS Apple Silicon**: \`filecodebox-darwin-arm64.tar.gz\`
+        - 🪟 **Windows x64**: \`filecodebox-windows-amd64.zip\`
+        - 🪟 **Windows ARM64**: \`filecodebox-windows-arm64.zip\`
+        
+        #### 方式二：Docker 部署
+        
         \`\`\`bash
-        docker pull ghcr.io/zy84338719/filecodebox:${{ github.ref_name }}
-        # 或者最新版本
-        docker pull ghcr.io/zy84338719/filecodebox:latest
+        # 拉取镜像
+        docker pull ghcr.io/zy84338719/filecodebox:$CURRENT_TAG
+        
+        # 运行容器
+        docker run -d \\
+          --name filecodebox \\
+          -p 12345:12345 \\
+          -v ./data:/app/data \\
+          ghcr.io/zy84338719/filecodebox:$CURRENT_TAG
+        \`\`\`
+        
+        #### 方式三：Docker Compose
+        
+        \`\`\`yaml
+        version: '3.8'
+        services:
+          filecodebox:
+            image: ghcr.io/zy84338719/filecodebox:$CURRENT_TAG
+            ports:
+              - "12345:12345"
+            volumes:
+              - ./data:/app/data
+            restart: unless-stopped
         \`\`\`
         
         ### 🔧 快速开始
         
-        1. 下载对应平台的可执行文件
-        2. 解压后运行 filecodebox
-        3. 访问 http://localhost:12345
-        4. 管理员界面: http://localhost:12345/admin (默认密码: admin)
+        1. **下载并启动服务**
+           - 下载对应平台的文件并解压
+           - 运行 \`./filecodebox\` (Linux/macOS) 或 \`filecodebox.exe\` (Windows)
+        
+        2. **访问服务**
+           - 用户界面: http://localhost:12345
+           - 管理员界面: http://localhost:12345/admin
+           - 默认管理员密码: \`FileCodeBox2025\`
+        
+        3. **基本配置**
+           - 修改管理员密码
+           - 配置存储后端
+           - 设置用户系统开关
         
         ### 📋 系统要求
-        - 无特殊依赖
-        - 支持所有主流操作系统
-        - 最小内存: 64MB
-        - 推荐内存: 256MB+
+        
+        - **操作系统**: Linux, macOS, Windows
+        - **架构**: AMD64 或 ARM64
+        - **内存**: 最小 64MB，推荐 256MB+
+        - **存储**: 根据使用量而定
+        - **网络**: HTTP/HTTPS 端口访问
+        
+        ### 🔒 安全说明
+        
+        - 首次启动请立即修改默认管理员密码
+        - 生产环境建议配置 HTTPS
+        - 定期备份数据目录
+        
+        ### 🆘 问题反馈
+        
+        如遇到问题，请访问：
+        - **GitHub Issues**: https://github.com/${{ github.repository }}/issues
+        - **文档**: https://github.com/${{ github.repository }}#readme
         
         ---
         
-        **完整更新日志和文档:** https://github.com/${{ github.repository }}
+        **构建信息**
+        - 构建时间: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        - Git 提交: ${{ github.sha }}
+        - Go 版本: $(go version | cut -d' ' -f3)
         EOF
 
     - name: Create Release
@@ -334,6 +413,6 @@ jobs:
         body_path: release-notes.md
         draft: false
         prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
-        generate_release_notes: true
+        generate_release_notes: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
