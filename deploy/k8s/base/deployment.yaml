@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filecodebox
+  namespace: filecodebox
+  labels:
+    app: filecodebox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: filecodebox
+  template:
+    metadata:
+      labels:
+        app: filecodebox
+    spec:
+      containers:
+        - name: filecodebox
+          image: ghcr.io/zy84338719/filecodebox:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 12345
+              name: http
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: filecodebox-data
