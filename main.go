@@ -69,21 +69,22 @@ func main() {
 
 	logrus.Info("正在初始化应用...")
 
+	// 初始化配置
+	cfg := config.Init()
+	
 	// 初始化数据库
-	db, err := database.Init(nil) // 先不传入配置
+	db, err := database.Init(cfg)
 	if err != nil {
 		logrus.Fatal("初始化数据库失败:", err)
 	}
 
-	// 自动迁移（在配置初始化前进行）
+	// 自动迁移
 	err = db.AutoMigrate(&models.FileCode{},
 		&models.UploadChunk{}, &models.KeyValue{}, &models.User{}, &models.UserSession{})
 	if err != nil {
 		logrus.Fatal("数据库迁移失败:", err)
 	}
 
-	// 初始化配置
-	cfg := config.Init()
 	// 使用数据库初始化配置
 	if err := cfg.InitWithDB(db); err != nil {
 		logrus.Fatal("初始化配置失败:", err)
