@@ -332,10 +332,10 @@ func (f *FileCodeBoxMCPServer) handleGetShare(ctx context.Context, arguments map
 	info.WriteString(fmt.Sprintf("使用次数：%d/%d\n", fileCode.UsedCount, fileCode.ExpiredCount))
 
 	if fileCode.Text != "" {
-		info.WriteString(fmt.Sprintf("类型：文本\n"))
+		info.WriteString("类型：文本\n")
 		info.WriteString(fmt.Sprintf("内容：%s\n", fileCode.Text))
 	} else {
-		info.WriteString(fmt.Sprintf("类型：文件\n"))
+		info.WriteString("类型：文件\n")
 		info.WriteString(fmt.Sprintf("文件名：%s%s\n", fileCode.Prefix, fileCode.Suffix))
 		info.WriteString(fmt.Sprintf("文件大小：%d 字节\n", fileCode.Size))
 	}
@@ -501,10 +501,10 @@ func (f *FileCodeBoxMCPServer) handleGetStorageInfo(ctx context.Context, argumen
 
 	// 测试存储连接
 	if err := f.storageManager.TestStorage(f.config.FileStorage); err != nil {
-		info.WriteString(fmt.Sprintf("存储状态：不可用\n"))
+		info.WriteString("存储状态：不可用\n")
 		info.WriteString(fmt.Sprintf("错误信息：%s\n", err.Error()))
 	} else {
-		info.WriteString(fmt.Sprintf("存储状态：可用\n"))
+		info.WriteString("存储状态：可用\n")
 	}
 
 	info.WriteString("\n=== 支持的存储类型 ===\n")
@@ -654,7 +654,7 @@ func (f *FileCodeBoxMCPServer) readStatusResource(ctx context.Context, uri strin
 
 	status := map[string]interface{}{
 		"timestamp":    time.Now().Format(time.RFC3339),
-		"server_info":  f.Server.info,
+		"server_info":  f.info,
 		"system_stats": stats,
 		"storage_type": f.config.FileStorage,
 		"user_system":  f.config.EnableUserSystem,

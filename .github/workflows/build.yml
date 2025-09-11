@@ -82,6 +82,15 @@ jobs:
           -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
           -o ${{ matrix.output }} .
         
+        # 确保 Linux/macOS 二进制文件有执行权限
+        if [[ "${{ matrix.goos }}" != "windows" ]]; then
+          chmod +x ${{ matrix.output }}
+        fi
+        
+        # 验证生成的文件
+        ls -la ${{ matrix.output }}
+        file ${{ matrix.output }}
+        
     - name: Create build info
       run: |
         echo "Build Info:" > build-info-${{ matrix.goos }}-${{ matrix.goarch }}.txt
@@ -241,15 +250,19 @@ jobs:
             cd "$dir"
             
             # 找到可执行文件
-            executable=$(find . -name "filecodebox*" -executable -type f | head -1)
+            executable=$(find . -name "filecodebox*" -type f | head -1)
             if [ -n "$executable" ]; then
+              echo "Found executable: $executable"
+              
               # 创建发布目录
               release_name="filecodebox-${platform}"
               mkdir -p "../release-assets/$release_name"
               
               # 复制文件
               cp "$executable" "../release-assets/$release_name/"
-              cp build-info-*.txt "../release-assets/$release_name/" 2>/dev/null || true
+              if [ -f "build-info-*.txt" ]; then
+                cp build-info-*.txt "../release-assets/$release_name/" 2>/dev/null || true
+              fi
               
               # 创建README
               cat > "../release-assets/$release_name/README.txt" << EOF
@@ -275,11 +288,18 @@ jobs:
                 tar -czf "${release_name}.tar.gz" "$release_name/"
               fi
               rm -rf "$release_name"
+            else
+              echo "No executable found in $dir"
+              ls -la "$dir"
             fi
             
             cd - > /dev/null
           fi
         done
+        
+        # 列出所有生成的文件
+        echo "Generated release assets:"
+        ls -la release-assets/
 
     - name: Generate release notes
       run: |

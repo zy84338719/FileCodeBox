@@ -206,7 +206,12 @@ func (m *MCPManager) testMCPConnection(port string) bool {
 	if err != nil {
 		return false
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			// 在这种测试场景下，关闭连接的错误不是关键问题，只记录一下
+			fmt.Printf("Warning: failed to close connection: %v\n", err)
+		}
+	}()
 
 	// 简单的连接测试，如果能连接就认为服务器在运行
 	return true

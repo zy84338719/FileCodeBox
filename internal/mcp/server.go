@@ -135,7 +135,11 @@ func (s *Server) ServeTCP(addr string) error {
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", addr, err)
 	}
-	defer listener.Close()
+	defer func() {
+		if err := listener.Close(); err != nil {
+			s.logger.Errorf("Failed to close listener: %v", err)
+		}
+	}()
 
 	for {
 		conn, err := listener.Accept()
@@ -150,7 +154,11 @@ func (s *Server) ServeTCP(addr string) error {
 
 // handleTCPConnection 处理 TCP 连接
 func (s *Server) handleTCPConnection(tcpConn net.Conn) {
-	defer tcpConn.Close()
+	defer func() {
+		if err := tcpConn.Close(); err != nil {
+			s.logger.Errorf("Failed to close TCP connection: %v", err)
+		}
+	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -201,7 +209,9 @@ func (s *Server) handleConnection(conn *Connection) error {
 		var msg JSONRPCMessage
 		if err := json.Unmarshal([]byte(line), &msg); err != nil {
 			s.logger.Errorf("Failed to parse JSON-RPC message: %v", err)
-			s.sendError(conn, nil, ParseError, "Parse error", nil)
+			if err := s.sendError(conn, nil, ParseError, "Parse error", nil); err != nil {
+				s.logger.Errorf("Failed to send error response: %v", err)
+			}
 			continue
 		}
 

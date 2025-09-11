@@ -26,6 +26,11 @@ release:
 	@echo "Building FileCodeBox release $(VERSION) ($(COMMIT)) at $(DATE)"
 	CGO_ENABLED=0 go build $(LDFLAGS) -a -installsuffix cgo -o filecodebox .
 
+# 多平台发布构建
+release-all:
+	@echo "Building FileCodeBox for all platforms..."
+	./build-release.sh $(VERSION)
+
 # 运行项目
 run: build
 	./filecodebox
@@ -48,6 +53,7 @@ dev:
 # 清理编译文件
 clean:
 	rm -f filecodebox
+	rm -rf build/
 	go clean
 
 # 整理依赖
@@ -94,6 +100,7 @@ help:
 	@echo "可用的make命令："
 	@echo "  build       - 编译项目（带版本信息）"
 	@echo "  release     - 发布构建（优化编译）"
+	@echo "  release-all - 多平台发布构建"
 	@echo "  run         - 编译并运行项目"
 	@echo "  version     - 显示版本信息"
 	@echo "  test        - 运行测试"
