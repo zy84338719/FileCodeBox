@@ -1,16 +1,32 @@
-.PHONY: build run test clean docker-build docker-run dev release
+.PHONY: build run test clean docker-build docker-run dev release version deps tidy fmt vet check help
 
-# 版本信息
-VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+# 版本信息 - 优先使用 Git tag
+VERSION ?= $(shell \
+	if git describe --tags --exact-match HEAD >/dev/null 2>&1; then \
+		git describe --tags --exact-match HEAD; \
+	elif git describe --tags --abbrev=0 >/dev/null 2>&1; then \
+		LATEST_TAG=$$(git describe --tags --abbrev=0); \
+		COMMITS_SINCE_TAG=$$(git rev-list --count $${LATEST_TAG}..HEAD); \
+		if [ "$${COMMITS_SINCE_TAG}" -gt 0 ]; then \
+			SHORT_COMMIT=$$(git rev-parse --short HEAD); \
+			echo "$${LATEST_TAG}-$${COMMITS_SINCE_TAG}-g$${SHORT_COMMIT}"; \
+		else \
+			echo "$${LATEST_TAG}"; \
+		fi; \
+	elif [ -f "VERSION" ]; then \
+		cat VERSION; \
+	else \
+		echo "dev"; \
+	fi)
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+DATE := $(shell date -u +"%Y-%m-%d %H:%M:%S UTC")
 GO_VERSION := $(shell go version | awk '{print $$3}')
 
 # 构建标志
 LDFLAGS := -ldflags "\
-	-X main.version=$(VERSION) \
-	-X main.commit=$(COMMIT) \
-	-X main.date=$(DATE) \
+	-X 'github.com/zy84338719/filecodebox/internal/models.Version=$(VERSION)' \
+	-X 'github.com/zy84338719/filecodebox/internal/models.GitCommit=$(COMMIT)' \
+	-X 'github.com/zy84338719/filecodebox/internal/models.BuildTime=$(DATE)' \
 	-w -s"
 
 # 默认目标
@@ -21,15 +37,15 @@ build:
 	@echo "Building FileCodeBox $(VERSION) ($(COMMIT)) at $(DATE)"
 	go build $(LDFLAGS) -o filecodebox .
 
+# 交叉编译（支持环境变量设置平台）
+build-cross:
+	@echo "Cross-compiling FileCodeBox $(VERSION) for $(GOOS)/$(GOARCH)"
+	env GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build $(LDFLAGS) -o filecodebox .
+
 # 发布构建（优化编译）
 release:
 	@echo "Building FileCodeBox release $(VERSION) ($(COMMIT)) at $(DATE)"
 	CGO_ENABLED=0 go build $(LDFLAGS) -a -installsuffix cgo -o filecodebox .
-
-# 多平台发布构建
-release-all:
-	@echo "Building FileCodeBox for all platforms..."
-	./build-release.sh $(VERSION)
 
 # 运行项目
 run: build
@@ -44,6 +60,10 @@ version:
 
 # 运行测试
 test:
+	go test -race -coverprofile=coverage.out ./... -v
+
+# 运行测试（简化版）
+test-simple:
 	go test ./... -v
 
 # 运行开发模式（热重载需要安装air: go install github.com/cosmtrek/air@latest）
@@ -53,7 +73,6 @@ dev:
 # 清理编译文件
 clean:
 	rm -f filecodebox
-	rm -rf build/
 	go clean
 
 # 整理依赖
@@ -100,7 +119,6 @@ help:
 	@echo "可用的make命令："
 	@echo "  build       - 编译项目（带版本信息）"
 	@echo "  release     - 发布构建（优化编译）"
-	@echo "  release-all - 多平台发布构建"
 	@echo "  run         - 编译并运行项目"
 	@echo "  version     - 显示版本信息"
 	@echo "  test        - 运行测试"

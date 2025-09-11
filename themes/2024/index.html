@@ -6,6 +6,9 @@
     <title>{{title}}</title>
     <meta name="description" content="{{description}}">
     <meta name="keywords" content="{{keywords}}">
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/logo-small.svg">
     <style>
         * {
             margin: 0;
@@ -148,12 +151,24 @@
         }
         
         .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+        }
+        
+        .logo-text {
             font-size: 2.5em;
             font-weight: bold;
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
         }
         
         .subtitle {
@@ -463,7 +478,10 @@
         </div>
         
         <div class="header">
-            <div class="logo">📦 FileCodeBox</div>
+            <div class="logo">
+                <img class="logo-icon" src="assets/images/logo.svg" alt="FileCodeBox Logo"/>
+                <div class="logo-text">FileCodeBox</div>
+            </div>
             <div class="subtitle">{{description}}</div>
         </div>
         

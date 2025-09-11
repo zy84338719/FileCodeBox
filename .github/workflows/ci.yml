@@ -28,16 +28,16 @@ jobs:
           go.mod
 
     - name: Download dependencies
-      run: go mod download
+      run: make deps
 
     - name: Verify dependencies
       run: go mod verify
 
-    - name: Run go vet
-      run: go vet ./...
+    - name: Run checks
+      run: make check
 
     - name: Run tests
-      run: go test -race -coverprofile=coverage.out ./...
+      run: make test
 
     - name: Upload coverage to Codecov
       if: matrix.go-version == '1.25'
@@ -48,13 +48,13 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
 
-    - name: Run build test
-      run: go build -v ./...
+    - name: Build
+      run: make build
 
     - name: Run integration tests
       run: |
         # 构建并启动服务
-        go build -o filecodebox .
+        make build
         ./filecodebox &
         SERVER_PID=$!
         

@@ -1,0 +1,52 @@
+<svg width="280" height="80" viewBox="0 0 280 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Logo图标部分 -->
+  <g transform="translate(0, 0)">
+    <!-- 背景圆形 -->
+    <circle cx="40" cy="40" r="35" fill="#2563eb"/>
+    
+    <!-- 文件盒子 -->
+    <rect x="25" y="28" width="30" height="24" rx="3" ry="3" fill="#ffffff"/>
+    
+    <!-- 盒子盖子 -->
+    <rect x="23" y="26" width="34" height="6" rx="3" ry="3" fill="#f3f4f6"/>
+    
+    <!-- 文件图标 -->
+    <rect x="28" y="32" width="6" height="8" rx="1" ry="1" fill="#3b82f6"/>
+    <rect x="37" y="32" width="6" height="8" rx="1" ry="1" fill="#10b981"/>
+    <rect x="46" y="32" width="6" height="8" rx="1" ry="1" fill="#f59e0b"/>
+    
+    <!-- 传输箭头 -->
+    <line x1="28" y1="58" x2="52" y2="58" stroke="#ffffff" stroke-width="2"/>
+    <polygon points="52,58 47,56 47,60" fill="#ffffff"/>
+    
+    <!-- 传输点 -->
+    <circle cx="32" cy="58" r="1" fill="#22d3ee">
+      <animate attributeName="cx" values="28;52;28" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- 文字部分 -->
+  <g transform="translate(90, 0)" fill="#1f2937">
+    <!-- FileCodeBox -->
+    <text x="0" y="30" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#2563eb">
+      FileCodeBox
+    </text>
+    
+    <!-- 副标题 -->
+    <text x="0" y="50" font-family="Arial, sans-serif" font-size="12" fill="#6b7280">
+      高性能文件快传系统
+    </text>
+    
+    <!-- 特性标签 -->
+    <g transform="translate(0, 60)">
+      <rect x="0" y="0" width="35" height="16" rx="8" ry="8" fill="#dbeafe"/>
+      <text x="17.5" y="11" font-family="Arial, sans-serif" font-size="8" text-anchor="middle" fill="#2563eb">快传</text>
+      
+      <rect x="40" y="0" width="35" height="16" rx="8" ry="8" fill="#dcfce7"/>
+      <text x="57.5" y="11" font-family="Arial, sans-serif" font-size="8" text-anchor="middle" fill="#16a34a">安全</text>
+      
+      <rect x="80" y="0" width="35" height="16" rx="8" ry="8" fill="#fef3c7"/>
+      <text x="97.5" y="11" font-family="Arial, sans-serif" font-size="8" text-anchor="middle" fill="#d97706">高效</text>
+    </g>
+  </g>
+</svg>

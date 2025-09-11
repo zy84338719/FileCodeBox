@@ -1,0 +1,19 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="64" height="64" rx="12" ry="12" fill="#dc3545"/>
+  
+  <!-- 文件盒子 -->
+  <rect x="16" y="20" width="32" height="24" rx="3" ry="3" fill="#ffffff" opacity="0.9"/>
+  
+  <!-- 盒子盖子 -->
+  <rect x="14" y="18" width="36" height="6" rx="3" ry="3" fill="#f3f4f6"/>
+  
+  <!-- 锁图标 -->
+  <rect x="28" y="32" width="8" height="6" rx="1" ry="1" fill="none" stroke="#dc3545" stroke-width="1.5"/>
+  <rect x="30" y="36" width="4" height="4" rx="1" ry="1" fill="#dc3545"/>
+  <circle cx="32" cy="38" r="1" fill="#ffffff"/>
+  
+  <!-- 传输箭头（暗化显示锁定状态） -->
+  <line x1="20" y1="50" x2="44" y2="50" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+  <polygon points="44,50 38,47 38,53" fill="#ffffff" opacity="0.5"/>
+</svg>

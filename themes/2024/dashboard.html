@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>用户中心 - FileCodeBox</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/logo-small.svg">
     <style>
         * {
             margin: 0;
@@ -35,9 +38,17 @@
         }
         
         .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             font-size: 1.5em;
             font-weight: bold;
             color: #667eea;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
         }
         
         .user-info {
@@ -386,7 +397,10 @@
     <div class="container">
         <!-- 头部 -->
         <div class="header">
-            <div class="logo">📦 FileCodeBox - 用户中心</div>
+            <div class="logo">
+                <img class="logo-icon" src="assets/images/logo-small.svg" alt="FileCodeBox Logo"/>
+                <span>FileCodeBox - 用户中心</span>
+            </div>
             <div class="user-info">
                 <div class="user-avatar" id="user-avatar"></div>
                 <div class="user-name" id="user-name">用户</div>

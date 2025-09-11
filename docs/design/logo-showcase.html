@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FileCodeBox Logo 展示</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #f8fafc;
+            color: #334155;
+        }
+        .logo-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .logo-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .logo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin: 30px 0;
+        }
+        h1 {
+            color: #2563eb;
+            text-align: center;
+        }
+        h2 {
+            color: #475569;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .usage {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .usage code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>FileCodeBox Logo 设计</h1>
+    
+    <div class="logo-section">
+        <h2>主 Logo（适合官网首页）</h2>
+        <div class="logo-container">
+            <img src="../../assets/images/logos/logo.svg" alt="FileCodeBox 主 Logo" width="200"/>
+        </div>
+        <div class="usage">
+            <strong>使用场景：</strong>官网首页、宣传材料、大尺寸展示<br>
+            <strong>文件：</strong><code>assets/images/logos/logo.svg</code>
+        </div>
+    </div>
+
+    <div class="logo-section">
+        <h2>横版 Logo（适合网站头部）</h2>
+        <div class="logo-container">
+            <img src="../../assets/images/logos/logo-horizontal.svg" alt="FileCodeBox 横版 Logo" height="80"/>
+        </div>
+        <div class="usage">
+            <strong>使用场景：</strong>网站头部导航、横幅、邮件签名<br>
+            <strong>文件：</strong><code>assets/images/logos/logo-horizontal.svg</code>
+        </div>
+    </div>
+
+    <div class="logo-grid">
+        <div class="logo-section">
+            <h2>小尺寸 Logo</h2>
+            <div class="logo-container">
+                <img src="../../assets/images/logos/logo-small.svg" alt="FileCodeBox 小 Logo" width="64"/>
+            </div>
+            <div class="usage">
+                <strong>使用场景：</strong>应用图标、按钮、小尺寸展示<br>
+                <strong>文件：</strong><code>assets/images/logos/logo-small.svg</code>
+            </div>
+        </div>
+
+        <div class="logo-section">
+            <h2>Favicon</h2>
+            <div class="logo-container">
+                <img src="../../assets/images/logos/favicon.svg" alt="FileCodeBox Favicon" width="32"/>
+            </div>
+            <div class="usage">
+                <strong>使用场景：</strong>浏览器标签页图标、收藏夹图标<br>
+                <strong>文件：</strong><code>assets/images/logos/favicon.svg</code>
+            </div>
+        </div>
+    </div>
+
+    <div class="logo-section">
+        <h2>设计理念</h2>
+        <ul>
+            <li><strong>文件盒子：</strong>体现了项目的核心功能 - 文件存储和分享</li>
+            <li><strong>多彩文件：</strong>三个不同颜色的文件代表支持多种文件类型</li>
+            <li><strong>传输箭头：</strong>表示快速传输和分享功能</li>
+            <li><strong>动画效果：</strong>传输点的动画暗示数据流动</li>
+            <li><strong>代码符号：</strong>体现技术属性和开发者友好</li>
+            <li><strong>蓝色主色调：</strong>专业、可靠、技术感</li>
+        </ul>
+    </div>
+
+    <div class="logo-section">
+        <h2>颜色规范</h2>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin: 20px 0;">
+            <div style="text-align: center;">
+                <div style="width: 60px; height: 60px; background: #2563eb; border-radius: 8px; margin: 0 auto 8px;"></div>
+                <div>主蓝色</div>
+                <code>#2563eb</code>
+            </div>
+            <div style="text-align: center;">
+                <div style="width: 60px; height: 60px; background: #3b82f6; border-radius: 8px; margin: 0 auto 8px;"></div>
+                <div>文件蓝</div>
+                <code>#3b82f6</code>
+            </div>
+            <div style="text-align: center;">
+                <div style="width: 60px; height: 60px; background: #10b981; border-radius: 8px; margin: 0 auto 8px;"></div>
+                <div>文件绿</div>
+                <code>#10b981</code>
+            </div>
+            <div style="text-align: center;">
+                <div style="width: 60px; height: 60px; background: #f59e0b; border-radius: 8px; margin: 0 auto 8px;"></div>
+                <div>文件橙</div>
+                <code>#f59e0b</code>
+            </div>
+            <div style="text-align: center;">
+                <div style="width: 60px; height: 60px; background: #22d3ee; border-radius: 8px; margin: 0 auto 8px;"></div>
+                <div>动画青</div>
+                <code>#22d3ee</code>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

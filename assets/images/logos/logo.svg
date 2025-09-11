@@ -1,0 +1,64 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="100" cy="100" r="90" fill="#2563eb" stroke="#1d4ed8" stroke-width="2"/>
+  
+  <!-- 文件盒子主体 -->
+  <rect x="60" y="70" width="80" height="60" rx="8" ry="8" fill="#ffffff" stroke="#e5e7eb" stroke-width="2"/>
+  
+  <!-- 盒子盖子 -->
+  <rect x="55" y="65" width="90" height="15" rx="8" ry="8" fill="#f3f4f6" stroke="#d1d5db" stroke-width="2"/>
+  
+  <!-- 文件图标1 -->
+  <rect x="70" y="85" width="20" height="25" rx="2" ry="2" fill="#3b82f6" opacity="0.8"/>
+  <rect x="75" y="90" width="10" height="2" fill="#ffffff"/>
+  <rect x="75" y="95" width="8" height="2" fill="#ffffff"/>
+  <rect x="75" y="100" width="6" height="2" fill="#ffffff"/>
+  
+  <!-- 文件图标2 -->
+  <rect x="95" y="85" width="20" height="25" rx="2" ry="2" fill="#10b981" opacity="0.8"/>
+  <rect x="100" y="90" width="10" height="2" fill="#ffffff"/>
+  <rect x="100" y="95" width="8" height="2" fill="#ffffff"/>
+  <rect x="100" y="100" width="6" height="2" fill="#ffffff"/>
+  
+  <!-- 文件图标3 -->
+  <rect x="120" y="85" width="20" height="25" rx="2" ry="2" fill="#f59e0b" opacity="0.8"/>
+  <rect x="125" y="90" width="10" height="2" fill="#ffffff"/>
+  <rect x="125" y="95" width="8" height="2" fill="#ffffff"/>
+  <rect x="125" y="100" width="6" height="2" fill="#ffffff"/>
+  
+  <!-- 传输箭头 -->
+  <g transform="translate(100, 140)">
+    <!-- 箭头主体 -->
+    <line x1="-25" y1="0" x2="25" y2="0" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+    <!-- 箭头头部 -->
+    <polygon points="25,0 15,-8 15,8" fill="#ffffff"/>
+    <!-- 传输点动画效果 -->
+    <circle cx="-15" cy="0" r="3" fill="#22d3ee">
+      <animate attributeName="cx" values="-25;25;-25" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- 代码符号 -->
+  <g transform="translate(100, 35)" fill="#ffffff" opacity="0.8">
+    <!-- 左括号 -->
+    <path d="M -15 -5 Q -20 -5 -20 0 Q -20 5 -15 5" stroke="#ffffff" stroke-width="2" fill="none"/>
+    <!-- 右括号 -->
+    <path d="M 15 -5 Q 20 -5 20 0 Q 20 5 15 5" stroke="#ffffff" stroke-width="2" fill="none"/>
+    <!-- 中间的斜杠 -->
+    <line x1="-5" y1="5" x2="5" y2="-5" stroke="#ffffff" stroke-width="2"/>
+  </g>
+  
+  <!-- 快速传输指示器 -->
+  <g transform="translate(100, 170)" opacity="0.6">
+    <circle cx="-20" cy="0" r="2" fill="#22d3ee">
+      <animate attributeName="opacity" values="0;1;0" dur="1s" begin="0s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="0" cy="0" r="2" fill="#22d3ee">
+      <animate attributeName="opacity" values="0;1;0" dur="1s" begin="0.3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="20" cy="0" r="2" fill="#22d3ee">
+      <animate attributeName="opacity" values="0;1;0" dur="1s" begin="0.6s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+</svg>

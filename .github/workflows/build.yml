@@ -45,7 +45,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version: '1.25'
 
     - name: Cache Go modules
       uses: actions/cache@v4
@@ -58,38 +58,24 @@ jobs:
           ${{ runner.os }}-go-
 
     - name: Download dependencies
-      run: go mod download
+      run: make deps
 
     - name: Run tests
-      run: go test ./...
+      run: make test
 
     - name: Build binary
       env:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
-        CGO_ENABLED: 0
       run: |
-        # 设置版本信息
-        VERSION=${{ github.ref_name }}
-        if [ "$VERSION" = "main" ]; then
-          VERSION="dev-$(git rev-parse --short HEAD)"
+        # 使用 Makefile 进行交叉编译
+        make build-cross
+        
+        # 重命名输出文件以匹配矩阵配置
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          mv filecodebox filecodebox.exe
         fi
-        
-        COMMIT=$(git rev-parse HEAD)
-        DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-        
-        go build \
-          -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
-          -o ${{ matrix.output }} .
-        
-        # 确保 Linux/macOS 二进制文件有执行权限
-        if [[ "${{ matrix.goos }}" != "windows" ]]; then
-          chmod +x ${{ matrix.output }}
-        fi
-        
-        # 验证生成的文件
-        ls -la ${{ matrix.output }}
-        file ${{ matrix.output }}
+        mv filecodebox* ${{ matrix.output }}
         
     - name: Create build info
       run: |
@@ -250,19 +236,15 @@ jobs:
             cd "$dir"
             
             # 找到可执行文件
-            executable=$(find . -name "filecodebox*" -type f | head -1)
+            executable=$(find . -name "filecodebox*" -executable -type f | head -1)
             if [ -n "$executable" ]; then
-              echo "Found executable: $executable"
-              
               # 创建发布目录
               release_name="filecodebox-${platform}"
               mkdir -p "../release-assets/$release_name"
               
               # 复制文件
               cp "$executable" "../release-assets/$release_name/"
-              if [ -f "build-info-*.txt" ]; then
-                cp build-info-*.txt "../release-assets/$release_name/" 2>/dev/null || true
-              fi
+              cp build-info-*.txt "../release-assets/$release_name/" 2>/dev/null || true
               
               # 创建README
               cat > "../release-assets/$release_name/README.txt" << EOF
@@ -288,18 +270,11 @@ jobs:
                 tar -czf "${release_name}.tar.gz" "$release_name/"
               fi
               rm -rf "$release_name"
-            else
-              echo "No executable found in $dir"
-              ls -la "$dir"
             fi
             
             cd - > /dev/null
           fi
         done
-        
-        # 列出所有生成的文件
-        echo "Generated release assets:"
-        ls -la release-assets/
 
     - name: Generate release notes
       run: |

@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -46,27 +47,19 @@ import (
 	_ "github.com/zy84338719/filecodebox/docs"
 )
 
-var (
-	version = "dev"
-	commit  = "unknown"
-	date    = "unknown"
-)
-
 func main() {
 	// 解析命令行参数
 	var showVersion = flag.Bool("version", false, "show version information")
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Printf("FileCodeBox %s\n", version)
-		fmt.Printf("Commit: %s\n", commit)
-		fmt.Printf("Built: %s\n", date)
-		fmt.Printf("Go Version: %s\n", "go1.21+")
+		buildInfo := models.GetBuildInfo()
+		fmt.Printf("FileCodeBox %s\n", buildInfo.Version)
+		fmt.Printf("Commit: %s\n", buildInfo.GitCommit)
+		fmt.Printf("Built: %s\n", buildInfo.BuildTime)
+		fmt.Printf("Go Version: %s\n", runtime.Version())
 		return
 	}
-
-	// 初始化配置
-	cfg := config.Init()
 
 	// 初始化日志
 	logrus.SetLevel(logrus.InfoLevel)
@@ -77,18 +70,20 @@ func main() {
 	logrus.Info("正在初始化应用...")
 
 	// 初始化数据库
-	db, err := database.Init(cfg)
+	db, err := database.Init(nil) // 先不传入配置
 	if err != nil {
 		logrus.Fatal("初始化数据库失败:", err)
 	}
 
-	// 自动迁移（需要在配置初始化前进行）
+	// 自动迁移（在配置初始化前进行）
 	err = db.AutoMigrate(&models.FileCode{},
 		&models.UploadChunk{}, &models.KeyValue{}, &models.User{}, &models.UserSession{})
 	if err != nil {
 		logrus.Fatal("数据库迁移失败:", err)
 	}
 
+	// 初始化配置
+	cfg := config.Init()
 	// 使用数据库初始化配置
 	if err := cfg.InitWithDB(db); err != nil {
 		logrus.Fatal("初始化配置失败:", err)
@@ -125,10 +120,9 @@ func main() {
 	// 根据配置启动 MCP 服务器
 	if cfg.EnableMCPServer == 1 {
 		if err := mcpManager.StartMCPServer(cfg.MCPPort); err != nil {
-			logrus.Errorf("启动 MCP 服务器失败: %v", err)
-		} else {
-			logrus.Info("MCP 服务器已在主程序启动时自动启动")
+			logrus.Fatal("启动 MCP 服务器失败: ", err)
 		}
+		logrus.Info("MCP 服务器已在主程序启动时自动启动")
 	}
 
 	logrus.Info("应用初始化完成")
@@ -143,5 +137,9 @@ func main() {
 	// 优雅关闭
 	if err := routes.GracefulShutdown(srv, 30*time.Second); err != nil {
 		logrus.Fatal("关闭服务器失败:", err)
+	}
+	// 关闭数据库连接
+	if sqlDB, err := db.DB(); err == nil {
+		sqlDB.Close()
 	}
 }

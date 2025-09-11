@@ -25,8 +25,14 @@ func SetupBaseRoutes(router *gin.Engine, cfg *config.Config) {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// API文档和健康检查
-	apiHandler := handlers.NewAPIHandler()
+	apiHandler := handlers.NewAPIHandler(cfg)
 	router.GET("/health", apiHandler.GetHealth)
+
+	// API 配置路由
+	api := router.Group("/api")
+	{
+		api.GET("/config", apiHandler.GetConfig)
+	}
 
 	// 首页和静态页面
 	router.GET("/", func(c *gin.Context) {
@@ -43,7 +49,7 @@ func SetupBaseRoutes(router *gin.Engine, cfg *config.Config) {
 		c.String(http.StatusOK, cfg.RobotsText)
 	})
 
-	// 获取配置接口
+	// 获取配置接口（兼容性保留）
 	router.POST("/", func(c *gin.Context) {
 		common.SuccessResponse(c, gin.H{
 			"name":               cfg.Name,
