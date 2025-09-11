@@ -1,0 +1,253 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取所有历史以便生成变更日志
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+
+    - name: Install bc (for cross-build script)
+      run: sudo apt-get update && sudo apt-get install -y bc
+
+    - name: Download dependencies
+      run: make deps
+
+    - name: Run tests
+      run: make test
+
+    - name: Cross compile all platforms
+      run: |
+        # 使用我们的交叉编译脚本
+        chmod +x scripts/cross-build.sh
+        ./scripts/cross-build.sh
+
+    - name: Generate release notes
+      run: |
+        # 获取当前和前一个标签
+        CURRENT_TAG="${{ github.ref_name }}"
+        PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -A1 "$CURRENT_TAG" | tail -1)
+        
+        # 如果没有前一个标签，使用第一个提交
+        if [ -z "$PREVIOUS_TAG" ] || [ "$PREVIOUS_TAG" = "$CURRENT_TAG" ]; then
+          PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+        fi
+        
+        echo "生成从 $PREVIOUS_TAG 到 $CURRENT_TAG 的变更日志"
+        
+        # 获取提交信息
+        COMMITS=$(git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..$CURRENT_TAG 2>/dev/null || git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD)
+        
+        # 获取文件变更统计
+        STATS=$(git diff --stat $PREVIOUS_TAG..$CURRENT_TAG 2>/dev/null || git diff --stat $PREVIOUS_TAG..HEAD || echo "首次发布")
+        
+        cat > release-notes.md << EOF
+        ## FileCodeBox $CURRENT_TAG
+        
+        ### 📝 本次更新
+        
+        $COMMITS
+        
+        ### 📊 变更统计
+        \`\`\`
+        $STATS
+        \`\`\`
+        
+        ### 🚀 功能特性
+        - ✅ 多平台可执行文件支持 (Linux, macOS, Windows, FreeBSD)
+        - ✅ 支持 AMD64、ARM64、386、ARM 架构
+        - ✅ Docker 镜像自动构建和发布
+        - ✅ 文件上传下载服务
+        - ✅ 用户认证系统
+        - ✅ 管理员控制面板
+        - ✅ 多种存储后端支持 (本地/S3/WebDAV/NFS)
+        - ✅ 分片上传支持
+        - ✅ MCP (Model Context Protocol) 服务器支持
+        
+        ### 📦 安装方式
+        
+        #### 方式一：直接下载可执行文件
+        
+        选择对应平台的文件下载：
+        - 🐧 **Linux x64**: \`filecodebox-$CURRENT_TAG-linux-amd64\`
+        - 🐧 **Linux ARM64**: \`filecodebox-$CURRENT_TAG-linux-arm64\`
+        - 🐧 **Linux x86**: \`filecodebox-$CURRENT_TAG-linux-386\`
+        - 🐧 **Linux ARM**: \`filecodebox-$CURRENT_TAG-linux-arm\`
+        - 🍎 **macOS Intel**: \`filecodebox-$CURRENT_TAG-darwin-amd64\`
+        - 🍎 **macOS Apple Silicon**: \`filecodebox-$CURRENT_TAG-darwin-arm64\`
+        - 🪟 **Windows x64**: \`filecodebox-$CURRENT_TAG-windows-amd64.exe\`
+        - 🪟 **Windows x86**: \`filecodebox-$CURRENT_TAG-windows-386.exe\`
+        - 🔧 **FreeBSD x64**: \`filecodebox-$CURRENT_TAG-freebsd-amd64\`
+        - 🔧 **FreeBSD ARM64**: \`filecodebox-$CURRENT_TAG-freebsd-arm64\`
+        
+        #### 方式二：Docker 部署
+        
+        \`\`\`bash
+        # 拉取镜像
+        docker pull ghcr.io/zy84338719/filecodebox:$CURRENT_TAG
+        
+        # 运行容器
+        docker run -d \\
+          --name filecodebox \\
+          -p 12345:12345 \\
+          -v ./data:/app/data \\
+          ghcr.io/zy84338719/filecodebox:$CURRENT_TAG
+        \`\`\`
+        
+        #### 方式三：Docker Compose
+        
+        \`\`\`yaml
+        version: '3.8'
+        services:
+          filecodebox:
+            image: ghcr.io/zy84338719/filecodebox:$CURRENT_TAG
+            ports:
+              - "12345:12345"
+            volumes:
+              - ./data:/app/data
+            restart: unless-stopped
+        \`\`\`
+        
+        #### 方式四：源码编译
+        
+        \`\`\`bash
+        git clone https://github.com/zy84338719/filecodebox.git
+        cd filecodebox
+        git checkout $CURRENT_TAG
+        make build
+        \`\`\`
+        
+        ### 🔧 快速开始
+        
+        1. **下载并启动服务**
+           - 下载对应平台的文件
+           - 运行 \`./filecodebox\` (Linux/macOS) 或 \`filecodebox.exe\` (Windows)
+        
+        2. **访问服务**
+           - 用户界面: http://localhost:12345
+           - 管理员界面: http://localhost:12345/admin
+           - API 文档: http://localhost:12345/swagger/index.html
+           - 默认管理员密码: \`FileCodeBox2025\`
+        
+        3. **基本配置**
+           - 修改管理员密码
+           - 配置存储后端
+           - 设置用户系统开关
+        
+        ### 📋 系统要求
+        
+        - **操作系统**: Linux, macOS, Windows, FreeBSD
+        - **架构**: AMD64, ARM64, 386, ARM
+        - **内存**: 最小 64MB，推荐 256MB+
+        - **存储**: 根据使用量而定
+        - **网络**: HTTP/HTTPS 端口访问
+        
+        ### 🔒 安全说明
+        
+        - 首次启动请立即修改默认管理员密码
+        - 生产环境建议配置 HTTPS
+        - 定期备份数据目录
+        - 建议配置防火墙规则
+        
+        ### 🆘 问题反馈
+        
+        如遇到问题，请访问：
+        - **GitHub Issues**: https://github.com/${{ github.repository }}/issues
+        - **文档**: https://github.com/${{ github.repository }}#readme
+        
+        ### 📖 更新说明
+        
+        - 支持通过 \`./filecodebox -version\` 查看版本信息
+        - 版本号现在使用 Git tag 自动管理
+        - 构建系统已优化，支持 Makefile 和脚本构建
+        
+        ---
+        
+        **构建信息**
+        - 构建时间: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        - Git 提交: ${{ github.sha }}
+        - Go 版本: $(go version | cut -d' ' -f3)
+        EOF
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/*
+        name: FileCodeBox ${{ github.ref_name }}
+        body_path: release-notes.md
+        draft: false
+        prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}
+        generate_release_notes: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    needs: release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/zy84338719/filecodebox
+        tags: |
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=raw,value=latest
+        labels: |
+          org.opencontainers.image.title=FileCodeBox
+          org.opencontainers.image.description=高性能文件分享服务 - Go语言实现
+          org.opencontainers.image.vendor=FileCodeBox
+          org.opencontainers.image.url=https://github.com/${{ github.repository }}
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          org.opencontainers.image.documentation=https://github.com/${{ github.repository }}#readme
+          org.opencontainers.image.licenses=MIT
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          VERSION=${{ github.ref_name }}
+          COMMIT=${{ github.sha }}
+          BUILD_TIME=${{ github.event.head_commit.timestamp }}
