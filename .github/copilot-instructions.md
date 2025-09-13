@@ -64,6 +64,23 @@ adminService := services.NewAdminService(daoManager, manager, storageService)
 - `dto/`: 数据传输对象
 - `mcp/`: MCP 协议相关模型
 
+主模型文件 (`internal/models/models.go`) 通过类型别名提供向后兼容性：
+```go
+// 数据库模型别名
+type FileCode = db.FileCode
+type User = db.User
+
+// 服务模型别名  
+type BuildInfo = service.BuildInfo
+type ShareFileRequest = service.ShareFileRequest
+
+// DTO 模型别名
+type UserUpdateFields = dto.UserUpdateFields
+
+// MCP 模型别名
+type SystemConfigResponse = mcp.SystemConfigResponse
+```
+
 ## Development Workflows
 
 ### Build System
@@ -195,5 +212,9 @@ storageManager := storage.NewStorageManager(configManager)
 - `internal/repository/manager.go`: Repository 模式实现，提供统一的数据访问抽象层，替代原有 DAO 模式，支持事务管理
 - `docs/changelogs/REFACTOR_SUMMARY.md`: 完整的架构演进记录，包含数据库多类型支持、模块化路由系统、服务依赖自动化的实现细节
 - `Dockerfile`: 优化的多阶段构建配置，支持 CGO 编译、最小化运行时镜像、非 root 用户安全实践
+  - **构建阶段**：使用 golang:1.24-alpine 作为构建环境，安装 gcc、musl-dev、sqlite-dev 等 CGO 依赖
+  - **运行时阶段**：使用 alpine:latest 最小化镜像，只包含必要的运行时依赖 (ca-certificates、tzdata、sqlite)
+  - **安全实践**：创建非 root 用户 (app:1000)，设置适当的文件权限，暴露标准端口 12345
+  - **构建优化**：使用 CGO_ENABLED=1 支持 SQLite，通过 -ldflags="-w -s" 减小二进制文件大小
 
 此项目强调模块化、可扩展性和高性能，在修改时请保持现有的架构模式和编码约定。

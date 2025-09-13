@@ -41,7 +41,15 @@ async function cleanTempFiles() {
         });
         
         if (result.code === 200) {
-            showAlert(`清理完成，释放空间: ${formatFileSize(result.data.freed_space)}`, 'success');
+            // 修复：使用正确的字段名，并提供默认值
+            const cleanedCount = result.data.count || 0;
+            const freedSpace = result.data.freed_space || 0;
+            
+            if (freedSpace > 0) {
+                showAlert(`清理完成，删除 ${cleanedCount} 个临时文件，释放空间: ${formatFileSize(freedSpace)}`, 'success');
+            } else {
+                showAlert(`清理完成，删除 ${cleanedCount} 个临时文件`, 'success');
+            }
         } else {
             throw new Error(result.message);
         }
@@ -90,7 +98,15 @@ async function cleanExpiredFiles() {
         
         if (result.code === 200) {
             const data = result.data;
-            showAlert(`清理完成，删除 ${data.deleted_count} 个文件，释放空间: ${formatFileSize(data.freed_space)}`, 'success');
+            // 修复：使用正确的字段名，并提供默认值
+            const deletedCount = data.cleaned_count || data.deleted_count || 0;
+            const freedSpace = data.freed_space || 0;
+            
+            if (freedSpace > 0) {
+                showAlert(`清理完成，删除 ${deletedCount} 个文件，释放空间: ${formatFileSize(freedSpace)}`, 'success');
+            } else {
+                showAlert(`清理完成，删除 ${deletedCount} 个文件`, 'success');
+            }
         } else {
             throw new Error(result.message);
         }

@@ -1,0 +1,259 @@
+/* 组件样式 - 用户链接、头部、标签页等组件 */
+
+/* 用户链接区域 */
+.user-links {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.user-link {
+    padding: 6px 12px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.user-link.login {
+    color: #667eea;
+    border: 1px solid #667eea;
+    background: transparent;
+}
+
+.user-link.login:hover {
+    background: #667eea;
+    color: white;
+}
+
+.user-link.register {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+}
+
+.user-link.register:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 用户信息显示 */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.user-name {
+    color: #333;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+/* 下拉菜单 */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background-color: white;
+    min-width: 150px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 1000;
+    margin-top: 5px;
+}
+
+.dropdown-content.show {
+    display: block;
+}
+
+.dropdown-item {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    transition: background-color 0.3s ease;
+    font-size: 0.9em;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-item.logout {
+    color: #dc3545;
+    border-top: 1px solid #e9ecef;
+}
+
+.dropdown-item.logout:hover {
+    background-color: #f8d7da;
+}
+
+/* 头部区域 */
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.logo-icon {
+    width: 60px;
+    height: 60px;
+}
+
+.logo-text {
+    font-size: 2.5em;
+    font-weight: bold;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.subtitle {
+    color: #666;
+    font-size: 1.1em;
+    margin-top: 5px;
+}
+
+/* 标签页 */
+.tabs {
+    display: flex;
+    margin-bottom: 30px;
+    border-radius: 25px;
+    background: #f8f9fa;
+    padding: 5px;
+}
+
+.tab {
+    flex: 1;
+    padding: 12px 20px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    color: #666;
+    background: transparent;
+    border: none;
+    font-size: 14px;
+}
+
+.tab.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.tab:hover:not(.active) {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+
+/* 标签页内容 */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* 表单组 */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+/* 上传区域 */
+.upload-area {
+    border: 2px dashed #ddd;
+    border-radius: 10px;
+    padding: 40px 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.upload-area:hover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.upload-area.dragover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.upload-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #666;
+}
+
+.upload-text {
+    color: #666;
+    font-size: 16px;
+}
+
+/* 页脚 */
+.footer {
+    margin-top: 30px;
+    text-align: center;
+    color: #888;
+    font-size: 0.9em;
+    line-height: 1.6;
+}
+
+.footer p {
+    margin-bottom: 10px;
+}
+
+.footer a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}

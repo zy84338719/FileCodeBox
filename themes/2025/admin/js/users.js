@@ -18,6 +18,10 @@ let userFilters = {
     sortBy: 'created_at_desc'
 };
 
+let currentUserPage = 1;
+let currentUserSearch = '';
+let currentUserLimit = 10;  // 添加动态limit支持
+
 /**
  * 初始化用户管理界面
  */
@@ -69,7 +73,7 @@ async function loadUsers(page = 1, search = '') {
     try {
         const params = new URLSearchParams({
             page: page,
-            limit: 20,
+            limit: currentUserLimit,  // 使用动态limit
             search: search,
             status: userFilters.status,
             date_range: userFilters.dateRange,
@@ -221,14 +225,27 @@ function displayUsersError(error) {
  * 更新分页信息
  */
 function updateUserPagination(pagination) {
-    const paginationContainer = document.getElementById('user-pagination');
+    const paginationContainer = document.getElementById('user-pagination-container');
+    const paginationElement = document.getElementById('user-pagination');
     const pageStartEl = document.getElementById('page-start');
     const pageEndEl = document.getElementById('page-end');
     const totalCountEl = document.getElementById('total-count');
     
-    if (!pagination || !paginationContainer) return;
+    if (!pagination || !paginationContainer || !paginationElement) return;
     
-    const { current_page = 1, per_page = 20, total = 0, last_page = 1 } = pagination;
+    const current_page = pagination.page || 1;
+    const per_page = pagination.page_size || 10;
+    const total = pagination.total || 0;
+    const last_page = pagination.pages || 1;
+    
+    // 如果总数为0，隐藏分页容器
+    if (total === 0) {
+        paginationContainer.style.display = 'none';
+        return;
+    }
+    
+    // 显示分页容器
+    paginationContainer.style.display = 'block';
     
     // 更新统计信息
     const start = (current_page - 1) * per_page + 1;
@@ -240,51 +257,122 @@ function updateUserPagination(pagination) {
     
     // 生成分页按钮
     if (last_page <= 1) {
-        paginationContainer.innerHTML = '';
+        paginationElement.innerHTML = '';
         return;
     }
     
-    let paginationHTML = '<div class="pagination">';
+    let paginationHTML = '<div class="pagination-wrapper">';
     
-    // 上一页
+    // 首页按钮
     if (current_page > 1) {
-        paginationHTML += `<button onclick="loadUsers(${current_page - 1}, currentUserSearch)" class="btn-page">
-            <i class="fas fa-chevron-left"></i> 上一页
+        paginationHTML += `<button onclick="loadUsers(1, currentUserSearch)" class="btn-page btn-page-first" title="首页">
+            <i class="fas fa-angle-double-left"></i>
         </button>`;
     }
     
-    // 页码按钮
+    // 上一页按钮
+    if (current_page > 1) {
+        paginationHTML += `<button onclick="loadUsers(${current_page - 1}, currentUserSearch)" class="btn-page btn-page-prev" title="上一页">
+            <i class="fas fa-angle-left"></i> 上一页
+        </button>`;
+    }
+    
+    // 页码按钮组
+    paginationHTML += '<div class="pagination-numbers">';
+    
     const startPage = Math.max(1, current_page - 2);
     const endPage = Math.min(last_page, current_page + 2);
     
+    // 如果开始页码不是1，显示省略号
     if (startPage > 1) {
         paginationHTML += `<button onclick="loadUsers(1, currentUserSearch)" class="btn-page">1</button>`;
         if (startPage > 2) {
-            paginationHTML += `<span class="pagination-dots">...</span>`;
+            paginationHTML += '<span class="pagination-ellipsis">...</span>';
         }
     }
     
+    // 页码按钮
     for (let i = startPage; i <= endPage; i++) {
         const activeClass = i === current_page ? 'active' : '';
-        paginationHTML += `<button onclick="loadUsers(${i}, currentUserSearch)" class="btn-page ${activeClass}">${i}</button>`;
+        paginationHTML += `<button onclick="loadUsers(${i}, currentUserSearch)" class="btn-page ${activeClass}" title="第${i}页">${i}</button>`;
     }
     
+    // 如果结束页码不是最后一页，显示省略号
     if (endPage < last_page) {
         if (endPage < last_page - 1) {
-            paginationHTML += `<span class="pagination-dots">...</span>`;
+            paginationHTML += '<span class="pagination-ellipsis">...</span>';
         }
         paginationHTML += `<button onclick="loadUsers(${last_page}, currentUserSearch)" class="btn-page">${last_page}</button>`;
     }
     
-    // 下一页
+    paginationHTML += '</div>';
+    
+    // 下一页按钮
     if (current_page < last_page) {
-        paginationHTML += `<button onclick="loadUsers(${current_page + 1}, currentUserSearch)" class="btn-page">
-            下一页 <i class="fas fa-chevron-right"></i>
+        paginationHTML += `<button onclick="loadUsers(${current_page + 1}, currentUserSearch)" class="btn-page btn-page-next" title="下一页">
+            下一页 <i class="fas fa-angle-right"></i>
         </button>`;
     }
     
+    // 末页按钮
+    if (current_page < last_page) {
+        paginationHTML += `<button onclick="loadUsers(${last_page}, currentUserSearch)" class="btn-page btn-page-last" title="末页">
+            <i class="fas fa-angle-double-right"></i>
+        </button>`;
+    }
+    
+    // 页面跳转控件
+    paginationHTML += `<div class="pagination-jump">
+        <span>跳转到</span>
+        <input type="number" id="users-page-jump" min="1" max="${last_page}" value="${current_page}" style="width: 60px; text-align: center;">
+        <button onclick="jumpToUserPage()" class="btn btn-sm">跳转</button>
+    </div>`;
+    
+    // 页面大小选择器
+    paginationHTML += `<div class="pagination-size">
+        <span>每页显示</span>
+        <select id="users-page-size" onchange="changeUserPageSize()">
+            <option value="5" ${per_page === 5 ? 'selected' : ''}>5条</option>
+            <option value="10" ${per_page === 10 ? 'selected' : ''}>10条</option>
+            <option value="20" ${per_page === 20 ? 'selected' : ''}>20条</option>
+            <option value="50" ${per_page === 50 ? 'selected' : ''}>50条</option>
+        </select>
+    </div>`;
+    
     paginationHTML += '</div>';
-    paginationContainer.innerHTML = paginationHTML;
+    
+    paginationElement.innerHTML = paginationHTML;
+}
+
+/**
+ * 跳转到指定用户页面
+ */
+function jumpToUserPage() {
+    const input = document.getElementById('users-page-jump');
+    if (!input) return;
+    
+    const page = parseInt(input.value);
+    if (isNaN(page) || page < 1) {
+        safeShowAlert('请输入有效的页码', 'warning');
+        return;
+    }
+    
+    loadUsers(page, currentUserSearch);
+}
+
+/**
+ * 更改用户页面大小
+ */
+function changeUserPageSize() {
+    const select = document.getElementById('users-page-size');
+    if (!select) return;
+    
+    const newLimit = parseInt(select.value);
+    if (isNaN(newLimit) || newLimit < 1) return;
+    
+    // 更新limit参数并重新加载第一页
+    currentUserLimit = newLimit;
+    loadUsers(1, currentUserSearch);
 }
 
 /**

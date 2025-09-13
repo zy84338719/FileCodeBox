@@ -1,0 +1,358 @@
+/* 分页组件样式 */
+
+.pagination-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.pagination-numbers {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 分页按钮样式 */
+.btn-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 6px 12px;
+    margin: 0 2px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    user-select: none;
+}
+
+.btn-page:hover {
+    color: #007bff;
+    background: #e7f3ff;
+    border-color: #007bff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+.btn-page:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 123, 255, 0.2);
+}
+
+.btn-page.active {
+    color: #fff;
+    background: #007bff;
+    border-color: #007bff;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+.btn-page.active:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+/* 特殊按钮样式 */
+.btn-page-first,
+.btn-page-last {
+    min-width: 36px;
+    padding: 6px 8px;
+}
+
+.btn-page-prev,
+.btn-page-next {
+    padding: 6px 16px;
+    font-weight: 500;
+}
+
+.btn-page-prev i,
+.btn-page-next i {
+    font-size: 12px;
+}
+
+/* 省略号样式 */
+.pagination-ellipsis {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    color: #6c757d;
+    font-weight: bold;
+    user-select: none;
+}
+
+/* 跳转控件样式 */
+.pagination-jump {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 16px;
+    padding-left: 16px;
+    border-left: 1px solid #dee2e6;
+}
+
+.pagination-jump span {
+    color: #495057;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.pagination-jump input {
+    width: 60px;
+    height: 32px;
+    padding: 4px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.pagination-jump input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.pagination-jump .btn {
+    height: 32px;
+    padding: 4px 12px;
+    font-size: 13px;
+    border-radius: 4px;
+}
+
+/* 页面大小选择器样式 */
+.pagination-size {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 16px;
+    padding-left: 16px;
+    border-left: 1px solid #dee2e6;
+}
+
+.pagination-size span {
+    color: #495057;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.pagination-size select {
+    height: 32px;
+    padding: 4px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    background: #fff;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.pagination-size select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* 分页信息样式 */
+.pagination-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 8px 16px;
+    background: #e9ecef;
+    border-radius: 6px;
+    color: #495057;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.pagination-info span {
+    color: #007bff;
+    font-weight: 600;
+}
+
+/* 分页容器样式 */
+.pagination-container {
+    margin-top: 24px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .pagination-wrapper {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+    }
+    
+    .pagination-numbers {
+        order: 1;
+    }
+    
+    .pagination-jump,
+    .pagination-size {
+        order: 2;
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
+        border-top: 1px solid #dee2e6;
+        padding-top: 12px;
+    }
+    
+    .btn-page {
+        min-width: 32px;
+        height: 32px;
+        font-size: 13px;
+    }
+    
+    .btn-page-prev,
+    .btn-page-next {
+        padding: 6px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pagination-wrapper {
+        padding: 8px;
+    }
+    
+    .pagination-jump,
+    .pagination-size {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .btn-page {
+        min-width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+    
+    .pagination-jump input,
+    .pagination-size select,
+    .pagination-jump .btn {
+        height: 28px;
+        font-size: 12px;
+    }
+}
+
+/* 禁用状态 */
+.btn-page:disabled {
+    color: #6c757d;
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-page:disabled:hover {
+    color: #6c757d;
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 加载状态 */
+.pagination-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.pagination-loading .btn-page {
+    cursor: not-allowed;
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pagination-wrapper {
+    animation: fadeIn 0.3s ease;
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+    .btn-page {
+        border-width: 2px;
+    }
+    
+    .btn-page:hover,
+    .btn-page.active {
+        border-width: 2px;
+    }
+}
+
+/* 暗色主题支持 */
+@media (prefers-color-scheme: dark) {
+    .pagination-wrapper {
+        background: #343a40;
+        border-color: #495057;
+    }
+    
+    .btn-page {
+        color: #e9ecef;
+        background: #495057;
+        border-color: #6c757d;
+    }
+    
+    .btn-page:hover {
+        color: #007bff;
+        background: #343a40;
+        border-color: #007bff;
+    }
+    
+    .btn-page.active {
+        color: #fff;
+        background: #007bff;
+        border-color: #007bff;
+    }
+    
+    .pagination-info {
+        background: #495057;
+        color: #e9ecef;
+    }
+    
+    .pagination-jump input,
+    .pagination-size select {
+        background: #495057;
+        border-color: #6c757d;
+        color: #e9ecef;
+    }
+    
+    .pagination-ellipsis {
+        color: #adb5bd;
+    }
+    
+    .pagination-container {
+        background: #343a40;
+        border-color: #495057;
+    }
+}

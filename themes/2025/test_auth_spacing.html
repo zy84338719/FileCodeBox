@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>认证页面间距测试</title>
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body class="auth-page">
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <img class="auth-logo-icon" src="/assets/images/logo.svg" alt="FileCodeBox Logo"/>
+                    <div class="auth-logo-text">FileCodeBox</div>
+                </div>
+                <div class="auth-title">创建账户</div>
+                <div class="auth-subtitle">加入 FileCodeBox，开始您的文件分享之旅</div>
+            </div>
+
+            <div id="alert" class="auth-message"></div>
+
+            <form class="auth-form">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" class="form-control" placeholder="请输入用户名" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">邮箱地址</label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="请输入邮箱地址" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="nickname">昵称 (可选)</label>
+                    <input type="text" id="nickname" name="nickname" class="form-control" placeholder="请输入昵称">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" class="form-control" placeholder="请输入密码" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码</label>
+                    <input type="password" id="confirmPassword" class="form-control" placeholder="请再次输入密码" required>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="agreeTerms" required>
+                    <label for="agreeTerms">
+                        我已阅读并同意 <a href="#" target="_blank">服务条款</a> 和 <a href="#" target="_blank">隐私政策</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="auth-btn">注册账户</button>
+            </form>
+
+            <div class="auth-link-section">
+                <p>已有账户？</p>
+                <a href="#" class="auth-link-btn">立即登录</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/models"
@@ -142,7 +143,8 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	common.SuccessResponse(c, &web.UserInfo{
+	// 构建用户信息响应
+	userInfo := &web.UserInfo{
 		ID:            user.ID,
 		Username:      user.Username,
 		Email:         user.Email,
@@ -151,7 +153,17 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 		Role:          user.Role,
 		Status:        user.Status,
 		EmailVerified: user.EmailVerified,
-	})
+	}
+
+	// 添加格式化的日期字段
+	if !user.CreatedAt.IsZero() {
+		userInfo.CreatedAt = user.CreatedAt.Format(time.RFC3339)
+	}
+	if user.LastLoginAt != nil && !user.LastLoginAt.IsZero() {
+		userInfo.LastLoginAt = user.LastLoginAt.Format(time.RFC3339)
+	}
+
+	common.SuccessResponse(c, userInfo)
 }
 
 // UpdateProfile 更新用户资料

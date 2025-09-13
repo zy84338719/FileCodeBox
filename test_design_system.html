@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设计系统测试 - FileCodeBox</title>
+    <link rel="stylesheet" href="themes/2025/css/base.css">
+    <link rel="stylesheet" href="themes/2025/css/layout.css">
+    <link rel="stylesheet" href="themes/2025/css/dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 主页面风格测试区域 -->
+        <div style="margin-bottom: 40px; padding: 30px; background: white; border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); text-align: center;">
+            <h2>主页面风格 - 完美居中</h2>
+            <p>这个区域展示主页面的居中风格，使用最大圆角 (--radius-xl = 30px)</p>
+            <div style="display: flex; gap: var(--spacing-md); justify-content: center; margin-top: var(--spacing-lg);">
+                <button style="padding: var(--spacing-sm) var(--spacing-lg); background: var(--primary-gradient); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer;">小圆角按钮</button>
+                <button style="padding: var(--spacing-sm) var(--spacing-lg); background: var(--primary-gradient); color: white; border: none; border-radius: var(--radius-md); cursor: pointer;">中等圆角按钮</button>
+                <button style="padding: var(--spacing-sm) var(--spacing-lg); background: var(--primary-gradient); color: white; border: none; border-radius: var(--radius-lg); cursor: pointer;">大圆角按钮</button>
+            </div>
+            
+            <!-- 圆角测试 -->
+            <div style="margin-top: var(--spacing-xl);">
+                <h3>统一圆角系统测试</h3>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--spacing-md); margin-top: var(--spacing-md);">
+                    <div style="background: #f0f0f0; padding: var(--spacing-md); border-radius: var(--radius-xs); text-align: center;">
+                        <small>XS<br>6px</small>
+                    </div>
+                    <div style="background: #f0f0f0; padding: var(--spacing-md); border-radius: var(--radius-sm); text-align: center;">
+                        <small>SM<br>12px</small>
+                    </div>
+                    <div style="background: #f0f0f0; padding: var(--spacing-md); border-radius: var(--radius-md); text-align: center;">
+                        <small>MD<br>18px</small>
+                    </div>
+                    <div style="background: #f0f0f0; padding: var(--spacing-md); border-radius: var(--radius-lg); text-align: center;">
+                        <small>LG<br>24px</small>
+                    </div>
+                    <div style="background: #f0f0f0; padding: var(--spacing-md); border-radius: var(--radius-xl); text-align: center;">
+                        <small>XL<br>30px</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 阴影测试 -->
+            <div style="margin-top: var(--spacing-xl);">
+                <h3>统一阴影系统测试</h3>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--spacing-md); margin-top: var(--spacing-md);">
+                    <div style="background: white; padding: var(--spacing-md); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); text-align: center;">
+                        <small>SM 阴影</small>
+                    </div>
+                    <div style="background: white; padding: var(--spacing-md); border-radius: var(--radius-md); box-shadow: var(--shadow-md); text-align: center;">
+                        <small>MD 阴影</small>
+                    </div>
+                    <div style="background: white; padding: var(--spacing-md); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); text-align: center;">
+                        <small>LG 阴影</small>
+                    </div>
+                    <div style="background: white; padding: var(--spacing-md); border-radius: var(--radius-md); box-shadow: var(--shadow-xl); text-align: center;">
+                        <small>XL 阴影</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 仪表板风格测试区域 -->
+        <div class="header">
+            <div class="logo">
+                <span>📁</span> FileCodeBox
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">U</div>
+                <span class="user-name">测试用户</span>
+                <button class="admin-btn">管理后台</button>
+                <button class="logout-btn">退出登录</button>
+            </div>
+        </div>
+        
+        <!-- 文件列表测试 -->
+        <div class="file-list">
+            <div class="file-list-header">
+                <h3>我的文件</h3>
+                <div class="file-count">3 个文件</div>
+            </div>
+            <table class="file-table">
+                <thead>
+                    <tr>
+                        <th>文件名</th>
+                        <th>大小</th>
+                        <th>上传时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="file-name">
+                            <span>📄</span> test_document.pdf
+                        </td>
+                        <td class="file-size">2.3 MB</td>
+                        <td class="file-date">2024-01-15</td>
+                        <td class="file-actions">
+                            <button class="btn-sm btn-info">查看</button>
+                            <button class="btn-sm btn-success">下载</button>
+                            <button class="btn-sm btn-danger">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="file-name">
+                            <span>🖼️</span> design_mockup.png
+                        </td>
+                        <td class="file-size">1.8 MB</td>
+                        <td class="file-date">2024-01-14</td>
+                        <td class="file-actions">
+                            <button class="btn-sm btn-info">查看</button>
+                            <button class="btn-sm btn-success">下载</button>
+                            <button class="btn-sm btn-danger">删除</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 分页测试 -->
+        <div class="pagination">
+            <button class="page-btn" disabled>‹ 上一页</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">下一页 ›</button>
+        </div>
+    </div>
+    
+    <script>
+        // 简单的交互测试
+        document.querySelectorAll('.btn-sm').forEach(btn => {
+            btn.addEventListener('click', function() {
+                console.log('按钮点击:', this.textContent);
+            });
+        });
+    </script>
+</body>
+</html>

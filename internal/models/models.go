@@ -59,6 +59,19 @@ type (
 	UserUpdateFields        = dto.UserUpdateFields
 	UserProfileUpdateFields = dto.UserProfileUpdateFields
 	UserStatsUpdateFields   = dto.UserStatsUpdateFields
+	ConfigUpdateFields      = dto.ConfigUpdateFields
+	FlatConfigUpdate        = dto.FlatConfigUpdate
+	MCPConfigUpdate         = dto.MCPConfigUpdate
+	BaseConfigUpdate        = dto.BaseConfigUpdate
+	TransferConfigUpdate    = dto.TransferConfigUpdate
+	UploadConfigUpdate      = dto.UploadConfigUpdate
+	DownloadConfigUpdate    = dto.DownloadConfigUpdate
+	UserConfigUpdate        = dto.UserConfigUpdate
+	StorageConfigUpdate     = dto.StorageConfigUpdate
+	S3ConfigUpdate          = dto.S3ConfigUpdate
+	WebDAVConfigUpdate      = dto.WebDAVConfigUpdate
+	OneDriveConfigUpdate    = dto.OneDriveConfigUpdate
+	NFSConfigUpdate         = dto.NFSConfigUpdate
 
 	// MCP 模型别名
 	SystemConfigResponse = mcp.SystemConfigResponse

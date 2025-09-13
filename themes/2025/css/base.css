@@ -1,0 +1,139 @@
+/* 基础样式 - 全局重置和基本设置 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* 统一的设计系统变量 */
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    
+    /* 统一的圆角系统 - 同心圆设计 */
+    --radius-xs: 6px;    /* 小元素 */
+    --radius-sm: 12px;   /* 按钮、输入框 */
+    --radius-md: 18px;   /* 卡片、容器 */
+    --radius-lg: 24px;   /* 主要容器 */
+    --radius-xl: 30px;   /* 页面容器 */
+    
+    /* 统一的阴影系统 */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.16);
+    
+    /* 统一的间距系统 */
+    --spacing-xs: 8px;
+    --spacing-sm: 12px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 40px;
+    --spacing-3xl: 48px;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--primary-gradient);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+/* 动态背景样式 - 由JavaScript动态设置 */
+body.custom-background {
+    background-image: var(--background-image);
+    opacity: var(--background-opacity, 1);
+}
+
+/* 全局按钮样式 */
+.btn {
+    padding: var(--spacing-sm) var(--spacing-xl);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--primary-gradient);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn:disabled:hover {
+    transform: none;
+}
+
+/* 表单控件基础样式 */
+.form-control {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 2px solid #e1e5e9;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-control::placeholder {
+    color: #adb5bd;
+}
+
+/* 统一的结果显示样式 */
+.result {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    border-radius: var(--radius-md);
+    display: none;
+    word-wrap: break-word;
+}
+
+.result.show {
+    display: block;
+}
+
+.result-code {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    color: var(--primary-color);
+    background: rgba(102, 126, 234, 0.1);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-sm);
+    margin: 10px 0;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+}

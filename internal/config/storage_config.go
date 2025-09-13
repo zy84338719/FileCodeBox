@@ -511,22 +511,30 @@ func (sc *StorageConfig) FromMap(data map[string]string) error {
 		if sc.S3 == nil {
 			sc.S3 = NewS3Config()
 		}
-		sc.S3.FromMap(data)
+		if err := sc.S3.FromMap(data); err != nil {
+			return fmt.Errorf("failed to parse S3 config: %w", err)
+		}
 	case "webdav":
 		if sc.WebDAV == nil {
 			sc.WebDAV = NewWebDAVConfig()
 		}
-		sc.WebDAV.FromMap(data)
+		if err := sc.WebDAV.FromMap(data); err != nil {
+			return fmt.Errorf("failed to parse WebDAV config: %w", err)
+		}
 	case "onedrive":
 		if sc.OneDrive == nil {
 			sc.OneDrive = NewOneDriveConfig()
 		}
-		sc.OneDrive.FromMap(data)
+		if err := sc.OneDrive.FromMap(data); err != nil {
+			return fmt.Errorf("failed to parse OneDrive config: %w", err)
+		}
 	case "nfs":
 		if sc.NFS == nil {
 			sc.NFS = NewNFSConfig()
 		}
-		sc.NFS.FromMap(data)
+		if err := sc.NFS.FromMap(data); err != nil {
+			return fmt.Errorf("failed to parse NFS config: %w", err)
+		}
 	}
 
 	return sc.Validate()

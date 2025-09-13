@@ -49,27 +49,10 @@ func (sh *StorageHandler) GetStorageInfo(c *gin.Context) {
 	}
 
 	// 构建存储配置信息
-	storageConfig := map[string]map[string]interface{}{
-		"local": {
-			"storage_path": sh.storageConfig.StoragePath,
-		},
-		"webdav": {
-			"hostname":  sh.storageConfig.WebDAV.Hostname,
-			"username":  sh.storageConfig.WebDAV.Username,
-			"root_path": sh.storageConfig.WebDAV.RootPath,
-			"url":       sh.storageConfig.WebDAV.URL,
-		},
-		"nfs": {
-			"server":      sh.storageConfig.NFS.Server,
-			"nfs_path":    sh.storageConfig.NFS.Path,
-			"mount_point": sh.storageConfig.NFS.MountPoint,
-			"version":     sh.storageConfig.NFS.Version,
-			"options":     sh.storageConfig.NFS.Options,
-			"timeout":     sh.storageConfig.NFS.Timeout,
-			"auto_mount":  sh.storageConfig.NFS.AutoMount,
-			"retry_count": sh.storageConfig.NFS.RetryCount,
-			"sub_path":    sh.storageConfig.NFS.SubPath,
-		},
+	storageConfig := map[string]interface{}{
+		"local":  sh.storageConfig,
+		"webdav": sh.storageConfig.WebDAV,
+		"nfs":    sh.storageConfig.NFS,
 	}
 
 	response := web.StorageInfoResponse{
@@ -103,12 +86,11 @@ func (sh *StorageHandler) SwitchStorage(c *gin.Context) {
 		return
 	}
 
-	response := web.StorageSwitchResponse{
+	common.SuccessResponse(c, web.StorageSwitchResponse{
 		Success:     true,
 		Message:     "存储切换成功",
 		CurrentType: req.Type,
-	}
-	common.SuccessResponse(c, response)
+	})
 }
 
 // TestStorageConnection 测试存储连接
@@ -146,25 +128,55 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 	// 根据存储类型更新配置
 	switch req.StorageType {
 	case "local":
-		if storagePath, ok := req.Config["storage_path"].(string); ok {
-			sh.storageConfig.StoragePath = storagePath
+		if val, ok := req.Config["storage_path"]; ok {
+			if storagePath, ok := val.(string); ok {
+				sh.storageConfig.StoragePath = storagePath
+			} else {
+				common.BadRequestResponse(c, "storage_path 必须是字符串类型")
+				return
+			}
 		}
 
 	case "webdav":
-		if hostname, ok := req.Config["hostname"].(string); ok {
-			sh.storageConfig.WebDAV.Hostname = hostname
+		if val, ok := req.Config["hostname"]; ok {
+			if hostname, ok := val.(string); ok {
+				sh.storageConfig.WebDAV.Hostname = hostname
+			} else {
+				common.BadRequestResponse(c, "hostname 必须是字符串类型")
+				return
+			}
 		}
-		if username, ok := req.Config["username"].(string); ok {
-			sh.storageConfig.WebDAV.Username = username
+		if val, ok := req.Config["username"]; ok {
+			if username, ok := val.(string); ok {
+				sh.storageConfig.WebDAV.Username = username
+			} else {
+				common.BadRequestResponse(c, "username 必须是字符串类型")
+				return
+			}
 		}
-		if password, ok := req.Config["password"].(string); ok && password != "" {
-			sh.storageConfig.WebDAV.Password = password
+		if val, ok := req.Config["password"]; ok {
+			if password, ok := val.(string); ok && password != "" {
+				sh.storageConfig.WebDAV.Password = password
+			} else if !ok {
+				common.BadRequestResponse(c, "password 必须是字符串类型")
+				return
+			}
 		}
-		if rootPath, ok := req.Config["root_path"].(string); ok {
-			sh.storageConfig.WebDAV.RootPath = rootPath
+		if val, ok := req.Config["root_path"]; ok {
+			if rootPath, ok := val.(string); ok {
+				sh.storageConfig.WebDAV.RootPath = rootPath
+			} else {
+				common.BadRequestResponse(c, "root_path 必须是字符串类型")
+				return
+			}
 		}
-		if url, ok := req.Config["url"].(string); ok {
-			sh.storageConfig.WebDAV.URL = url
+		if val, ok := req.Config["url"]; ok {
+			if url, ok := val.(string); ok {
+				sh.storageConfig.WebDAV.URL = url
+			} else {
+				common.BadRequestResponse(c, "url 必须是字符串类型")
+				return
+			}
 		}
 
 		// 重新创建 WebDAV 存储以应用新配置
@@ -180,63 +192,143 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 		}
 
 	case "s3":
-		if accessKeyID, ok := req.Config["access_key_id"].(string); ok {
-			sh.storageConfig.S3.AccessKeyID = accessKeyID
-		}
-		if secretAccessKey, ok := req.Config["secret_access_key"].(string); ok && secretAccessKey != "" {
-			sh.storageConfig.S3.SecretAccessKey = secretAccessKey
-		}
-		if bucketName, ok := req.Config["bucket_name"].(string); ok {
-			sh.storageConfig.S3.BucketName = bucketName
-		}
-		if endpointURL, ok := req.Config["endpoint_url"].(string); ok {
-			sh.storageConfig.S3.EndpointURL = endpointURL
-		}
-		if regionName, ok := req.Config["region_name"].(string); ok {
-			sh.storageConfig.S3.RegionName = regionName
-		}
-		if hostname, ok := req.Config["hostname"].(string); ok {
-			sh.storageConfig.S3.Hostname = hostname
-		}
-		if proxy, ok := req.Config["proxy"].(bool); ok {
-			if proxy {
-				sh.storageConfig.S3.Proxy = 1
+		if val, ok := req.Config["access_key_id"]; ok {
+			if accessKeyID, ok := val.(string); ok {
+				sh.storageConfig.S3.AccessKeyID = accessKeyID
 			} else {
-				sh.storageConfig.S3.Proxy = 0
+				common.BadRequestResponse(c, "access_key_id 必须是字符串类型")
+				return
+			}
+		}
+		if val, ok := req.Config["secret_access_key"]; ok {
+			if secretAccessKey, ok := val.(string); ok && secretAccessKey != "" {
+				sh.storageConfig.S3.SecretAccessKey = secretAccessKey
+			} else if !ok {
+				common.BadRequestResponse(c, "secret_access_key 必须是字符串类型")
+				return
+			}
+		}
+		if val, ok := req.Config["bucket_name"]; ok {
+			if bucketName, ok := val.(string); ok {
+				sh.storageConfig.S3.BucketName = bucketName
+			} else {
+				common.BadRequestResponse(c, "bucket_name 必须是字符串类型")
+				return
+			}
+		}
+		if val, ok := req.Config["endpoint_url"]; ok {
+			if endpointURL, ok := val.(string); ok {
+				sh.storageConfig.S3.EndpointURL = endpointURL
+			} else {
+				common.BadRequestResponse(c, "endpoint_url 必须是字符串类型")
+				return
+			}
+		}
+		if val, ok := req.Config["region_name"]; ok {
+			if regionName, ok := val.(string); ok {
+				sh.storageConfig.S3.RegionName = regionName
+			} else {
+				common.BadRequestResponse(c, "region_name 必须是字符串类型")
+				return
+			}
+		}
+		if val, ok := req.Config["hostname"]; ok {
+			if hostname, ok := val.(string); ok {
+				sh.storageConfig.S3.Hostname = hostname
+			} else {
+				common.BadRequestResponse(c, "hostname 必须是字符串类型")
+				return
+			}
+		}
+		if val, ok := req.Config["proxy"]; ok {
+			if proxy, ok := val.(bool); ok {
+				if proxy {
+					sh.storageConfig.S3.Proxy = 1
+				} else {
+					sh.storageConfig.S3.Proxy = 0
+				}
+			} else {
+				common.BadRequestResponse(c, "proxy 必须是布尔类型")
+				return
 			}
 		}
 
 	case "nfs":
-		if server, ok := req.Config["server"].(string); ok {
-			sh.storageConfig.NFS.Server = server
-		}
-		if nfsPath, ok := req.Config["nfs_path"].(string); ok {
-			sh.storageConfig.NFS.Path = nfsPath
-		}
-		if mountPoint, ok := req.Config["mount_point"].(string); ok {
-			sh.storageConfig.NFS.MountPoint = mountPoint
-		}
-		if version, ok := req.Config["version"].(string); ok {
-			sh.storageConfig.NFS.Version = version
-		}
-		if options, ok := req.Config["options"].(string); ok {
-			sh.storageConfig.NFS.Options = options
-		}
-		if timeout, ok := req.Config["timeout"].(float64); ok {
-			sh.storageConfig.NFS.Timeout = int(timeout)
-		}
-		if autoMount, ok := req.Config["auto_mount"].(bool); ok {
-			if autoMount {
-				sh.storageConfig.NFS.AutoMount = 1
+		if val, ok := req.Config["server"]; ok {
+			if server, ok := val.(string); ok {
+				sh.storageConfig.NFS.Server = server
 			} else {
-				sh.storageConfig.NFS.AutoMount = 0
+				common.BadRequestResponse(c, "server 必须是字符串类型")
+				return
 			}
 		}
-		if retryCount, ok := req.Config["retry_count"].(float64); ok {
-			sh.storageConfig.NFS.RetryCount = int(retryCount)
+		if val, ok := req.Config["nfs_path"]; ok {
+			if nfsPath, ok := val.(string); ok {
+				sh.storageConfig.NFS.Path = nfsPath
+			} else {
+				common.BadRequestResponse(c, "nfs_path 必须是字符串类型")
+				return
+			}
 		}
-		if subPath, ok := req.Config["sub_path"].(string); ok {
-			sh.storageConfig.NFS.SubPath = subPath
+		if val, ok := req.Config["mount_point"]; ok {
+			if mountPoint, ok := val.(string); ok {
+				sh.storageConfig.NFS.MountPoint = mountPoint
+			} else {
+				common.BadRequestResponse(c, "mount_point 必须是字符串类型")
+				return
+			}
+		}
+		if val, ok := req.Config["version"]; ok {
+			if version, ok := val.(string); ok {
+				sh.storageConfig.NFS.Version = version
+			} else {
+				common.BadRequestResponse(c, "version 必须是字符串类型")
+				return
+			}
+		}
+		if val, ok := req.Config["options"]; ok {
+			if options, ok := val.(string); ok {
+				sh.storageConfig.NFS.Options = options
+			} else {
+				common.BadRequestResponse(c, "options 必须是字符串类型")
+				return
+			}
+		}
+		if val, ok := req.Config["timeout"]; ok {
+			if timeout, ok := val.(float64); ok {
+				sh.storageConfig.NFS.Timeout = int(timeout)
+			} else {
+				common.BadRequestResponse(c, "timeout 必须是数值类型")
+				return
+			}
+		}
+		if val, ok := req.Config["auto_mount"]; ok {
+			if autoMount, ok := val.(bool); ok {
+				if autoMount {
+					sh.storageConfig.NFS.AutoMount = 1
+				} else {
+					sh.storageConfig.NFS.AutoMount = 0
+				}
+			} else {
+				common.BadRequestResponse(c, "auto_mount 必须是布尔类型")
+				return
+			}
+		}
+		if val, ok := req.Config["retry_count"]; ok {
+			if retryCount, ok := val.(float64); ok {
+				sh.storageConfig.NFS.RetryCount = int(retryCount)
+			} else {
+				common.BadRequestResponse(c, "retry_count 必须是数值类型")
+				return
+			}
+		}
+		if val, ok := req.Config["sub_path"]; ok {
+			if subPath, ok := val.(string); ok {
+				sh.storageConfig.NFS.SubPath = subPath
+			} else {
+				common.BadRequestResponse(c, "sub_path 必须是字符串类型")
+				return
+			}
 		}
 
 		// 重新创建 NFS 存储以应用新配置

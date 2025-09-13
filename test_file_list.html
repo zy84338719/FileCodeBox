@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件列表测试 - FileCodeBox</title>
+    <link rel="stylesheet" href="themes/2025/css/base.css">
+    <link rel="stylesheet" href="themes/2025/css/layout.css">
+    <link rel="stylesheet" href="themes/2025/css/dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <span>📁</span> FileCodeBox - 用户中心
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">U</div>
+                <span class="user-name">测试用户</span>
+                <button class="admin-btn">管理后台</button>
+                <button class="logout-btn">退出登录</button>
+            </div>
+        </div>
+        
+        <div class="nav-tabs">
+            <div class="tabs">
+                <button class="tab">仪表板</button>
+                <button class="tab">上传文件</button>
+                <button class="tab active">我的文件</button>
+                <button class="tab">个人资料</button>
+            </div>
+            
+            <div class="tab-content active">
+                <div class="content-section">
+                    <div class="section-header">
+                        <div class="section-title">📁 我的文件</div>
+                    </div>
+                    <div class="section-content">
+                        <div id="files-list">
+                            <!-- 去掉红色边框的文件列表 - 直接显示表格 -->
+                            <table class="file-table">
+                                <thead>
+                                    <tr>
+                                        <th>文件信息</th>
+                                        <th>提取码</th>
+                                        <th>大小</th>
+                                        <th>类型</th>
+                                        <th>过期时间</th>
+                                        <th>下载次数</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div class="file-name">
+                                                <span class="file-icon">📦</span>
+                                                <div>
+                                                    <div>🔓 EqMEGfUs-hfx03so8-themes_new_only_v4.zip</div>
+                                                    <span class="file-upload-type">认证上传</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="file-code">EqMEGfUs</span></td>
+                                        <td><span class="file-size">31.13 KB</span></td>
+                                        <td><span class="file-type">ZIP</span></td>
+                                        <td><span class="file-expire">2025/09/21 03:09:06</span></td>
+                                        <td><span class="file-downloads">0</span></td>
+                                        <td>
+                                            <div class="file-actions">
+                                                <button class="btn-sm btn-info" title="复制提取码">📋 复制</button>
+                                                <button class="btn-sm btn-success" title="下载文件">📥 下载</button>
+                                                <button class="btn-sm btn-danger" title="删除文件">🗑️ 删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="file-name">
+                                                <span class="file-icon">📦</span>
+                                                <div>
+                                                    <div>🔓 eOYbXloB-themes_new_only_v4.zip</div>
+                                                    <span class="file-upload-type">认证上传</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="file-code">eOYbXloB</span></td>
+                                        <td><span class="file-size">31.13 KB</span></td>
+                                        <td><span class="file-type">ZIP</span></td>
+                                        <td><span class="file-expire">2025/09/21 03:07:50</span></td>
+                                        <td><span class="file-downloads">0</span></td>
+                                        <td>
+                                            <div class="file-actions">
+                                                <button class="btn-sm btn-info" title="复制提取码">📋 复制</button>
+                                                <button class="btn-sm btn-success" title="下载文件">📥 下载</button>
+                                                <button class="btn-sm btn-danger" title="删除文件">🗑️ 删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="file-name">
+                                                <span class="file-icon">🖥️</span>
+                                                <div>
+                                                    <div>🔓 qqzTfXWS-飞书2024-v0.1.3_aarch64.dmg</div>
+                                                    <span class="file-upload-type">认证上传</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="file-code">qqzTfXWS</span></td>
+                                        <td><span class="file-size">21.8 MB</span></td>
+                                        <td><span class="file-type">DMG</span></td>
+                                        <td><span class="file-expire">2025/09/16 02:28:58</span></td>
+                                        <td><span class="file-downloads">0</span></td>
+                                        <td>
+                                            <div class="file-actions">
+                                                <button class="btn-sm btn-info" title="复制提取码">📋 复制</button>
+                                                <button class="btn-sm btn-success" title="下载文件">📥 下载</button>
+                                                <button class="btn-sm btn-danger" title="删除文件">🗑️ 删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="file-name">
+                                                <span class="file-icon">📦</span>
+                                                <div>
+                                                    <div>🔓 hfx03so8-themes_new_only_v4.zip</div>
+                                                    <span class="file-upload-type">认证上传</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="file-code">hfx03so8</span></td>
+                                        <td><span class="file-size">31.13 KB</span></td>
+                                        <td><span class="file-type">ZIP</span></td>
+                                        <td><span class="file-expire">2025/09/16 01:57:56</span></td>
+                                        <td><span class="file-downloads">2</span></td>
+                                        <td>
+                                            <div class="file-actions">
+                                                <button class="btn-sm btn-info" title="复制提取码">📋 复制</button>
+                                                <button class="btn-sm btn-success" title="下载文件">📥 下载</button>
+                                                <button class="btn-sm btn-danger" title="删除文件">🗑️ 删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="file-name">
+                                                <span class="file-icon">📦</span>
+                                                <div>
+                                                    <div>🔓 themes_new_only_v4.zip</div>
+                                                    <span class="file-upload-type">认证上传</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="file-code">D0E6Jfnc</span></td>
+                                        <td><span class="file-size">31.13 KB</span></td>
+                                        <td><span class="file-type">ZIP</span></td>
+                                        <td><span class="file-expire">2025/09/16 00:01:04</span></td>
+                                        <td><span class="file-downloads">3</span></td>
+                                        <td>
+                                            <div class="file-actions">
+                                                <button class="btn-sm btn-info" title="复制提取码">📋 复制</button>
+                                                <button class="btn-sm btn-success" title="下载文件">📥 下载</button>
+                                                <button class="btn-sm btn-danger" title="删除文件">🗑️ 删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            
+                            <!-- 增强的分页功能 -->
+                            <div class="pagination">
+                                <button class="page-btn" disabled>‹ 上一页</button>
+                                <button class="page-btn active">1</button>
+                                <button class="page-btn">2</button>
+                                <button class="page-btn">3</button>
+                                <span class="page-ellipsis">...</span>
+                                <button class="page-btn">8</button>
+                                <button class="page-btn">下一页 ›</button>
+                                <span class="page-info">第 1 页，共 8 页 (75 个文件)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 简单的按钮交互测试
+        document.querySelectorAll('.btn-sm').forEach(btn => {
+            btn.addEventListener('click', function() {
+                alert('按钮功能: ' + this.textContent.trim());
+            });
+        });
+        
+        document.querySelectorAll('.page-btn:not([disabled])').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (!this.classList.contains('active')) {
+                    document.querySelector('.page-btn.active').classList.remove('active');
+                    this.classList.add('active');
+                    console.log('切换到页面:', this.textContent);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

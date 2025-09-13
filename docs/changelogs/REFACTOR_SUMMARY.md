@@ -1,45 +1,99 @@
 # FileCodeBox 架构重构总结
 
+# FileCodeBox 架构重构总结
+
 ## 🎯 重构目标完成情况
 
 ### ✅ 已完成的重构任务
 
-#### 1. 数据库多类型支持
+#### 1. Repository 模式架构完成
+- **Repository Manager**：统一的数据访问管理器，替代原有 DAO 模式
+- **类型安全**：完整的 Repository 接口，支持事务管理
+- **向后兼容**：保持 `daoManager` 变量名，类型为 `*repository.RepositoryManager`
+
+#### 2. 配置管理系统完善
+- **分层配置架构**：`BaseConfig`, `DatabaseConfig`, `StorageConfig`, `UserSystemConfig`, `MCPConfig`
+- **环境变量优先级**：PORT、ADMIN_TOKEN 等关键配置优先使用环境变量
+- **数据库持久化**：配置自动保存到 key_value 表，支持运行时动态更新
+- **热重载机制**：通过 ReloadConfig() 方法实现配置的运行时更新
+- **完整验证**：每个配置模块都有独立的验证方法
+
+#### 3. 数据库多类型支持
 - **SQLite**：默认配置，零配置启动
 - **MySQL**：生产环境推荐
 - **PostgreSQL**：企业级部署选择
 
-#### 2. 路由架构完全重构
-- **模块化设计**：按功能拆分路由文件
-- **职责分离**：每个模块独立管理其路由
-- **向后兼容**：保持原有API接口不变
+#### 4. 路由架构完全重构
+- **模块化设计**：按功能拆分路由文件 (`base.go`, `share.go`, `user.go`, `chunk.go`, `admin.go`)
+- **自动化依赖注入**：`SetupAllRoutesWithDependencies()` 实现完整的服务→处理器→路由初始化链
+- **服务器生命周期管理**：`CreateAndStartServer()` 和 `GracefulShutdown()` 提供完整的服务器管理
 
-#### 3. 服务依赖整合
-- **自动化初始化**：一键创建所有服务和处理器
-- **集中管理**：routes模块统一管理应用启动
-- **简化main.go**：主文件专注核心初始化流程
+#### 5. 服务依赖整合与自动化
+- **现代化依赖注入**：服务层通过构造函数自动注入依赖
+- **服务间依赖管理**：如 `shareService` 依赖 `userService` 和 `storageService`
+- **集中管理**：routes模块统一管理应用启动和服务初始化
+
+#### 6. MCP 服务器集成优化
+- **Repository 模式适配**：MCP 层完全迁移到 Repository 模式
+- **统一命名约定**：保持 `daoManager` 变量名，避免架构迁移中的命名不一致
+- **生命周期管理**：通过 MCPManager 提供完整的 MCP 服务器启动/停止/重启功能
+
+#### 7. 模型架构分层完善
+- **四层模型架构**：`db/`, `service/`, `dto/`, `mcp/` 按用途分层组织
+- **类型别名兼容层**：`internal/models/models.go` 通过类型别名提供向后兼容性
+- **统一导出**：集中管理所有模型的导出，简化导入复杂度
 
 ## 📁 新的项目结构
 
 ```
 internal/
-├── routes/                    # 🆕 路由模块（完全重构）
+├── config/                   # 🔄 配置管理模块（完整重构）
+│   ├── manager.go            # 统一配置管理核心，支持环境变量+数据库双重配置源
+│   ├── base.go               # 基础配置：主机、端口、数据路径、生产模式
+│   ├── database.go           # 数据库配置：类型、连接参数、SSL设置
+│   ├── storage.go            # 存储配置：本地、S3、WebDAV、OneDrive
+│   ├── user.go               # 用户系统配置：启用状态、注册开关、验证设置
+│   └── mcp.go                # MCP配置：服务器启用、端口、工具配置
+├── routes/                   # 🆕 路由模块（完全重构）
+│   ├── setup.go              # 路由整合和服务器管理（CreateAndStartServer、GracefulShutdown）
 │   ├── base.go               # 基础路由（首页、健康检查、静态文件、Swagger）
 │   ├── share.go              # 分享功能路由 (/share/*)
 │   ├── user.go               # 用户系统路由 (/user/*)
 │   ├── chunk.go              # 分片上传路由 (/chunk/*)
-│   ├── admin.go              # 管理后台路由 (/admin/*)
-│   ├── setup.go              # 路由整合和服务器管理
-│   ├── routes.go             # 兼容性说明文件
-│   └── README.md             # 路由结构文档
+│   └── admin.go              # 管理后台路由 (/admin/*)
+├── repository/               # 🆕 Repository 模式（替代 DAO）
+│   ├── manager.go            # Repository 管理器，提供统一的数据访问抽象层
+│   ├── user.go               # 用户数据访问
+│   ├── file_code.go          # 文件代码数据访问
+│   ├── chunk.go              # 分片数据访问
+│   ├── user_session.go       # 用户会话数据访问
+│   └── key_value.go          # 键值对数据访问
+├── models/                   # 🔄 模型架构（分层完善）
+│   ├── models.go             # 统一导出层，类型别名提供向后兼容性
+│   ├── db/                   # 数据库实体模型
+│   ├── service/              # 服务层传输对象
+│   ├── dto/                  # 数据传输对象
+│   └── mcp/                  # MCP 协议相关模型
 ├── database/                 # 🔄 数据库模块（多类型支持）
 │   └── database.go           # 支持 SQLite、MySQL、PostgreSQL
-├── config/                   # 🔄 配置模块（新增数据库配置）
-│   └── config.go             # 环境变量 + 数据库配置支持
+├── mcp/                      # 🔄 MCP 服务器（Repository 模式适配）
+│   ├── manager.go            # MCP 服务器生命周期管理
+│   └── filecodebox.go        # FileCodeBox MCP 工具实现
 └── ...（其他模块保持不变）
 ```
 
 ## 🚀 新功能特性
+
+### Repository 模式
+- **统一数据访问层**：`RepositoryManager` 提供一致的数据访问接口
+- **事务支持**：`BeginTransaction()` 方法支持数据库事务管理
+- **类型安全**：强类型的 Repository 接口，减少运行时错误
+
+### 配置管理增强
+- **分层配置结构**：每个功能模块都有独立的配置结构体
+- **序列化支持**：`ToMap()` 和 `FromMap()` 方法支持配置的序列化和反序列化
+- **配置验证**：每个配置模块都有 `Validate()` 方法进行配置验证
+- **热重载**：`ReloadConfig()` 支持运行时配置更新，无需重启应用
 
 ### 数据库配置
 - **环境变量配置**：`DB_TYPE`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_SSL`
@@ -62,14 +116,14 @@ internal/
 
 ### 应用启动
 ```go
-// 旧方式：需要手动初始化各种服务和处理器
-userService := services.NewUserService(...)
-shareService := services.NewShareService(...)
-// ... 更多初始化代码
-
-// 新方式：一行代码完成所有初始化
-srv, err := routes.CreateAndStartServer(cfg, daoManager, storageManager)
+// 现代化依赖注入：一行代码完成所有初始化
+srv, err := routes.CreateAndStartServer(manager, daoManager, storageManager)
 ```
+
+### MCP 服务器集成
+- **完整生命周期管理**：启动、停止、重启、状态检查
+- **Repository 模式适配**：与项目架构保持一致
+- **统一错误处理**：与项目的错误处理机制集成
 
 ## 🔧 使用示例
 
@@ -184,10 +238,33 @@ services:
 ## 🏆 总结
 
 这次重构实现了：
+- **Repository 模式完整实现**：统一的数据访问层，支持事务管理
+- **配置管理系统完善**：分层配置、环境变量优先级、数据库持久化、热重载
 - **数据库多类型支持**：SQLite、MySQL、PostgreSQL
-- **路由完全模块化**：7个功能模块，职责清晰
-- **服务依赖自动化**：一键初始化所有组件
+- **路由完全模块化**：7个功能模块，职责清晰，自动化依赖注入
+- **MCP 服务器集成优化**：Repository 模式适配，完整生命周期管理
+- **模型架构分层**：四层模型结构 (db/service/dto/mcp)，类型别名兼容层
+- **容器化优化**：多阶段构建，CGO 支持，安全实践
 - **向后完全兼容**：无痛升级路径
-- **生产环境就绪**：企业级数据库支持
 
-通过这次重构，FileCodeBox 从一个单体应用演进为具有现代微服务架构特征的模块化应用，为未来的功能扩展和性能优化奠定了坚实的基础。
+通过这次重构，FileCodeBox 从一个单体应用演进为具有现代微服务架构特征的模块化应用，实现了：
+
+### 架构层面
+- **Clean Architecture**：明确的层次分离和依赖方向
+- **Repository Pattern**：统一的数据访问抽象
+- **Dependency Injection**：现代化的依赖管理
+- **Configuration Management**：企业级配置管理机制
+
+### 开发体验
+- **模块化开发**：每个功能模块独立开发和测试
+- **类型安全**：完整的类型系统，减少运行时错误
+- **代码复用**：通用组件在多个模块间共享
+- **热重载配置**：无需重启即可更新配置
+
+### 生产就绪
+- **多数据库支持**：适应不同的部署环境需求
+- **容器化部署**：标准的 Docker 镜像构建
+- **安全实践**：非 root 用户运行，最小权限原则
+- **优雅关闭**：生产环境友好的生命周期管理
+
+为未来的功能扩展和性能优化奠定了坚实的基础。

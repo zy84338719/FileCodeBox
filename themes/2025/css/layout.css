@@ -1,0 +1,233 @@
+/* 布局样式 - 容器、网格、间距等布局相关 */
+
+/* 主页面容器 - 居中设计 */
+.container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-xl);
+    backdrop-filter: blur(10px);
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    margin: var(--spacing-lg) auto;
+}
+
+/* 仪表板容器 - 全屏居中设计 */
+.dashboard-container {
+    background: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: var(--spacing-lg);
+}
+
+.dashboard-container .container {
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    max-width: 1200px;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+/* 进度条容器 */
+.progress-container {
+    margin: var(--spacing-lg) 0;
+    display: none;
+}
+
+.progress-container.show {
+    display: block;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background: #f0f0f0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary-gradient);
+    border-radius: var(--radius-sm);
+    width: 0%;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #333;
+    font-weight: 600;
+    font-size: 12px;
+    z-index: 1;
+}
+
+.upload-status {
+    text-align: center;
+    margin: 10px 0;
+    font-weight: 600;
+}
+
+.status-uploading {
+    color: var(--primary-color);
+}
+
+.status-success {
+    color: #28a745;
+}
+
+.status-error {
+    color: #dc3545;
+}
+
+/* 通知系统 */
+.notification {
+    position: fixed;
+    top: var(--spacing-lg);
+    right: var(--spacing-lg);
+    background: #28a745;
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    z-index: 10000;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.error {
+    background: #dc3545;
+}
+
+.notification.warning {
+    background: #ffc107;
+    color: #333;
+}
+
+.notification.info {
+    background: #17a2b8;
+}
+
+/* 模态框基础结构 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-overlay.show {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: var(--shadow-xl);
+}
+
+.modal-close {
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+    padding: 5px;
+    line-height: 1;
+    border-radius: var(--radius-xs);
+}
+
+.modal-close:hover {
+    color: #333;
+    background: #f8f9fa;
+}
+
+/* 加载状态 */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 1000;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 隐藏元素 */
+.hidden {
+    display: none !important;
+}
+
+.invisible {
+    visibility: hidden;
+}
+
+/* 文本对齐 */
+.text-center {
+    text-align: center;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.text-right {
+    text-align: right;
+}
+
+/* 间距工具类 */
+.mt-10 { margin-top: 10px; }
+.mt-20 { margin-top: 20px; }
+.mb-10 { margin-bottom: 10px; }
+.mb-20 { margin-bottom: 20px; }
+.p-10 { padding: 10px; }
+.p-20 { padding: 20px; }

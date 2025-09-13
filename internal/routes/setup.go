@@ -102,13 +102,13 @@ func SetupAllRoutesWithDependencies(
 	storageService := storage.NewConcreteStorageService(manager)
 
 	// 初始化服务
-	userService := services.NewUserService(daoManager, manager)                                // 先初始化用户服务
-	shareService := services.NewShareService(daoManager, manager, storageService, userService) // 使用新的存储服务
-	chunkService := services.NewChunkService(daoManager, manager, storageService)              // 使用新的存储服务
-	adminService := services.NewAdminService(daoManager, manager, storageService)              // 使用新的存储服务
+	userService := services.NewUserService(daoManager, manager)                                        // 先初始化用户服务
+	shareServiceInstance := services.NewShareService(daoManager, manager, storageService, userService) // 使用带用户服务的分享服务
+	chunkService := services.NewChunkService(daoManager, manager, storageService)                      // 使用新的存储服务
+	adminService := services.NewAdminService(daoManager, manager, storageService)                      // 使用新的存储服务
 
 	// 初始化处理器
-	shareHandler := handlers.NewShareHandler(shareService)
+	shareHandler := handlers.NewShareHandler(shareServiceInstance)
 	chunkHandler := handlers.NewChunkHandler(chunkService)
 	adminHandler := handlers.NewAdminHandler(adminService, manager)
 	storageHandler := handlers.NewStorageHandler(storageManager, manager.Storage, manager)

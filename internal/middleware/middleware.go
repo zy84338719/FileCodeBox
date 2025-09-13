@@ -245,3 +245,39 @@ func OptionalUserAuth(manager *config.ConfigManager, userService interface {
 		c.Next()
 	}
 }
+
+// AdminTokenAuth 管理员Token认证中间件
+func AdminTokenAuth(manager *config.ConfigManager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 获取Authorization头
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			common.UnauthorizedResponse(c, "缺少认证信息")
+			c.Abort()
+			return
+		}
+
+		// 检查Bearer前缀
+		tokenParts := strings.SplitN(authHeader, " ", 2)
+		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+			common.UnauthorizedResponse(c, "认证格式错误")
+			c.Abort()
+			return
+		}
+
+		token := tokenParts[1]
+
+		// 验证管理员token
+		if token != manager.AdminToken {
+			common.UnauthorizedResponse(c, "管理员token无效")
+			c.Abort()
+			return
+		}
+
+		// 设置管理员身份到上下文
+		c.Set("is_admin", true)
+		c.Set("role", "admin")
+
+		c.Next()
+	}
+}

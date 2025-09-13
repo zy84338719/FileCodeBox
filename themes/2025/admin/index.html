@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="css/storage.css">
     <link rel="stylesheet" href="css/mcp.css">
     <link rel="stylesheet" href="css/files.css">
+    <link rel="stylesheet" href="css/pagination.css">
     
     <!-- 图标库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -362,11 +363,11 @@
                         </div>
 
                         <!-- 分页控件 -->
-                        <div class="pagination-container" id="files-pagination-container">
+                        <div class="pagination-container" id="files-pagination-container" style="display: none;">
                             <div class="pagination-info">
                                 显示第 <span id="files-current-start">0</span>-<span id="files-current-end">0</span> 条，共 <span id="files-total">0</span> 条记录
                             </div>
-                            <div class="pagination-controls" id="files-pagination">
+                            <div class="pagination-wrapper" id="files-pagination">
                                 <!-- 分页按钮将通过 JavaScript 生成 -->
                             </div>
                         </div>
@@ -515,11 +516,13 @@
                         </div>
                         
                         <!-- 分页控件 -->
-                        <div class="pagination-container">
+                        <div class="pagination-container" id="user-pagination-container" style="display: none;">
                             <div class="pagination-info">
-                                <span>显示第 <span id="page-start">1</span> - <span id="page-end">20</span> 条，共 <span id="total-count">0</span> 条记录</span>
+                                显示第 <span id="page-start">1</span>-<span id="page-end">20</span> 条，共 <span id="total-count">0</span> 条记录
                             </div>
-                            <div class="pagination" id="user-pagination"></div>
+                            <div class="pagination-wrapper" id="user-pagination">
+                                <!-- 分页按钮将通过 JavaScript 生成 -->
+                            </div>
                         </div>
                     </div>
 

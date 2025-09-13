@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
-	"github.com/zy84338719/filecodebox/internal/middleware"
+	"github.com/zy84338719/filecodebox/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,10 +43,48 @@ func SetupAdminRoutes(
 		adminGroup.Static("/components", fmt.Sprintf("%s/components", themeDir))
 	}
 
-	// 需要用户认证且为管理员的API路由组
+	// 创建一个支持两种认证方式的中间件
+	combinedAuthMiddleware := func(c *gin.Context) {
+		// 先尝试JWT用户认证
+		authHeader := c.GetHeader("Authorization")
+		if authHeader != "" {
+			tokenParts := strings.SplitN(authHeader, " ", 2)
+			if len(tokenParts) == 2 && tokenParts[0] == "Bearer" {
+				// 尝试验证JWT token
+				claimsInterface, err := userService.ValidateToken(tokenParts[1])
+				if err == nil {
+					// JWT验证成功，检查是否为管理员角色
+					if claims, ok := claimsInterface.(*services.AuthClaims); ok && claims.Role == "admin" {
+						// 设置用户信息到上下文
+						c.Set("user_id", claims.UserID)
+						c.Set("username", claims.Username)
+						c.Set("role", claims.Role)
+						c.Set("session_id", claims.SessionID)
+						c.Set("auth_type", "jwt")
+						c.Next()
+						return
+					}
+				}
+
+				// JWT验证失败，尝试管理员token认证
+				if tokenParts[1] == cfg.AdminToken {
+					c.Set("is_admin", true)
+					c.Set("role", "admin")
+					c.Set("auth_type", "admin_token")
+					c.Next()
+					return
+				}
+			}
+		}
+
+		// 两种认证都失败
+		c.JSON(401, gin.H{"code": 401, "message": "认证失败"})
+		c.Abort()
+	}
+
+	// 需要管理员认证的API路由组
 	authGroup := adminGroup.Group("")
-	authGroup.Use(middleware.UserAuth(cfg, userService))
-	authGroup.Use(middleware.AdminAuth(cfg)) // 验证用户是否为管理员
+	authGroup.Use(combinedAuthMiddleware)
 	{
 		// 仪表板和统计
 		authGroup.GET("/dashboard", adminHandler.Dashboard)

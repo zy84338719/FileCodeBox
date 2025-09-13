@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/zy84338719/filecodebox/internal/models"
 	"gorm.io/gorm"
@@ -302,7 +303,25 @@ func (cm *ConfigManager) LoadFromDatabase() error {
 	// 构建数据映射
 	data := make(map[string]string)
 	for _, kv := range kvPairs {
-		data[kv.Key] = kv.Value
+		// 支持嵌套格式的键，转换为平面格式
+		if strings.Contains(kv.Key, ".") {
+			// 将嵌套格式转换为平面格式，例如 "user.allow_user_registration" -> "allow_user_registration"
+			parts := strings.SplitN(kv.Key, ".", 2)
+			if len(parts) == 2 {
+				// 如果是已知的嵌套格式，去掉前缀
+				switch parts[0] {
+				case "user", "base", "transfer", "storage", "database", "mcp":
+					data[parts[1]] = kv.Value
+				default:
+					// 保持原样
+					data[kv.Key] = kv.Value
+				}
+			} else {
+				data[kv.Key] = kv.Value
+			}
+		} else {
+			data[kv.Key] = kv.Value
+		}
 	}
 
 	// 加载各个配置模块

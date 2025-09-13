@@ -188,12 +188,13 @@ type AdminDownloadConfig struct {
 
 // AdminUserConfig 用户配置请求
 type AdminUserConfig struct {
-	AllowUserRegistration *int   `json:"allow_user_registration,omitempty"`
-	RequireEmailVerify    *int   `json:"require_email_verify,omitempty"`
-	UserUploadSize        *int64 `json:"user_upload_size,omitempty"`
-	UserStorageQuota      *int64 `json:"user_storage_quota,omitempty"`
-	SessionExpiryHours    *int   `json:"session_expiry_hours,omitempty"`
-	MaxSessionsPerUser    *int   `json:"max_sessions_per_user,omitempty"`
+	AllowUserRegistration *int    `json:"allow_user_registration,omitempty"`
+	RequireEmailVerify    *int    `json:"require_email_verify,omitempty"`
+	UserUploadSize        *int64  `json:"user_upload_size,omitempty"`
+	UserStorageQuota      *int64  `json:"user_storage_quota,omitempty"`
+	SessionExpiryHours    *int    `json:"session_expiry_hours,omitempty"`
+	MaxSessionsPerUser    *int    `json:"max_sessions_per_user,omitempty"`
+	JWTSecret             *string `json:"jwt_secret,omitempty"`
 }
 
 // AdminSystemStatusResponse 管理员系统状态响应

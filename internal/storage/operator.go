@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mime/multipart"
 
+	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/models"
 
 	"github.com/gin-gonic/gin"
@@ -81,16 +82,13 @@ func (so *StorageOperator) CleanChunks(uploadID string) error {
 func (so *StorageOperator) GetFileResponse(c *gin.Context, fileCode *models.FileCode) error {
 	// 处理文本分享
 	if fileCode.Text != "" {
-		c.JSON(200, gin.H{
-			"code":    200,
-			"message": "success",
-			"detail": gin.H{
-				"code": fileCode.Code,
-				"name": fileCode.Prefix + fileCode.Suffix,
-				"size": fileCode.Size,
-				"text": fileCode.Text,
-			},
-		})
+		response := map[string]interface{}{
+			"code": fileCode.Code,
+			"name": fileCode.Prefix + fileCode.Suffix,
+			"size": fileCode.Size,
+			"text": fileCode.Text,
+		}
+		common.SuccessResponse(c, response)
 		return nil
 	}
 
@@ -104,11 +102,22 @@ func (so *StorageOperator) GetFileResponse(c *gin.Context, fileCode *models.File
 
 	// 检查文件是否存在
 	if !so.strategy.FileExists(fullPath) {
-		return fmt.Errorf("文件不存在")
+		// 如果在新位置不存在，尝试检查旧位置（兼容性处理）
+		// 对于旧数据，文件可能存储在项目根目录下
+		legacyFullPath := filePath
+		if so.strategy.FileExists(legacyFullPath) {
+			fullPath = legacyFullPath
+		} else {
+			return fmt.Errorf("文件不存在")
+		}
 	}
 
 	// 委托给具体策略处理文件下载
-	fileName := fileCode.Prefix + fileCode.Suffix
+	fileName := fileCode.UUIDFileName
+	if fileName == "" {
+		// 向后兼容：如果UUIDFileName为空，则使用Prefix + Suffix
+		fileName = fileCode.Prefix + fileCode.Suffix
+	}
 	return so.strategy.ServeFile(c, fullPath, fileName)
 }
 

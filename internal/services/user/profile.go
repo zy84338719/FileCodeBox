@@ -112,6 +112,13 @@ func (s *Service) UpdateUserStats(userID uint, statsType string, value int64) er
 		user.TotalStorage += value
 	case "download":
 		user.TotalDownloads++
+	case "delete":
+		// 删除文件时，减少存储使用量（value应该是负数）
+		user.TotalStorage += value
+		// 确保存储使用量不会变成负数
+		if user.TotalStorage < 0 {
+			user.TotalStorage = 0
+		}
 	default:
 		return errors.New("invalid stats type")
 	}

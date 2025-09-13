@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员配置面板 - 结构化DTO示例</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .content {
+            padding: 20px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+        }
+        
+        .section-title {
+            margin: 0 0 15px 0;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .col {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>FileCodeBox 管理员配置面板</h1>
+            <p>使用新的结构化DTO配置API</p>
+        </div>
+        
+        <div class="content">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('structured')">结构化配置</div>
+                <div class="tab" onclick="switchTab('flat')">平面化配置</div>
+                <div class="tab" onclick="switchTab('batch')">批量配置</div>
+                <div class="tab" onclick="switchTab('current')">当前配置</div>
+            </div>
+
+            <!-- 结构化配置 -->
+            <div id="structured-tab" class="tab-content active">
+                <div class="row">
+                    <div class="col">
+                        <div class="section">
+                            <h3 class="section-title">MCP服务器配置</h3>
+                            <div class="form-group">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="enable_mcp_server">
+                                    <label for="enable_mcp_server">启用MCP服务器</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="mcp_port">MCP端口</label>
+                                <input type="text" id="mcp_port" value="8081">
+                            </div>
+                            <div class="form-group">
+                                <label for="mcp_host">MCP主机</label>
+                                <input type="text" id="mcp_host" value="0.0.0.0">
+                            </div>
+                            <button class="btn" onclick="updateMCPConfig()">更新MCP配置</button>
+                        </div>
+
+                        <div class="section">
+                            <h3 class="section-title">用户系统配置</h3>
+                            <div class="form-group">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="allow_user_registration">
+                                    <label for="allow_user_registration">允许用户注册</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="require_email_verify">
+                                    <label for="require_email_verify">需要邮箱验证</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="jwt_secret">JWT密钥 (至少16个字符)</label>
+                                <input type="text" id="jwt_secret" placeholder="请输入JWT密钥">
+                            </div>
+                            <div class="form-group">
+                                <label for="user_upload_size">用户上传限制 (字节)</label>
+                                <input type="number" id="user_upload_size" value="52428800">
+                            </div>
+                            <div class="form-group">
+                                <label for="user_storage_quota">用户存储配额 (字节)</label>
+                                <input type="number" id="user_storage_quota" value="1073741824">
+                            </div>
+                            <button class="btn" onclick="updateUserConfig()">更新用户配置</button>
+                        </div>
+                    </div>
+
+                    <div class="col">
+                        <div class="section">
+                            <h3 class="section-title">基础配置</h3>
+                            <div class="form-group">
+                                <label for="base_name">站点名称</label>
+                                <input type="text" id="base_name" placeholder="文件快递柜 - FileCodeBox">
+                            </div>
+                            <div class="form-group">
+                                <label for="base_description">站点描述</label>
+                                <input type="text" id="base_description" placeholder="开箱即用的文件快传系统">
+                            </div>
+                            <div class="form-group">
+                                <label for="base_keywords">关键词</label>
+                                <input type="text" id="base_keywords" placeholder="FileCodeBox, 文件快递柜, 口令传送箱">
+                            </div>
+                            <button class="btn" onclick="updateBaseConfig()">更新基础配置</button>
+                        </div>
+
+                        <div class="section">
+                            <h3 class="section-title">传输配置</h3>
+                            <div class="form-group">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="open_upload" checked>
+                                    <label for="open_upload">开放上传</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="upload_size">上传大小限制 (字节)</label>
+                                <input type="number" id="upload_size" value="10485760">
+                            </div>
+                            <div class="form-group">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="enable_chunk">
+                                    <label for="enable_chunk">启用分块上传</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="chunk_size">分块大小 (字节)</label>
+                                <input type="number" id="chunk_size" value="2097152">
+                            </div>
+                            <button class="btn" onclick="updateTransferConfig()">更新传输配置</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 平面化配置 -->
+            <div id="flat-tab" class="tab-content">
+                <div class="section">
+                    <h3 class="section-title">平面化配置更新</h3>
+                    <div class="form-group">
+                        <label for="flat_config">JSON配置 (平面格式)</label>
+                        <textarea id="flat_config" rows="10">{
+  "enable_mcp_server": 1,
+  "mcp_port": "8081",
+  "allow_user_registration": 1,
+  "jwt_secret": "mySecretKey123456",
+  "name": "我的文件快递柜",
+  "open_upload": 1,
+  "upload_size": 10485760
+}</textarea>
+                    </div>
+                    <button class="btn" onclick="updateFlatConfig()">更新平面化配置</button>
+                    <button class="btn btn-secondary" onclick="formatFlatConfig()">格式化JSON</button>
+                </div>
+            </div>
+
+            <!-- 批量配置 -->
+            <div id="batch-tab" class="tab-content">
+                <div class="section">
+                    <h3 class="section-title">批量配置更新</h3>
+                    <div class="form-group">
+                        <label for="batch_config">JSON配置 (嵌套结构)</label>
+                        <textarea id="batch_config" rows="15">{
+  "base": {
+    "name": "批量更新的文件快递柜",
+    "description": "通过批量API更新的描述"
+  },
+  "mcp": {
+    "enable_mcp_server": 1,
+    "mcp_port": "8082",
+    "mcp_host": "127.0.0.1"
+  },
+  "user": {
+    "allow_user_registration": 1,
+    "jwt_secret": "batchUpdateSecret123456"
+  },
+  "transfer": {
+    "upload": {
+      "open_upload": 1,
+      "upload_size": 20971520
+    }
+  },
+  "notify_title": "系统通知",
+  "opacity": 85
+}</textarea>
+                    </div>
+                    <button class="btn" onclick="updateBatchConfig()">批量更新配置</button>
+                    <button class="btn btn-secondary" onclick="formatBatchConfig()">格式化JSON</button>
+                </div>
+            </div>
+
+            <!-- 当前配置 -->
+            <div id="current-tab" class="tab-content">
+                <div class="section">
+                    <h3 class="section-title">当前系统配置</h3>
+                    <button class="btn btn-success" onclick="loadCurrentConfig()">刷新配置</button>
+                    <pre id="current_config">点击"刷新配置"按钮加载当前配置...</pre>
+                </div>
+            </div>
+
+            <!-- 结果显示 -->
+            <div id="result" class="result" style="display: none;">
+                <h4>操作结果</h4>
+                <div id="result_content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin_config_client.js"></script>
+    <script>
+        // 初始化配置客户端
+        const configClient = new AdminConfigClient('http://localhost:12345', 'FileCodeBox2025');
+
+        // 标签页切换
+        function switchTab(tabName) {
+            // 隐藏所有标签页内容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 移除所有标签的active类
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的标签页
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // 显示结果
+        function showResult(message, isSuccess = true) {
+            const resultDiv = document.getElementById('result');
+            const contentDiv = document.getElementById('result_content');
+            
+            resultDiv.className = 'result ' + (isSuccess ? 'success' : 'error');
+            contentDiv.innerHTML = message;
+            resultDiv.style.display = 'block';
+            
+            // 滚动到结果区域
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 更新MCP配置
+        async function updateMCPConfig() {
+            try {
+                const enable = document.getElementById('enable_mcp_server').checked;
+                const port = document.getElementById('mcp_port').value;
+                const host = document.getElementById('mcp_host').value;
+
+                const result = await configClient.updateMCPConfig(enable, port, host);
+                showResult(`MCP配置更新成功！<br>启用状态: ${enable ? '是' : '否'}<br>端口: ${port}<br>主机: ${host}`);
+            } catch (error) {
+                showResult(`MCP配置更新失败: ${error.message}`, false);
+            }
+        }
+
+        // 更新用户配置
+        async function updateUserConfig() {
+            try {
+                const allowReg = document.getElementById('allow_user_registration').checked;
+                const requireEmail = document.getElementById('require_email_verify').checked;
+                const jwtSecret = document.getElementById('jwt_secret').value;
+                const uploadSize = parseInt(document.getElementById('user_upload_size').value);
+                const storageQuota = parseInt(document.getElementById('user_storage_quota').value);
+
+                const userConfig = {
+                    allow_user_registration: allowReg ? 1 : 0,
+                    require_email_verify: requireEmail ? 1 : 0,
+                    user_upload_size: uploadSize,
+                    user_storage_quota: storageQuota
+                };
+
+                if (jwtSecret && jwtSecret.length >= 16) {
+                    userConfig.jwt_secret = jwtSecret;
+                }
+
+                const result = await configClient.updateConfigStructured({ user: userConfig });
+                showResult(`用户配置更新成功！<br>允许注册: ${allowReg ? '是' : '否'}<br>需要邮箱验证: ${requireEmail ? '是' : '否'}<br>上传限制: ${uploadSize} 字节<br>存储配额: ${storageQuota} 字节`);
+            } catch (error) {
+                showResult(`用户配置更新失败: ${error.message}`, false);
+            }
+        }
+
+        // 更新基础配置
+        async function updateBaseConfig() {
+            try {
+                const name = document.getElementById('base_name').value;
+                const description = document.getElementById('base_description').value;
+                const keywords = document.getElementById('base_keywords').value;
+
+                const baseConfig = {};
+                if (name) baseConfig.name = name;
+                if (description) baseConfig.description = description;
+                if (keywords) baseConfig.keywords = keywords;
+
+                if (Object.keys(baseConfig).length === 0) {
+                    showResult('至少需要填写一个基础配置字段', false);
+                    return;
+                }
+
+                const result = await configClient.updateConfigStructured({ base: baseConfig });
+                showResult(`基础配置更新成功！<br>名称: ${name || '未修改'}<br>描述: ${description || '未修改'}<br>关键词: ${keywords || '未修改'}`);
+            } catch (error) {
+                showResult(`基础配置更新失败: ${error.message}`, false);
+            }
+        }
+
+        // 更新传输配置
+        async function updateTransferConfig() {
+            try {
+                const openUpload = document.getElementById('open_upload').checked;
+                const uploadSize = parseInt(document.getElementById('upload_size').value);
+                const enableChunk = document.getElementById('enable_chunk').checked;
+                const chunkSize = parseInt(document.getElementById('chunk_size').value);
+
+                const transferConfig = {
+                    upload: {
+                        open_upload: openUpload ? 1 : 0,
+                        upload_size: uploadSize,
+                        enable_chunk: enableChunk ? 1 : 0,
+                        chunk_size: chunkSize
+                    }
+                };
+
+                const result = await configClient.updateConfigStructured({ transfer: transferConfig });
+                showResult(`传输配置更新成功！<br>开放上传: ${openUpload ? '是' : '否'}<br>上传限制: ${uploadSize} 字节<br>分块上传: ${enableChunk ? '是' : '否'}<br>分块大小: ${chunkSize} 字节`);
+            } catch (error) {
+                showResult(`传输配置更新失败: ${error.message}`, false);
+            }
+        }
+
+        // 更新平面化配置
+        async function updateFlatConfig() {
+            try {
+                const configText = document.getElementById('flat_config').value;
+                const config = JSON.parse(configText);
+
+                const result = await configClient.updateConfigFlat(config);
+                showResult(`平面化配置更新成功！<br><pre>${JSON.stringify(config, null, 2)}</pre>`);
+            } catch (error) {
+                showResult(`平面化配置更新失败: ${error.message}`, false);
+            }
+        }
+
+        // 批量更新配置
+        async function updateBatchConfig() {
+            try {
+                const configText = document.getElementById('batch_config').value;
+                const config = JSON.parse(configText);
+
+                const result = await configClient.updateConfigStructured(config);
+                showResult(`批量配置更新成功！<br><pre>${JSON.stringify(config, null, 2)}</pre>`);
+            } catch (error) {
+                showResult(`批量配置更新失败: ${error.message}`, false);
+            }
+        }
+
+        // 格式化JSON
+        function formatFlatConfig() {
+            try {
+                const textarea = document.getElementById('flat_config');
+                const config = JSON.parse(textarea.value);
+                textarea.value = JSON.stringify(config, null, 2);
+            } catch (error) {
+                showResult(`JSON格式错误: ${error.message}`, false);
+            }
+        }
+
+        function formatBatchConfig() {
+            try {
+                const textarea = document.getElementById('batch_config');
+                const config = JSON.parse(textarea.value);
+                textarea.value = JSON.stringify(config, null, 2);
+            } catch (error) {
+                showResult(`JSON格式错误: ${error.message}`, false);
+            }
+        }
+
+        // 加载当前配置
+        async function loadCurrentConfig() {
+            try {
+                const config = await configClient.getConfig();
+                document.getElementById('current_config').textContent = JSON.stringify(config, null, 2);
+                showResult('配置加载成功！');
+            } catch (error) {
+                showResult(`加载配置失败: ${error.message}`, false);
+            }
+        }
+
+        // 页面加载时自动加载当前配置
+        window.addEventListener('load', function() {
+            // 可以在这里添加页面初始化逻辑
+            console.log('管理员配置面板已加载');
+        });
+    </script>
+</body>
+</html>

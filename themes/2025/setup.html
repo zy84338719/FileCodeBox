@@ -7,156 +7,72 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/logo-small.svg">
+    
+    <!-- 引入统一的设计系统CSS -->
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/auth.css">
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .setup-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-            padding: 0;
+        /* Setup页面特有的样式扩展 */
+        .auth-card {
             max-width: 600px;
-            width: 100%;
             max-height: 90vh;
             overflow-y: auto;
         }
-
-        .setup-header {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 40px;
-            text-align: center;
-            border-radius: 20px 20px 0 0;
-        }
-
-        .logo {
+        
+        .setup-steps {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 24px;
+            flex-direction: column;
+            gap: var(--spacing-lg);
         }
-
-        .logo-icon {
-            width: 48px;
-            height: 48px;
+        
+        .setup-step {
+            display: none;
         }
-
-        .logo-text {
-            font-size: 28px;
-            font-weight: bold;
-            letter-spacing: -0.5px;
+        
+        .setup-step.active {
+            display: block;
         }
-
-        .setup-header h1 {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
-        }
-
-        .setup-header p {
-            font-size: 16px;
-            opacity: 0.9;
-            line-height: 1.5;
-        }
-
-        .setup-content {
-            padding: 40px;
-        }
-
-        .step {
-            margin-bottom: 40px;
-        }
-
-        .step:last-child {
-            margin-bottom: 0;
-        }
-
+        
         .step-header {
             display: flex;
             align-items: center;
-            margin-bottom: 20px;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
         }
-
+        
         .step-number {
             width: 32px;
             height: 32px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: var(--primary-gradient);
             color: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            margin-right: 12px;
-        }
-
-        .step-title {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .step-description {
-            color: #666;
-            margin-bottom: 20px;
-            line-height: 1.5;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
             font-weight: 600;
+            font-size: 14px;
         }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e1e8ed;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: white;
+        
+        .step-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-text-primary);
         }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        
+        .step-description {
+            color: var(--color-text-secondary);
+            margin-bottom: var(--spacing-lg);
+            line-height: 1.6;
         }
-
+        
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: var(--spacing-md);
         }
-
-        .password-toggle {
-            position: relative;
-        }
-
+        
         .password-toggle-btn {
             position: absolute;
             right: 12px;
@@ -164,624 +80,463 @@
             transform: translateY(-50%);
             background: none;
             border: none;
-            color: #666;
+            color: var(--color-text-secondary);
             cursor: pointer;
             padding: 4px;
+            border-radius: var(--radius-xs);
+            transition: all 0.2s ease;
         }
-
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
+        
+        .password-toggle-btn:hover {
+            color: var(--color-primary);
+            background: var(--color-background-hover);
         }
-
-        .alert.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .alert.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .setup-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .setup-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        .setup-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .loading {
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top: 2px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            display: none;
-        }
-
-        .setup-btn.loading .loading {
-            display: block;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* 复选框样式 */
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            font-size: 16px;
-            user-select: none;
-        }
-
-        .checkbox-label input[type="checkbox"] {
-            display: none;
-        }
-
-        .checkmark {
-            width: 24px;
-            height: 24px;
-            background-color: white;
-            border: 2px solid #e1e8ed;
-            border-radius: 6px;
-            margin-right: 12px;
+        
+        .form-group.password-field {
             position: relative;
-            transition: all 0.3s ease;
         }
-
-        .checkbox-label:hover .checkmark {
-            border-color: #667eea;
+        
+        .form-group.password-field input {
+            padding-right: 40px;
         }
-
-        .checkbox-label input[type="checkbox"]:checked + .checkmark {
-            background-color: #667eea;
-            border-color: #667eea;
+        
+        .setup-actions {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: space-between;
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--color-border);
         }
-
-        .checkbox-label input[type="checkbox"]:checked + .checkmark::after {
-            content: '';
-            position: absolute;
-            left: 7px;
-            top: 3px;
-            width: 6px;
-            height: 10px;
-            border: solid white;
-            border-width: 0 2px 2px 0;
-            transform: rotate(45deg);
+        
+        .btn-secondary {
+            background: var(--color-background);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-
-        .form-section {
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
+        
+        .btn-secondary:hover {
+            background: var(--color-background-hover);
+            border-color: var(--color-primary);
         }
-
-        .form-section h3 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 15px;
-        }
-
-        .database-config {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            border: 2px solid #e9ecef;
-        }
-
-        .database-type-selector {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .db-type-option {
+        
+        .progress-indicator {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 12px;
-            border: 2px solid #e1e8ed;
-            border-radius: 8px;
-            cursor: pointer;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-border);
             transition: all 0.3s ease;
-            background: white;
         }
-
-        .db-type-option.active {
-            border-color: #667eea;
-            background: #f0f4ff;
+        
+        .progress-dot.active {
+            background: var(--color-primary);
+            transform: scale(1.2);
         }
-
-        .db-type-option input[type="radio"] {
+        
+        .progress-dot.completed {
+            background: var(--color-success);
+        }
+        
+        .db-config {
             display: none;
         }
-
-        .db-type-option label {
-            cursor: pointer;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .db-config-fields {
-            display: none;
-        }
-
-        .db-config-fields.active {
+        
+        .db-config.active {
             display: block;
         }
-
-        .hint {
-            font-size: 14px;
-            color: #666;
-            margin-top: 4px;
+        
+        .hidden {
+            display: none !important;
         }
-
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: #e9ecef;
-            border-radius: 3px;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            transition: width 0.3s ease;
-            width: 0%;
-        }
-
+        
         @media (max-width: 768px) {
-            .setup-container {
-                margin: 10px;
-                max-height: 95vh;
-            }
-
-            .setup-header {
-                padding: 30px 20px;
-            }
-
-            .setup-content {
-                padding: 30px 20px;
-            }
-
             .form-row {
                 grid-template-columns: 1fr;
             }
-
-            .database-type-selector {
-                grid-template-columns: 1fr;
+            
+            .setup-actions {
+                flex-direction: column;
+            }
+            
+            .auth-card {
+                max-height: 95vh;
             }
         }
     </style>
 </head>
-<body>
-    <div class="setup-container">
-        <div class="setup-header">
-            <div class="logo">
-                <img class="logo-icon" src="/assets/images/logo.svg" alt="FileCodeBox Logo"/>
-                <div class="logo-text">FileCodeBox</div>
-            </div>
-            <h1>系统初始化</h1>
-            <p>欢迎使用 FileCodeBox！让我们快速完成系统初始化设置。</p>
-        </div>
-
-        <div class="setup-content">
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
+<body class="auth-page">
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <img class="auth-logo-icon" src="/assets/images/logo.svg" alt="FileCodeBox Logo"/>
+                    <div class="auth-logo-text">FileCodeBox</div>
+                </div>
+                <div class="auth-title">系统初始化</div>
+                <div class="auth-subtitle">欢迎使用 FileCodeBox，让我们完成初始配置</div>
             </div>
 
-            <div id="alert" class="alert"></div>
-
-            <form id="setupForm">
-                <!-- 步骤1: 数据库配置 -->
-                <div class="step" id="step1">
-                    <div class="step-header">
-                        <div class="step-number">1</div>
-                        <div class="step-title">数据库配置</div>
-                    </div>
-                    <div class="step-description">
-                        选择您的数据库类型并配置连接信息。推荐使用 SQLite 进行快速开始。
-                    </div>
-
-                    <div class="database-config">
-                        <div class="form-group">
-                            <label>数据库类型</label>
-                            <div class="database-type-selector">
-                                <div class="db-type-option active" onclick="selectDbType('sqlite')">
-                                    <input type="radio" name="dbType" value="sqlite" id="sqlite" checked>
-                                    <label for="sqlite">SQLite</label>
-                                </div>
-                                <div class="db-type-option" onclick="selectDbType('mysql')">
-                                    <input type="radio" name="dbType" value="mysql" id="mysql">
-                                    <label for="mysql">MySQL</label>
-                                </div>
-                                <div class="db-type-option" onclick="selectDbType('postgres')">
-                                    <input type="radio" name="dbType" value="postgres" id="postgres">
-                                    <label for="postgres">PostgreSQL</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SQLite 配置 -->
-                        <div class="db-config-fields active" id="sqlite-config">
-                            <div class="form-group">
-                                <label for="sqliteFile">数据库文件路径</label>
-                                <input type="text" id="sqliteFile" name="sqliteFile" value="./data/filecodebox.db" required>
-                                <div class="hint">数据库文件将自动创建，推荐使用默认路径</div>
-                            </div>
-                        </div>
-
-                        <!-- MySQL 配置 -->
-                        <div class="db-config-fields" id="mysql-config">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="mysqlHost">主机地址</label>
-                                    <input type="text" id="mysqlHost" name="mysqlHost" value="localhost">
-                                </div>
-                                <div class="form-group">
-                                    <label for="mysqlPort">端口</label>
-                                    <input type="number" id="mysqlPort" name="mysqlPort" value="3306">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="mysqlUser">用户名</label>
-                                    <input type="text" id="mysqlUser" name="mysqlUser" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="mysqlPassword">密码</label>
-                                    <input type="password" id="mysqlPassword" name="mysqlPassword">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="mysqlDatabase">数据库名</label>
-                                <input type="text" id="mysqlDatabase" name="mysqlDatabase" value="filecodebox" required>
-                            </div>
-                        </div>
-
-                        <!-- PostgreSQL 配置 -->
-                        <div class="db-config-fields" id="postgres-config">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="pgHost">主机地址</label>
-                                    <input type="text" id="pgHost" name="pgHost" value="localhost">
-                                </div>
-                                <div class="form-group">
-                                    <label for="pgPort">端口</label>
-                                    <input type="number" id="pgPort" name="pgPort" value="5432">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="pgUser">用户名</label>
-                                    <input type="text" id="pgUser" name="pgUser" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="pgPassword">密码</label>
-                                    <input type="password" id="pgPassword" name="pgPassword">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="pgDatabase">数据库名</label>
-                                <input type="text" id="pgDatabase" name="pgDatabase" value="filecodebox" required>
-                            </div>
-                        </div>
-                    </div>
+            <div class="auth-form">
+                <div class="progress-indicator">
+                    <div class="progress-dot active" data-step="1"></div>
+                    <div class="progress-dot" data-step="2"></div>
+                    <div class="progress-dot" data-step="3"></div>
                 </div>
 
-                <!-- 步骤2: 管理员账户 -->
-                <div class="step" id="step2">
-                    <div class="step-header">
-                        <div class="step-number">2</div>
-                        <div class="step-title">创建管理员账户</div>
-                    </div>
-                    <div class="step-description">
-                        创建第一个管理员账户，该账户将拥有系统的完全管理权限。
-                    </div>
+                <div id="alert" class="auth-message"></div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="adminUsername">管理员用户名</label>
-                            <input type="text" id="adminUsername" name="adminUsername" required minlength="3">
-                            <div class="hint">至少3个字符，推荐使用字母和数字组合</div>
+                <form id="setupForm" class="setup-steps">
+                    <!-- 步骤1: 数据库配置 -->
+                    <div class="setup-step active" id="step1">
+                        <div class="step-header">
+                            <div class="step-number">1</div>
+                            <div class="step-title">数据库配置</div>
                         </div>
+                        <div class="step-description">
+                            选择数据库类型并配置连接信息。SQLite适合小型部署，MySQL/PostgreSQL适合生产环境。
+                        </div>
+
                         <div class="form-group">
-                            <label for="adminEmail">管理员邮箱</label>
-                            <input type="email" id="adminEmail" name="adminEmail" required>
-                            <div class="hint">用于接收系统通知和找回密码</div>
+                            <label for="dbType">数据库类型</label>
+                            <select id="dbType" name="db_type" class="form-control" required>
+                                <option value="sqlite">SQLite (推荐)</option>
+                                <option value="mysql">MySQL</option>
+                                <option value="postgres">PostgreSQL</option>
+                            </select>
+                        </div>
+
+                        <div id="dbConfig" class="db-config"></div>
+
+                        <div class="setup-actions">
+                            <div></div>
+                            <button type="button" class="auth-btn" onclick="nextStep(2)">下一步</button>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="adminNickname">显示名称</label>
-                        <input type="text" id="adminNickname" name="adminNickname">
-                        <div class="hint">可选，默认使用用户名</div>
-                    </div>
+                    <!-- 步骤2: 管理员配置 -->
+                    <div class="setup-step" id="step2">
+                        <div class="step-header">
+                            <div class="step-number">2</div>
+                            <div class="step-title">管理员账户</div>
+                        </div>
+                        <div class="step-description">
+                            创建系统管理员账户，用于管理系统配置和用户。
+                        </div>
 
-                    <div class="form-row">
                         <div class="form-group">
+                            <label for="adminToken">管理员令牌</label>
+                            <input type="text" id="adminToken" name="admin_token" class="form-control" 
+                                   placeholder="系统管理令牌，用于管理后台登录" required>
+                        </div>
+
+                        <div class="form-group password-field">
                             <label for="adminPassword">管理员密码</label>
-                            <div class="password-toggle">
-                                <input type="password" id="adminPassword" name="adminPassword" required minlength="6">
-                                <button type="button" class="password-toggle-btn" onclick="togglePassword('adminPassword')">👁️</button>
-                            </div>
-                            <div class="hint">至少6个字符，建议包含大小写字母、数字和特殊字符</div>
+                            <input type="password" id="adminPassword" name="admin_password" class="form-control" 
+                                   placeholder="管理员登录密码" required>
+                            <button type="button" class="password-toggle-btn" onclick="togglePassword('adminPassword')">
+                                <span id="adminPasswordToggle">👁️</span>
+                            </button>
                         </div>
-                        <div class="form-group">
-                            <label for="confirmPassword">确认密码</label>
-                            <div class="password-toggle">
-                                <input type="password" id="confirmPassword" name="confirmPassword" required>
-                                <button type="button" class="password-toggle-btn" onclick="togglePassword('confirmPassword')">👁️</button>
-                            </div>
+
+                        <div class="setup-actions">
+                            <button type="button" class="btn-secondary" onclick="prevStep(1)">上一步</button>
+                            <button type="button" class="auth-btn" onclick="nextStep(3)">下一步</button>
                         </div>
                     </div>
 
-                    <div class="form-section">
-                        <h3>用户注册设置</h3>
+                    <!-- 步骤3: 基础设置 -->
+                    <div class="setup-step" id="step3">
+                        <div class="step-header">
+                            <div class="step-number">3</div>
+                            <div class="step-title">基础设置</div>
+                        </div>
+                        <div class="step-description">
+                            配置系统的基本参数和存储设置。
+                        </div>
+
                         <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="allowUserRegistration" name="allowUserRegistration" checked>
-                                <span class="checkmark"></span>
-                                允许新用户注册
-                            </label>
-                            <div class="hint">如果关闭，只有管理员可以创建新用户账户</div>
+                            <label for="siteName">站点名称</label>
+                            <input type="text" id="siteName" name="site_name" class="form-control" 
+                                   value="FileCodeBox" placeholder="显示在页面上的站点名称">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxFileSize">最大文件大小 (MB)</label>
+                            <input type="number" id="maxFileSize" name="max_file_size" class="form-control" 
+                                   value="100" min="1" max="1024">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="storageType">存储类型</label>
+                                <select id="storageType" name="storage_type" class="form-control">
+                                    <option value="local">本地存储</option>
+                                    <option value="s3">Amazon S3</option>
+                                    <option value="webdav">WebDAV</option>
+                                    <option value="onedrive">OneDrive</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="enableUserSystem">用户系统</label>
+                                <select id="enableUserSystem" name="enable_user_system" class="form-control">
+                                    <option value="false">禁用</option>
+                                    <option value="true">启用</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="setup-actions">
+                            <button type="button" class="btn-secondary" onclick="prevStep(2)">上一步</button>
+                            <button type="submit" class="auth-btn" id="setupBtn">完成设置</button>
                         </div>
                     </div>
-                </div>
-
-                <button type="submit" class="setup-btn" id="setupBtn">
-                    <div class="loading"></div>
-                    <span class="btn-text">开始初始化</span>
-                </button>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 
     <script>
-        // 进度更新
-        function updateProgress(step) {
-            const progressFill = document.getElementById('progressFill');
-            const progress = (step / 2) * 100;
-            progressFill.style.width = progress + '%';
+        let currentStep = 1;
+        const totalSteps = 3;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeForm();
+            setupEventListeners();
+        });
+
+        function initializeForm() {
+            // 初始化数据库配置选择
+            const dbTypeSelect = document.getElementById('dbType');
+            updateDatabaseConfig(dbTypeSelect.value);
+            
+            // 设置表单提交处理
+            document.getElementById('setupForm').addEventListener('submit', handleSetup);
         }
 
-        // 数据库类型选择
-        function selectDbType(type) {
-            // 更新选中状态
-            document.querySelectorAll('.db-type-option').forEach(option => {
-                option.classList.remove('active');
+        function setupEventListeners() {
+            const dbTypeSelect = document.getElementById('dbType');
+            dbTypeSelect.addEventListener('change', function() {
+                updateDatabaseConfig(this.value);
             });
-            document.querySelector(`[onclick="selectDbType('${type}')"]`).classList.add('active');
-            
-            // 更新radio选中状态
-            document.getElementById(type).checked = true;
-            
-            // 显示对应配置
-            document.querySelectorAll('.db-config-fields').forEach(field => {
-                field.classList.remove('active');
-            });
-            document.getElementById(type + '-config').classList.add('active');
-            
-            // 动态更新required属性
-            updateRequiredFields(type);
         }
 
-        // 更新表单字段的required属性
-        function updateRequiredFields(dbType) {
-            // 重置所有数据库字段的required状态
-            const allDbFields = ['mysqlHost', 'mysqlPort', 'mysqlUser', 'mysqlPassword', 'mysqlDatabase',
-                               'pgHost', 'pgPort', 'pgUser', 'pgPassword', 'pgDatabase', 'sqliteFile'];
+        function updateDatabaseConfig(dbType) {
+            const dbConfig = document.getElementById('dbConfig');
             
-            allDbFields.forEach(fieldId => {
-                const field = document.getElementById(fieldId);
-                if (field) {
-                    field.removeAttribute('required');
-                }
-            });
+            let configHTML = '';
             
-            // 根据选择的数据库类型设置required属性
             if (dbType === 'mysql') {
-                ['mysqlHost', 'mysqlPort', 'mysqlUser', 'mysqlPassword', 'mysqlDatabase'].forEach(fieldId => {
-                    const field = document.getElementById(fieldId);
-                    if (field) {
-                        field.setAttribute('required', 'required');
-                    }
-                });
+                configHTML = `
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dbHost">数据库地址</label>
+                            <input type="text" id="dbHost" name="db_host" class="form-control" 
+                                   value="localhost" placeholder="数据库服务器地址" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dbPort">端口</label>
+                            <input type="number" id="dbPort" name="db_port" class="form-control" 
+                                   value="3306" placeholder="数据库端口" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dbName">数据库名</label>
+                            <input type="text" id="dbName" name="db_name" class="form-control" 
+                                   value="filecodebox" placeholder="数据库名称" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dbUser">用户名</label>
+                            <input type="text" id="dbUser" name="db_user" class="form-control" 
+                                   placeholder="数据库用户名" required>
+                        </div>
+                    </div>
+                    <div class="form-group password-field">
+                        <label for="dbPassword">密码</label>
+                        <input type="password" id="dbPassword" name="db_password" class="form-control" 
+                               placeholder="数据库密码" required>
+                        <button type="button" class="password-toggle-btn" onclick="togglePassword('dbPassword')">
+                            <span id="dbPasswordToggle">👁️</span>
+                        </button>
+                    </div>
+                `;
             } else if (dbType === 'postgres') {
-                ['pgHost', 'pgPort', 'pgUser', 'pgPassword', 'pgDatabase'].forEach(fieldId => {
-                    const field = document.getElementById(fieldId);
-                    if (field) {
-                        field.setAttribute('required', 'required');
-                    }
-                });
-            } else if (dbType === 'sqlite') {
-                const sqliteFile = document.getElementById('sqliteFile');
-                if (sqliteFile) {
-                    sqliteFile.setAttribute('required', 'required');
+                configHTML = `
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dbHost">数据库地址</label>
+                            <input type="text" id="dbHost" name="db_host" class="form-control" 
+                                   value="localhost" placeholder="数据库服务器地址" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dbPort">端口</label>
+                            <input type="number" id="dbPort" name="db_port" class="form-control" 
+                                   value="5432" placeholder="数据库端口" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dbName">数据库名</label>
+                            <input type="text" id="dbName" name="db_name" class="form-control" 
+                                   value="filecodebox" placeholder="数据库名称" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dbUser">用户名</label>
+                            <input type="text" id="dbUser" name="db_user" class="form-control" 
+                                   placeholder="数据库用户名" required>
+                        </div>
+                    </div>
+                    <div class="form-group password-field">
+                        <label for="dbPassword">密码</label>
+                        <input type="password" id="dbPassword" name="db_password" class="form-control" 
+                               placeholder="数据库密码" required>
+                        <button type="button" class="password-toggle-btn" onclick="togglePassword('dbPassword')">
+                            <span id="dbPasswordToggle">👁️</span>
+                        </button>
+                    </div>
+                `;
+            } else {
+                // SQLite
+                configHTML = `
+                    <div class="form-group">
+                        <label for="dbPath">数据库文件路径</label>
+                        <input type="text" id="dbPath" name="db_path" class="form-control" 
+                               value="./data/filecodebox.db" placeholder="SQLite数据库文件路径">
+                    </div>
+                `;
+            }
+            
+            dbConfig.innerHTML = configHTML;
+            dbConfig.className = 'db-config active';
+        }
+
+        function nextStep(step) {
+            if (validateCurrentStep()) {
+                showStep(step);
+            }
+        }
+
+        function prevStep(step) {
+            showStep(step);
+        }
+
+        function showStep(step) {
+            // 隐藏所有步骤
+            for (let i = 1; i <= totalSteps; i++) {
+                const stepElement = document.getElementById(`step${i}`);
+                const dotElement = document.querySelector(`[data-step="${i}"]`);
+                
+                stepElement.classList.remove('active');
+                dotElement.classList.remove('active', 'completed');
+                
+                if (i < step) {
+                    dotElement.classList.add('completed');
+                } else if (i === step) {
+                    dotElement.classList.add('active');
                 }
             }
+            
+            // 显示当前步骤
+            document.getElementById(`step${step}`).classList.add('active');
+            currentStep = step;
         }
 
-        // 密码显示切换
-        function togglePassword(fieldId) {
-            const field = document.getElementById(fieldId);
-            const isPassword = field.type === 'password';
-            field.type = isPassword ? 'text' : 'password';
-        }
-
-        // 显示提示信息
-        function showAlert(message, type = 'info') {
-            const alert = document.getElementById('alert');
-            alert.textContent = message;
-            alert.className = `alert ${type}`;
-            alert.style.display = 'block';
+        function validateCurrentStep() {
+            const currentStepElement = document.getElementById(`step${currentStep}`);
+            const requiredFields = currentStepElement.querySelectorAll('input[required], select[required]');
             
-            if (type === 'success') {
-                setTimeout(() => {
-                    alert.style.display = 'none';
-                }, 5000);
-            }
-        }
-
-        // 表单验证
-        function validateForm() {
-            const adminPassword = document.getElementById('adminPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if (adminPassword !== confirmPassword) {
-                showAlert('两次输入的密码不一致，请重新输入', 'error');
-                return false;
-            }
-            
-            if (adminPassword.length < 6) {
-                showAlert('密码长度至少需要6个字符', 'error');
-                return false;
+            for (let field of requiredFields) {
+                if (!field.value.trim()) {
+                    showAlert(`请填写 ${field.previousElementSibling.textContent}`, 'error');
+                    field.focus();
+                    return false;
+                }
             }
             
             return true;
         }
 
-        // 收集表单数据
-        function collectFormData() {
-            const dbType = document.querySelector('input[name="dbType"]:checked').value;
-            const formData = {
-                database: {
-                    type: dbType
-                },
-                admin: {
-                    username: document.getElementById('adminUsername').value.trim(),
-                    email: document.getElementById('adminEmail').value.trim(),
-                    nickname: document.getElementById('adminNickname').value.trim(),
-                    password: document.getElementById('adminPassword').value,
-                    allowUserRegistration: document.getElementById('allowUserRegistration').checked
-                }
-            };
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = document.getElementById(inputId + 'Toggle');
             
-            // 根据数据库类型收集配置
-            if (dbType === 'sqlite') {
-                formData.database.file = document.getElementById('sqliteFile').value.trim();
-            } else if (dbType === 'mysql') {
-                formData.database.host = document.getElementById('mysqlHost').value.trim();
-                formData.database.port = parseInt(document.getElementById('mysqlPort').value);
-                formData.database.user = document.getElementById('mysqlUser').value.trim();
-                formData.database.password = document.getElementById('mysqlPassword').value;
-                formData.database.database = document.getElementById('mysqlDatabase').value.trim();
-            } else if (dbType === 'postgres') {
-                formData.database.host = document.getElementById('pgHost').value.trim();
-                formData.database.port = parseInt(document.getElementById('pgPort').value);
-                formData.database.user = document.getElementById('pgUser').value.trim();
-                formData.database.password = document.getElementById('pgPassword').value;
-                formData.database.database = document.getElementById('pgDatabase').value.trim();
+            if (input.type === 'password') {
+                input.type = 'text';
+                toggle.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                toggle.textContent = '👁️';
             }
-            
-            return formData;
         }
 
-        // 表单提交处理
-        document.getElementById('setupForm').addEventListener('submit', async function(e) {
+        async function handleSetup(e) {
             e.preventDefault();
             
-            if (!validateForm()) {
+            if (!validateCurrentStep()) {
                 return;
             }
             
             const setupBtn = document.getElementById('setupBtn');
-            const btnText = setupBtn.querySelector('.btn-text');
-            
-            // 显示加载状态
             setupBtn.classList.add('loading');
             setupBtn.disabled = true;
-            btnText.textContent = '正在初始化...';
             
             try {
-                const formData = collectFormData();
-                console.log('提交初始化数据:', formData);
+                const formData = new FormData(e.target);
+                const setupData = Object.fromEntries(formData.entries());
                 
-                const response = await fetch('/setup/initialize', {
+                const response = await fetch('/setup', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(setupData)
                 });
                 
-                const result = await response.json();
+                const data = await response.json();
                 
-                if (result.code === 200) {
-                    updateProgress(2);
-                    showAlert('系统初始化成功！正在跳转到管理后台...', 'success');
-                    
+                if (data.code === 200) {
+                    showAlert('系统初始化完成！正在跳转...', 'success');
                     setTimeout(() => {
-                        window.location.href = '/admin/';
+                        window.location.href = '/';
                     }, 2000);
                 } else {
-                    throw new Error(result.message || '初始化失败');
+                    showAlert(data.message || '初始化失败，请重试', 'error');
                 }
             } catch (error) {
                 console.error('初始化失败:', error);
-                showAlert('初始化失败: ' + error.message, 'error');
+                showAlert('初始化失败，请检查网络连接', 'error');
             } finally {
-                // 恢复按钮状态
                 setupBtn.classList.remove('loading');
                 setupBtn.disabled = false;
-                btnText.textContent = '开始初始化';
             }
-        });
+        }
 
-        // 页面加载完成后更新进度
-        document.addEventListener('DOMContentLoaded', function() {
-            updateProgress(0);
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `auth-message ${type}`;
+            alert.style.display = 'block';
             
-            // 初始化required字段状态（默认SQLite）
-            updateRequiredFields('sqlite');
-            
-            // 实时验证
-            const inputs = document.querySelectorAll('input[required]');
-            inputs.forEach(input => {
-                input.addEventListener('input', function() {
-                    if (this.value.trim()) {
-                        this.style.borderColor = '#28a745';
-                    } else {
-                        this.style.borderColor = '#e1e8ed';
-                    }
-                });
-            });
-        });
+            // 自动隐藏成功消息
+            if (type === 'success') {
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 3000);
+            }
+        }
     </script>
 </body>
 </html>

@@ -1,13 +1,16 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"strconv"
 	"time"
 
 	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/models/web"
 	"github.com/zy84338719/filecodebox/internal/services"
 
@@ -152,17 +155,73 @@ func (h *AdminHandler) GetConfig(c *gin.Context) {
 
 // UpdateConfig 更新配置
 func (h *AdminHandler) UpdateConfig(c *gin.Context) {
-	var configRequest web.AdminConfigRequest
-	if err := c.ShouldBindJSON(&configRequest); err != nil {
-		common.BadRequestResponse(c, "配置参数错误: "+err.Error())
+	// 首先尝试获取原始JSON数据
+	jsonData, err := c.GetRawData()
+	if err != nil {
+		common.BadRequestResponse(c, "无法读取请求数据: "+err.Error())
 		return
 	}
 
-	// 直接传递结构化的配置请求给服务层
-	err := h.service.UpdateConfigFromRequest(&configRequest)
-	if err != nil {
-		common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
-		return
+	// 尝试绑定到结构化配置更新DTO
+	var configUpdate models.ConfigUpdateFields
+	if err := json.Unmarshal(jsonData, &configUpdate); err == nil && configUpdate.HasUpdates() {
+		// 使用结构化配置更新
+		err = h.service.UpdateConfigWithDTO(&configUpdate)
+		if err != nil {
+			common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
+			return
+		}
+	} else {
+		// 尝试绑定到平面化配置更新DTO
+		var flatConfigUpdate models.FlatConfigUpdate
+		if err2 := json.Unmarshal(jsonData, &flatConfigUpdate); err2 == nil && flatConfigUpdate.HasUpdates() {
+			// 使用平面化配置更新
+			err = h.service.UpdateConfigWithFlatDTO(&flatConfigUpdate)
+			if err != nil {
+				common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
+				return
+			}
+		} else {
+			// 最后尝试绑定到结构化请求（保持兼容性）
+			var configRequest web.AdminConfigRequest
+			if err3 := json.Unmarshal(jsonData, &configRequest); err3 == nil {
+				// 检查是否有有效的结构化数据
+				hasValidStructuredData := (configRequest.Base != nil) ||
+					(configRequest.Transfer != nil) ||
+					(configRequest.User != nil) ||
+					(configRequest.NotifyTitle != nil) ||
+					(configRequest.NotifyContent != nil) ||
+					(configRequest.PageExplain != nil) ||
+					(configRequest.Opacity != nil) ||
+					(configRequest.ThemesSelect != nil)
+
+				if hasValidStructuredData {
+					// 使用结构化的配置请求
+					err = h.service.UpdateConfigFromRequest(&configRequest)
+					if err != nil {
+						common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
+						return
+					}
+				} else {
+					// 回退到原始的map处理
+					var flatConfig map[string]interface{}
+					if err4 := json.Unmarshal(jsonData, &flatConfig); err4 != nil {
+						common.BadRequestResponse(c, "配置参数错误: 无法解析请求数据")
+						return
+					}
+
+					// 使用原始map配置更新
+					err = h.service.UpdateConfig(flatConfig)
+					if err != nil {
+						common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
+						return
+					}
+				}
+			} else {
+				common.BadRequestResponse(c, "配置参数错误: 无法解析请求数据")
+				return
+			}
+		}
 	}
 
 	common.SuccessWithMessage(c, "更新成功", nil)
@@ -1060,7 +1119,11 @@ func (h *AdminHandler) TestMCPConnection(c *gin.Context) {
 		common.ErrorResponse(c, 400, fmt.Sprintf("连接测试失败: %s，端口可能未开放或MCP服务器未启动", err.Error()))
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("关闭连接失败: %v", err)
+		}
+	}()
 
 	common.SuccessWithMessage(c, "MCP连接测试成功", map[string]interface{}{
 		"address": address,

@@ -41,7 +41,11 @@ func NewChunkService(repositoryManager *repository.RepositoryManager, manager *c
 }
 
 func NewShareService(repositoryManager *repository.RepositoryManager, manager *config.ConfigManager, storageService *storage.ConcreteStorageService, userService *UserService) *ShareService {
-	return share.NewService(repositoryManager, manager, storageService)
+	shareService := share.NewService(repositoryManager, manager, storageService)
+	if userService != nil {
+		shareService.SetUserService(userService)
+	}
+	return shareService
 }
 
 func NewUserService(repositoryManager *repository.RepositoryManager, manager *config.ConfigManager) *UserService {

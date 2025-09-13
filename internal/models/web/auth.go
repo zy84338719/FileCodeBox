@@ -41,4 +41,6 @@ type UserInfo struct {
 	Role          string `json:"role"`
 	Status        string `json:"status"`
 	EmailVerified bool   `json:"email_verified"`
+	CreatedAt     string `json:"created_at,omitempty"`
+	LastLoginAt   string `json:"last_login_at,omitempty"`
 }

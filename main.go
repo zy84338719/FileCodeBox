@@ -144,6 +144,8 @@ func main() {
 	}
 	// 关闭数据库连接
 	if sqlDB, err := db.DB(); err == nil {
-		sqlDB.Close()
+		if err := sqlDB.Close(); err != nil {
+			logrus.Error("关闭数据库连接失败:", err)
+		}
 	}
 }

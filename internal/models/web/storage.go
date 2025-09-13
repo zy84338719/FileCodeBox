@@ -2,10 +2,10 @@ package web
 
 // StorageInfoResponse 存储信息响应
 type StorageInfoResponse struct {
-	Current        string                            `json:"current"`
-	Available      []string                          `json:"available"`
-	StorageDetails map[string]StorageDetail          `json:"storage_details"`
-	StorageConfig  map[string]map[string]interface{} `json:"storage_config"`
+	Current        string                   `json:"current"`
+	Available      []string                 `json:"available"`
+	StorageDetails map[string]StorageDetail `json:"storage_details"`
+	StorageConfig  map[string]interface{}   `json:"storage_config"`
 }
 
 // StorageDetail 存储详情

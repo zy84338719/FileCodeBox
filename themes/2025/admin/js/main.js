@@ -1,5 +1,84 @@
 // 主入口文件 - 应用程序初始化和全局控制
 
+// ========== 立即可用的全局函数 ==========
+
+/**
+ * 切换标签页 - 立即可用版本
+ * @param {string} tabName - 标签页名称
+ */
+function switchTab(tabName) {
+    try {
+        // 如果未认证，显示登录提示
+        const authToken = localStorage.getItem('user_token');
+        if (!authToken) {
+            showLoginPrompt();
+            return;
+        }
+        
+        // 更新按钮状态
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // 找到被点击的按钮并激活
+        const clickedBtn = event ? event.target : document.querySelector(`.tab-btn[onclick*="${tabName}"]`);
+        if (clickedBtn) {
+            clickedBtn.classList.add('active');
+        }
+        
+        // 隐藏登录提示
+        const loginPrompt = document.getElementById('login-prompt');
+        if (loginPrompt) {
+            loginPrompt.classList.remove('active');
+        }
+        
+        // 更新内容显示
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        const targetTab = document.getElementById(tabName + '-tab');
+        if (targetTab) {
+            targetTab.classList.add('active');
+        }
+        
+        // 根据标签页加载相应数据
+        if (typeof loadTabData === 'function') {
+            loadTabData(tabName);
+        }
+        
+        console.log(`Switched to tab: ${tabName}`);
+    } catch (error) {
+        console.error('Failed to switch tab:', error);
+        if (typeof showAlert === 'function') {
+            showAlert('切换标签页失败', 'error');
+        }
+    }
+}
+
+/**
+ * 显示登录提示 - 立即可用版本
+ */
+function showLoginPrompt() {
+    try {
+        const loginPrompt = document.getElementById('login-prompt');
+        if (loginPrompt) {
+            loginPrompt.classList.add('active');
+        }
+        
+        // 显示登录模态框或重定向到登录页面
+        if (typeof showLoginModal === 'function') {
+            showLoginModal();
+        } else {
+            alert('请先登录！');
+        }
+    } catch (error) {
+        console.error('Failed to show login prompt:', error);
+    }
+}
+
+// ========== 应用状态管理 ==========
+
 // 全局状态管理
 const AppState = {
     currentTab: 'dashboard',
@@ -13,8 +92,6 @@ const AppState = {
 let currentPage = 1;
 let currentSearch = '';
 let authToken = localStorage.getItem('user_token'); // 使用统一的user_token
-let currentUserPage = 1;
-let currentUserSearch = '';
 let currentStorageType = 'local';
 let storageData = {};
 
@@ -319,59 +396,7 @@ async function loadStats() {
     }
 }
 
-// ========== 标签页切换 ==========
-
-/**
- * 切换标签页
- * @param {string} tabName - 标签页名称
- */
-function switchTab(tabName) {
-    try {
-        // 如果未认证，显示登录提示
-        if (!authToken) {
-            showLoginPrompt();
-            return;
-        }
-        
-        // 更新按钮状态
-        document.querySelectorAll('.tab-item').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        
-        // 通过事件源获取被点击的按钮
-        const clickedBtn = event ? event.target : document.querySelector(`.tab-item[onclick*="${tabName}"]`);
-        if (clickedBtn) {
-            clickedBtn.classList.add('active');
-        }
-        
-        // 隐藏登录提示
-        const loginPrompt = document.getElementById('login-prompt');
-        if (loginPrompt) {
-            loginPrompt.classList.remove('active');
-        }
-        
-        // 更新内容显示
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        
-        const targetTab = document.getElementById(tabName + '-tab');
-        if (targetTab) {
-            targetTab.classList.add('active');
-        }
-        
-        // 更新全局状态
-        AppState.currentTab = tabName;
-        
-        // 根据标签页加载相应数据
-        loadTabData(tabName);
-        
-        console.log(`Switched to tab: ${tabName}`);
-    } catch (error) {
-        console.error('Failed to switch tab:', error);
-        showAlert('切换标签页失败', 'error');
-    }
-}
+// ========== 标签页数据加载 ==========
 
 /**
  * 加载标签页数据

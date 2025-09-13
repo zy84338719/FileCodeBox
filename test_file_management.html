@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件管理测试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>FileCodeBox 文件管理测试</h1>
+    
+    <div class="test-section">
+        <h3>API 响应测试</h3>
+        <button onclick="testAPI()">测试文件列表API</button>
+        <div id="api-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>数据结构映射测试</h3>
+        <button onclick="testDataMapping()">测试数据映射</button>
+        <div id="mapping-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>文件显示测试</h3>
+        <button onclick="testFileDisplay()">测试文件显示逻辑</button>
+        <div id="display-result"></div>
+    </div>
+
+    <script>
+        // 模拟API响应数据
+        const mockAPIResponse = {
+            "code": 200,
+            "data": {
+                "list": [
+                    {
+                        "ID": 1,
+                        "CreatedAt": "2025-01-15T10:30:00Z",
+                        "uuid_file_name": "DOE6Jfmc-themes_new_only_v4.zip",
+                        "code": "DOE6Jfmc",
+                        "size": 1048576,
+                        "downloads": 5,
+                        "max_downloads": 0,
+                        "expire_time": null,
+                        "is_public": true
+                    },
+                    {
+                        "ID": 2,
+                        "CreatedAt": "2025-01-15T11:15:00Z",
+                        "uuid_file_name": "EGF64JYN-download_test2.txt",
+                        "code": "EGF64JYN",
+                        "size": 2048,
+                        "downloads": 2,
+                        "max_downloads": 10,
+                        "expire_time": "2025-02-15T11:15:00Z",
+                        "is_public": false
+                    }
+                ],
+                "pagination": {
+                    "total": 9,
+                    "page": 1,
+                    "limit": 10,
+                    "pages": 1
+                }
+            }
+        };
+
+        // 测试API调用
+        async function testAPI() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = '<div class="info">正在测试API...</div>';
+            
+            try {
+                // 模拟真实API调用
+                const response = await fetch('/admin/files?page=1&limit=10&search=', {
+                    headers: {
+                        'Authorization': 'Bearer ' + (localStorage.getItem('user_token') || 'test-token')
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="success">✓ API调用成功</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">✗ API调用失败: ${error.message}</div>
+                    <div class="info">使用模拟数据进行测试:</div>
+                    <pre>${JSON.stringify(mockAPIResponse, null, 2)}</pre>
+                `;
+            }
+        }
+
+        // 测试数据映射逻辑
+        function testDataMapping() {
+            const resultDiv = document.getElementById('mapping-result');
+            resultDiv.innerHTML = '<div class="info">正在测试数据映射...</div>';
+            
+            try {
+                const response = mockAPIResponse;
+                
+                // 修复后的数据访问方式
+                const files = response.data.list; // 修复: 使用 data.list 而不是 data.files
+                const pagination = response.data.pagination; // 修复: 使用 pagination 对象
+                
+                // 测试字段映射
+                const mappingTests = [];
+                
+                files.forEach((file, index) => {
+                    const test = {
+                        file: index + 1,
+                        id: file.ID, // 修复: 使用 ID 而不是 id
+                        createdAt: file.CreatedAt, // 修复: 使用 CreatedAt 而不是 created_at
+                        filename: file.uuid_file_name ? file.uuid_file_name.split('-').slice(1).join('-') : 'unknown', // 修复: 提取真实文件名
+                        code: file.code,
+                        size: file.size
+                    };
+                    mappingTests.push(test);
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✓ 数据映射测试成功</div>
+                    <div><strong>文件列表字段映射:</strong></div>
+                    <pre>${JSON.stringify(mappingTests, null, 2)}</pre>
+                    <div><strong>分页信息映射:</strong></div>
+                    <pre>总数: ${pagination.total}, 页码: ${pagination.page}, 每页: ${pagination.limit}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">✗ 数据映射测试失败: ${error.message}</div>
+                `;
+            }
+        }
+
+        // 测试文件显示逻辑
+        function testFileDisplay() {
+            const resultDiv = document.getElementById('display-result');
+            resultDiv.innerHTML = '<div class="info">正在测试文件显示...</div>';
+            
+            try {
+                const response = mockAPIResponse;
+                const files = response.data.list;
+                
+                // 模拟文件显示逻辑
+                let displayHTML = '<table border="1" style="width:100%; border-collapse: collapse;"><thead><tr><th>ID</th><th>文件名</th><th>大小</th><th>状态</th><th>上传时间</th></tr></thead><tbody>';
+                
+                files.forEach(file => {
+                    const filename = file.uuid_file_name ? file.uuid_file_name.split('-').slice(1).join('-') : 'unknown';
+                    const formattedSize = formatFileSize(file.size);
+                    const formattedDate = formatDateTime(file.CreatedAt);
+                    const status = file.is_public ? '公开' : '私有';
+                    
+                    displayHTML += `
+                        <tr>
+                            <td>${file.ID}</td>
+                            <td>${filename}</td>
+                            <td>${formattedSize}</td>
+                            <td>${status}</td>
+                            <td>${formattedDate}</td>
+                        </tr>
+                    `;
+                });
+                
+                displayHTML += '</tbody></table>';
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✓ 文件显示测试成功</div>
+                    ${displayHTML}
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">✗ 文件显示测试失败: ${error.message}</div>
+                `;
+            }
+        }
+
+        // 模拟格式化函数
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatDateTime(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleString('zh-CN');
+            } catch (error) {
+                return dateStr;
+            }
+        }
+    </script>
+</body>
+</html>

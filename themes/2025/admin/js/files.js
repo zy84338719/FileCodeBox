@@ -3,6 +3,7 @@ const FilesManager = {
     currentPage: 1,
     currentSearch: '',
     currentFilter: 'all',
+    currentLimit: 10,  // 添加动态limit支持
     currentView: 'list',
     selectedFiles: new Set(),
     filesStats: {},
@@ -80,9 +81,9 @@ async function loadFiles(page = 1, search = '', filter = 'all') {
         
         const params = new URLSearchParams({
             page: page,
-            limit: 20,
-            search: search,
-            type: filter
+            limit: FilesManager.currentLimit,  // 使用动态limit
+            search: search
+            // 暂时移除type参数，后端不支持
         });
         
         const result = await apiRequest('/admin/files?' + params);
@@ -96,13 +97,31 @@ async function loadFiles(page = 1, search = '', filter = 'all') {
             FilesManager.selectedFiles.clear();
             updateBulkActions();
             
-            if (FilesManager.currentView === 'list') {
-                displayFilesList(data.files || []);
-            } else {
-                displayFilesGrid(data.files || []);
+            // 修复：使用正确的数据结构
+            let filesList = data.list || [];
+            const pagination = data.pagination || {};
+            
+            // 前端文件类型过滤（临时解决方案，因为后端不支持type参数）
+            if (filter && filter !== 'all') {
+                filesList = filesList.filter(file => {
+                    const fileName = file.uuid_file_name || '';
+                    return matchesFileType(fileName, filter);
+                });
             }
             
-            updateFilesPagination(data.total || 0, page, data.limit || 20);
+            if (FilesManager.currentView === 'list') {
+                displayFilesList(filesList);
+            } else {
+                displayFilesGrid(filesList);
+            }
+            
+            updateFilesPagination(pagination.total || 0, page, FilesManager.currentLimit);
+            
+            // 更新分页信息显示
+            updateFilesInfo(filesList, pagination, page);
+            
+            // 根据文件列表数据计算并更新统计信息
+            updateFileStatsFromData(filesList, pagination);
             
         } else {
             throw new Error(result.message || '加载失败');
@@ -125,27 +144,34 @@ function displayFilesList(files) {
     }
     
     tbody.innerHTML = files.map(file => {
+        // 安全地从uuid_file_name中提取原始文件名
+        let fileName = '未知文件';
+        if (file.uuid_file_name && typeof file.uuid_file_name === 'string') {
+            const match = file.uuid_file_name.match(/^[A-Za-z0-9]+-(.+)$/);
+            fileName = match ? match[1] : file.uuid_file_name;
+        }
+        
         return '<tr>' +
-            '<td><input type="checkbox" class="file-checkbox" value="' + file.id + '" onchange="toggleFileSelection(\'' + file.id + '\')"></td>' +
+            '<td><input type="checkbox" class="file-checkbox" value="' + file.ID + '" onchange="toggleFileSelection(\'' + file.ID + '\')"></td>' +
             '<td><div class="file-info">' +
-                '<div class="file-icon ' + getFileTypeClass(file.name) + '"><i class="' + getFileIcon(file.name) + '"></i></div>' +
+                '<div class="file-icon ' + getFileTypeClass(fileName) + '"><i class="' + getFileIcon(fileName) + '"></i></div>' +
                 '<div class="file-details">' +
-                    '<div class="file-name" title="' + file.name + '">' + file.name + '</div>' +
+                    '<div class="file-name" title="' + fileName + '">' + fileName + '</div>' +
                     '<div class="file-meta">' +
                         '<span class="file-code">' + file.code + '</span>' +
-                        '<span class="file-date">' + formatDateTime(file.created_at) + '</span>' +
+                        '<span class="file-date">' + formatDateTime(file.CreatedAt) + '</span>' +
                     '</div>' +
                 '</div>' +
             '</div></td>' +
             '<td>' + formatFileSize(file.size) + '</td>' +
-            '<td><span class="file-status ' + (file.is_public ? 'public' : 'private') + '">' + (file.is_public ? '公开' : '私有') + '</span></td>' +
-            '<td>' + formatDateTime(file.created_at) + '</td>' +
+            '<td><span class="file-status ' + (file.require_auth ? 'private' : 'public') + '">' + (file.require_auth ? '私有' : '公开') + '</span></td>' +
+            '<td>' + formatDateTime(file.CreatedAt) + '</td>' +
             '<td><div class="file-actions">' +
-                '<button class="file-action-btn btn-view" onclick="viewFile(\'' + file.id + '\')" title="预览"><i class="fas fa-eye"></i></button>' +
-                '<button class="file-action-btn btn-download" onclick="downloadFile(\'' + file.id + '\')" title="下载"><i class="fas fa-download"></i></button>' +
+                '<button class="file-action-btn btn-view" onclick="viewFile(\'' + file.ID + '\')" title="预览"><i class="fas fa-eye"></i></button>' +
+                '<button class="file-action-btn btn-download" onclick="downloadFile(\'' + file.ID + '\')" title="下载"><i class="fas fa-download"></i></button>' +
                 '<button class="file-action-btn btn-copy" onclick="copyFileLink(\'' + file.code + '\')" title="复制链接"><i class="fas fa-copy"></i></button>' +
-                '<button class="file-action-btn btn-edit" onclick="editFile(\'' + file.id + '\')" title="编辑"><i class="fas fa-edit"></i></button>' +
-                '<button class="file-action-btn btn-delete" onclick="deleteFile(\'' + file.id + '\')" title="删除"><i class="fas fa-trash"></i></button>' +
+                '<button class="file-action-btn btn-edit" onclick="editFile(\'' + file.ID + '\')" title="编辑"><i class="fas fa-edit"></i></button>' +
+                '<button class="file-action-btn btn-delete" onclick="deleteFile(\'' + file.ID + '\')" title="删除"><i class="fas fa-trash"></i></button>' +
             '</div></td>' +
         '</tr>';
     }).join('');
@@ -161,25 +187,32 @@ function displayFilesGrid(files) {
     }
     
     gridContainer.innerHTML = files.map(file => {
-        const previewContent = isImageFile(file.name) ? 
-            '<img src="/file/' + file.code + '" alt="' + file.name + '" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">' +
-            '<div class="file-card-icon ' + getFileTypeClass(file.name) + '" style="display: none;"><i class="' + getFileIcon(file.name) + '"></i></div>' :
-            '<div class="file-card-icon ' + getFileTypeClass(file.name) + '"><i class="' + getFileIcon(file.name) + '"></i></div>';
+        // 安全地从uuid_file_name中提取原始文件名
+        let fileName = '未知文件';
+        if (file.uuid_file_name && typeof file.uuid_file_name === 'string') {
+            const match = file.uuid_file_name.match(/^[A-Za-z0-9]+-(.+)$/);
+            fileName = match ? match[1] : file.uuid_file_name;
+        }
+        
+        const previewContent = isImageFile(fileName) ? 
+            '<img src="/file/' + file.code + '" alt="' + fileName + '" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">' +
+            '<div class="file-card-icon ' + getFileTypeClass(fileName) + '" style="display: none;"><i class="' + getFileIcon(fileName) + '"></i></div>' :
+            '<div class="file-card-icon ' + getFileTypeClass(fileName) + '"><i class="' + getFileIcon(fileName) + '"></i></div>';
             
-        return '<div class="file-card" onclick="selectFileCard(\'' + file.id + '\')">' +
+        return '<div class="file-card" onclick="selectFileCard(\'' + file.ID + '\')">' +
             '<div class="file-card-preview">' + previewContent + '</div>' +
             '<div class="file-card-body">' +
-                '<div class="file-card-name" title="' + file.name + '">' + file.name + '</div>' +
+                '<div class="file-card-name" title="' + fileName + '">' + fileName + '</div>' +
                 '<div class="file-card-meta">' +
                     '<span>' + formatFileSize(file.size) + '</span>' +
-                    '<span class="file-status ' + (file.is_public ? 'public' : 'private') + '">' + (file.is_public ? '公开' : '私有') + '</span>' +
+                    '<span class="file-status ' + (file.require_auth ? 'private' : 'public') + '">' + (file.require_auth ? '私有' : '公开') + '</span>' +
                 '</div>' +
                 '<div class="file-card-actions">' +
-                    '<button class="file-action-btn btn-view" onclick="event.stopPropagation(); viewFile(\'' + file.id + '\')" title="预览"><i class="fas fa-eye"></i></button>' +
-                    '<button class="file-action-btn btn-download" onclick="event.stopPropagation(); downloadFile(\'' + file.id + '\')" title="下载"><i class="fas fa-download"></i></button>' +
+                    '<button class="file-action-btn btn-view" onclick="event.stopPropagation(); viewFile(\'' + file.ID + '\')" title="预览"><i class="fas fa-eye"></i></button>' +
+                    '<button class="file-action-btn btn-download" onclick="event.stopPropagation(); downloadFile(\'' + file.ID + '\')" title="下载"><i class="fas fa-download"></i></button>' +
                     '<button class="file-action-btn btn-copy" onclick="event.stopPropagation(); copyFileLink(\'' + file.code + '\')" title="复制链接"><i class="fas fa-copy"></i></button>' +
-                    '<button class="file-action-btn btn-edit" onclick="event.stopPropagation(); editFile(\'' + file.id + '\')" title="编辑"><i class="fas fa-edit"></i></button>' +
-                    '<button class="file-action-btn btn-delete" onclick="event.stopPropagation(); deleteFile(\'' + file.id + '\')" title="删除"><i class="fas fa-trash"></i></button>' +
+                    '<button class="file-action-btn btn-edit" onclick="event.stopPropagation(); editFile(\'' + file.ID + '\')" title="编辑"><i class="fas fa-edit"></i></button>' +
+                    '<button class="file-action-btn btn-delete" onclick="event.stopPropagation(); deleteFile(\'' + file.ID + '\')" title="删除"><i class="fas fa-trash"></i></button>' +
                 '</div>' +
             '</div>' +
         '</div>';
@@ -279,33 +312,150 @@ function updateBulkActions() {
 }
 
 function updateFilesPagination(total, page, limit) {
-    const totalPages = Math.ceil(total / limit);
+    const paginationContainer = document.getElementById('files-pagination-container');
     const pagination = document.getElementById('files-pagination');
     
-    if (!pagination || totalPages <= 1) {
-        if (pagination) pagination.innerHTML = '';
+    if (!paginationContainer || !pagination) return;
+    
+    // 如果总数为0，隐藏分页容器
+    if (total === 0) {
+        paginationContainer.style.display = 'none';
         return;
     }
     
-    let paginationHTML = '';
+    // 显示分页容器
+    paginationContainer.style.display = 'block';
     
-    if (page > 1) {
-        paginationHTML += '<button onclick="loadFiles(' + (page - 1) + ', \'' + FilesManager.currentSearch + '\', \'' + FilesManager.currentFilter + '\')" class="btn-page">上一页</button>';
+    // 更新统计信息
+    const startItem = Math.min((page - 1) * limit + 1, total);
+    const endItem = Math.min(page * limit, total);
+    document.getElementById('files-current-start').textContent = startItem;
+    document.getElementById('files-current-end').textContent = endItem;
+    document.getElementById('files-total').textContent = total;
+    
+    const totalPages = Math.ceil(total / limit);
+    
+    if (totalPages <= 1) {
+        pagination.innerHTML = '';
+        return;
     }
+    
+    let paginationHTML = '<div class="pagination-wrapper">';
+    
+    // 首页按钮
+    if (page > 1) {
+        paginationHTML += `<button onclick="loadFiles(1, '${FilesManager.currentSearch}', '${FilesManager.currentFilter}')" class="btn-page btn-page-first" title="首页">
+            <i class="fas fa-angle-double-left"></i>
+        </button>`;
+    }
+    
+    // 上一页按钮
+    if (page > 1) {
+        paginationHTML += `<button onclick="loadFiles(${page - 1}, '${FilesManager.currentSearch}', '${FilesManager.currentFilter}')" class="btn-page btn-page-prev" title="上一页">
+            <i class="fas fa-angle-left"></i> 上一页
+        </button>`;
+    }
+    
+    // 页码按钮组
+    paginationHTML += '<div class="pagination-numbers">';
     
     const startPage = Math.max(1, page - 2);
     const endPage = Math.min(totalPages, page + 2);
     
+    // 如果开始页码不是1，显示省略号
+    if (startPage > 1) {
+        paginationHTML += `<button onclick="loadFiles(1, '${FilesManager.currentSearch}', '${FilesManager.currentFilter}')" class="btn-page">1</button>`;
+        if (startPage > 2) {
+            paginationHTML += '<span class="pagination-ellipsis">...</span>';
+        }
+    }
+    
+    // 页码按钮
     for (let i = startPage; i <= endPage; i++) {
         const activeClass = i === page ? 'active' : '';
-        paginationHTML += '<button onclick="loadFiles(' + i + ', \'' + FilesManager.currentSearch + '\', \'' + FilesManager.currentFilter + '\')" class="btn-page ' + activeClass + '">' + i + '</button>';
+        paginationHTML += `<button onclick="loadFiles(${i}, '${FilesManager.currentSearch}', '${FilesManager.currentFilter}')" class="btn-page ${activeClass}" title="第${i}页">${i}</button>`;
     }
     
-    if (page < totalPages) {
-        paginationHTML += '<button onclick="loadFiles(' + (page + 1) + ', \'' + FilesManager.currentSearch + '\', \'' + FilesManager.currentFilter + '\')" class="btn-page">下一页</button>';
+    // 如果结束页码不是最后一页，显示省略号
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            paginationHTML += '<span class="pagination-ellipsis">...</span>';
+        }
+        paginationHTML += `<button onclick="loadFiles(${totalPages}, '${FilesManager.currentSearch}', '${FilesManager.currentFilter}')" class="btn-page">${totalPages}</button>`;
     }
+    
+    paginationHTML += '</div>';
+    
+    // 下一页按钮
+    if (page < totalPages) {
+        paginationHTML += `<button onclick="loadFiles(${page + 1}, '${FilesManager.currentSearch}', '${FilesManager.currentFilter}')" class="btn-page btn-page-next" title="下一页">
+            下一页 <i class="fas fa-angle-right"></i>
+        </button>`;
+    }
+    
+    // 末页按钮
+    if (page < totalPages) {
+        paginationHTML += `<button onclick="loadFiles(${totalPages}, '${FilesManager.currentSearch}', '${FilesManager.currentFilter}')" class="btn-page btn-page-last" title="末页">
+            <i class="fas fa-angle-double-right"></i>
+        </button>`;
+    }
+    
+    // 页面跳转控件
+    paginationHTML += `<div class="pagination-jump">
+        <span>跳转到</span>
+        <input type="number" id="files-page-jump" min="1" max="${totalPages}" value="${page}" style="width: 60px; text-align: center;">
+        <button onclick="jumpToPage('files')" class="btn btn-sm">跳转</button>
+    </div>`;
+    
+    // 页面大小选择器
+    paginationHTML += `<div class="pagination-size">
+        <span>每页显示</span>
+        <select id="files-page-size" onchange="changePageSize('files')">
+            <option value="5" ${limit === 5 ? 'selected' : ''}>5条</option>
+            <option value="10" ${limit === 10 ? 'selected' : ''}>10条</option>
+            <option value="20" ${limit === 20 ? 'selected' : ''}>20条</option>
+            <option value="50" ${limit === 50 ? 'selected' : ''}>50条</option>
+        </select>
+    </div>`;
+    
+    paginationHTML += '</div>';
     
     pagination.innerHTML = paginationHTML;
+}
+
+/**
+ * 跳转到指定页面
+ */
+function jumpToPage(module) {
+    const input = document.getElementById(module + '-page-jump');
+    if (!input) return;
+    
+    const page = parseInt(input.value);
+    if (isNaN(page) || page < 1) {
+        FilesManager.showAlert('请输入有效的页码', 'warning');
+        return;
+    }
+    
+    if (module === 'files') {
+        loadFiles(page, FilesManager.currentSearch, FilesManager.currentFilter);
+    }
+}
+
+/**
+ * 更改页面大小
+ */
+function changePageSize(module) {
+    const select = document.getElementById(module + '-page-size');
+    if (!select) return;
+    
+    const newLimit = parseInt(select.value);
+    if (isNaN(newLimit) || newLimit < 1) return;
+    
+    if (module === 'files') {
+        // 更新limit参数并重新加载第一页
+        FilesManager.currentLimit = newLimit;
+        loadFiles(1, FilesManager.currentSearch, FilesManager.currentFilter);
+    }
 }
 
 async function downloadFile(fileId) {
@@ -415,6 +565,182 @@ function editFile(fileId) {
 }
 
 /**
+ * 判断文件是否匹配指定类型
+ */
+function matchesFileType(fileName, fileType) {
+    if (!fileName) return false;
+    
+    const ext = fileName.toLowerCase().split('.').pop();
+    
+    switch (fileType) {
+        case 'image':
+            return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico'].includes(ext);
+        case 'video':
+            return ['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv', 'webm', '3gp'].includes(ext);
+        case 'audio':
+            return ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'wma'].includes(ext);
+        case 'document':
+            return ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'odt'].includes(ext);
+        case 'archive':
+            return ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'dmg'].includes(ext);
+        case 'code':
+            return ['js', 'html', 'css', 'php', 'py', 'java', 'cpp', 'c', 'h', 'go', 'rs', 'ts', 'json', 'xml', 'sql'].includes(ext);
+        case 'other':
+            return !matchesFileType(fileName, 'image') && 
+                   !matchesFileType(fileName, 'video') && 
+                   !matchesFileType(fileName, 'audio') && 
+                   !matchesFileType(fileName, 'document') && 
+                   !matchesFileType(fileName, 'archive') && 
+                   !matchesFileType(fileName, 'code');
+        default:
+            return true;
+    }
+}
+
+/**
+ * 根据文件列表数据更新统计信息
+ */
+function updateFileStatsFromData(files, pagination) {
+    // 总文件数使用分页信息中的total
+    const totalFiles = pagination.total || 0;
+    updateElement('total-files', totalFiles);
+    
+    // 计算总大小（只能计算当前页面的文件大小）
+    let totalSize = 0;
+    let publicFiles = 0;
+    let todayUploads = 0;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    files.forEach(file => {
+        if (file.size) {
+            totalSize += file.size;
+        }
+        
+        if (!file.require_auth) {
+            publicFiles++;
+        }
+        
+        if (file.CreatedAt) {
+            const fileDate = new Date(file.CreatedAt);
+            fileDate.setHours(0, 0, 0, 0);
+            if (fileDate.getTime() === today.getTime()) {
+                todayUploads++;
+            }
+        }
+    });
+    
+    // 注意：总大小只是当前页面的估算值
+    updateElement('total-size', formatFileSize(totalSize));
+    updateElement('public-files', publicFiles);
+    updateElement('today-uploads', todayUploads);
+}
+
+/**
+ * 更新文件列表分页信息显示
+ */
+function updateFilesInfo(files, pagination, currentPage) {
+    const total = pagination.total || 0;
+    const pageSize = FilesManager.currentLimit;  // 使用动态limit
+    
+    if (total === 0) {
+        updateElement('files-current-start', 0);
+        updateElement('files-current-end', 0);
+        updateElement('files-total', 0);
+        return;
+    }
+    
+    const start = (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, total);
+    
+    updateElement('files-current-start', start);
+    updateElement('files-current-end', end);
+    updateElement('files-total', total);
+}
+
+/**
+ * 安全更新DOM元素内容
+ */
+function updateElement(id, content) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = content;
+    }
+}
+
+/**
+ * 批量删除文件
+ */
+function bulkDelete() {
+    const selectedFiles = Array.from(FilesManager.selectedFiles);
+    
+    if (selectedFiles.length === 0) {
+        FilesManager.showAlert('请先选择要删除的文件', 'warning');
+        return;
+    }
+    
+    if (!confirm(`确定要删除选中的 ${selectedFiles.length} 个文件吗？此操作不可恢复！`)) {
+        return;
+    }
+    
+    FilesManager.showAlert('批量删除功能开发中', 'info');
+    // TODO: 实现批量删除功能
+    console.log('批量删除文件:', selectedFiles);
+}
+
+/**
+ * 批量下载文件
+ */
+function bulkDownload() {
+    const selectedFiles = Array.from(FilesManager.selectedFiles);
+    
+    if (selectedFiles.length === 0) {
+        FilesManager.showAlert('请先选择要下载的文件', 'warning');
+        return;
+    }
+    
+    FilesManager.showAlert('批量下载功能开发中', 'info');
+    // TODO: 实现批量下载功能
+    console.log('批量下载文件:', selectedFiles);
+}
+
+/**
+ * 批量切换可见性
+ */
+function bulkToggleVisibility() {
+    const selectedFiles = Array.from(FilesManager.selectedFiles);
+    
+    if (selectedFiles.length === 0) {
+        FilesManager.showAlert('请先选择要操作的文件', 'warning');
+        return;
+    }
+    
+    FilesManager.showAlert('批量切换可见性功能开发中', 'info');
+    // TODO: 实现批量切换可见性功能
+    console.log('批量切换可见性:', selectedFiles);
+}
+
+/**
+ * 清除选择
+ */
+function clearSelection() {
+    FilesManager.selectedFiles.clear();
+    updateBulkActions();
+    
+    // 取消所有复选框的选中状态
+    const checkboxes = document.querySelectorAll('.file-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    const selectAllCheckbox = document.getElementById('select-all-files');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = false;
+    }
+}
+
+/**
  * 显示上传模态框
  */
 function showUploadModal() {
@@ -435,3 +761,9 @@ window.deleteFile = deleteFile;
 window.viewFile = viewFile;
 window.editFile = editFile;
 window.showUploadModal = showUploadModal;
+window.bulkDelete = bulkDelete;
+window.bulkDownload = bulkDownload;
+window.bulkToggleVisibility = bulkToggleVisibility;
+window.clearSelection = clearSelection;
+window.jumpToPage = jumpToPage;
+window.changePageSize = changePageSize;

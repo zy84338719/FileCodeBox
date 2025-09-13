@@ -7,359 +7,80 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/logo-small.svg">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .register-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            width: 100%;
-            max-width: 450px;
-            animation: slideUp 0.6s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .register-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-        
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-        }
-        
-        .logo-text {
-            font-size: 1.8em;
-            font-weight: bold;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .register-header h1 {
-            color: #333;
-            font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .register-header p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.8);
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            background: rgba(255, 255, 255, 1);
-        }
-
-        .form-group input.error {
-            border-color: #e53e3e;
-            background-color: rgba(229, 62, 62, 0.05);
-        }
-
-        .form-group input.success {
-            border-color: #38a169;
-            background-color: rgba(56, 161, 105, 0.05);
-        }
-
-        .error-message {
-            color: #e53e3e;
-            font-size: 12px;
-            margin-top: 5px;
-            display: none;
-        }
-
-        .success-message {
-            color: #38a169;
-            font-size: 12px;
-            margin-top: 5px;
-            display: none;
-        }
-
-        .password-strength {
-            margin-top: 8px;
-            display: none;
-        }
-
-        .password-strength-bar {
-            height: 4px;
-            background: #e1e5e9;
-            border-radius: 2px;
-            overflow: hidden;
-            margin-bottom: 5px;
-        }
-
-        .password-strength-fill {
-            height: 100%;
-            transition: all 0.3s ease;
-            width: 0%;
-        }
-
-        .password-strength-fill.weak { background: #e53e3e; }
-        .password-strength-fill.medium { background: #f59e0b; }
-        .password-strength-fill.strong { background: #38a169; }
-
-        .password-strength-text {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .register-btn {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .register-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .register-btn:active {
-            transform: translateY(0);
-        }
-
-        .register-btn:disabled {
-            background: #cbd5e0;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .register-btn .loading {
-            display: none;
-        }
-
-        .register-btn.loading .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top: 2px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 8px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .login-link {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .login-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .login-link a:hover {
-            color: #764ba2;
-        }
-
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .alert.success {
-            background-color: rgba(56, 161, 105, 0.1);
-            color: #38a169;
-            border: 1px solid rgba(56, 161, 105, 0.3);
-        }
-
-        .alert.error {
-            background-color: rgba(229, 62, 62, 0.1);
-            color: #e53e3e;
-            border: 1px solid rgba(229, 62, 62, 0.3);
-        }
-
-        @media (max-width: 480px) {
-            .register-container {
-                padding: 30px 20px;
-                margin: 10px;
-            }
-            
-            .register-header h1 {
-                font-size: 24px;
-            }
-        }
-
-        /* 复选框样式 */
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            width: auto;
-            margin-right: 8px;
-            transform: scale(1.2);
-        }
-
-        .checkbox-group label {
-            margin-bottom: 0;
-            font-size: 13px;
-            color: #666;
-        }
-
-        .checkbox-group a {
-            color: #667eea;
-            text-decoration: none;
-        }
-
-        .checkbox-group a:hover {
-            text-decoration: underline;
-        }
-    </style>
+    
+    <!-- 引入统一的设计系统CSS -->
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/auth.css">
 </head>
-<body>
-    <div class="register-container">
-        <div class="register-header">
-            <div class="logo">
-                <img class="logo-icon" src="/assets/images/logo.svg" alt="FileCodeBox Logo"/>
-                <div class="logo-text">FileCodeBox</div>
-            </div>
-            <h1>创建账户</h1>
-            <p>加入 FileCodeBox，开始您的文件分享之旅</p>
-        </div>
-
-        <div id="alert" class="alert"></div>
-
-        <form id="registerForm">
-            <div class="form-group">
-                <label for="username">用户名</label>
-                <input type="text" id="username" name="username" required>
-                <div class="error-message" id="usernameError"></div>
-                <div class="success-message" id="usernameSuccess"></div>
-            </div>
-
-            <div class="form-group">
-                <label for="email">邮箱地址</label>
-                <input type="email" id="email" name="email" required>
-                <div class="error-message" id="emailError"></div>
-                <div class="success-message" id="emailSuccess"></div>
-            </div>
-
-            <div class="form-group">
-                <label for="nickname">昵称 (可选)</label>
-                <input type="text" id="nickname" name="nickname">
-            </div>
-
-            <div class="form-group">
-                <label for="password">密码</label>
-                <input type="password" id="password" name="password" required>
-                <div class="password-strength" id="passwordStrength">
-                    <div class="password-strength-bar">
-                        <div class="password-strength-fill" id="passwordStrengthFill"></div>
-                    </div>
-                    <div class="password-strength-text" id="passwordStrengthText"></div>
+<body class="auth-page">
+    <a href="/" class="back-to-home">← 返回首页</a>
+    
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <img class="auth-logo-icon" src="/assets/images/logo.svg" alt="FileCodeBox Logo"/>
+                    <div class="auth-logo-text">FileCodeBox</div>
                 </div>
-                <div class="error-message" id="passwordError"></div>
+                <div class="auth-title">创建账户</div>
+                <div class="auth-subtitle">加入 FileCodeBox，开始您的文件分享之旅</div>
             </div>
 
-            <div class="form-group">
-                <label for="confirmPassword">确认密码</label>
-                <input type="password" id="confirmPassword" name="confirmPassword" required>
-                <div class="error-message" id="confirmPasswordError"></div>
-                <div class="success-message" id="confirmPasswordSuccess"></div>
+            <div id="alert" class="auth-message"></div>
+
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" class="form-control" required>
+                    <div class="field-message error" id="usernameError"></div>
+                    <div class="field-message success" id="usernameSuccess"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">邮箱地址</label>
+                    <input type="email" id="email" name="email" class="form-control" required>
+                    <div class="field-message error" id="emailError"></div>
+                    <div class="field-message success" id="emailSuccess"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="nickname">昵称 (可选)</label>
+                    <input type="text" id="nickname" name="nickname" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                    <div class="password-strength" id="passwordStrength">
+                        <div class="password-strength-bar">
+                            <div class="password-strength-fill" id="passwordStrengthFill"></div>
+                        </div>
+                        <div class="password-strength-text" id="passwordStrengthText"></div>
+                    </div>
+                    <div class="field-message error" id="passwordError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required>
+                    <div class="field-message error" id="confirmPasswordError"></div>
+                    <div class="field-message success" id="confirmPasswordSuccess"></div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="agreeTerms" required>
+                    <label for="agreeTerms">
+                        我已阅读并同意 <a href="#" target="_blank">服务条款</a> 和 <a href="#" target="_blank">隐私政策</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="auth-btn" id="registerBtn">注册账户</button>
+            </form>
+
+            <div class="auth-link-section">
+                <p>已有账户？ <a href="/user/login" class="auth-link-btn">立即登录</a></p>
             </div>
-
-            <div class="checkbox-group">
-                <input type="checkbox" id="agreeTerms" required>
-                <label for="agreeTerms">
-                    我已阅读并同意 <a href="#" target="_blank">服务条款</a> 和 <a href="#" target="_blank">隐私政策</a>
-                </label>
-            </div>
-
-            <button type="submit" class="register-btn" id="registerBtn">
-                <span class="loading"></span>
-                <span class="btn-text">注册账户</span>
-            </button>
-        </form>
-
-        <div class="login-link">
-            <p>已有账户？ <a href="/user/login">立即登录</a></p>
         </div>
     </div>
 
@@ -613,7 +334,6 @@
             // 显示加载状态
             registerBtn.classList.add('loading');
             registerBtn.disabled = true;
-            btnText.textContent = '注册中...';
             
             try {
                 const formData = {
@@ -648,14 +368,13 @@
                 // 恢复按钮状态
                 registerBtn.classList.remove('loading');
                 registerBtn.disabled = false;
-                btnText.textContent = '注册账户';
             }
         }
 
         function showAlert(message, type) {
             const alert = document.getElementById('alert');
             alert.textContent = message;
-            alert.className = `alert ${type}`;
+            alert.className = `auth-message ${type}`;
             alert.style.display = 'block';
             
             // 3秒后自动隐藏

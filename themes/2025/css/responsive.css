@@ -1,0 +1,239 @@
+/* 响应式样式 - 移动端适配和不同屏幕尺寸的样式 */
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+    .container {
+        padding: 20px;
+        margin: 20px;
+        max-width: none;
+        width: calc(100% - 40px);
+    }
+    
+    .logo-text {
+        font-size: 2em;
+    }
+    
+    .logo-icon {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .user-links {
+        position: static;
+        justify-content: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .tabs {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .tab {
+        margin-bottom: 0;
+    }
+    
+    .upload-area {
+        padding: 30px 15px;
+    }
+    
+    .upload-icon {
+        font-size: 36px;
+    }
+    
+    .upload-text {
+        font-size: 14px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .btn {
+        width: 100%;
+        padding: 15px;
+        font-size: 16px;
+    }
+    
+    .notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        transform: translateY(-100%);
+    }
+    
+    .notification.show {
+        transform: translateY(0);
+    }
+    
+    .modal-content {
+        margin: 20px;
+        padding: 20px;
+        max-width: calc(100% - 40px);
+    }
+    
+    .dropdown-content {
+        position: fixed;
+        top: auto;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        width: auto;
+        min-width: auto;
+    }
+}
+
+/* 平板端适配 */
+@media (min-width: 601px) and (max-width: 768px) {
+    .container {
+        max-width: 600px;
+        padding: 35px;
+    }
+    
+    .logo-text {
+        font-size: 2.2em;
+    }
+    
+    .upload-area {
+        padding: 35px 20px;
+    }
+}
+
+/* 大屏幕适配 */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 550px;
+        padding: 50px;
+    }
+    
+    .logo-text {
+        font-size: 3em;
+    }
+    
+    .logo-icon {
+        width: 70px;
+        height: 70px;
+    }
+}
+
+/* 高分辨率屏幕适配 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .logo-icon {
+        image-rendering: -webkit-optimize-contrast;
+    }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1a1a1a;
+        --text-color: #ffffff;
+        --card-bg: rgba(255, 255, 255, 0.1);
+        --border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    body.dark-mode {
+        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    }
+    
+    .dark-mode .container {
+        background: var(--card-bg);
+        color: var(--text-color);
+        backdrop-filter: blur(20px);
+    }
+    
+    .dark-mode .form-control {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+    
+    .dark-mode .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .dark-mode .tab {
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .dark-mode .tab:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .dark-mode .upload-area {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--border-color);
+    }
+    
+    .dark-mode .upload-area:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: #667eea;
+    }
+    
+    .dark-mode .footer {
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .dark-mode .dropdown-content {
+        background-color: #2c3e50;
+        border: 1px solid var(--border-color);
+    }
+    
+    .dark-mode .dropdown-item {
+        color: var(--text-color);
+    }
+    
+    .dark-mode .dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* 无障碍访问 */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+    .btn {
+        border: 2px solid #000;
+    }
+    
+    .form-control {
+        border: 2px solid #000;
+    }
+    
+    .tab.active {
+        border: 2px solid #000;
+    }
+}
+
+/* 打印样式 */
+@media print {
+    body {
+        background: white !important;
+    }
+    
+    .container {
+        background: white !important;
+        box-shadow: none !important;
+        border: 1px solid #000;
+    }
+    
+    .user-links,
+    .btn,
+    .upload-area {
+        display: none !important;
+    }
+    
+    .result {
+        display: block !important;
+        page-break-inside: avoid;
+    }
+}

@@ -6,7 +6,7 @@ import (
 	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/models/web"
-	"github.com/zy84338719/filecodebox/internal/services"
+	"github.com/zy84338719/filecodebox/internal/services/share"
 	"github.com/zy84338719/filecodebox/internal/storage"
 
 	"github.com/gin-gonic/gin"
@@ -15,10 +15,10 @@ import (
 
 // ShareHandler 分享处理器
 type ShareHandler struct {
-	service *services.ShareService
+	service *share.Service
 }
 
-func NewShareHandler(service *services.ShareService) *ShareHandler {
+func NewShareHandler(service *share.Service) *ShareHandler {
 	return &ShareHandler{service: service}
 }
 
@@ -79,16 +79,17 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 		userID = &id
 	}
 
-	fileCode, err := h.service.ShareTextWithAuth(req.Text, req.ExpireValue, req.ExpireStyle, userID)
+	fileResult, err := h.service.ShareTextWithAuth(req.Text, req.ExpireValue, req.ExpireStyle, userID)
 	if err != nil {
 		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
 	response := web.ShareResponse{
-		Code:     fileCode.Code,
-		ShareURL: fileCode.ShareURL,
-		FileName: "文本分享",
+		Code:      fileResult.Code,
+		ShareURL:  fileResult.ShareURL,
+		FileName:  "文本分享",
+		ExpiredAt: fileResult.ExpiredAt,
 	}
 
 	common.SuccessWithMessage(c, "分享成功", response)
@@ -154,16 +155,17 @@ func (h *ShareHandler) ShareFile(c *gin.Context) {
 		UserID:      userID,
 	}
 
-	fileCode, err := h.service.ShareFileWithAuth(serviceReq)
+	fileResult, err := h.service.ShareFileWithAuth(serviceReq)
 	if err != nil {
 		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
 	response := web.ShareResponse{
-		Code:     fileCode.Code,
-		ShareURL: fileCode.ShareURL,
-		FileName: fileCode.FileName,
+		Code:      fileResult.Code,
+		ShareURL:  fileResult.ShareURL,
+		FileName:  fileResult.FileName,
+		ExpiredAt: fileResult.ExpiredAt,
 	}
 
 	common.SuccessResponse(c, response)
@@ -224,7 +226,7 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 
 	response := web.FileInfoResponse{
 		Code:        fileCode.Code,
-		Name:        fileCode.Prefix + fileCode.Suffix,
+		Name:        getDisplayFileName(fileCode),
 		Size:        fileCode.Size,
 		UploadType:  fileCode.UploadType,
 		RequireAuth: fileCode.RequireAuth,
@@ -297,4 +299,13 @@ func (h *ShareHandler) DownloadFile(c *gin.Context) {
 		common.NotFoundResponse(c, "文件下载失败: "+err.Error())
 		return
 	}
+}
+
+// getDisplayFileName 获取用于显示的文件名
+func getDisplayFileName(fileCode *models.FileCode) string {
+	if fileCode.UUIDFileName != "" {
+		return fileCode.UUIDFileName
+	}
+	// 向后兼容：如果UUIDFileName为空，则使用Prefix + Suffix
+	return fileCode.Prefix + fileCode.Suffix
 }

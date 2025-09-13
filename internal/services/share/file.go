@@ -101,6 +101,18 @@ func (s *Service) CreateFileShare(
 		return nil, err
 	}
 
+	// 如果是已认证用户上传，更新用户统计信息
+	if userID != nil {
+		if s.userService != nil {
+			// 更新用户上传统计：增加上传次数和存储使用量
+			err = s.userService.UpdateUserStats(*userID, "upload", fileSize)
+			if err != nil {
+				// 记录警告但不中断流程
+				fmt.Printf("Warning: Failed to update user stats: %v\n", err)
+			}
+		}
+	}
+
 	return fileCode, nil
 }
 
@@ -143,6 +155,16 @@ func (s *Service) DeleteFileShare(code string) error {
 	result := s.storageService.DeleteFileWithResult(fileCode)
 	if !result.Success {
 		fmt.Printf("Warning: Failed to delete physical file: %v\n", result.Error)
+	}
+
+	// 如果是已认证用户的文件，更新用户统计信息
+	if fileCode.UserID != nil && s.userService != nil {
+		// 减少用户存储使用量（注意：这里使用负值来减少）
+		err = s.userService.UpdateUserStats(*fileCode.UserID, "delete", -fileCode.Size)
+		if err != nil {
+			// 记录警告但不中断流程
+			fmt.Printf("Warning: Failed to update user stats for deletion: %v\n", err)
+		}
 	}
 
 	// 删除数据库记录
@@ -307,16 +329,22 @@ func (s *Service) ShareFileWithAuth(req models.ShareFileRequest) (*models.ShareF
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("关闭文件失败: %v\n", err)
+		}
+	}()
 
 	// 生成文件代码
 	code := generateRandomCode()
 
 	// 生成文件路径
-	filePath := fmt.Sprintf("uploads/%s-%s", code, fileHeader.Filename)
+	uuidFileName := fmt.Sprintf("%s-%s", code, fileHeader.Filename)
+	directoryPath := "uploads"
+	fullFilePath := fmt.Sprintf("%s/%s", directoryPath, uuidFileName)
 
 	// 保存文件到存储系统
-	result := s.storageService.SaveFileWithResult(fileHeader, filePath)
+	result := s.storageService.SaveFileWithResult(fileHeader, fullFilePath)
 	if !result.Success {
 		return nil, fmt.Errorf("failed to save file: %v", result.Error)
 	}
@@ -329,7 +357,7 @@ func (s *Service) ShareFileWithAuth(req models.ShareFileRequest) (*models.ShareF
 	case "forever":
 		// 永久有效，不设置过期时间和次数限制
 		expiredAt = nil
-		expiredCount = 0 // 0 表示无限制次数
+		expiredCount = -1 // -1 表示无限制次数
 	case "count":
 		// 按次数限制
 		expiredAt = nil                // 不设置时间过期
@@ -340,21 +368,21 @@ func (s *Service) ShareFileWithAuth(req models.ShareFileRequest) (*models.ShareF
 			t := time.Now().Add(time.Duration(req.ExpireValue) * time.Minute)
 			expiredAt = &t
 		}
-		expiredCount = 0 // 时间限制时，不限制次数
+		expiredCount = -1 // 时间限制时，不限制次数
 	case "hour":
 		// 按小时限制
 		if req.ExpireValue > 0 {
 			t := time.Now().Add(time.Duration(req.ExpireValue) * time.Hour)
 			expiredAt = &t
 		}
-		expiredCount = 0 // 时间限制时，不限制次数
+		expiredCount = -1 // 时间限制时，不限制次数
 	case "day":
 		// 按天限制
 		if req.ExpireValue > 0 {
 			t := time.Now().Add(time.Duration(req.ExpireValue) * 24 * time.Hour)
 			expiredAt = &t
 		}
-		expiredCount = 0 // 时间限制时，不限制次数
+		expiredCount = -1 // 时间限制时，不限制次数
 	default:
 		// 默认永久有效
 		expiredAt = nil
@@ -364,11 +392,11 @@ func (s *Service) ShareFileWithAuth(req models.ShareFileRequest) (*models.ShareF
 	// 创建文件分享记录
 	fileCode, err := s.CreateFileShare(
 		code,
-		"", // prefix
-		"", // suffix
-		fileHeader.Filename,
-		filePath,
-		"", // text - 文件分享不需要文本内容
+		"",            // prefix
+		"",            // suffix
+		uuidFileName,  // UUID化的文件名
+		directoryPath, // 目录路径
+		"",            // text - 文件分享不需要文本内容
 		fileHeader.Size,
 		expiredAt,
 		expiredCount, // 使用计算出的过期次数
