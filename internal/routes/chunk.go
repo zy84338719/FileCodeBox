@@ -12,7 +12,7 @@ import (
 func SetupChunkRoutes(
 	router *gin.Engine,
 	chunkHandler *handlers.ChunkHandler,
-	cfg *config.Config,
+	cfg *config.ConfigManager,
 ) {
 	// 分片上传相关路由
 	chunkGroup := router.Group("/chunk")

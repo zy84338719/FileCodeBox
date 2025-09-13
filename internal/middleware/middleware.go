@@ -1,17 +1,16 @@
 package middleware
 
 import (
-	"net/http"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/services"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/time/rate"
 )
 
@@ -77,7 +76,7 @@ func init() {
 }
 
 // RateLimit 限流中间件
-func RateLimit(cfg *config.Config) gin.HandlerFunc {
+func RateLimit(manager *config.ConfigManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
 
@@ -86,14 +85,11 @@ func RateLimit(cfg *config.Config) gin.HandlerFunc {
 			// 上传限流
 			limiter := uploadLimiter.GetLimiter(
 				ip,
-				rate.Every(time.Duration(cfg.UploadMinute)*time.Minute/time.Duration(cfg.UploadCount)),
-				cfg.UploadCount,
+				rate.Every(time.Duration(manager.UploadMinute)*time.Minute/time.Duration(manager.UploadCount)),
+				manager.UploadCount,
 			)
 			if !limiter.Allow() {
-				c.JSON(http.StatusTooManyRequests, gin.H{
-					"code":    429,
-					"message": "上传频率过快，请稍后再试",
-				})
+				common.TooManyRequestsResponse(c, "上传频率过快，请稍后再试")
 				c.Abort()
 				return
 			}
@@ -101,14 +97,11 @@ func RateLimit(cfg *config.Config) gin.HandlerFunc {
 			// 只对GET请求的select进行错误限流，POST请求更宽松
 			limiter := errorLimiter.GetLimiter(
 				ip,
-				rate.Every(time.Duration(cfg.ErrorMinute)*time.Minute/time.Duration(cfg.ErrorCount)),
-				cfg.ErrorCount,
+				rate.Every(time.Duration(manager.ErrorMinute)*time.Minute/time.Duration(manager.ErrorCount)),
+				manager.ErrorCount,
 			)
 			if !limiter.Allow() {
-				c.JSON(http.StatusTooManyRequests, gin.H{
-					"code":    429,
-					"message": "请求频率过快，请稍后再试",
-				})
+				common.TooManyRequestsResponse(c, "请求频率过快，请稍后再试")
 				c.Abort()
 				return
 			}
@@ -118,61 +111,21 @@ func RateLimit(cfg *config.Config) gin.HandlerFunc {
 	}
 }
 
-// AdminAuth 管理员认证中间件
-func AdminAuth(cfg *config.Config) gin.HandlerFunc {
+// AdminAuth 管理员认证中间件（基于用户权限）
+func AdminAuth(manager *config.ConfigManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 获取Authorization头
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    401,
-				"message": "缺少认证信息",
-			})
+		// 从上下文中获取用户角色（由UserAuth中间件设置）
+		role, exists := c.Get("role")
+		if !exists {
+			common.UnauthorizedResponse(c, "用户权限信息不存在")
 			c.Abort()
 			return
 		}
 
-		// 检查Bearer前缀
-		tokenParts := strings.SplitN(authHeader, " ", 2)
-		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    401,
-				"message": "认证格式错误",
-			})
-			c.Abort()
-			return
-		}
-
-		// 验证JWT token
-		tokenString := tokenParts[1]
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return []byte(cfg.AdminToken), nil
-		})
-
-		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    401,
-				"message": "认证失败",
-			})
-			c.Abort()
-			return
-		}
-
-		// 检查是否是管理员
-		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			if isAdmin, exists := claims["is_admin"]; !exists || !isAdmin.(bool) {
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"code":    401,
-					"message": "权限不足",
-				})
-				c.Abort()
-				return
-			}
-		} else {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    401,
-				"message": "token格式错误",
-			})
+		// 检查用户角色是否为管理员
+		roleStr, ok := role.(string)
+		if !ok || roleStr != "admin" {
+			common.ForbiddenResponse(c, "需要管理员权限")
 			c.Abort()
 			return
 		}
@@ -182,13 +135,10 @@ func AdminAuth(cfg *config.Config) gin.HandlerFunc {
 }
 
 // ShareAuth 分享认证中间件
-func ShareAuth(cfg *config.Config) gin.HandlerFunc {
+func ShareAuth(manager *config.ConfigManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if cfg.OpenUpload == 0 {
-			c.JSON(http.StatusForbidden, gin.H{
-				"code":    403,
-				"message": "上传功能已关闭",
-			})
+		if manager.Transfer.Upload.OpenUpload == 0 {
+			common.ForbiddenResponse(c, "上传功能已关闭")
 			c.Abort()
 			return
 		}
@@ -197,23 +147,16 @@ func ShareAuth(cfg *config.Config) gin.HandlerFunc {
 }
 
 // UserAuth 用户认证中间件
-func UserAuth(cfg *config.Config, userService interface {
+func UserAuth(manager *config.ConfigManager, userService interface {
 	ValidateToken(string) (interface{}, error)
 }) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 如果用户系统未启用，直接跳过
-		if cfg.EnableUserSystem == 0 {
-			c.Next()
-			return
-		}
+		// 用户系统始终启用，直接进行认证验证
 
 		// 获取Authorization头
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    401,
-				"message": "缺少认证信息",
-			})
+			common.UnauthorizedResponse(c, "缺少认证信息")
 			c.Abort()
 			return
 		}
@@ -221,10 +164,7 @@ func UserAuth(cfg *config.Config, userService interface {
 		// 检查Bearer前缀
 		tokenParts := strings.SplitN(authHeader, " ", 2)
 		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    401,
-				"message": "认证格式错误",
-			})
+			common.UnauthorizedResponse(c, "认证格式错误")
 			c.Abort()
 			return
 		}
@@ -232,10 +172,7 @@ func UserAuth(cfg *config.Config, userService interface {
 		// 验证token
 		claimsInterface, err := userService.ValidateToken(tokenParts[1])
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    401,
-				"message": "认证失败: " + err.Error(),
-			})
+			common.UnauthorizedResponse(c, "认证失败: "+err.Error())
 			c.Abort()
 			return
 		}
@@ -248,10 +185,7 @@ func UserAuth(cfg *config.Config, userService interface {
 			c.Set("role", claims.Role)
 			c.Set("session_id", claims.SessionID)
 		} else {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    401,
-				"message": "token格式错误",
-			})
+			common.UnauthorizedResponse(c, "token格式错误")
 			c.Abort()
 			return
 		}
@@ -262,15 +196,11 @@ func UserAuth(cfg *config.Config, userService interface {
 
 // UserClaims JWT claims 结构体定义
 // OptionalUserAuth 可选用户认证中间件（支持匿名和登录用户）
-func OptionalUserAuth(cfg *config.Config, userService interface {
+func OptionalUserAuth(manager *config.ConfigManager, userService interface {
 	ValidateToken(string) (interface{}, error)
 }) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 如果用户系统未启用，直接跳过
-		if cfg.EnableUserSystem == 0 {
-			c.Next()
-			return
-		}
+		// 用户系统始终启用，直接进行认证验证
 
 		// 获取Authorization头
 		authHeader := c.GetHeader("Authorization")

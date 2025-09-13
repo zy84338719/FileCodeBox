@@ -20,12 +20,12 @@ var startTime = time.Now()
 
 // APIHandler API处理器
 type APIHandler struct {
-	config *config.Config
+	config *config.ConfigManager
 }
 
-func NewAPIHandler(cfg *config.Config) *APIHandler {
+func NewAPIHandler(manager *config.ConfigManager) *APIHandler {
 	return &APIHandler{
-		config: cfg,
+		config: manager,
 	}
 }
 
@@ -99,11 +99,11 @@ type SystemConfig struct {
 // @Router /api/config [get]
 func (h *APIHandler) GetConfig(c *gin.Context) {
 	systemConfig := SystemConfig{
-		Name:        h.config.Name,
-		Description: h.config.Description,
-		UploadSize:  h.config.UploadSize,
-		EnableChunk: h.config.EnableChunk,
-		OpenUpload:  h.config.OpenUpload,
+		Name:        h.config.Base.Name,
+		Description: h.config.Base.Description,
+		UploadSize:  h.config.Transfer.Upload.UploadSize,
+		EnableChunk: h.config.Transfer.Upload.EnableChunk,
+		OpenUpload:  h.config.Transfer.Upload.OpenUpload,
 		ExpireStyle: h.config.ExpireStyle,
 	}
 

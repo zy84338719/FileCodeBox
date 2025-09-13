@@ -4,6 +4,8 @@ import (
 	"strconv"
 
 	"github.com/zy84338719/filecodebox/internal/common"
+	"github.com/zy84338719/filecodebox/internal/models"
+	"github.com/zy84338719/filecodebox/internal/models/web"
 	"github.com/zy84338719/filecodebox/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -28,13 +30,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Username string `json:"username" binding:"required"`
-		Email    string `json:"email" binding:"required"`
-		Password string `json:"password" binding:"required"`
-		Nickname string `json:"nickname"`
-	}
-
+	var req web.AuthRegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
 		return
@@ -61,13 +57,15 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	common.SuccessWithMessage(c, "注册成功", gin.H{
-		"id":       user.ID,
-		"username": user.Username,
-		"email":    user.Email,
-		"nickname": user.Nickname,
-		"role":     user.Role,
-	})
+	response := web.AuthRegisterResponse{
+		ID:       user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+		Nickname: user.Nickname,
+		Role:     user.Role,
+	}
+
+	common.SuccessWithMessage(c, "注册成功", response)
 }
 
 // Login 用户登录
@@ -77,11 +75,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Username string `json:"username" binding:"required"`
-		Password string `json:"password" binding:"required"`
-	}
-
+	var req web.AuthLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
 		return
@@ -98,30 +92,34 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	common.SuccessWithMessage(c, "登录成功", gin.H{
-		"token":      token,
-		"token_type": "Bearer",
-		"user": gin.H{
-			"id":       user.ID,
-			"username": user.Username,
-			"email":    user.Email,
-			"nickname": user.Nickname,
-			"role":     user.Role,
-			"avatar":   user.Avatar,
+	response := web.AuthLoginResponse{
+		User: &web.UserInfo{
+			ID:            user.ID,
+			Username:      user.Username,
+			Email:         user.Email,
+			Nickname:      user.Nickname,
+			Role:          user.Role,
+			Avatar:        user.Avatar,
+			Status:        user.Status,
+			EmailVerified: user.EmailVerified,
 		},
-	})
+		Token:     token,
+		TokenType: "Bearer",
+	}
+
+	common.SuccessWithMessage(c, "登录成功", response)
 }
 
 // Logout 用户登出
 func (h *UserHandler) Logout(c *gin.Context) {
-	// 从上下文获取会话ID
-	sessionID, exists := c.Get("session_id")
+	// 获取用户ID用于登出
+	userID, exists := c.Get("user_id")
 	if !exists {
-		common.BadRequestResponse(c, "会话信息不存在")
+		common.UnauthorizedResponse(c, "用户未登录")
 		return
 	}
 
-	if err := h.userService.Logout(sessionID.(string)); err != nil {
+	if err := h.userService.Logout(userID.(uint)); err != nil {
 		common.InternalServerErrorResponse(c, "登出失败: "+err.Error())
 		return
 	}
@@ -144,17 +142,15 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	common.SuccessResponse(c, gin.H{
-		"id":             user.ID,
-		"username":       user.Username,
-		"email":          user.Email,
-		"nickname":       user.Nickname,
-		"avatar":         user.Avatar,
-		"role":           user.Role,
-		"status":         user.Status,
-		"email_verified": user.EmailVerified,
-		"created_at":     user.CreatedAt,
-		"last_login_at":  user.LastLoginAt,
+	common.SuccessResponse(c, &web.UserInfo{
+		ID:            user.ID,
+		Username:      user.Username,
+		Email:         user.Email,
+		Nickname:      user.Nickname,
+		Avatar:        user.Avatar,
+		Role:          user.Role,
+		Status:        user.Status,
+		EmailVerified: user.EmailVerified,
 	})
 }
 
@@ -166,11 +162,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Nickname string `json:"nickname"`
-		Avatar   string `json:"avatar"`
-	}
-
+	var req web.UserProfileUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
 		return
@@ -192,11 +184,7 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		OldPassword string `json:"old_password" binding:"required"`
-		NewPassword string `json:"new_password" binding:"required"`
-	}
-
+	var req web.UserPasswordChangeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
 		return
@@ -220,30 +208,53 @@ func (h *UserHandler) GetUserFiles(c *gin.Context) {
 
 	// 获取分页参数
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
+	// 兼容老版本的limit参数
+	if pageSize == 20 {
+		if limitParam := c.Query("limit"); limitParam != "" {
+			pageSize, _ = strconv.Atoi(limitParam)
+		}
+	}
 
 	if page < 1 {
 		page = 1
 	}
-	if limit < 1 || limit > 100 {
-		limit = 20
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
 	}
 
-	files, total, err := h.userService.GetUserFiles(userID.(uint), page, limit)
+	files, total, err := h.userService.GetUserFiles(userID.(uint), page, pageSize)
 	if err != nil {
 		common.InternalServerErrorResponse(c, "获取文件列表失败: "+err.Error())
 		return
 	}
 
-	common.SuccessResponse(c, gin.H{
-		"files": files,
-		"pagination": gin.H{
-			"page":  page,
-			"limit": limit,
-			"total": total,
-			"pages": (total + int64(limit) - 1) / int64(limit),
+	// 临时处理：因为 userService.GetUserFiles 返回 interface{}，我们需要处理类型转换
+	var fileInfos []web.FileInfo
+
+	// 如果是 []models.FileCode 类型，进行转换
+	if fileCodes, ok := files.([]models.FileCode); ok {
+		fileInfos = web.ConvertFileCodeSliceToFileInfoSlice(fileCodes)
+	} else {
+		// 如果是其他类型，返回空列表
+		fileInfos = []web.FileInfo{}
+	}
+
+	totalPages := (int(total) + pageSize - 1) / pageSize
+	response := web.UserFilesResponse{
+		Files: fileInfos,
+		Pagination: web.PaginationInfo{
+			Page:       page,
+			PageSize:   pageSize,
+			Total:      total,
+			TotalPages: totalPages,
+			HasNext:    page < totalPages,
+			HasPrev:    page > 1,
 		},
-	})
+	}
+
+	common.SuccessResponse(c, response)
 }
 
 // GetUserStats 获取用户统计信息
@@ -260,7 +271,9 @@ func (h *UserHandler) GetUserStats(c *gin.Context) {
 		return
 	}
 
-	common.SuccessResponse(c, stats)
+	// 使用转换函数将 service 层数据转换为 web 层响应
+	response := web.ConvertUserStatsToWeb(stats)
+	common.SuccessResponse(c, response)
 }
 
 // CheckAuth 检查用户认证状态
@@ -277,22 +290,49 @@ func (h *UserHandler) CheckAuth(c *gin.Context) {
 		return
 	}
 
-	common.SuccessResponse(c, gin.H{
-		"id":             user.ID,
-		"username":       user.Username,
-		"email":          user.Email,
-		"role":           user.Role,
-		"status":         user.Status,
-		"email_verified": user.EmailVerified,
-	})
+	response := &web.UserInfo{
+		ID:            user.ID,
+		Username:      user.Username,
+		Email:         user.Email,
+		Nickname:      user.Nickname,
+		Avatar:        user.Avatar,
+		Role:          user.Role,
+		Status:        user.Status,
+		EmailVerified: user.EmailVerified,
+	}
+
+	common.SuccessResponse(c, response)
 }
 
 // GetSystemInfo 获取系统信息（公开接口）
 func (h *UserHandler) GetSystemInfo(c *gin.Context) {
-	common.SuccessResponse(c, gin.H{
-		"enable_user_system":      h.userService.IsUserSystemEnabled(),
-		"allow_user_registration": h.userService.IsRegistrationAllowed(),
-	})
+	response := &web.UserSystemInfoResponse{
+		UserSystemEnabled:        h.userService.IsUserSystemEnabled(),
+		AllowUserRegistration:    h.userService.IsRegistrationAllowed(),
+		RequireEmailVerification: false, // 这里需要从配置获取
+	}
+
+	common.SuccessResponse(c, response)
+}
+
+// CheckSystemInitialization 检查系统初始化状态（公开接口）
+func (h *UserHandler) CheckSystemInitialization(c *gin.Context) {
+	initialized, err := h.userService.IsSystemInitialized()
+	if err != nil {
+		common.InternalServerErrorResponse(c, "检查系统初始化状态失败")
+		return
+	}
+
+	response := map[string]interface{}{
+		"initialized": initialized,
+	}
+
+	common.SuccessResponse(c, response)
+}
+
+// IsSystemInitialized 内部方法，直接返回初始化状态
+func (h *UserHandler) IsSystemInitialized() (bool, error) {
+	return h.userService.IsSystemInitialized()
 }
 
 // DeleteFile 删除用户文件

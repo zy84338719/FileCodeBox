@@ -17,7 +17,7 @@ echo
 echo "1. 创建必要目录..."
 mkdir -p $DATA_DIR $LOG_DIR
 mkdir -p $DATA_DIR/share/data
-mkdir -p themes/2024/assets
+mkdir -p themes/2025/assets
 
 echo "2. 检查依赖..."
 # 检查Go环境

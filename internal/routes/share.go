@@ -12,7 +12,7 @@ import (
 func SetupShareRoutes(
 	router *gin.Engine,
 	shareHandler *handlers.ShareHandler,
-	cfg *config.Config,
+	cfg *config.ConfigManager,
 	userService interface {
 		ValidateToken(string) (interface{}, error)
 	},

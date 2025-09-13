@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/models/web"
 	"github.com/zy84338719/filecodebox/internal/storage"
 
 	"github.com/gin-gonic/gin"
@@ -11,14 +12,16 @@ import (
 // StorageHandler 存储管理处理器
 type StorageHandler struct {
 	storageManager *storage.StorageManager
-	config         *config.Config
+	storageConfig  *config.StorageConfig
+	configManager  *config.ConfigManager
 }
 
 // NewStorageHandler 创建存储处理器
-func NewStorageHandler(sm *storage.StorageManager, cfg *config.Config) *StorageHandler {
+func NewStorageHandler(sm *storage.StorageManager, storageConfig *config.StorageConfig, configManager *config.ConfigManager) *StorageHandler {
 	return &StorageHandler{
 		storageManager: sm,
-		config:         cfg,
+		storageConfig:  storageConfig,
+		configManager:  configManager,
 	}
 }
 
@@ -28,79 +31,84 @@ func (sh *StorageHandler) GetStorageInfo(c *gin.Context) {
 	currentStorage := sh.storageManager.GetCurrentStorage()
 
 	// 获取各存储类型的详细信息
-	storageDetails := make(map[string]interface{})
+	storageDetails := make(map[string]web.StorageDetail)
 
 	for _, storageType := range availableStorages {
-		details := map[string]interface{}{
-			"type":      storageType,
-			"available": true,
+		detail := web.StorageDetail{
+			Type:      storageType,
+			Available: true,
 		}
 
 		// 测试连接状态
 		if err := sh.storageManager.TestStorage(storageType); err != nil {
-			details["available"] = false
-			details["error"] = err.Error()
+			detail.Available = false
+			detail.Error = err.Error()
 		}
 
-		storageDetails[storageType] = details
+		storageDetails[storageType] = detail
 	}
 
-	common.SuccessResponse(c, gin.H{
-		"current":         currentStorage,
-		"available":       availableStorages,
-		"storage_details": storageDetails,
-		"storage_config": gin.H{
-			"local": gin.H{
-				"storage_path": sh.config.StoragePath,
-			},
-			"webdav": gin.H{
-				"hostname":  sh.config.WebDAVHostname,
-				"username":  sh.config.WebDAVUsername,
-				"root_path": sh.config.WebDAVRootPath,
-				"url":       sh.config.WebDAVURL,
-			},
-			"nfs": gin.H{
-				"server":      sh.config.NFSServer,
-				"nfs_path":    sh.config.NFSPath,
-				"mount_point": sh.config.NFSMountPoint,
-				"version":     sh.config.NFSVersion,
-				"options":     sh.config.NFSOptions,
-				"timeout":     sh.config.NFSTimeout,
-				"auto_mount":  sh.config.NFSAutoMount,
-				"retry_count": sh.config.NFSRetryCount,
-				"sub_path":    sh.config.NFSSubPath,
-			},
+	// 构建存储配置信息
+	storageConfig := map[string]map[string]interface{}{
+		"local": {
+			"storage_path": sh.storageConfig.StoragePath,
 		},
-	})
+		"webdav": {
+			"hostname":  sh.storageConfig.WebDAV.Hostname,
+			"username":  sh.storageConfig.WebDAV.Username,
+			"root_path": sh.storageConfig.WebDAV.RootPath,
+			"url":       sh.storageConfig.WebDAV.URL,
+		},
+		"nfs": {
+			"server":      sh.storageConfig.NFS.Server,
+			"nfs_path":    sh.storageConfig.NFS.Path,
+			"mount_point": sh.storageConfig.NFS.MountPoint,
+			"version":     sh.storageConfig.NFS.Version,
+			"options":     sh.storageConfig.NFS.Options,
+			"timeout":     sh.storageConfig.NFS.Timeout,
+			"auto_mount":  sh.storageConfig.NFS.AutoMount,
+			"retry_count": sh.storageConfig.NFS.RetryCount,
+			"sub_path":    sh.storageConfig.NFS.SubPath,
+		},
+	}
+
+	response := web.StorageInfoResponse{
+		Current:        currentStorage,
+		Available:      availableStorages,
+		StorageDetails: storageDetails,
+		StorageConfig:  storageConfig,
+	}
+
+	common.SuccessResponse(c, response)
 }
 
 // SwitchStorage 切换存储类型
 func (sh *StorageHandler) SwitchStorage(c *gin.Context) {
-	var req struct {
-		StorageType string `json:"storage_type" binding:"required"`
-	}
-
+	var req web.StorageSwitchRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		common.BadRequestResponse(c, "参数错误: "+err.Error())
 		return
 	}
 
 	// 切换存储
-	if err := sh.storageManager.SwitchStorage(req.StorageType); err != nil {
+	if err := sh.storageManager.SwitchStorage(req.Type); err != nil {
 		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
 	// 更新配置
-	sh.config.FileStorage = req.StorageType
-	if err := sh.config.Save(); err != nil {
+	sh.storageConfig.Type = req.Type
+	if err := sh.configManager.Save(); err != nil {
 		common.InternalServerErrorResponse(c, "保存配置失败: "+err.Error())
 		return
 	}
 
-	common.SuccessWithMessage(c, "存储切换成功", gin.H{
-		"current": req.StorageType,
-	})
+	response := web.StorageSwitchResponse{
+		Success:     true,
+		Message:     "存储切换成功",
+		CurrentType: req.Type,
+	}
+	common.SuccessResponse(c, response)
 }
 
 // TestStorageConnection 测试存储连接
@@ -117,9 +125,9 @@ func (sh *StorageHandler) TestStorageConnection(c *gin.Context) {
 		return
 	}
 
-	common.SuccessWithMessage(c, "连接测试成功", gin.H{
-		"type":   storageType,
-		"status": "connected",
+	common.SuccessWithMessage(c, "连接测试成功", web.StorageConnectionResponse{
+		Type:   storageType,
+		Status: "connected",
 	})
 }
 
@@ -139,33 +147,33 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 	switch req.StorageType {
 	case "local":
 		if storagePath, ok := req.Config["storage_path"].(string); ok {
-			sh.config.StoragePath = storagePath
+			sh.storageConfig.StoragePath = storagePath
 		}
 
 	case "webdav":
 		if hostname, ok := req.Config["hostname"].(string); ok {
-			sh.config.WebDAVHostname = hostname
+			sh.storageConfig.WebDAV.Hostname = hostname
 		}
 		if username, ok := req.Config["username"].(string); ok {
-			sh.config.WebDAVUsername = username
+			sh.storageConfig.WebDAV.Username = username
 		}
 		if password, ok := req.Config["password"].(string); ok && password != "" {
-			sh.config.WebDAVPassword = password
+			sh.storageConfig.WebDAV.Password = password
 		}
 		if rootPath, ok := req.Config["root_path"].(string); ok {
-			sh.config.WebDAVRootPath = rootPath
+			sh.storageConfig.WebDAV.RootPath = rootPath
 		}
 		if url, ok := req.Config["url"].(string); ok {
-			sh.config.WebDAVURL = url
+			sh.storageConfig.WebDAV.URL = url
 		}
 
 		// 重新创建 WebDAV 存储以应用新配置
 		// 由于使用了策略模式，我们需要重新创建存储实例
 		if err := sh.storageManager.ReconfigureWebDAV(
-			sh.config.WebDAVHostname,
-			sh.config.WebDAVUsername,
-			sh.config.WebDAVPassword,
-			sh.config.WebDAVRootPath,
+			sh.storageConfig.WebDAV.Hostname,
+			sh.storageConfig.WebDAV.Username,
+			sh.storageConfig.WebDAV.Password,
+			sh.storageConfig.WebDAV.RootPath,
 		); err != nil {
 			common.InternalServerErrorResponse(c, "重新配置WebDAV存储失败: "+err.Error())
 			return
@@ -173,75 +181,75 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 
 	case "s3":
 		if accessKeyID, ok := req.Config["access_key_id"].(string); ok {
-			sh.config.S3AccessKeyID = accessKeyID
+			sh.storageConfig.S3.AccessKeyID = accessKeyID
 		}
 		if secretAccessKey, ok := req.Config["secret_access_key"].(string); ok && secretAccessKey != "" {
-			sh.config.S3SecretAccessKey = secretAccessKey
+			sh.storageConfig.S3.SecretAccessKey = secretAccessKey
 		}
 		if bucketName, ok := req.Config["bucket_name"].(string); ok {
-			sh.config.S3BucketName = bucketName
+			sh.storageConfig.S3.BucketName = bucketName
 		}
 		if endpointURL, ok := req.Config["endpoint_url"].(string); ok {
-			sh.config.S3EndpointURL = endpointURL
+			sh.storageConfig.S3.EndpointURL = endpointURL
 		}
 		if regionName, ok := req.Config["region_name"].(string); ok {
-			sh.config.S3RegionName = regionName
+			sh.storageConfig.S3.RegionName = regionName
 		}
 		if hostname, ok := req.Config["hostname"].(string); ok {
-			sh.config.S3Hostname = hostname
+			sh.storageConfig.S3.Hostname = hostname
 		}
 		if proxy, ok := req.Config["proxy"].(bool); ok {
 			if proxy {
-				sh.config.S3Proxy = 1
+				sh.storageConfig.S3.Proxy = 1
 			} else {
-				sh.config.S3Proxy = 0
+				sh.storageConfig.S3.Proxy = 0
 			}
 		}
 
 	case "nfs":
 		if server, ok := req.Config["server"].(string); ok {
-			sh.config.NFSServer = server
+			sh.storageConfig.NFS.Server = server
 		}
 		if nfsPath, ok := req.Config["nfs_path"].(string); ok {
-			sh.config.NFSPath = nfsPath
+			sh.storageConfig.NFS.Path = nfsPath
 		}
 		if mountPoint, ok := req.Config["mount_point"].(string); ok {
-			sh.config.NFSMountPoint = mountPoint
+			sh.storageConfig.NFS.MountPoint = mountPoint
 		}
 		if version, ok := req.Config["version"].(string); ok {
-			sh.config.NFSVersion = version
+			sh.storageConfig.NFS.Version = version
 		}
 		if options, ok := req.Config["options"].(string); ok {
-			sh.config.NFSOptions = options
+			sh.storageConfig.NFS.Options = options
 		}
 		if timeout, ok := req.Config["timeout"].(float64); ok {
-			sh.config.NFSTimeout = int(timeout)
+			sh.storageConfig.NFS.Timeout = int(timeout)
 		}
 		if autoMount, ok := req.Config["auto_mount"].(bool); ok {
 			if autoMount {
-				sh.config.NFSAutoMount = 1
+				sh.storageConfig.NFS.AutoMount = 1
 			} else {
-				sh.config.NFSAutoMount = 0
+				sh.storageConfig.NFS.AutoMount = 0
 			}
 		}
 		if retryCount, ok := req.Config["retry_count"].(float64); ok {
-			sh.config.NFSRetryCount = int(retryCount)
+			sh.storageConfig.NFS.RetryCount = int(retryCount)
 		}
 		if subPath, ok := req.Config["sub_path"].(string); ok {
-			sh.config.NFSSubPath = subPath
+			sh.storageConfig.NFS.SubPath = subPath
 		}
 
 		// 重新创建 NFS 存储以应用新配置
 		if err := sh.storageManager.ReconfigureNFS(
-			sh.config.NFSServer,
-			sh.config.NFSPath,
-			sh.config.NFSMountPoint,
-			sh.config.NFSVersion,
-			sh.config.NFSOptions,
-			sh.config.NFSTimeout,
-			sh.config.NFSAutoMount == 1,
-			sh.config.NFSRetryCount,
-			sh.config.NFSSubPath,
+			sh.storageConfig.NFS.Server,
+			sh.storageConfig.NFS.Path,
+			sh.storageConfig.NFS.MountPoint,
+			sh.storageConfig.NFS.Version,
+			sh.storageConfig.NFS.Options,
+			sh.storageConfig.NFS.Timeout,
+			sh.storageConfig.NFS.AutoMount == 1,
+			sh.storageConfig.NFS.RetryCount,
+			sh.storageConfig.NFS.SubPath,
 		); err != nil {
 			common.InternalServerErrorResponse(c, "重新配置NFS存储失败: "+err.Error())
 			return
@@ -253,7 +261,7 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 	}
 
 	// 保存配置（会同时保存到文件和数据库）
-	if err := sh.config.Save(); err != nil {
+	if err := sh.configManager.Save(); err != nil {
 		common.InternalServerErrorResponse(c, "保存配置失败: "+err.Error())
 		return
 	}

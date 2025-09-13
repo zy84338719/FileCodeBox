@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"github.com/zy84338719/filecodebox/internal/config"
-	"github.com/zy84338719/filecodebox/internal/dao"
+	"github.com/zy84338719/filecodebox/internal/models"
+	"github.com/zy84338719/filecodebox/internal/repository"
 	"github.com/zy84338719/filecodebox/internal/services"
 	"github.com/zy84338719/filecodebox/internal/storage"
 )
@@ -16,18 +17,18 @@ import (
 // FileCodeBoxMCPServer FileCodeBox MCP 服务器
 type FileCodeBoxMCPServer struct {
 	*Server
-	config         *config.Config
-	daoManager     *dao.DAOManager
-	storageManager *storage.StorageManager
-	shareService   *services.ShareService
-	adminService   *services.AdminService
-	userService    *services.UserService
+	manager           *config.ConfigManager
+	repositoryManager *repository.RepositoryManager
+	storageManager    *storage.StorageManager
+	shareService      *services.ShareService
+	adminService      *services.AdminService
+	userService       *services.UserService
 }
 
 // NewFileCodeBoxMCPServer 创建 FileCodeBox MCP 服务器
 func NewFileCodeBoxMCPServer(
-	cfg *config.Config,
-	daoManager *dao.DAOManager,
+	manager *config.ConfigManager,
+	repositoryManager *repository.RepositoryManager,
 	storageManager *storage.StorageManager,
 	shareService *services.ShareService,
 	adminService *services.AdminService,
@@ -36,13 +37,13 @@ func NewFileCodeBoxMCPServer(
 	server := NewServer("FileCodeBox MCP Server", "1.0.0")
 
 	mcpServer := &FileCodeBoxMCPServer{
-		Server:         server,
-		config:         cfg,
-		daoManager:     daoManager,
-		storageManager: storageManager,
-		shareService:   shareService,
-		adminService:   adminService,
-		userService:    userService,
+		Server:            server,
+		manager:           manager,
+		repositoryManager: repositoryManager,
+		storageManager:    storageManager,
+		shareService:      shareService,
+		adminService:      adminService,
+		userService:       userService,
 	}
 
 	// 设置服务器说明
@@ -304,7 +305,7 @@ func (f *FileCodeBoxMCPServer) handleGetShare(ctx context.Context, arguments map
 	}
 
 	// 获取分享信息
-	fileCode, err := f.daoManager.FileCode.GetByCode(code)
+	fileCode, err := f.repositoryManager.FileCode.GetByCode(code)
 	if err != nil {
 		return &ToolCallResult{
 			Content: []Content{TextContent(fmt.Sprintf("获取分享失败：%v", err))},
@@ -363,7 +364,7 @@ func (f *FileCodeBoxMCPServer) handleListShares(ctx context.Context, arguments m
 	}
 
 	// 获取分享列表
-	fileCodes, total, err := f.daoManager.FileCode.List(page, size, "")
+	fileCodes, total, err := f.repositoryManager.FileCode.List(page, size, "")
 	if err != nil {
 		return &ToolCallResult{
 			Content: []Content{TextContent(fmt.Sprintf("获取分享列表失败：%v", err))},
@@ -421,7 +422,7 @@ func (f *FileCodeBoxMCPServer) handleDeleteShare(ctx context.Context, arguments 
 	}
 
 	// 获取分享记录
-	fileCode, err := f.daoManager.FileCode.GetByCode(code)
+	fileCode, err := f.repositoryManager.FileCode.GetByCode(code)
 	if err != nil {
 		return &ToolCallResult{
 			Content: []Content{TextContent(fmt.Sprintf("删除分享失败：%v", err))},
@@ -439,7 +440,7 @@ func (f *FileCodeBoxMCPServer) handleDeleteShare(ctx context.Context, arguments 
 	}
 
 	// 删除数据库记录
-	if err := f.daoManager.FileCode.Delete(fileCode.ID); err != nil {
+	if err := f.repositoryManager.FileCode.Delete(fileCode.ID); err != nil {
 		return &ToolCallResult{
 			Content: []Content{TextContent(fmt.Sprintf("删除分享记录失败：%v", err))},
 			IsError: true,
@@ -469,19 +470,24 @@ func (f *FileCodeBoxMCPServer) handleGetSystemStatus(ctx context.Context, argume
 
 	var info strings.Builder
 	info.WriteString("=== FileCodeBox 系统状态 ===\n\n")
-	info.WriteString(fmt.Sprintf("系统名称：%s\n", f.config.Name))
-	info.WriteString(fmt.Sprintf("系统描述：%s\n", f.config.Description))
-	info.WriteString(fmt.Sprintf("运行端口：%d\n", f.config.Port))
-	info.WriteString(fmt.Sprintf("数据目录：%s\n", f.config.DataPath))
-	info.WriteString(fmt.Sprintf("当前存储：%s\n", f.config.FileStorage))
-	info.WriteString(fmt.Sprintf("用户系统：%s\n", map[int]string{0: "未启用", 1: "已启用"}[f.config.EnableUserSystem]))
+	info.WriteString(fmt.Sprintf("系统名称：%s\n", f.manager.Base.Name))
+	info.WriteString(fmt.Sprintf("系统描述：%s\n", f.manager.Base.Description))
+	info.WriteString(fmt.Sprintf("运行端口：%d\n", f.manager.Base.Port))
+	info.WriteString(fmt.Sprintf("数据目录：%s\n", f.manager.Base.DataPath))
+	info.WriteString(fmt.Sprintf("当前存储：%s\n", f.manager.Storage.Type))
+	info.WriteString(fmt.Sprintf("用户系统：%s\n", "已启用"))
 	info.WriteString("\n")
 
 	// 添加统计信息
 	info.WriteString("=== 统计信息 ===\n")
-	for key, value := range stats {
-		info.WriteString(fmt.Sprintf("%s：%v\n", key, value))
-	}
+	info.WriteString(fmt.Sprintf("总用户数：%d\n", stats.TotalUsers))
+	info.WriteString(fmt.Sprintf("活跃用户数：%d\n", stats.ActiveUsers))
+	info.WriteString(fmt.Sprintf("今日注册：%d\n", stats.TodayRegistrations))
+	info.WriteString(fmt.Sprintf("今日上传：%d\n", stats.TodayUploads))
+	info.WriteString(fmt.Sprintf("总文件数：%d\n", stats.TotalFiles))
+	info.WriteString(fmt.Sprintf("活跃文件数：%d\n", stats.ActiveFiles))
+	info.WriteString(fmt.Sprintf("总存储大小：%d 字节\n", stats.TotalSize))
+	info.WriteString(fmt.Sprintf("系统启动时间：%s\n", stats.SysStart))
 
 	content := []Content{
 		TextContent(info.String()),
@@ -497,10 +503,10 @@ func (f *FileCodeBoxMCPServer) handleGetSystemStatus(ctx context.Context, argume
 func (f *FileCodeBoxMCPServer) handleGetStorageInfo(ctx context.Context, arguments map[string]interface{}) (*ToolCallResult, error) {
 	var info strings.Builder
 	info.WriteString("=== 存储配置信息 ===\n\n")
-	info.WriteString(fmt.Sprintf("当前存储类型：%s\n", f.config.FileStorage))
+	info.WriteString(fmt.Sprintf("当前存储类型：%s\n", f.manager.Storage.Type))
 
 	// 测试存储连接
-	if err := f.storageManager.TestStorage(f.config.FileStorage); err != nil {
+	if err := f.storageManager.TestStorage(f.manager.Storage.Type); err != nil {
 		info.WriteString("存储状态：不可用\n")
 		info.WriteString(fmt.Sprintf("错误信息：%s\n", err.Error()))
 	} else {
@@ -511,7 +517,7 @@ func (f *FileCodeBoxMCPServer) handleGetStorageInfo(ctx context.Context, argumen
 	supportedTypes := []string{"local", "webdav", "nfs", "s3"}
 	for _, stype := range supportedTypes {
 		info.WriteString(fmt.Sprintf("- %s", stype))
-		if stype == f.config.FileStorage {
+		if stype == f.manager.Storage.Type {
 			info.WriteString(" (当前)")
 		}
 		info.WriteString("\n")
@@ -529,12 +535,7 @@ func (f *FileCodeBoxMCPServer) handleGetStorageInfo(ctx context.Context, argumen
 
 // handleListUsers 处理列出用户
 func (f *FileCodeBoxMCPServer) handleListUsers(ctx context.Context, arguments map[string]interface{}) (*ToolCallResult, error) {
-	if f.config.EnableUserSystem == 0 {
-		return &ToolCallResult{
-			Content: []Content{TextContent("用户系统未启用")},
-			IsError: true,
-		}, nil
-	}
+	// 用户系统始终启用
 
 	page := 1
 	if val, ok := arguments["page"].(float64); ok {
@@ -547,7 +548,7 @@ func (f *FileCodeBoxMCPServer) handleListUsers(ctx context.Context, arguments ma
 	}
 
 	// 获取用户列表
-	users, total, err := f.daoManager.User.List(page, size, "")
+	users, total, err := f.repositoryManager.User.List(page, size, "")
 	if err != nil {
 		return &ToolCallResult{
 			Content: []Content{TextContent(fmt.Sprintf("获取用户列表失败：%v", err))},
@@ -585,7 +586,7 @@ func (f *FileCodeBoxMCPServer) handleCleanupExpired(ctx context.Context, argumen
 	}
 
 	// 执行清理
-	cleanedCount, err := f.adminService.CleanExpiredFiles()
+	cleanedCount, err := f.adminService.CleanupExpiredFiles()
 	if err != nil {
 		return &ToolCallResult{
 			Content: []Content{TextContent(fmt.Sprintf("清理失败：%v", err))},
@@ -616,17 +617,16 @@ func (f *FileCodeBoxMCPServer) handleCleanupExpired(ctx context.Context, argumen
 
 // readConfigResource 读取配置资源
 func (f *FileCodeBoxMCPServer) readConfigResource(ctx context.Context, uri string) (*ResourcesReadResult, error) {
-	config := map[string]interface{}{
-		"name":                    f.config.Name,
-		"description":             f.config.Description,
-		"port":                    f.config.Port,
-		"host":                    f.config.Host,
-		"data_path":               f.config.DataPath,
-		"file_storage":            f.config.FileStorage,
-		"enable_user_system":      f.config.EnableUserSystem,
-		"allow_user_registration": f.config.AllowUserRegistration,
-		"upload_size":             f.config.UploadSize,
-		"max_save_seconds":        f.config.MaxSaveSeconds,
+	config := &models.SystemConfigResponse{
+		Name:                  f.manager.Base.Name,
+		Description:           f.manager.Base.Description,
+		Port:                  f.manager.Base.Port,
+		Host:                  f.manager.Base.Host,
+		DataPath:              f.manager.Base.DataPath,
+		FileStorage:           f.manager.Storage.Type,
+		AllowUserRegistration: f.manager.User.AllowUserRegistration == 1,
+		UploadSize:            f.manager.Transfer.Upload.UploadSize,
+		MaxSaveSeconds:        f.manager.Transfer.Upload.MaxSaveSeconds,
 	}
 
 	configJSON, err := json.MarshalIndent(config, "", "  ")
@@ -656,8 +656,8 @@ func (f *FileCodeBoxMCPServer) readStatusResource(ctx context.Context, uri strin
 		"timestamp":    time.Now().Format(time.RFC3339),
 		"server_info":  f.info,
 		"system_stats": stats,
-		"storage_type": f.config.FileStorage,
-		"user_system":  f.config.EnableUserSystem,
+		"storage_type": f.manager.Storage.Type,
+		"user_system":  "enabled",
 	}
 
 	statusJSON, err := json.MarshalIndent(status, "", "  ")
@@ -679,11 +679,11 @@ func (f *FileCodeBoxMCPServer) readStatusResource(ctx context.Context, uri strin
 // readStorageResource 读取存储资源
 func (f *FileCodeBoxMCPServer) readStorageResource(ctx context.Context, uri string) (*ResourcesReadResult, error) {
 	storageInfo := map[string]interface{}{
-		"type":      f.config.FileStorage,
-		"available": f.storageManager.TestStorage(f.config.FileStorage) == nil,
+		"type":      f.manager.Storage.Type,
+		"available": f.storageManager.TestStorage(f.manager.Storage.Type) == nil,
 	}
 
-	if err := f.storageManager.TestStorage(f.config.FileStorage); err != nil {
+	if err := f.storageManager.TestStorage(f.manager.Storage.Type); err != nil {
 		storageInfo["error"] = err.Error()
 	}
 
@@ -730,18 +730,18 @@ func (f *FileCodeBoxMCPServer) readShareStatsResource(ctx context.Context, uri s
 // getBaseURL 获取基础URL
 func (f *FileCodeBoxMCPServer) getBaseURL() string {
 	protocol := "http"
-	if f.config.Production {
+	if f.manager.Base.Production {
 		protocol = "https"
 	}
 
-	host := f.config.Host
+	host := f.manager.Base.Host
 	if host == "0.0.0.0" || host == "" {
 		host = "localhost"
 	}
 
-	if (protocol == "http" && f.config.Port == 80) || (protocol == "https" && f.config.Port == 443) {
+	if (protocol == "http" && f.manager.Base.Port == 80) || (protocol == "https" && f.manager.Base.Port == 443) {
 		return fmt.Sprintf("%s://%s", protocol, host)
 	}
 
-	return fmt.Sprintf("%s://%s:%d", protocol, host, f.config.Port)
+	return fmt.Sprintf("%s://%s:%d", protocol, host, f.manager.Base.Port)
 }

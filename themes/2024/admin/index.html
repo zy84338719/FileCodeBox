@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, user-scalable=yes">
+    <title>管理后台 - FileCodeBox</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/logo-small.svg">
+    
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/users.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/storage.css">
+    <link rel="stylesheet" href="css/mcp.css">
+    <link rel="stylesheet" href="css/files.css">
+    
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- 强制桌面端布局 -->
+    <style>
+        /* 强制桌面端布局 */
+        @media screen {
+            .container {
+                max-width: none !important;
+                width: 95vw !important;
+                margin: 0 auto !important;
+            }
+            
+            .stats-grid {
+                display: grid !important;
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 20px !important;
+            }
+            
+            .mobile-menu-toggle {
+                display: none !important;
+            }
+            
+            body {
+                min-width: 1200px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 移动端菜单按钮 -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" style="display: none;">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- 侧边栏遮罩层 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 管理页面 (移除了独立的管理员登录界面) -->
+    <div id="admin-page">
+        <div class="container">
+            <!-- 头部 -->
+            <div class="header">
+                <!-- 移动端菜单按钮 -->
+                <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" style="display: none;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <div class="logo">
+                    <img class="logo-icon" src="/assets/images/logo-small.svg" alt="FileCodeBox Logo"/>
+                    <span>FileCodeBox 管理后台</span>
+                </div>
+                <div class="header-buttons">
+                    <button class="user-btn" onclick="goToUser()">
+                        <i class="fas fa-user"></i> 用户页面
+                    </button>
+                    <button class="logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> 退出登录
+                    </button>
+                </div>
+            </div>
+
+            <!-- 主要内容区域 -->
+            <div class="tabs">
+                <!-- 横向标签导航 -->
+                <div class="tab-header">
+                    <button class="tab-btn active" onclick="switchTab('dashboard')">
+                        <i class="fas fa-tachometer-alt"></i> 仪表板
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('files')">
+                        <i class="fas fa-file"></i> 文件管理
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('users')">
+                        <i class="fas fa-users"></i> 用户管理
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('storage')">
+                        <i class="fas fa-hdd"></i> 存储管理
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('mcp')">
+                        <i class="fas fa-server"></i> MCP服务器
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('config')">
+                        <i class="fas fa-cog"></i> 系统配置
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('maintenance')">
+                        <i class="fas fa-tools"></i> 维护工具
+                    </button>
+                </div>
+
+                <!-- 标签页内容容器 -->
+                <div id="tab-content-container">
+                    <!-- 仪表板标签页 -->
+                    <div id="dashboard-tab" class="tab-content active">
+                        <div class="dashboard-header">
+                            <h3><i class="fas fa-tachometer-alt"></i> 系统仪表板</h3>
+                            <p class="dashboard-subtitle">实时监控系统状态和关键指标</p>
+                        </div>
+
+                        <!-- 主要统计数据 -->
+                        <div class="stats-grid" id="dashboard-stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-file"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-number" id="dashboard-total-files">-</div>
+                                    <div class="stat-label">总文件数</div>
+                                    <div class="stat-trend">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span id="files-trend">+12%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-upload"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-number" id="dashboard-today-uploads">-</div>
+                                    <div class="stat-label">今日上传</div>
+                                    <div class="stat-trend">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span id="uploads-trend">+8%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-number" id="dashboard-active-users">-</div>
+                                    <div class="stat-label">活跃用户</div>
+                                    <div class="stat-trend">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span id="users-trend">+5%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-hdd"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-number" id="dashboard-total-storage">-</div>
+                                    <div class="stat-label">总存储大小</div>
+                                    <div class="stat-trend">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span id="storage-trend">+15%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 快速操作区域 -->
+                        <div class="dashboard-actions">
+                            <h4><i class="fas fa-bolt"></i> 快速操作</h4>
+                            <div class="action-cards">
+                                <div class="action-card" onclick="switchTab('files')">
+                                    <div class="action-icon">
+                                        <i class="fas fa-file-plus"></i>
+                                    </div>
+                                    <div class="action-content">
+                                        <h5>文件管理</h5>
+                                        <p>查看和管理所有文件</p>
+                                    </div>
+                                </div>
+                                <div class="action-card" onclick="switchTab('users')">
+                                    <div class="action-icon">
+                                        <i class="fas fa-user-plus"></i>
+                                    </div>
+                                    <div class="action-content">
+                                        <h5>用户管理</h5>
+                                        <p>添加和管理用户账户</p>
+                                    </div>
+                                </div>
+                                <div class="action-card" onclick="switchTab('storage')">
+                                    <div class="action-icon">
+                                        <i class="fas fa-database"></i>
+                                    </div>
+                                    <div class="action-content">
+                                        <h5>存储管理</h5>
+                                        <p>配置存储选项</p>
+                                    </div>
+                                </div>
+                                <div class="action-card" onclick="switchTab('maintenance')">
+                                    <div class="action-icon">
+                                        <i class="fas fa-tools"></i>
+                                    </div>
+                                    <div class="action-content">
+                                        <h5>系统维护</h5>
+                                        <p>执行维护和清理任务</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 系统状态 -->
+                        <div class="dashboard-status">
+                            <h4><i class="fas fa-heartbeat"></i> 系统状态</h4>
+                            <div class="status-grid">
+                                <div class="status-item">
+                                    <div class="status-indicator online"></div>
+                                    <div class="status-label">服务状态</div>
+                                    <div class="status-value">正常运行</div>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-indicator online"></div>
+                                    <div class="status-label">数据库</div>
+                                    <div class="status-value">连接正常</div>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-indicator warning"></div>
+                                    <div class="status-label">存储空间</div>
+                                    <div class="status-value" id="storage-usage">75% 已使用</div>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-indicator online"></div>
+                                    <div class="status-label">备份状态</div>
+                                    <div class="status-value">最近备份: 2小时前</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 文件管理标签页 -->
+                    <div id="files-tab" class="tab-content">
+                        <!-- 文件统计 -->
+                        <div class="files-stats">
+                            <div class="files-stat-card">
+                                <div class="files-stat-value" id="total-files">-</div>
+                                <div class="files-stat-label">总文件数</div>
+                            </div>
+                            <div class="files-stat-card">
+                                <div class="files-stat-value" id="total-size">-</div>
+                                <div class="files-stat-label">总存储大小</div>
+                            </div>
+                            <div class="files-stat-card">
+                                <div class="files-stat-value" id="today-uploads">-</div>
+                                <div class="files-stat-label">今日上传</div>
+                            </div>
+                            <div class="files-stat-card">
+                                <div class="files-stat-value" id="public-files">-</div>
+                                <div class="files-stat-label">公开文件</div>
+                            </div>
+                        </div>
+
+                        <!-- 工具栏 -->
+                        <div class="files-toolbar">
+                            <div class="files-search-section">
+                                <div class="files-search-box">
+                                    <input type="text" placeholder="搜索文件名或代码..." id="files-search-input" class="files-search-input">
+                                    <button class="btn btn-primary" onclick="searchFiles()">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="files-actions">
+                                <div class="view-toggle">
+                                    <button class="view-toggle-btn active" id="list-view-btn" onclick="switchView('list')">
+                                        <i class="fas fa-list"></i> 列表
+                                    </button>
+                                    <button class="view-toggle-btn" id="grid-view-btn" onclick="switchView('grid')">
+                                        <i class="fas fa-th-large"></i> 网格
+                                    </button>
+                                </div>
+                                <button class="btn btn-success" onclick="showUploadModal()">
+                                    <i class="fas fa-upload"></i> 上传
+                                </button>
+                                <button class="btn btn-secondary" onclick="loadFiles(1)">
+                                    <i class="fas fa-sync"></i> 刷新
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 文件过滤器 -->
+                        <div class="files-filters">
+                            <span class="filter-label">文件类型:</span>
+                            <div class="filter-tag active" data-type="all">全部</div>
+                            <div class="filter-tag" data-type="image">图片</div>
+                            <div class="filter-tag" data-type="video">视频</div>
+                            <div class="filter-tag" data-type="audio">音频</div>
+                            <div class="filter-tag" data-type="document">文档</div>
+                            <div class="filter-tag" data-type="archive">压缩包</div>
+                            <div class="filter-tag" data-type="code">代码</div>
+                            <div class="filter-tag" data-type="other">其他</div>
+                        </div>
+
+                        <!-- 批量操作 -->
+                        <div class="bulk-actions" id="bulk-actions">
+                            <div class="bulk-info">
+                                已选择 <span id="selected-count">0</span> 个文件
+                            </div>
+                            <div class="bulk-buttons">
+                                <button class="btn btn-info btn-sm" onclick="bulkDownload()">
+                                    <i class="fas fa-download"></i> 批量下载
+                                </button>
+                                <button class="btn btn-warning btn-sm" onclick="bulkToggleVisibility()">
+                                    <i class="fas fa-eye"></i> 切换可见性
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="bulkDelete()">
+                                    <i class="fas fa-trash"></i> 批量删除
+                                </button>
+                                <button class="btn btn-secondary btn-sm" onclick="clearSelection()">
+                                    <i class="fas fa-times"></i> 取消选择
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 文件列表视图 -->
+                        <div id="files-list-view" class="files-list-container">
+                            <table class="files-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;">
+                                            <input type="checkbox" id="select-all-files" class="select-all-checkbox">
+                                        </th>
+                                        <th>文件信息</th>
+                                        <th style="width: 100px;">大小</th>
+                                        <th style="width: 120px;">状态</th>
+                                        <th style="width: 140px;">上传时间</th>
+                                        <th style="width: 120px;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="files-tbody">
+                                    <tr>
+                                        <td colspan="6" class="text-center" style="padding: 40px;">
+                                            <div class="loading-spinner">
+                                                <div class="spinner"></div>
+                                                <div>正在加载文件列表...</div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 文件网格视图 -->
+                        <div id="files-grid-view" class="files-grid" style="display: none;">
+                            <!-- 网格视图内容将通过 JavaScript 生成 -->
+                        </div>
+
+                        <!-- 分页控件 -->
+                        <div class="pagination-container" id="files-pagination-container">
+                            <div class="pagination-info">
+                                显示第 <span id="files-current-start">0</span>-<span id="files-current-end">0</span> 条，共 <span id="files-total">0</span> 条记录
+                            </div>
+                            <div class="pagination-controls" id="files-pagination">
+                                <!-- 分页按钮将通过 JavaScript 生成 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 用户管理标签页 -->
+                    <div id="users-tab" class="tab-content">
+                        <!-- 用户统计卡片 -->
+                        <div class="stats-row">
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-number" id="total-users">-</div>
+                                    <div class="stat-label">总用户数</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-number" id="active-users">-</div>
+                                    <div class="stat-label">活跃用户</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
+                                    <i class="fas fa-user-plus"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-number" id="new-users-today">-</div>
+                                    <div class="stat-label">今日新增</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, #17a2b8, #138496);">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-number" id="online-users">-</div>
+                                    <div class="stat-label">在线用户</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 用户管理工具栏 -->
+                        <div class="user-toolbar">
+                            <div class="search-section">
+                                <div class="search-box">
+                                    <input type="text" placeholder="搜索用户名、邮箱或ID..." id="user-search-input" class="search-input">
+                                    <button class="btn" onclick="searchUsers()">
+                                        <i class="fas fa-search"></i> 搜索
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="clearUserSearch()">
+                                        <i class="fas fa-times"></i> 清空
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="action-section">
+                                <button class="btn btn-success" onclick="showAddUserModal()">
+                                    <i class="fas fa-plus"></i> 添加用户
+                                </button>
+                                <button class="btn btn-info" onclick="refreshUsers()">
+                                    <i class="fas fa-sync"></i> 刷新
+                                </button>
+                                <button class="btn btn-warning" onclick="exportUsers()">
+                                    <i class="fas fa-download"></i> 导出
+                                </button>
+                                <div class="dropdown">
+                                    <button class="btn btn-secondary dropdown-toggle" onclick="toggleUserActions()">
+                                        <i class="fas fa-cog"></i> 批量操作
+                                    </button>
+                                    <div class="dropdown-menu" id="user-actions-menu">
+                                        <a href="#" onclick="batchEnableUsers()"><i class="fas fa-check"></i> 批量启用</a>
+                                        <a href="#" onclick="batchDisableUsers()"><i class="fas fa-ban"></i> 批量禁用</a>
+                                        <a href="#" onclick="batchDeleteUsers()"><i class="fas fa-trash"></i> 批量删除</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 用户过滤器 -->
+                        <div class="user-filters">
+                            <div class="filter-group">
+                                <label>状态过滤:</label>
+                                <select id="status-filter" onchange="filterUsers()">
+                                    <option value="">全部状态</option>
+                                    <option value="active">活跃用户</option>
+                                    <option value="inactive">禁用用户</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>注册时间:</label>
+                                <select id="date-filter" onchange="filterUsers()">
+                                    <option value="">全部时间</option>
+                                    <option value="today">今天</option>
+                                    <option value="week">本周</option>
+                                    <option value="month">本月</option>
+                                    <option value="year">今年</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>排序方式:</label>
+                                <select id="sort-filter" onchange="filterUsers()">
+                                    <option value="created_at_desc">最新注册</option>
+                                    <option value="created_at_asc">最早注册</option>
+                                    <option value="last_login_desc">最近登录</option>
+                                    <option value="username_asc">用户名升序</option>
+                                    <option value="username_desc">用户名降序</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- 用户列表 -->
+                        <div class="users-table-container">
+                            <table class="users-table">
+                                <thead>
+                                    <tr>
+                                        <th width="40">
+                                            <input type="checkbox" id="select-all-users" onchange="toggleSelectAllUsers()">
+                                        </th>
+                                        <th>用户信息</th>
+                                        <th>邮箱</th>
+                                        <th>注册时间</th>
+                                        <th>最后登录</th>
+                                        <th>状态</th>
+                                        <th>文件数</th>
+                                        <th>存储使用</th>
+                                        <th width="200">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-tbody">
+                                    <tr>
+                                        <td colspan="9" class="loading-cell">
+                                            <div class="loading-spinner">
+                                                <i class="fas fa-spinner fa-spin"></i>
+                                                <span>正在加载用户列表...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- 分页控件 -->
+                        <div class="pagination-container">
+                            <div class="pagination-info">
+                                <span>显示第 <span id="page-start">1</span> - <span id="page-end">20</span> 条，共 <span id="total-count">0</span> 条记录</span>
+                            </div>
+                            <div class="pagination" id="user-pagination"></div>
+                        </div>
+                    </div>
+
+                    <!-- 用户编辑模态框 -->
+                    <div id="user-modal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3 id="user-modal-title">✨ 添加用户</h3>
+                                <span class="close" onclick="closeUserModal()">&times;</span>
+                            </div>
+                            <form id="user-form" onsubmit="submitUserForm(event)">
+                                <div class="modal-body">
+                                    <input type="hidden" id="user-id">
+                                    
+                                    <div class="form-section">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="user-username">👤 用户名 *</label>
+                                                <input type="text" id="user-username" class="form-control" required maxlength="50" placeholder="请输入用户名">
+                                                <small class="form-text">用户登录时使用的唯一标识</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="user-email">📧 邮箱</label>
+                                                <input type="email" id="user-email" class="form-control" maxlength="255" placeholder="user@example.com">
+                                                <small class="form-text">用于接收通知和密码重置（可选）</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="user-password">🔒 密码</label>
+                                                <input type="password" id="user-password" class="form-control" minlength="6" placeholder="至少6位密码">
+                                                <small class="form-text" id="password-hint">密码长度至少6位，建议使用字母数字组合</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="user-role">🎭 用户角色</label>
+                                                <select id="user-role" class="form-control">
+                                                    <option value="user">👨‍💼 普通用户</option>
+                                                    <option value="admin">👨‍💻 管理员</option>
+                                                </select>
+                                                <small class="form-text">管理员拥有所有权限</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="user-storage-limit">💾 存储限制 (MB)</label>
+                                                <input type="number" id="user-storage-limit" class="form-control" min="0" value="100" placeholder="100">
+                                                <small class="form-text">0表示无限制，默认100MB</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="user-file-limit">📁 文件数量限制</label>
+                                                <input type="number" id="user-file-limit" class="form-control" min="0" value="1000" placeholder="1000">
+                                                <small class="form-text">0表示无限制，默认1000个文件</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="user-active" checked>
+                                                <span>🟢 启用账户</span>
+                                            </label>
+                                            <small class="form-text">禁用的账户无法登录系统</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" onclick="closeUserModal()">
+                                        <i class="fas fa-times"></i> 取消
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> 保存用户
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- 存储管理标签页 -->
+                    <div id="storage-tab" class="tab-content">
+                        <div class="storage-container">
+                            <!-- 当前存储状态 -->
+                            <div class="config-section">
+                                <div class="section-header">
+                                    <div class="section-icon" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                                        <i class="fas fa-hdd"></i>
+                                    </div>
+                                    <h3>当前存储状态</h3>
+                                    <small>查看当前使用的存储类型和运行状态</small>
+                                </div>
+                                
+                                <div id="current-storage-display" style="background: #f8f9fa; border-radius: 8px; padding: 20px;">
+                                    <div style="text-align: center; padding: 40px; color: #6c757d;">
+                                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+                                        <p>正在加载存储信息...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 存储类型选择 -->
+                            <div class="config-section">
+                                <div class="section-header">
+                                    <div class="section-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c); color: white;">
+                                        <i class="fas fa-layer-group"></i>
+                                    </div>
+                                    <h3>存储类型管理</h3>
+                                    <small>选择和配置不同的存储后端</small>
+                                </div>
+                                
+                                <div class="storage-grid">
+                                    <!-- 本地存储 -->
+                                    <div class="storage-card" id="local-storage-card" onclick="selectStorageCard('local')">
+                                        <div class="storage-card-header">
+                                            <div class="storage-icon local-icon">
+                                                <i class="fas fa-folder"></i>
+                                            </div>
+                                            <div class="storage-info">
+                                                <h4>本地存储</h4>
+                                                <p>文件存储在服务器本地磁盘</p>
+                                            </div>
+                                            <div class="storage-status-badge">
+                                                <i class="fas fa-question-circle"></i> 未检查
+                                            </div>
+                                        </div>
+                                        <div class="storage-error-display" style="display: none;"></div>
+                                    </div>
+                                    
+                                    <!-- WebDAV存储 -->
+                                    <div class="storage-card" id="webdav-storage-card" onclick="selectStorageCard('webdav')">
+                                        <div class="storage-card-header">
+                                            <div class="storage-icon webdav-icon">
+                                                <i class="fas fa-cloud"></i>
+                                            </div>
+                                            <div class="storage-info">
+                                                <h4>WebDAV存储</h4>
+                                                <p>文件存储在WebDAV兼容服务</p>
+                                            </div>
+                                            <div class="storage-status-badge">
+                                                <i class="fas fa-question-circle"></i> 未检查
+                                            </div>
+                                        </div>
+                                        <div class="storage-error-display" style="display: none;"></div>
+                                    </div>
+                                    
+                                    <!-- NFS存储 -->
+                                    <div class="storage-card" id="nfs-storage-card" onclick="selectStorageCard('nfs')">
+                                        <div class="storage-card-header">
+                                            <div class="storage-icon nfs-icon">
+                                                <i class="fas fa-network-wired"></i>
+                                            </div>
+                                            <div class="storage-info">
+                                                <h4>NFS网络存储</h4>
+                                                <p>文件存储在NFS网络文件系统</p>
+                                            </div>
+                                            <div class="storage-status-badge">
+                                                <i class="fas fa-question-circle"></i> 未检查
+                                            </div>
+                                        </div>
+                                        <div class="storage-error-display" style="display: none;"></div>
+                                    </div>
+                                    
+                                    <!-- S3存储 -->
+                                    <div class="storage-card" id="s3-storage-card" onclick="selectStorageCard('s3')">
+                                        <div class="storage-card-header">
+                                            <div class="storage-icon s3-icon">
+                                                <i class="fas fa-archive"></i>
+                                            </div>
+                                            <div class="storage-info">
+                                                <h4>S3对象存储</h4>
+                                                <p>文件存储在S3兼容的对象存储</p>
+                                            </div>
+                                            <div class="storage-status-badge">
+                                                <i class="fas fa-question-circle"></i> 未检查
+                                            </div>
+                                        </div>
+                                        <div class="storage-error-display" style="display: none;"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 操作按钮区域 -->
+                                <div id="storage-actions" class="storage-actions" style="margin-top: 20px; text-align: center;">
+                                    <p style="color: #6c757d; margin: 0;">
+                                        <i class="fas fa-info-circle"></i>
+                                        请先选择一个存储类型进行配置
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <!-- 存储配置面板 -->
+                            <div class="config-section">
+                                <div class="section-header">
+                                    <div class="section-icon" style="background: linear-gradient(135deg, #11998e, #38ef7d); color: white;">
+                                        <i class="fas fa-cog"></i>
+                                    </div>
+                                    <h3>存储配置</h3>
+                                    <small>配置选中存储类型的详细参数</small>
+                                </div>
+                                
+                                <!-- 本地存储配置 -->
+                                <div id="local-config-panel" class="storage-config-panel" style="display: none;">
+                                    <div class="config-form">
+                                        <h4><i class="fas fa-folder"></i> 本地存储配置</h4>
+                                        <div class="form-group">
+                                            <label>存储路径</label>
+                                            <input type="text" id="local-storage-path" class="form-control" placeholder="/data/uploads">
+                                            <small class="form-text">文件存储的本地目录路径（可选，默认为程序数据目录）</small>
+                                        </div>
+                                        <div class="form-actions">
+                                            <button onclick="saveStorageConfig('local')" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> 保存配置
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- WebDAV存储配置 -->
+                                <div id="webdav-config-panel" class="storage-config-panel" style="display: none;">
+                                    <div class="config-form">
+                                        <h4><i class="fas fa-cloud"></i> WebDAV存储配置</h4>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                            <div class="form-group">
+                                                <label>服务器地址</label>
+                                                <input type="text" id="webdav-hostname" class="form-control" placeholder="https://example.com/webdav">
+                                                <small class="form-text">WebDAV服务器的完整URL地址</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>用户名</label>
+                                                <input type="text" id="webdav-username" class="form-control" placeholder="username">
+                                                <small class="form-text">WebDAV服务器登录用户名</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>密码</label>
+                                                <input type="password" id="webdav-password" class="form-control" placeholder="••••••••">
+                                                <small class="form-text">WebDAV服务器登录密码</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>根目录</label>
+                                                <input type="text" id="webdav-root-path" class="form-control" placeholder="/uploads">
+                                                <small class="form-text">文件存储的根目录路径</small>
+                                            </div>
+                                        </div>
+                                        <div class="form-actions">
+                                            <button onclick="saveStorageConfig('webdav')" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> 保存配置
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- NFS存储配置 -->
+                                <div id="nfs-config-panel" class="storage-config-panel" style="display: none;">
+                                    <div class="config-form">
+                                        <h4><i class="fas fa-network-wired"></i> NFS网络存储配置</h4>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                            <div class="form-group">
+                                                <label>NFS服务器</label>
+                                                <input type="text" id="nfs-server" class="form-control" placeholder="192.168.1.100">
+                                                <small class="form-text">NFS服务器的IP地址或域名</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>共享路径</label>
+                                                <input type="text" id="nfs-path" class="form-control" placeholder="/mnt/shared">
+                                                <small class="form-text">NFS服务器上的共享目录路径</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>本地挂载点</label>
+                                                <input type="text" id="nfs-mount-point" class="form-control" placeholder="/data/nfs">
+                                                <small class="form-text">NFS挂载到本地的目录</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>NFS版本</label>
+                                                <select id="nfs-version" class="form-control">
+                                                    <option value="v3">NFSv3</option>
+                                                    <option value="v4">NFSv4</option>
+                                                    <option value="v4.1">NFSv4.1</option>
+                                                </select>
+                                                <small class="form-text">选择NFS协议版本</small>
+                                            </div>
+                                            <div class="form-group" style="grid-column: span 2;">
+                                                <label>挂载选项</label>
+                                                <input type="text" id="nfs-options" class="form-control" placeholder="rw,sync,hard,intr">
+                                                <small class="form-text">NFS挂载的额外选项（可选）</small>
+                                            </div>
+                                        </div>
+                                        <div class="form-actions">
+                                            <button onclick="saveStorageConfig('nfs')" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> 保存配置
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- S3存储配置 -->
+                                <div id="s3-config-panel" class="storage-config-panel" style="display: none;">
+                                    <div class="config-form">
+                                        <h4><i class="fas fa-archive"></i> S3对象存储配置</h4>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                            <div class="form-group">
+                                                <label>访问密钥ID</label>
+                                                <input type="text" id="s3-access-key-id" class="form-control" placeholder="AKIAIOSFODNN7EXAMPLE">
+                                                <small class="form-text">S3访问密钥ID (Access Key ID)</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>秘密访问密钥</label>
+                                                <input type="password" id="s3-secret-access-key" class="form-control" placeholder="••••••••">
+                                                <small class="form-text">S3秘密访问密钥 (Secret Access Key)</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>存储桶名称</label>
+                                                <input type="text" id="s3-bucket-name" class="form-control" placeholder="my-bucket">
+                                                <small class="form-text">S3存储桶名称</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>端点URL</label>
+                                                <input type="text" id="s3-endpoint-url" class="form-control" placeholder="https://s3.amazonaws.com">
+                                                <small class="form-text">S3服务端点URL（AWS或兼容服务）</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>区域名称</label>
+                                                <input type="text" id="s3-region-name" class="form-control" placeholder="us-east-1">
+                                                <small class="form-text">S3服务区域名称</small>
+                                            </div>
+                                        </div>
+                                        <div class="form-actions">
+                                            <button onclick="saveStorageConfig('s3')" class="btn btn-primary">
+                                                <i class="fas fa-save"></i> 保存配置
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MCP 服务器标签页 -->
+                    <div id="mcp-tab" class="tab-content">
+                        <div class="mcp-container">
+                            <!-- MCP 配置区域 -->
+                            <div class="config-section">
+                                <div class="section-header">
+                                    <div class="section-icon" style="background: linear-gradient(135deg, #11998e, #38ef7d); color: white;">
+                                        <i class="fas fa-server"></i>
+                                    </div>
+                                    <h3>MCP 服务器配置</h3>
+                                    <small>Model Context Protocol 服务器管理</small>
+                                </div>
+                                
+                                <form id="mcp-config-form">
+                                    <!-- 基础配置 -->
+                                    <div class="form-group">
+                                        <label style="display: flex; align-items: center; font-weight: bold; margin-bottom: 15px;">
+                                            <input type="checkbox" id="enable_mcp_server" style="margin-right: 10px; transform: scale(1.2);">
+                                            <span style="color: #333;">启用 MCP 服务器</span>
+                                        </label>
+                                        <small class="form-text">
+                                            <i class="fas fa-info-circle" style="color: #17a2b8;"></i>
+                                            启用后，AI 工具可以通过 MCP 协议与 FileCodeBox 进行交互
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- 详细配置选项 -->
+                                    <div id="mcp-config-options" style="display: none; margin-top: 25px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #11998e;">
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                            <div class="form-group">
+                                                <label>服务器端口</label>
+                                                <input type="text" id="mcp_port" class="form-control" placeholder="8081" style="border: 2px solid #e9ecef; border-radius: 6px; padding: 10px;">
+                                                <small class="form-text">MCP 服务器监听的端口号（默认：8081）</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>绑定地址</label>
+                                                <input type="text" id="mcp_host" class="form-control" placeholder="0.0.0.0" style="border: 2px solid #e9ecef; border-radius: 6px; padding: 10px;">
+                                                <small class="form-text">服务器绑定的IP地址（0.0.0.0表示绑定所有网络接口）</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 连接测试 -->
+                                        <div class="form-group" style="margin-top: 20px;">
+                                            <button type="button" onclick="testMCPConnection()" class="btn btn-info" style="background: linear-gradient(45deg, #17a2b8, #138496); border: none; color: white; padding: 8px 16px; border-radius: 4px; font-size: 13px;">
+                                                <i class="fas fa-network-wired"></i> 测试连接
+                                            </button>
+                                            <small class="form-text">测试当前配置的连通性</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 保存按钮 -->
+                                    <div class="form-group" style="margin-top: 25px; text-align: right;">
+                                        <button type="submit" class="btn-primary" style="background: linear-gradient(45deg, #11998e, #38ef7d); border: none; color: white; padding: 12px 24px; border-radius: 6px; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(17,153,142,0.3); transition: all 0.3s ease;">
+                                            <i class="fas fa-save"></i> 保存配置
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- MCP 状态区域 -->
+                            <div class="config-section">
+                                <div class="section-header">
+                                    <div class="section-icon" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <h3>服务器状态</h3>
+                                    <small>实时监控 MCP 服务器运行状态</small>
+                                </div>
+                                
+                                <div id="mcp-status-display" style="background: #f8f9fa; border-radius: 8px; padding: 20px;">
+                                    <div style="text-align: center; padding: 40px; color: #6c757d;">
+                                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+                                        <p>正在加载状态信息...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- MCP 使用指南 -->
+                            <div class="config-section">
+                                <div class="section-header">
+                                    <div class="section-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c); color: white;">
+                                        <i class="fas fa-book"></i>
+                                    </div>
+                                    <h3>使用指南</h3>
+                                    <small>如何连接和使用 MCP 服务器</small>
+                                </div>
+                                
+                                <div style="background: #f8f9fa; border-radius: 8px; padding: 20px;">
+                                    <h4 style="color: #495057; margin-bottom: 15px;">
+                                        <i class="fas fa-plug" style="color: #11998e;"></i> 连接方式
+                                    </h4>
+                                    <div style="background: #ffffff; border-radius: 6px; padding: 15px; margin-bottom: 20px; border-left: 4px solid #11998e;">
+                                        <p style="margin: 0; color: #6c757d;">
+                                            <strong>TCP 连接：</strong> <code>localhost:<span id="display-port">8081</span></code>
+                                        </p>
+                                        <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 13px;">
+                                            在支持 MCP 的 AI 工具中使用上述地址连接到 FileCodeBox
+                                        </p>
+                                    </div>
+                                    
+                                    <h4 style="color: #495057; margin-bottom: 15px;">
+                                        <i class="fas fa-tools" style="color: #667eea;"></i> 可用功能
+                                    </h4>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                                        <div style="background: #ffffff; border-radius: 6px; padding: 15px; border-left: 4px solid #38ef7d;">
+                                            <strong style="color: #495057;">文件管理</strong>
+                                            <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 13px;">上传、下载、删除文件</p>
+                                        </div>
+                                        <div style="background: #ffffff; border-radius: 6px; padding: 15px; border-left: 4px solid #f093fb;">
+                                            <strong style="color: #495057;">系统配置</strong>
+                                            <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 13px;">查看和修改系统设置</p>
+                                        </div>
+                                        <div style="background: #ffffff; border-radius: 6px; padding: 15px; border-left: 4px solid #667eea;">
+                                            <strong style="color: #495057;">用户管理</strong>
+                                            <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 13px;">管理用户和权限</p>
+                                        </div>
+                                        <div style="background: #ffffff; border-radius: 6px; padding: 15px; border-left: 4px solid #f5576c;">
+                                            <strong style="color: #495057;">系统维护</strong>
+                                            <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 13px;">清理、备份、监控</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 系统配置标签页 -->
+                    <div id="config-tab" class="tab-content">
+                        <div class="config-container">
+                            <form id="config-form">
+                                <!-- 基础设置 -->
+                                <div class="config-section">
+                                    <div class="section-header">
+                                        <div class="section-icon" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                                            <i class="fas fa-cog"></i>
+                                        </div>
+                                        <h3>基础设置</h3>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>站点名称</label>
+                                        <input type="text" name="base.name" id="base_name" class="form-control" placeholder="FileCodeBox">
+                                        <small class="form-text">显示在页面标题和头部的站点名称</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>站点描述</label>
+                                        <input type="text" name="base.description" id="base_description" class="form-control" placeholder="开箱即用的文件快传系统">
+                                        <small class="form-text">站点的简要描述，显示在首页</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>关键词</label>
+                                        <input type="text" name="base.keywords" id="base_keywords" class="form-control" placeholder="FileCodeBox, 文件快递柜">
+                                        <small class="form-text">站点关键词，用于SEO优化</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>管理员密码</label>
+                                        <input type="password" name="admin_token" id="admin_token" class="form-control" placeholder="••••••••••••">
+                                        <small class="form-text">用于登录管理后台的密码</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>通知标题</label>
+                                        <input type="text" name="notify_title" id="notify_title" class="form-control" placeholder="系统通知">
+                                        <small class="form-text">系统通知消息的标题</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>通知内容</label>
+                                        <textarea name="notify_content" id="notify_content" class="form-control" rows="3" placeholder="欢迎使用 FileCodeBox..."></textarea>
+                                        <small class="form-text">系统通知的详细内容，支持HTML</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>页面说明</label>
+                                        <textarea name="page_explain" id="page_explain" class="form-control" rows="3" placeholder="请勿上传违法内容..."></textarea>
+                                        <small class="form-text">页面底部的法律声明和使用说明</small>
+                                    </div>
+                                </div>
+
+                                <!-- 上传限制设置 -->
+                                <div class="config-section">
+                                    <div class="section-header">
+                                        <div class="section-icon" style="background: linear-gradient(135deg, #ffa726, #ff7043); color: white;">
+                                            <i class="fas fa-upload"></i>
+                                        </div>
+                                        <h3>上传限制设置</h3>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-group">
+                                                <label>匿名用户上传大小限制 (MB)</label>
+                                                <input type="number" name="transfer.upload.upload_size_mb" id="upload_size_mb" class="form-control" min="1" max="1024">
+                                                <small class="form-text">单个文件最大上传大小，数据不能为空</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-group">
+                                                <label>分片上传大小 (MB)</label>
+                                                <input type="number" name="transfer.upload.chunk_size_mb" id="chunk_size_mb" class="form-control" min="1" max="100">
+                                                <small class="form-text">大文件分片上传时每片的大小</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-group">
+                                                <label style="display: flex; align-items: center; gap: 10px;">
+                                                    <input type="checkbox" name="transfer.upload.open_upload" id="open_upload" style="transform: scale(1.2);">
+                                                    启用文件上传
+                                                </label>
+                                                <small class="form-text">是否允许用户上传文件</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-group">
+                                                <label style="display: flex; align-items: center; gap: 10px;">
+                                                    <input type="checkbox" name="transfer.upload.enable_chunk" id="enable_chunk" style="transform: scale(1.2);">
+                                                    启用分片上传
+                                                </label>
+                                                <small class="form-text">大文件分片上传，提高上传成功率</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>文件保存时间 (秒，0为永久)</label>
+                                        <input type="number" name="transfer.upload.max_save_seconds" id="max_save_seconds" class="form-control" min="0">
+                                        <small class="form-text">文件在服务器上的最大保存时间，0表示永久保存</small>
+                                    </div>
+                                </div>
+
+                                <!-- 性能设置 -->
+                                <div class="config-section">
+                                    <div class="section-header">
+                                        <div class="section-icon" style="background: linear-gradient(135deg, #26c6da, #00acc1); color: white;">
+                                            <i class="fas fa-tachometer-alt"></i>
+                                        </div>
+                                        <h3>性能设置</h3>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label style="display: flex; align-items: center; gap: 10px;">
+                                            <input type="checkbox" name="transfer.download.enable_concurrent_download" id="enable_concurrent_download" style="transform: scale(1.2);">
+                                            启用并发下载
+                                        </label>
+                                        <small class="form-text">允许同时进行多个文件下载任务</small>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-group">
+                                                <label>最大并发下载数</label>
+                                                <input type="number" name="transfer.download.max_concurrent_downloads" id="max_concurrent_downloads" class="form-control" min="1" max="50">
+                                                <small class="form-text">同时允许的最大下载连接数</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-group">
+                                                <label>下载超时时间 (秒)</label>
+                                                <input type="number" name="transfer.download.download_timeout" id="download_timeout" class="form-control" min="30" max="3600">
+                                                <small class="form-text">单个下载请求的超时时间</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-group">
+                                                <label>透明度设置</label>
+                                                <input type="number" name="opacity" id="opacity" class="form-control" min="0.1" max="1.0" step="0.1">
+                                                <small class="form-text">页面背景透明度 (0.1-1.0)</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-group">
+                                                <label>主题选择</label>
+                                                <select name="themes_select" id="themes_select" class="form-control">
+                                                    <option value="themes/2024">2024主题</option>
+                                                </select>
+                                                <small class="form-text">选择界面主题</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 用户系统设置 -->
+                                <div class="config-section">
+                                    <div class="section-header">
+                                        <div class="section-icon" style="background: linear-gradient(135deg, #ab47bc, #8e24aa); color: white;">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                        <h3>用户系统设置</h3>
+                                    </div>
+                                    
+                                    <!-- 用户系统始终启用，无需开关 -->
+                                    
+                                    <div id="user-system-options" style="display: block;">
+                                        <div class="form-group">
+                                            <label style="display: flex; align-items: center; gap: 10px;">
+                                                <input type="checkbox" name="user.allow_user_registration" id="allow_user_registration" style="transform: scale(1.2);">
+                                                允许用户注册
+                                            </label>
+                                            <small class="form-text">允许新用户自主注册账号</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label style="display: flex; align-items: center; gap: 10px;">
+                                                <input type="checkbox" name="user.require_email_verify" id="require_email_verify" style="transform: scale(1.2);">
+                                                需要邮箱验证
+                                            </label>
+                                            <small class="form-text">新用户注册后需要验证邮箱才能使用</small>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <label>用户存储配额 (MB)</label>
+                                                    <input type="number" name="user.user_storage_quota_mb" id="user_storage_quota_mb" class="form-control" min="10">
+                                                    <small class="form-text">每个用户的存储空间限制</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <label>用户单文件大小限制 (MB)</label>
+                                                    <input type="number" name="user.user_upload_size_mb" id="user_upload_size_mb" class="form-control" min="1">
+                                                    <small class="form-text">注册用户单个文件最大上传大小</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <label>会话过期时间 (小时)</label>
+                                                    <input type="number" name="user.session_expiry_hours" id="session_expiry_hours" class="form-control" min="1" max="8760">
+                                                    <small class="form-text">用户会话有效时间</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <label>单用户最大会话数</label>
+                                                    <input type="number" name="user.max_sessions_per_user" id="max_sessions_per_user" class="form-control" min="1" max="20">
+                                                    <small class="form-text">每个用户同时允许的最大登录会话数</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="text-align: center; margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                                    <button type="submit" class="btn" style="padding: 12px 30px; font-size: 16px; margin-right: 15px; background: linear-gradient(135deg, #28a745, #20c997); border: none;">
+                                        <i class="fas fa-save"></i> 保存所有配置
+                                    </button>
+                                    <button type="button" onclick="resetConfig()" class="btn" style="padding: 12px 30px; font-size: 16px; margin-right: 15px; background: linear-gradient(135deg, #ffc107, #fd7e14); border: none;">
+                                        <i class="fas fa-undo"></i> 重置配置
+                                    </button>
+                                    <button type="button" onclick="loadConfig()" class="btn" style="padding: 12px 30px; font-size: 16px; background: linear-gradient(135deg, #17a2b8, #6f42c1); border: none;">
+                                        <i class="fas fa-sync"></i> 重新加载
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- 系统维护标签页 -->
+                    <div id="maintenance-tab" class="tab-content">
+                        <div class="maintenance-container">
+                            <div class="maintenance-header">
+                                <h2><i class="fas fa-tools"></i> 系统维护中心</h2>
+                                <p>管理和优化您的 FileCodeBox 系统，保持最佳性能状态</p>
+                            </div>
+                            
+                            <!-- 维护工具网格 -->
+                            <div class="maintenance-grid">
+                                <!-- 清理管理 -->
+                                <div class="maintenance-card">
+                                    <div class="section-header">
+                                        <div class="section-icon" style="background: #ff6b6b; color: white;">
+                                            <i class="fas fa-broom"></i>
+                                        </div>
+                                        <h3>清理管理</h3>
+                                    </div>
+                                    <p>清理过期和无效数据</p>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <button class="btn" onclick="cleanExpiredFiles()">
+                                            <i class="fas fa-trash"></i> 清理过期文件
+                                        </button>
+                                        <button class="btn" onclick="cleanTempFiles()">
+                                            <i class="fas fa-file-alt"></i> 清理临时文件
+                                        </button>
+                                        <button class="btn" onclick="cleanInvalidRecords()">
+                                            <i class="fas fa-database"></i> 清理无效记录
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 数据库维护 -->
+                                <div class="maintenance-card">
+                                    <div class="section-header">
+                                        <div class="section-icon" style="background: #4ecdc4; color: white;">
+                                            <i class="fas fa-database"></i>
+                                        </div>
+                                        <h3>数据库维护</h3>
+                                    </div>
+                                    <p>优化数据库性能</p>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <button class="btn" onclick="optimizeDatabase()">
+                                            <i class="fas fa-tools"></i> 优化数据库
+                                        </button>
+                                        <button class="btn" onclick="analyzeDatabase()">
+                                            <i class="fas fa-chart-line"></i> 数据分析
+                                        </button>
+                                        <button class="btn" onclick="backupDatabase()">
+                                            <i class="fas fa-save"></i> 数据备份
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 缓存管理 -->
+                                <div class="maintenance-card">
+                                    <div class="section-header">
+                                        <div class="section-icon" style="background: #a55eea; color: white;">
+                                            <i class="fas fa-bolt"></i>
+                                        </div>
+                                        <h3>缓存管理</h3>
+                                    </div>
+                                    <p>管理系统缓存</p>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <button class="btn" onclick="clearCache()">
+                                            <i class="fas fa-eraser"></i> 清空缓存
+                                        </button>
+                                        <button class="btn" onclick="refreshCache()">
+                                            <i class="fas fa-sync"></i> 重建缓存
+                                        </button>
+                                        <button class="btn" onclick="showCacheStats()">
+                                            <i class="fas fa-chart-pie"></i> 缓存统计
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 系统监控 -->
+                                <div class="maintenance-card">
+                                    <div class="section-header">
+                                        <div class="section-icon" style="background: #26de81; color: white;">
+                                            <i class="fas fa-chart-line"></i>
+                                        </div>
+                                        <h3>系统监控</h3>
+                                    </div>
+                                    <p>监控系统运行状态</p>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <button class="btn" onclick="showSystemStatus()">
+                                            <i class="fas fa-server"></i> 系统状态
+                                        </button>
+                                        <button class="btn" onclick="showPerformanceMetrics()">
+                                            <i class="fas fa-tachometer-alt"></i> 性能指标
+                                        </button>
+                                        <button class="btn" onclick="generateSystemReport()">
+                                            <i class="fas fa-file-alt"></i> 生成报告
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 安全管理 -->
+                                <div class="maintenance-card">
+                                    <div class="section-header">
+                                        <div class="section-icon" style="background: #fd9644; color: white;">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </div>
+                                        <h3>安全管理</h3>
+                                    </div>
+                                    <p>系统安全与访问管理</p>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <button class="btn" onclick="securityScan()">
+                                            <i class="fas fa-search"></i> 安全扫描
+                                        </button>
+                                        <button class="btn" onclick="showAccessLogs()">
+                                            <i class="fas fa-list"></i> 访问日志
+                                        </button>
+                                        <button class="btn" onclick="clearSessions()">
+                                            <i class="fas fa-sign-out-alt"></i> 清理会话
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 日志管理 -->
+                                <div class="maintenance-card">
+                                    <div class="section-header">
+                                        <div class="section-icon" style="background: #667eea; color: white;">
+                                            <i class="fas fa-file-text"></i>
+                                        </div>
+                                        <h3>日志管理</h3>
+                                    </div>
+                                    <p>查看和管理系统日志</p>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <button class="btn" onclick="downloadLogs()">
+                                            <i class="fas fa-download"></i> 下载日志
+                                        </button>
+                                        <button class="btn" onclick="clearOldLogs()">
+                                            <i class="fas fa-trash-alt"></i> 清理旧日志
+                                        </button>
+                                        <button class="btn" onclick="showLogAnalysis()">
+                                            <i class="fas fa-chart-bar"></i> 日志分析
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 快速操作 -->
+                            <div class="quick-actions">
+                                <h3><i class="fas fa-rocket"></i> 快速操作</h3>
+                                <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                                    <button class="btn btn-danger" onclick="quickCleanAll()" style="padding: 12px 24px;">
+                                        <i class="fas fa-magic"></i> 一键全面清理
+                                    </button>
+                                    <button class="btn btn-success" onclick="quickOptimize()" style="padding: 12px 24px;">
+                                        <i class="fas fa-rocket"></i> 一键优化系统
+                                    </button>
+                                    <button class="btn" onclick="systemHealthCheck()" style="padding: 12px 24px;">
+                                        <i class="fas fa-heartbeat"></i> 系统健康检查
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 维护结果显示区域 -->
+                            <div class="maintenance-result-container" id="maintenance-result" style="display: none;">
+                                <!-- 维护操作结果将在这里显示 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑文件模态框 -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">编辑文件信息</h3>
+                <span class="close">&times;</span>
+            </div>
+            <form id="edit-form" class="modal-form">
+                <input type="hidden" id="edit-id">
+                <div class="form-group">
+                    <label>文件码</label>
+                    <input type="text" id="edit-code" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>文件名</label>
+                    <input type="text" id="edit-filename" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>文件大小</label>
+                    <input type="text" id="edit-size" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>过期时间</label>
+                    <input type="datetime-local" id="edit-expire-time" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>下载次数限制</label>
+                    <input type="number" id="edit-download-count" class="form-control" min="0" placeholder="0表示无限制">
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button type="submit" class="btn">保存更改</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 存储切换确认模态框 -->
+    <div id="switch-confirm-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">确认存储切换</h3>
+            </div>
+            <div class="modal-form">
+                <p id="switch-confirm-text"></p>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-danger" onclick="executeStorageSwitch()">确认切换</button>
+                    <button class="btn btn-secondary" onclick="cancelStorageSwitch()">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript文件 -->
+    <script src="js/api.js"></script>
+    <script src="js/files.js"></script>
+    <script src="js/users.js"></script>
+    <script src="js/storage-simple.js"></script>
+    <script src="js/mcp-simple.js"></script>
+    <script src="js/config-simple.js"></script>
+    <script src="js/maintenance-simple.js"></script>
+    <script src="js/main.js"></script>
+    
+    <script>
+    // 页面加载完成后初始化配置表单
+    document.addEventListener('DOMContentLoaded', function() {
+        // 注意：这些初始化函数不会立即加载数据
+        // 数据加载将在用户登录并切换到相应标签页时进行
+        
+        // 初始化配置表单（仅绑定事件，不加载数据）
+        if (typeof initConfigForm === 'function') {
+            initConfigForm();
+        }
+        
+        // 用户系统始终启用，无需切换显示
+        
+        // 初始化MCP管理界面（仅绑定事件，不加载数据）
+        if (typeof initMCPInterface === 'function') {
+            initMCPInterface();
+        }
+        
+        // 初始化存储管理界面（仅绑定事件，不加载数据）
+        if (typeof initStorageInterface === 'function') {
+            initStorageInterface();
+        }
+    });
+    </script>
+    
+    <!-- CSS样式已拆分到独立文件中 -->
+    
+</body>
+</html>

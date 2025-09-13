@@ -32,16 +32,16 @@ type StorageManager struct {
 	current  string
 }
 
-func NewStorageManager(cfg *config.Config) *StorageManager {
+func NewStorageManager(manager *config.ConfigManager) *StorageManager {
 	sm := &StorageManager{
 		storages: make(map[string]StorageInterface),
-		current:  cfg.FileStorage,
+		current:  manager.Storage.Type,
 	}
 
 	// 创建 PathManager
-	basePath := cfg.StoragePath
+	basePath := manager.Storage.StoragePath
 	if basePath == "" {
-		basePath = filepath.Join(cfg.DataPath)
+		basePath = filepath.Join(manager.Base.DataPath)
 	}
 	pathManager := NewPathManager(basePath)
 
@@ -50,12 +50,12 @@ func NewStorageManager(cfg *config.Config) *StorageManager {
 	sm.storages["local"] = NewStrategyBasedStorage(localStrategy, pathManager)
 
 	// 注册 WebDAV 存储 - 使用新的策略模式
-	if cfg.WebDAVHostname != "" {
+	if manager.Storage.WebDAV != nil && manager.Storage.WebDAV.Hostname != "" {
 		webdavStrategy, err := NewWebDAVStorageStrategy(
-			cfg.WebDAVHostname,
-			cfg.WebDAVRootPath,
-			cfg.WebDAVUsername,
-			cfg.WebDAVPassword,
+			manager.Storage.WebDAV.Hostname,
+			manager.Storage.WebDAV.RootPath,
+			manager.Storage.WebDAV.Username,
+			manager.Storage.WebDAV.Password,
 		)
 		if err == nil {
 			sm.storages["webdav"] = NewStrategyBasedStorage(webdavStrategy, pathManager)
@@ -63,16 +63,16 @@ func NewStorageManager(cfg *config.Config) *StorageManager {
 	}
 
 	// 注册 S3 存储 - 使用新的策略模式
-	if cfg.S3AccessKeyID != "" && cfg.S3SecretAccessKey != "" && cfg.S3BucketName != "" {
+	if manager.Storage.S3 != nil && manager.Storage.S3.AccessKeyID != "" && manager.Storage.S3.SecretAccessKey != "" && manager.Storage.S3.BucketName != "" {
 		s3Strategy, err := NewS3StorageStrategy(
-			cfg.S3AccessKeyID,
-			cfg.S3SecretAccessKey,
-			cfg.S3BucketName,
-			cfg.S3EndpointURL,
-			cfg.S3RegionName,
-			cfg.AWSSessionToken,
-			cfg.S3Hostname,
-			cfg.S3Proxy == 1,
+			manager.Storage.S3.AccessKeyID,
+			manager.Storage.S3.SecretAccessKey,
+			manager.Storage.S3.BucketName,
+			manager.Storage.S3.EndpointURL,
+			manager.Storage.S3.RegionName,
+			manager.Storage.S3.SessionToken,
+			manager.Storage.S3.Hostname,
+			manager.Storage.S3.Proxy == 1,
 			"filebox_storage",
 		)
 		if err == nil {
@@ -81,17 +81,17 @@ func NewStorageManager(cfg *config.Config) *StorageManager {
 	}
 
 	// 注册 NFS 存储 - 使用新的策略模式
-	if cfg.NFSServer != "" {
+	if manager.Storage.NFS != nil && manager.Storage.NFS.Server != "" {
 		nfsStrategy, err := NewNFSStorageStrategy(
-			cfg.NFSServer,
-			cfg.NFSPath,
-			cfg.NFSMountPoint,
-			cfg.NFSVersion,
-			cfg.NFSOptions,
-			cfg.NFSTimeout,
-			cfg.NFSAutoMount == 1,
-			cfg.NFSRetryCount,
-			cfg.NFSSubPath,
+			manager.Storage.NFS.Server,
+			manager.Storage.NFS.Path,
+			manager.Storage.NFS.MountPoint,
+			manager.Storage.NFS.Version,
+			manager.Storage.NFS.Options,
+			manager.Storage.NFS.Timeout,
+			manager.Storage.NFS.AutoMount == 1,
+			manager.Storage.NFS.RetryCount,
+			manager.Storage.NFS.SubPath,
 		)
 		if err == nil {
 			sm.storages["nfs"] = NewStrategyBasedStorage(nfsStrategy, pathManager)

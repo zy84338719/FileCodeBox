@@ -267,4 +267,4 @@ docker logs filecodebox
 
 ## 许可证
 
-与原Python版本保持一致的开源许可证。
+MIT License

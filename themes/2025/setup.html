@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统初始化 - FileCodeBox</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/logo-small.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .setup-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            padding: 0;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .setup-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: -0.5px;
+        }
+
+        .setup-header h1 {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .setup-header p {
+            font-size: 16px;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .setup-content {
+            padding: 40px;
+        }
+
+        .step {
+            margin-bottom: 40px;
+        }
+
+        .step:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        .step-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .step-description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .password-toggle {
+            position: relative;
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .setup-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .setup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .setup-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        .setup-btn.loading .loading {
+            display: block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 复选框样式 */
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 16px;
+            user-select: none;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkmark {
+            width: 24px;
+            height: 24px;
+            background-color: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            margin-right: 12px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-label:hover .checkmark {
+            border-color: #667eea;
+        }
+
+        .checkbox-label input[type="checkbox"]:checked + .checkmark {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+
+        .checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 3px;
+            width: 6px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .form-section {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .form-section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .database-config {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+        }
+
+        .database-type-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .db-type-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .db-type-option.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .db-type-option input[type="radio"] {
+            display: none;
+        }
+
+        .db-type-option label {
+            cursor: pointer;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .db-config-fields {
+            display: none;
+        }
+
+        .db-config-fields.active {
+            display: block;
+        }
+
+        .hint {
+            font-size: 14px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        @media (max-width: 768px) {
+            .setup-container {
+                margin: 10px;
+                max-height: 95vh;
+            }
+
+            .setup-header {
+                padding: 30px 20px;
+            }
+
+            .setup-content {
+                padding: 30px 20px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .database-type-selector {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <div class="setup-header">
+            <div class="logo">
+                <img class="logo-icon" src="/assets/images/logo.svg" alt="FileCodeBox Logo"/>
+                <div class="logo-text">FileCodeBox</div>
+            </div>
+            <h1>系统初始化</h1>
+            <p>欢迎使用 FileCodeBox！让我们快速完成系统初始化设置。</p>
+        </div>
+
+        <div class="setup-content">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div id="alert" class="alert"></div>
+
+            <form id="setupForm">
+                <!-- 步骤1: 数据库配置 -->
+                <div class="step" id="step1">
+                    <div class="step-header">
+                        <div class="step-number">1</div>
+                        <div class="step-title">数据库配置</div>
+                    </div>
+                    <div class="step-description">
+                        选择您的数据库类型并配置连接信息。推荐使用 SQLite 进行快速开始。
+                    </div>
+
+                    <div class="database-config">
+                        <div class="form-group">
+                            <label>数据库类型</label>
+                            <div class="database-type-selector">
+                                <div class="db-type-option active" onclick="selectDbType('sqlite')">
+                                    <input type="radio" name="dbType" value="sqlite" id="sqlite" checked>
+                                    <label for="sqlite">SQLite</label>
+                                </div>
+                                <div class="db-type-option" onclick="selectDbType('mysql')">
+                                    <input type="radio" name="dbType" value="mysql" id="mysql">
+                                    <label for="mysql">MySQL</label>
+                                </div>
+                                <div class="db-type-option" onclick="selectDbType('postgres')">
+                                    <input type="radio" name="dbType" value="postgres" id="postgres">
+                                    <label for="postgres">PostgreSQL</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SQLite 配置 -->
+                        <div class="db-config-fields active" id="sqlite-config">
+                            <div class="form-group">
+                                <label for="sqliteFile">数据库文件路径</label>
+                                <input type="text" id="sqliteFile" name="sqliteFile" value="./data/filecodebox.db" required>
+                                <div class="hint">数据库文件将自动创建，推荐使用默认路径</div>
+                            </div>
+                        </div>
+
+                        <!-- MySQL 配置 -->
+                        <div class="db-config-fields" id="mysql-config">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mysqlHost">主机地址</label>
+                                    <input type="text" id="mysqlHost" name="mysqlHost" value="localhost">
+                                </div>
+                                <div class="form-group">
+                                    <label for="mysqlPort">端口</label>
+                                    <input type="number" id="mysqlPort" name="mysqlPort" value="3306">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mysqlUser">用户名</label>
+                                    <input type="text" id="mysqlUser" name="mysqlUser" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="mysqlPassword">密码</label>
+                                    <input type="password" id="mysqlPassword" name="mysqlPassword">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="mysqlDatabase">数据库名</label>
+                                <input type="text" id="mysqlDatabase" name="mysqlDatabase" value="filecodebox" required>
+                            </div>
+                        </div>
+
+                        <!-- PostgreSQL 配置 -->
+                        <div class="db-config-fields" id="postgres-config">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="pgHost">主机地址</label>
+                                    <input type="text" id="pgHost" name="pgHost" value="localhost">
+                                </div>
+                                <div class="form-group">
+                                    <label for="pgPort">端口</label>
+                                    <input type="number" id="pgPort" name="pgPort" value="5432">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="pgUser">用户名</label>
+                                    <input type="text" id="pgUser" name="pgUser" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="pgPassword">密码</label>
+                                    <input type="password" id="pgPassword" name="pgPassword">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="pgDatabase">数据库名</label>
+                                <input type="text" id="pgDatabase" name="pgDatabase" value="filecodebox" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 步骤2: 管理员账户 -->
+                <div class="step" id="step2">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <div class="step-title">创建管理员账户</div>
+                    </div>
+                    <div class="step-description">
+                        创建第一个管理员账户，该账户将拥有系统的完全管理权限。
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="adminUsername">管理员用户名</label>
+                            <input type="text" id="adminUsername" name="adminUsername" required minlength="3">
+                            <div class="hint">至少3个字符，推荐使用字母和数字组合</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="adminEmail">管理员邮箱</label>
+                            <input type="email" id="adminEmail" name="adminEmail" required>
+                            <div class="hint">用于接收系统通知和找回密码</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="adminNickname">显示名称</label>
+                        <input type="text" id="adminNickname" name="adminNickname">
+                        <div class="hint">可选，默认使用用户名</div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="adminPassword">管理员密码</label>
+                            <div class="password-toggle">
+                                <input type="password" id="adminPassword" name="adminPassword" required minlength="6">
+                                <button type="button" class="password-toggle-btn" onclick="togglePassword('adminPassword')">👁️</button>
+                            </div>
+                            <div class="hint">至少6个字符，建议包含大小写字母、数字和特殊字符</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">确认密码</label>
+                            <div class="password-toggle">
+                                <input type="password" id="confirmPassword" name="confirmPassword" required>
+                                <button type="button" class="password-toggle-btn" onclick="togglePassword('confirmPassword')">👁️</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>用户注册设置</h3>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="allowUserRegistration" name="allowUserRegistration" checked>
+                                <span class="checkmark"></span>
+                                允许新用户注册
+                            </label>
+                            <div class="hint">如果关闭，只有管理员可以创建新用户账户</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="setup-btn" id="setupBtn">
+                    <div class="loading"></div>
+                    <span class="btn-text">开始初始化</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 进度更新
+        function updateProgress(step) {
+            const progressFill = document.getElementById('progressFill');
+            const progress = (step / 2) * 100;
+            progressFill.style.width = progress + '%';
+        }
+
+        // 数据库类型选择
+        function selectDbType(type) {
+            // 更新选中状态
+            document.querySelectorAll('.db-type-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            document.querySelector(`[onclick="selectDbType('${type}')"]`).classList.add('active');
+            
+            // 更新radio选中状态
+            document.getElementById(type).checked = true;
+            
+            // 显示对应配置
+            document.querySelectorAll('.db-config-fields').forEach(field => {
+                field.classList.remove('active');
+            });
+            document.getElementById(type + '-config').classList.add('active');
+            
+            // 动态更新required属性
+            updateRequiredFields(type);
+        }
+
+        // 更新表单字段的required属性
+        function updateRequiredFields(dbType) {
+            // 重置所有数据库字段的required状态
+            const allDbFields = ['mysqlHost', 'mysqlPort', 'mysqlUser', 'mysqlPassword', 'mysqlDatabase',
+                               'pgHost', 'pgPort', 'pgUser', 'pgPassword', 'pgDatabase', 'sqliteFile'];
+            
+            allDbFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.removeAttribute('required');
+                }
+            });
+            
+            // 根据选择的数据库类型设置required属性
+            if (dbType === 'mysql') {
+                ['mysqlHost', 'mysqlPort', 'mysqlUser', 'mysqlPassword', 'mysqlDatabase'].forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.setAttribute('required', 'required');
+                    }
+                });
+            } else if (dbType === 'postgres') {
+                ['pgHost', 'pgPort', 'pgUser', 'pgPassword', 'pgDatabase'].forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.setAttribute('required', 'required');
+                    }
+                });
+            } else if (dbType === 'sqlite') {
+                const sqliteFile = document.getElementById('sqliteFile');
+                if (sqliteFile) {
+                    sqliteFile.setAttribute('required', 'required');
+                }
+            }
+        }
+
+        // 密码显示切换
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const isPassword = field.type === 'password';
+            field.type = isPassword ? 'text' : 'password';
+        }
+
+        // 显示提示信息
+        function showAlert(message, type = 'info') {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert ${type}`;
+            alert.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // 表单验证
+        function validateForm() {
+            const adminPassword = document.getElementById('adminPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (adminPassword !== confirmPassword) {
+                showAlert('两次输入的密码不一致，请重新输入', 'error');
+                return false;
+            }
+            
+            if (adminPassword.length < 6) {
+                showAlert('密码长度至少需要6个字符', 'error');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // 收集表单数据
+        function collectFormData() {
+            const dbType = document.querySelector('input[name="dbType"]:checked').value;
+            const formData = {
+                database: {
+                    type: dbType
+                },
+                admin: {
+                    username: document.getElementById('adminUsername').value.trim(),
+                    email: document.getElementById('adminEmail').value.trim(),
+                    nickname: document.getElementById('adminNickname').value.trim(),
+                    password: document.getElementById('adminPassword').value,
+                    allowUserRegistration: document.getElementById('allowUserRegistration').checked
+                }
+            };
+            
+            // 根据数据库类型收集配置
+            if (dbType === 'sqlite') {
+                formData.database.file = document.getElementById('sqliteFile').value.trim();
+            } else if (dbType === 'mysql') {
+                formData.database.host = document.getElementById('mysqlHost').value.trim();
+                formData.database.port = parseInt(document.getElementById('mysqlPort').value);
+                formData.database.user = document.getElementById('mysqlUser').value.trim();
+                formData.database.password = document.getElementById('mysqlPassword').value;
+                formData.database.database = document.getElementById('mysqlDatabase').value.trim();
+            } else if (dbType === 'postgres') {
+                formData.database.host = document.getElementById('pgHost').value.trim();
+                formData.database.port = parseInt(document.getElementById('pgPort').value);
+                formData.database.user = document.getElementById('pgUser').value.trim();
+                formData.database.password = document.getElementById('pgPassword').value;
+                formData.database.database = document.getElementById('pgDatabase').value.trim();
+            }
+            
+            return formData;
+        }
+
+        // 表单提交处理
+        document.getElementById('setupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!validateForm()) {
+                return;
+            }
+            
+            const setupBtn = document.getElementById('setupBtn');
+            const btnText = setupBtn.querySelector('.btn-text');
+            
+            // 显示加载状态
+            setupBtn.classList.add('loading');
+            setupBtn.disabled = true;
+            btnText.textContent = '正在初始化...';
+            
+            try {
+                const formData = collectFormData();
+                console.log('提交初始化数据:', formData);
+                
+                const response = await fetch('/setup/initialize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    updateProgress(2);
+                    showAlert('系统初始化成功！正在跳转到管理后台...', 'success');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/admin/';
+                    }, 2000);
+                } else {
+                    throw new Error(result.message || '初始化失败');
+                }
+            } catch (error) {
+                console.error('初始化失败:', error);
+                showAlert('初始化失败: ' + error.message, 'error');
+            } finally {
+                // 恢复按钮状态
+                setupBtn.classList.remove('loading');
+                setupBtn.disabled = false;
+                btnText.textContent = '开始初始化';
+            }
+        });
+
+        // 页面加载完成后更新进度
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProgress(0);
+            
+            // 初始化required字段状态（默认SQLite）
+            updateRequiredFields('sqlite');
+            
+            // 实时验证
+            const inputs = document.querySelectorAll('input[required]');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    if (this.value.trim()) {
+                        this.style.borderColor = '#28a745';
+                    } else {
+                        this.style.borderColor = '#e1e8ed';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

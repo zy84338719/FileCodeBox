@@ -4,7 +4,10 @@ import (
 	"strconv"
 
 	"github.com/zy84338719/filecodebox/internal/common"
+	"github.com/zy84338719/filecodebox/internal/models"
+	"github.com/zy84338719/filecodebox/internal/models/web"
 	"github.com/zy84338719/filecodebox/internal/services"
+	"github.com/zy84338719/filecodebox/internal/storage"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -40,7 +43,15 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 	requireAuthStr := c.DefaultPostForm("require_auth", "false")
 
 	expireValue, err := strconv.Atoi(expireValueStr)
-	if err != nil || expireValue <= 0 {
+	if err != nil {
+		common.BadRequestResponse(c, "过期时间参数错误")
+		return
+	}
+
+	// 对于forever模式，允许expireValue为0
+	// 对于count模式，expireValue必须大于0
+	// 对于时间模式，expireValue必须大于0
+	if expireValue < 0 || (expireStyle != "forever" && expireValue == 0) {
 		common.BadRequestResponse(c, "过期时间参数错误")
 		return
 	}
@@ -54,27 +65,33 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 	requireAuth := requireAuthStr == "true"
 
 	// 构建请求
-	req := services.ShareTextRequest{
+	req := web.ShareTextRequest{
 		Text:        text,
 		ExpireValue: expireValue,
 		ExpireStyle: expireStyle,
 		RequireAuth: requireAuth,
-		ClientIP:    c.ClientIP(),
 	}
 
 	// 检查是否为认证用户上传
-	if userID, exists := c.Get("user_id"); exists {
-		uid := userID.(uint)
-		req.UserID = &uid
+	var userID *uint
+	if uid, exists := c.Get("user_id"); exists {
+		id := uid.(uint)
+		userID = &id
 	}
 
-	fileCode, err := h.service.ShareTextWithAuth(req)
+	fileCode, err := h.service.ShareTextWithAuth(req.Text, req.ExpireValue, req.ExpireStyle, userID)
 	if err != nil {
 		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
-	common.SuccessWithUploadInfo(c, fileCode.Code, fileCode.UploadType)
+	response := web.ShareResponse{
+		Code:     fileCode.Code,
+		ShareURL: fileCode.ShareURL,
+		FileName: "文本分享",
+	}
+
+	common.SuccessWithMessage(c, "分享成功", response)
 }
 
 // ShareFile 分享文件
@@ -92,14 +109,26 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /share/file/ [post]
 func (h *ShareHandler) ShareFile(c *gin.Context) {
-	expireValueStr := c.DefaultPostForm("expire_value", "1")
-	expireStyle := c.DefaultPostForm("expire_style", "day")
-	requireAuthStr := c.DefaultPostForm("require_auth", "false")
-
-	expireValue, err := strconv.Atoi(expireValueStr)
-	if err != nil || expireValue <= 0 {
-		common.BadRequestResponse(c, "过期时间参数错误")
+	// 绑定表单参数
+	var req web.ShareFileRequest
+	if err := c.ShouldBind(&req); err != nil {
+		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
 		return
+	}
+
+	// 默认值处理和验证
+	if req.ExpireValue < 0 {
+		common.BadRequestResponse(c, "过期时间参数不能为负数")
+		return
+	}
+
+	// 对于非forever模式，ExpireValue不能为0
+	if req.ExpireStyle != "forever" && req.ExpireValue == 0 {
+		req.ExpireValue = 1 // 默认值
+	}
+
+	if req.ExpireStyle == "" {
+		req.ExpireStyle = "day"
 	}
 
 	file, err := c.FormFile("file")
@@ -108,35 +137,36 @@ func (h *ShareHandler) ShareFile(c *gin.Context) {
 		return
 	}
 
-	// 检查是否需要登录才能下载
-	requireAuth := requireAuthStr == "true"
-
-	// 构建请求
-	req := services.ShareFileRequest{
-		File:        file,
-		ExpireValue: expireValue,
-		ExpireStyle: expireStyle,
-		RequireAuth: requireAuth,
-		ClientIP:    c.ClientIP(),
-	}
-
 	// 检查是否为认证用户上传
-	if userID, exists := c.Get("user_id"); exists {
-		uid := userID.(uint)
-		req.UserID = &uid
+	var userID *uint
+	if uid, exists := c.Get("user_id"); exists {
+		id := uid.(uint)
+		userID = &id
 	}
 
-	fileCode, err := h.service.ShareFileWithAuth(req)
+	// 构建服务层请求（这里需要适配服务层的接口）
+	serviceReq := models.ShareFileRequest{
+		File:        file,
+		ExpireValue: req.ExpireValue,
+		ExpireStyle: req.ExpireStyle,
+		RequireAuth: req.RequireAuth,
+		ClientIP:    c.ClientIP(),
+		UserID:      userID,
+	}
+
+	fileCode, err := h.service.ShareFileWithAuth(serviceReq)
 	if err != nil {
 		common.BadRequestResponse(c, err.Error())
 		return
 	}
 
-	common.SuccessResponse(c, gin.H{
-		"code":        fileCode.Code,
-		"name":        file.Filename,
-		"upload_type": fileCode.UploadType,
-	})
+	response := web.ShareResponse{
+		Code:     fileCode.Code,
+		ShareURL: fileCode.ShareURL,
+		FileName: fileCode.FileName,
+	}
+
+	common.SuccessResponse(c, response)
 }
 
 // GetFile 获取文件信息
@@ -159,9 +189,7 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 		code = c.Query("code")
 	} else {
 		// POST 请求，尝试从JSON解析
-		var req struct {
-			Code string `json:"code"`
-		}
+		var req web.ShareCodeRequest
 		if err := c.ShouldBindJSON(&req); err == nil {
 			code = req.Code
 		} else {
@@ -182,39 +210,35 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 		userID = &id
 	}
 
-	fileCode, err := h.service.GetFileByCodeWithAuth(code, true, userID)
+	fileCode, err := h.service.GetFileByCodeWithAuth(code, userID)
 	if err != nil {
 		common.NotFoundResponse(c, err.Error())
 		return
 	}
 
 	// 更新使用次数
-	if err := h.service.UpdateFileUsage(fileCode); err != nil {
+	if err := h.service.UpdateFileUsage(fileCode.Code); err != nil {
 		// 记录错误但不阻止下载
 		logrus.WithError(err).Error("更新文件使用次数失败")
 	}
 
+	response := web.FileInfoResponse{
+		Code:        fileCode.Code,
+		Name:        fileCode.Prefix + fileCode.Suffix,
+		Size:        fileCode.Size,
+		UploadType:  fileCode.UploadType,
+		RequireAuth: fileCode.RequireAuth,
+	}
+
 	if fileCode.Text != "" {
 		// 返回文本内容
-		common.SuccessResponse(c, gin.H{
-			"code":         fileCode.Code,
-			"name":         fileCode.Prefix + fileCode.Suffix,
-			"size":         fileCode.Size,
-			"text":         fileCode.Text,
-			"upload_type":  fileCode.UploadType,
-			"require_auth": fileCode.RequireAuth,
-		})
+		response.Text = fileCode.Text
 	} else {
-		// 返回文件下载信息
-		common.SuccessResponse(c, gin.H{
-			"code":         fileCode.Code,
-			"name":         fileCode.Prefix + fileCode.Suffix,
-			"size":         fileCode.Size,
-			"text":         "/share/download?code=" + fileCode.Code,
-			"upload_type":  fileCode.UploadType,
-			"require_auth": fileCode.RequireAuth,
-		})
+		// 返回文件下载链接
+		response.Text = "/share/download?code=" + fileCode.Code
 	}
+
+	common.SuccessResponse(c, response)
 }
 
 // DownloadFile 下载文件
@@ -244,10 +268,16 @@ func (h *ShareHandler) DownloadFile(c *gin.Context) {
 		userID = &id
 	}
 
-	fileCode, err := h.service.GetFileByCodeWithAuth(code, false, userID)
+	fileCode, err := h.service.GetFileByCodeWithAuth(code, userID)
 	if err != nil {
 		common.NotFoundResponse(c, err.Error())
 		return
+	}
+
+	// 更新使用次数
+	if err := h.service.UpdateFileUsage(fileCode.Code); err != nil {
+		// 记录错误但不阻止下载
+		logrus.WithError(err).Error("更新文件使用次数失败")
 	}
 
 	if fileCode.Text != "" {
@@ -255,9 +285,15 @@ func (h *ShareHandler) DownloadFile(c *gin.Context) {
 		return
 	}
 
-	// 使用存储接口下载文件
-	storageInterface := h.service.GetStorageInterface()
-	if err := storageInterface.GetFileResponse(c, fileCode); err != nil {
+	// 使用存储服务下载文件
+	storageServiceInterface := h.service.GetStorageService()
+	storageService, ok := storageServiceInterface.(*storage.ConcreteStorageService)
+	if !ok {
+		common.InternalServerErrorResponse(c, "存储服务类型错误")
+		return
+	}
+
+	if err := storageService.GetFileResponse(c, fileCode); err != nil {
 		common.NotFoundResponse(c, "文件下载失败: "+err.Error())
 		return
 	}

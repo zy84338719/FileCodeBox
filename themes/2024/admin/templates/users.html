@@ -1,0 +1,275 @@
+<div class="users-management">
+    <!-- 用户管理头部 -->
+    <div class="page-header">
+        <div class="header-left">
+            <h2>用户管理</h2>
+            <p>管理系统用户，包括创建、编辑、删除用户以及权限控制</p>
+        </div>
+        <div class="header-right">
+            <button id="create-user-btn" class="btn btn-primary">
+                <i class="icon-plus"></i> 创建用户
+            </button>
+        </div>
+    </div>
+
+    <!-- 搜索和筛选 -->
+    <div class="search-section">
+        <div class="search-container">
+            <div class="search-input-group">
+                <input type="text" id="user-search" class="form-input" placeholder="搜索用户名或邮箱...">
+                <button id="user-search-btn" class="btn btn-secondary">搜索</button>
+            </div>
+        </div>
+        
+        <div class="filter-container">
+            <select id="user-role-filter" class="form-select">
+                <option value="">所有角色</option>
+                <option value="admin">管理员</option>
+                <option value="user">普通用户</option>
+                <option value="guest">访客</option>
+            </select>
+            
+            <select id="user-status-filter" class="form-select">
+                <option value="">所有状态</option>
+                <option value="active">正常</option>
+                <option value="inactive">已禁用</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 批量操作栏 -->
+    <div class="batch-actions">
+        <div class="batch-select">
+            <input type="checkbox" id="select-all-users" class="checkbox">
+            <label for="select-all-users">全选</label>
+        </div>
+        <div class="batch-buttons">
+            <button id="batch-delete-users-btn" class="btn btn-danger" disabled>
+                批量删除 (0)
+            </button>
+        </div>
+    </div>
+
+    <!-- 用户列表 -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th width="40">
+                        <input type="checkbox" id="select-all-users-header" class="checkbox">
+                    </th>
+                    <th class="sortable user-sort-btn" data-sort="username">
+                        用户信息
+                        <span class="sort-icon"></span>
+                    </th>
+                    <th class="sortable user-sort-btn" data-sort="role">
+                        角色
+                        <span class="sort-icon"></span>
+                    </th>
+                    <th class="sortable user-sort-btn" data-sort="status">
+                        状态
+                        <span class="sort-icon"></span>
+                    </th>
+                    <th class="sortable user-sort-btn" data-sort="file_count">
+                        文件数量
+                        <span class="sort-icon"></span>
+                    </th>
+                    <th class="sortable user-sort-btn" data-sort="created_at">
+                        创建时间
+                        <span class="sort-icon"></span>
+                    </th>
+                    <th class="sortable user-sort-btn" data-sort="last_login">
+                        最后登录
+                        <span class="sort-icon"></span>
+                    </th>
+                    <th width="200">操作</th>
+                </tr>
+            </thead>
+            <tbody id="users-tbody">
+                <!-- 用户数据将由JavaScript动态填充 -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 分页 -->
+    <div id="user-pagination-container" class="pagination-container">
+        <!-- 分页组件将由JavaScript动态生成 -->
+    </div>
+</div>
+
+<!-- 用户编辑模态框 -->
+<div id="user-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="user-modal-title">创建用户</h3>
+            <button class="modal-close user-modal-close">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <form class="form-grid">
+                <div class="form-group">
+                    <label for="user-username">用户名 *</label>
+                    <input type="text" id="user-username" class="form-input" required>
+                    <div class="field-help">3-20个字符，只能包含字母、数字和下划线</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="user-email">邮箱</label>
+                    <input type="email" id="user-email" class="form-input">
+                </div>
+                
+                <div class="form-group" id="password-field">
+                    <label for="user-password">密码 *</label>
+                    <input type="password" id="user-password" class="form-input">
+                    <div class="field-help">至少6个字符</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="user-role">角色</label>
+                    <select id="user-role" class="form-select">
+                        <option value="user">普通用户</option>
+                        <option value="admin">管理员</option>
+                        <option value="guest">访客</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="user-status">状态</label>
+                    <select id="user-status" class="form-select">
+                        <option value="active">正常</option>
+                        <option value="inactive">已禁用</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        
+        <div class="modal-footer">
+            <button class="btn btn-secondary user-modal-close">取消</button>
+            <button id="save-user-btn" class="btn btn-primary">创建用户</button>
+        </div>
+    </div>
+</div>
+
+<!-- 重置密码模态框 -->
+<div id="reset-password-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>重置用户密码</h3>
+            <button class="modal-close user-modal-close">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <p>用户: <strong id="reset-password-username"></strong></p>
+            
+            <form class="form">
+                <div class="form-group">
+                    <label for="new-password">新密码 *</label>
+                    <input type="password" id="new-password" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm-password">确认密码 *</label>
+                    <input type="password" id="confirm-password" class="form-input" required>
+                </div>
+            </form>
+        </div>
+        
+        <div class="modal-footer">
+            <button class="btn btn-secondary user-modal-close">取消</button>
+            <button id="save-password-btn" class="btn btn-primary">重置密码</button>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div id="delete-user-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>确认删除</h3>
+            <button class="modal-close user-modal-close">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <div class="warning-content">
+                <div class="warning-icon">⚠️</div>
+                <div class="warning-text">
+                    <p>确定要删除用户 <strong id="delete-user-name"></strong> 吗？</p>
+                    <p class="text-danger">此操作不可撤销，用户的所有文件也将被删除。</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <button class="btn btn-secondary user-modal-close">取消</button>
+            <button id="confirm-delete-user-btn" class="btn btn-danger">确认删除</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 用户管理特定样式 */
+.users-management {
+    padding: 20px;
+}
+
+.user-avatar img {
+    object-fit: cover;
+}
+
+.role-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.role-admin {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.role-user {
+    background-color: #dbeafe;
+    color: #2563eb;
+}
+
+.role-guest {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+.field-help {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.field-error {
+    font-size: 12px;
+    color: #dc2626;
+    margin-top: 4px;
+}
+
+.form-input.error {
+    border-color: #dc2626;
+}
+
+.warning-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.warning-icon {
+    font-size: 24px;
+    color: #f59e0b;
+}
+
+.warning-text {
+    flex: 1;
+}
+
+#password-field {
+    display: block;
+}
+</style>

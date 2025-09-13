@@ -3,7 +3,7 @@ package tasks
 import (
 	"time"
 
-	"github.com/zy84338719/filecodebox/internal/dao"
+	"github.com/zy84338719/filecodebox/internal/repository"
 	"github.com/zy84338719/filecodebox/internal/storage"
 
 	"github.com/robfig/cron/v3"
@@ -12,13 +12,13 @@ import (
 
 // TaskManager 任务管理器
 type TaskManager struct {
-	daoManager  *dao.DAOManager
+	daoManager  *repository.RepositoryManager
 	storage     *storage.StorageManager
 	cron        *cron.Cron
 	pathManager *storage.PathManager
 }
 
-func NewTaskManager(daoManager *dao.DAOManager, storageManager *storage.StorageManager, dataPath string) *TaskManager {
+func NewTaskManager(daoManager *repository.RepositoryManager, storageManager *storage.StorageManager, dataPath string) *TaskManager {
 	// 创建路径管理器
 	pathManager := storage.NewPathManager(dataPath)
 

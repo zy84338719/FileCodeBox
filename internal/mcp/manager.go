@@ -10,15 +10,15 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/zy84338719/filecodebox/internal/config"
-	"github.com/zy84338719/filecodebox/internal/dao"
+	"github.com/zy84338719/filecodebox/internal/repository"
 	"github.com/zy84338719/filecodebox/internal/services"
 	"github.com/zy84338719/filecodebox/internal/storage"
 )
 
 // MCPManager MCP 服务器管理器
 type MCPManager struct {
-	config         *config.Config
-	daoManager     *dao.DAOManager
+	manager        *config.ConfigManager
+	daoManager     *repository.RepositoryManager
 	storageManager *storage.StorageManager
 	shareService   *services.ShareService
 	adminService   *services.AdminService
@@ -32,15 +32,15 @@ type MCPManager struct {
 
 // NewMCPManager 创建新的 MCP 管理器
 func NewMCPManager(
-	cfg *config.Config,
-	daoManager *dao.DAOManager,
+	manager *config.ConfigManager,
+	daoManager *repository.RepositoryManager,
 	storageManager *storage.StorageManager,
 	shareService *services.ShareService,
 	adminService *services.AdminService,
 	userService *services.UserService,
 ) *MCPManager {
 	return &MCPManager{
-		config:         cfg,
+		manager:        manager,
 		daoManager:     daoManager,
 		storageManager: storageManager,
 		shareService:   shareService,
@@ -61,7 +61,7 @@ func (m *MCPManager) StartMCPServer(port string) error {
 
 	// 创建 MCP 服务器
 	m.server = NewFileCodeBoxMCPServer(
-		m.config,
+		m.manager,
 		m.daoManager,
 		m.storageManager,
 		m.shareService,

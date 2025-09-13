@@ -16,7 +16,7 @@ import (
 func SetupUserRoutes(
 	router *gin.Engine,
 	userHandler *handlers.UserHandler,
-	cfg *config.Config,
+	cfg *config.ConfigManager,
 	userService interface {
 		ValidateToken(string) (interface{}, error)
 	},
@@ -28,6 +28,7 @@ func SetupUserRoutes(
 		userGroup.POST("/register", userHandler.Register)
 		userGroup.POST("/login", userHandler.Login)
 		userGroup.GET("/system-info", userHandler.GetSystemInfo)
+		userGroup.GET("/check-initialization", userHandler.CheckSystemInitialization)
 
 		// 需要认证的路由
 		authGroup := userGroup.Group("/")
@@ -63,7 +64,7 @@ func SetupUserRoutes(
 }
 
 // ServeUserPage 服务用户页面
-func ServeUserPage(c *gin.Context, cfg *config.Config, pageName string) {
+func ServeUserPage(c *gin.Context, cfg *config.ConfigManager, pageName string) {
 	userPagePath := filepath.Join(".", cfg.ThemesSelect, pageName)
 
 	content, err := os.ReadFile(userPagePath)
