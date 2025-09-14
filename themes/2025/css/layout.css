@@ -202,6 +202,132 @@
     100% { transform: rotate(360deg); }
 }
 
+/* 标签页容器及按钮样式 */
+.tabs {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-top: 20px;
+    border: 1px solid #e5e7eb;
+}
+
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: #2c3e50;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.mobile-menu-toggle:hover {
+    background: rgba(44, 62, 80, 0.1);
+    color: #667eea;
+}
+
+.tab-header {
+    display: flex;
+    background: linear-gradient(135deg, #f8faff 0%, #f1f5f9 100%);
+    border-bottom: 2px solid #e2e8f0;
+    overflow-x: auto;
+    padding: 0;
+    position: relative;
+}
+
+.tab-header::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #667eea, transparent);
+}
+
+/* 标签导航按钮 */
+.tab-btn {
+    flex: 1;
+    min-width: 160px;
+    padding: 16px 24px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 0;
+}
+
+.tab-btn::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 3px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    transform: translateX(-50%);
+    transition: width 0.3s ease;
+    border-radius: 2px 2px 0 0;
+}
+
+.tab-btn:hover {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    color: #475569;
+    transform: translateY(-1px);
+}
+
+.tab-btn:hover::before {
+    width: 60%;
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+    color: #667eea;
+    position: relative;
+    box-shadow: 0 -2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.tab-btn.active::before {
+    width: 80%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    box-shadow: 0 0 8px rgba(102, 126, 234, 0.4);
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #667eea, transparent);
+}
+
+.tab-btn i {
+    font-size: 16px;
+    margin-right: 0;
+    transition: transform 0.3s ease;
+}
+
+.tab-btn:hover i,
+.tab-btn.active i {
+    transform: scale(1.1);
+}
+
 /* 隐藏元素 */
 .hidden {
     display: none !important;

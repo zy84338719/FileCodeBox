@@ -67,11 +67,8 @@ class FileCodeBoxApp {
      */
     async loadConfig() {
         try {
-            const response = await fetch('/', {
-                method: 'POST'
-            });
-            const result = await response.json();
-            
+            const result = await apiPost(API_ENDPOINTS.CONFIG, {});
+
             if (result.code === 200) {
                 AppState.config = result.data;
                 console.log('应用配置已加载:', AppState.config);
