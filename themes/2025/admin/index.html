@@ -8,17 +8,21 @@
     <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/logo-small.svg">
     
-    <!-- 样式文件 -->
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/layout.css">
-    <link rel="stylesheet" href="css/responsive.css">
+    <!-- 样式文件（与 themes/2025 统一的前端体系） -->
+    <!-- 全局基础样式复用主站样式表 -->
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+    
+    <!-- 管理后台专属样式（仅保留差异化部分） -->
     <link rel="stylesheet" href="css/users.css">
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/storage.css">
     <link rel="stylesheet" href="css/mcp.css">
     <link rel="stylesheet" href="css/files.css">
     <link rel="stylesheet" href="css/pagination.css">
+    <link rel="stylesheet" href="css/overrides.css">
     
     <!-- 图标库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -73,10 +77,10 @@
                     <span>FileCodeBox 管理后台</span>
                 </div>
                 <div class="header-buttons">
-                    <button class="user-btn" onclick="goToUser()">
+                    <button class="btn user-btn" onclick="goToUser()">
                         <i class="fas fa-user"></i> 用户页面
                     </button>
-                    <button class="logout-btn" onclick="logout()">
+                    <button class="btn logout-btn" onclick="logout()">
                         <i class="fas fa-sign-out-alt"></i> 退出登录
                     </button>
                 </div>

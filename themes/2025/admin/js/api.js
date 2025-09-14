@@ -10,7 +10,11 @@
  */
 async function apiRequest(url, options = {}) {
     // 动态获取当前的authToken
-    const currentAuthToken = window.authToken || localStorage.getItem('admin_token');
+    // 优先使用用户系统登录产生的 token，其次兼容旧的 admin_token
+    const currentAuthToken =
+        (typeof window !== 'undefined' ? window.authToken : null) ||
+        localStorage.getItem('user_token') ||
+        localStorage.getItem('admin_token');
     
     const defaultOptions = {
         headers: {
@@ -115,7 +119,10 @@ async function apiDelete(url) {
  */
 async function apiUpload(url, formData, onProgress = null) {
     return new Promise((resolve, reject) => {
-        const currentAuthToken = window.authToken || localStorage.getItem('admin_token');
+        const currentAuthToken =
+            (typeof window !== 'undefined' ? window.authToken : null) ||
+            localStorage.getItem('user_token') ||
+            localStorage.getItem('admin_token');
         const xhr = new XMLHttpRequest();
         
         // 设置上传进度监听
@@ -175,7 +182,10 @@ async function apiUpload(url, formData, onProgress = null) {
  */
 async function apiDownload(url, filename = 'download') {
     try {
-        const currentAuthToken = window.authToken || localStorage.getItem('admin_token');
+        const currentAuthToken =
+            (typeof window !== 'undefined' ? window.authToken : null) ||
+            localStorage.getItem('user_token') ||
+            localStorage.getItem('admin_token');
         const headers = {};
         
         if (currentAuthToken) {

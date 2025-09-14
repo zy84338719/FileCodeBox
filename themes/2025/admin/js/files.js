@@ -167,11 +167,11 @@ function displayFilesList(files) {
             '<td><span class="file-status ' + (file.require_auth ? 'private' : 'public') + '">' + (file.require_auth ? '私有' : '公开') + '</span></td>' +
             '<td>' + formatDateTime(file.CreatedAt) + '</td>' +
             '<td><div class="file-actions">' +
-                '<button class="file-action-btn btn-view" onclick="viewFile(\'' + file.ID + '\')" title="预览"><i class="fas fa-eye"></i></button>' +
-                '<button class="file-action-btn btn-download" onclick="downloadFile(\'' + file.ID + '\')" title="下载"><i class="fas fa-download"></i></button>' +
+                '<button class="file-action-btn btn-view" onclick="viewFile(\'' + file.code + '\')" title="预览"><i class="fas fa-eye"></i></button>' +
+                '<button class="file-action-btn btn-download" onclick="downloadFile(\'' + file.code + '\')" title="下载"><i class="fas fa-download"></i></button>' +
                 '<button class="file-action-btn btn-copy" onclick="copyFileLink(\'' + file.code + '\')" title="复制链接"><i class="fas fa-copy"></i></button>' +
-                '<button class="file-action-btn btn-edit" onclick="editFile(\'' + file.ID + '\')" title="编辑"><i class="fas fa-edit"></i></button>' +
-                '<button class="file-action-btn btn-delete" onclick="deleteFile(\'' + file.ID + '\')" title="删除"><i class="fas fa-trash"></i></button>' +
+                '<button class="file-action-btn btn-edit" onclick="editFile(\'' + file.code + '\')" title="编辑"><i class="fas fa-edit"></i></button>' +
+                '<button class="file-action-btn btn-delete" onclick="deleteFile(\'' + file.code + '\')" title="删除"><i class="fas fa-trash"></i></button>' +
             '</div></td>' +
         '</tr>';
     }).join('');
@@ -208,11 +208,11 @@ function displayFilesGrid(files) {
                     '<span class="file-status ' + (file.require_auth ? 'private' : 'public') + '">' + (file.require_auth ? '私有' : '公开') + '</span>' +
                 '</div>' +
                 '<div class="file-card-actions">' +
-                    '<button class="file-action-btn btn-view" onclick="event.stopPropagation(); viewFile(\'' + file.ID + '\')" title="预览"><i class="fas fa-eye"></i></button>' +
-                    '<button class="file-action-btn btn-download" onclick="event.stopPropagation(); downloadFile(\'' + file.ID + '\')" title="下载"><i class="fas fa-download"></i></button>' +
+                    '<button class="file-action-btn btn-view" onclick="event.stopPropagation(); viewFile(\'' + file.code + '\')" title="预览"><i class="fas fa-eye"></i></button>' +
+                    '<button class="file-action-btn btn-download" onclick="event.stopPropagation(); downloadFile(\'' + file.code + '\')" title="下载"><i class="fas fa-download"></i></button>' +
                     '<button class="file-action-btn btn-copy" onclick="event.stopPropagation(); copyFileLink(\'' + file.code + '\')" title="复制链接"><i class="fas fa-copy"></i></button>' +
-                    '<button class="file-action-btn btn-edit" onclick="event.stopPropagation(); editFile(\'' + file.ID + '\')" title="编辑"><i class="fas fa-edit"></i></button>' +
-                    '<button class="file-action-btn btn-delete" onclick="event.stopPropagation(); deleteFile(\'' + file.ID + '\')" title="删除"><i class="fas fa-trash"></i></button>' +
+                    '<button class="file-action-btn btn-edit" onclick="event.stopPropagation(); editFile(\'' + file.code + '\')" title="编辑"><i class="fas fa-edit"></i></button>' +
+                    '<button class="file-action-btn btn-delete" onclick="event.stopPropagation(); deleteFile(\'' + file.code + '\')" title="删除"><i class="fas fa-trash"></i></button>' +
                 '</div>' +
             '</div>' +
         '</div>';
@@ -458,9 +458,9 @@ function changePageSize(module) {
     }
 }
 
-async function downloadFile(fileId) {
+async function downloadFile(fileCode) {
     try {
-        const response = await fetch('/admin/files/' + fileId + '/download', {
+        const response = await fetch('/admin/files/download?code=' + encodeURIComponent(fileCode), {
             headers: {
                 'Authorization': 'Bearer ' + (authToken || '')
             }
@@ -497,7 +497,7 @@ async function downloadFile(fileId) {
 
 async function copyFileLink(fileCode) {
     try {
-        const link = window.location.origin + '/file/' + fileCode;
+        const link = window.location.origin + '/share/download?code=' + fileCode;
         await navigator.clipboard.writeText(link);
         FilesManager.showAlert('链接已复制到剪贴板', 'success');
     } catch (error) {
@@ -506,20 +506,20 @@ async function copyFileLink(fileCode) {
     }
 }
 
-async function deleteFile(fileId) {
+async function deleteFile(fileCode) {
     if (!confirm('确定要删除这个文件吗？此操作不可恢复！')) {
         return;
     }
     
     try {
-        const result = await apiRequest('/admin/files/' + fileId, {
+        const result = await apiRequest('/admin/files/' + encodeURIComponent(fileCode), {
             method: 'DELETE'
         });
         
         if (result.code === 200) {
             FilesManager.showAlert('文件已删除', 'success');
             loadFiles(FilesManager.currentPage, FilesManager.currentSearch, FilesManager.currentFilter);
-            loadFileStats();
+            // loadFileStats(); // 后端未提供统计接口，已移除
         } else {
             throw new Error(result.message || '删除失败');
         }
@@ -556,11 +556,12 @@ function isImageFile(filename) {
     return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(ext);
 }
 
-function viewFile(fileId) {
-    FilesManager.showAlert('文件预览功能', 'info');
+function viewFile(fileCode) {
+    // 直接在新标签打开下载/预览链接，由后端按类型决定返回
+    window.open('/share/download?code=' + encodeURIComponent(fileCode), '_blank');
 }
 
-function editFile(fileId) {
+function editFile(fileCode) {
     FilesManager.showAlert('文件编辑功能', 'info');
 }
 

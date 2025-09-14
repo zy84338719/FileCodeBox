@@ -306,42 +306,17 @@ function goToUser() {
 
 // ========== API请求封装 ==========
 
-/**
- * API请求封装
- */
-async function apiRequest(url, options = {}) {
-    const defaultOptions = {
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    };
-    
-    const finalOptions = {
-        ...defaultOptions,
-        ...options,
-        headers: {
-            ...defaultOptions.headers,
-            ...options.headers
-        }
-    };
-    
-    if (authToken) {
-        finalOptions.headers['Authorization'] = `Bearer ${authToken}`;
-        console.log('🔑 使用Bearer token进行API请求:', url);
-    } else {
-        console.log('🔓 无token，发送匿名API请求:', url);
+// 仅当未由 api.js 定义时，才提供兜底实现，避免冲突
+if (typeof window !== 'undefined' && typeof window.apiRequest === 'undefined') {
+    async function apiRequest(url, options = {}) {
+        const defaultOptions = { headers: { 'Content-Type': 'application/json' } };
+        const finalOptions = { ...defaultOptions, ...options, headers: { ...defaultOptions.headers, ...options.headers } };
+        if (authToken) finalOptions.headers['Authorization'] = `Bearer ${authToken}`;
+        const response = await fetch(url, finalOptions);
+        if (response.status === 401) { logout(); throw new Error('认证失败'); }
+        return response.json();
     }
-    
-    const response = await fetch(url, finalOptions);
-    console.log('📡 API响应状态:', response.status, response.statusText);
-    
-    if (response.status === 401) {
-        console.log('🚫 收到401未授权响应，执行自动登出');
-        logout();
-        throw new Error('认证失败');
-    }
-    
-    return response.json();
+    window.apiRequest = apiRequest;
 }
 
 // ========== 统计数据 ==========

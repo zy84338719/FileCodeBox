@@ -1,0 +1,102 @@
+/* 管理后台与主站CSS融合的桥接样式
+ * 目标：尽量复用 themes/2025/css 下的设计系统，
+ * 仅补充/覆盖在主站里会影响后台布局的部分。
+ */
+
+/* 1) 全局重置：主页把 body 设为 flex 居中并使用渐变背景，这里改回普通文档流 */
+html, body {
+  height: auto !important;
+}
+body {
+  display: block !important;
+  min-height: auto !important;
+  align-items: unset !important;
+  justify-content: unset !important;
+  background: #f5f5f5 !important; /* 去掉主页的渐变背景 */
+  background-image: none !important;
+  background-attachment: scroll !important;
+  background-size: auto !important;
+}
+
+/* 2) 容器还原为后台布局：占满宽度、去阴影/毛玻璃/圆角卡片感 */
+.container {
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+  width: 95vw !important;
+  margin: 0 auto !important;
+  padding: 20px !important;
+}
+
+/* 主要按钮（与主站 .btn 保持一致主题） */
+.btn-primary {
+  background: var(--primary-gradient);
+  color: #fff;
+}
+.btn-primary:hover {
+  filter: brightness(1.02);
+}
+
+/* 次级按钮 */
+.btn-secondary {
+  background: #f1f3f5;
+  color: #333;
+}
+.btn-secondary:hover {
+  background: #e9ecef;
+}
+
+/* 危险按钮 */
+.btn-danger {
+  background: #dc3545;
+  color: #fff;
+}
+.btn-danger:hover {
+  filter: brightness(0.95);
+}
+
+/* 小尺寸按钮 - 用于表格行操作区 */
+.btn-small, .btn-sm {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: var(--radius-xs);
+}
+
+/* 兼容 .actions 区域的按钮间距 */
+.actions .btn-small,
+.actions .btn-sm {
+  margin-right: 6px;
+}
+
+/* 头部按钮适配 */
+.user-btn { background: var(--primary-gradient); color: #fff; }
+.logout-btn { background: #dc3545; color: #fff; }
+
+/* 标签页按钮适配（与主站 tabs 风格一致） */
+.tab-header {
+  display: flex;
+  gap: 6px;
+  background: #f8f9fa;
+  padding: 6px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+.tab-btn {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border-radius: 18px;
+  border: none;
+  background: transparent;
+  color: #666;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+.tab-btn:hover { background: rgba(102,126,234,.1); color: var(--primary-color); }
+.tab-btn.active { background: var(--primary-gradient); color: #fff; box-shadow: var(--shadow-sm); }
+
+/* 3) 其他细节：避免主站的 .result、.dashboard-container 等样式影响后台 */
+.dashboard-container { background: transparent !important; box-shadow: none !important; }
+.result { box-shadow: none !important; }
