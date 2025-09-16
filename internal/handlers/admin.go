@@ -1045,8 +1045,8 @@ func (h *AdminHandler) UpdateMCPConfig(c *gin.Context) {
 		return
 	}
 
-	// 重新加载配置
-	err = h.config.LoadFromDatabase()
+	// 重新加载配置（从 config.yaml 与环境变量）
+	err = h.config.ReloadConfig()
 	if err != nil {
 		common.InternalServerErrorResponse(c, "重新加载配置失败: "+err.Error())
 		return

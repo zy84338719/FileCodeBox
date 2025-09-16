@@ -163,12 +163,6 @@ func (cm *ConfigManager) LoadFromYAML(path string) error {
 
 // InitWithDB has been removed. Use SetDB(db) to inject a database connection.
 
-func (cm *ConfigManager) InitDefaultDataInDB() error {
-	// No-op: database initialization for config is intentionally disabled.
-	// Configuration should be provided via config.yaml or environment variables.
-	return nil
-}
-
 // buildConfigMap flattens modules to module_field keys
 func (cm *ConfigManager) buildConfigMap() map[string]string {
 	out := make(map[string]string)
@@ -202,31 +196,15 @@ func (cm *ConfigManager) buildConfigMap() map[string]string {
 	return out
 }
 
-func (cm *ConfigManager) saveToDatabase() error {
-	// No-op: saving configuration to DB is disabled under the "YAML-first" policy.
-	return nil
-}
-
-// LoadFromDatabase previously supported per-row compatibility formats.
-// That behavior has been removed: configuration should come from `config.yaml` or environment variables.
-// LoadFromDatabase is now a no-op to preserve caller compatibility.
-func (cm *ConfigManager) LoadFromDatabase() error {
-	// No per-row DB compatibility parsing. Return nil as no-op.
-	return nil
-}
-
 func (cm *ConfigManager) ReloadConfig() error {
-	if cm.db == nil {
-		return errors.New("数据库连接未设置")
-	}
+	// ReloadConfig no longer reads configuration from the database.
+	// Configuration should be provided via `config.yaml` and environment variables.
+	// Preserve in-memory immutable fields across reload (port/admin token).
 	curPort := cm.Base.Port
 	curAdmin := cm.AdminToken
-	if err := cm.LoadFromDatabase(); err != nil {
-		return err
-	}
+	cm.applyEnvironmentOverrides()
 	cm.Base.Port = curPort
 	cm.AdminToken = curAdmin
-	cm.applyEnvironmentOverrides()
 	return nil
 }
 
@@ -245,9 +223,10 @@ func (cm *ConfigManager) applyEnvironmentOverrides() {
 }
 
 // Save saves the configuration to the database (if db is set).
+// Save persists configuration. Persisting to DB is intentionally removed;
+// this method returns an error to surface that saving is unsupported.
 func (cm *ConfigManager) Save() error {
-	// No-op save to DB
-	return nil
+	return errors.New("saving configuration to database is not supported; use config.yaml and environment variables")
 }
 
 // Get helpers
