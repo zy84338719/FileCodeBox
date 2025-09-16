@@ -43,7 +43,6 @@ func InitWithManager(manager *config.ConfigManager) (*gorm.DB, error) {
 	err = db.AutoMigrate(
 		&models.FileCode{},
 		&models.UploadChunk{},
-		&models.KeyValue{},
 		&models.User{},
 		&models.UserSession{},
 	)

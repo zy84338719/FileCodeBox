@@ -12,7 +12,6 @@ import (
 type (
 	// 数据库模型别名
 	FileCode    = db.FileCode
-	UploadChunk = db.UploadChunk
 	KeyValue    = db.KeyValue
 	User        = db.User
 	UserSession = db.UserSession
