@@ -45,6 +45,8 @@ type ConfigManager struct {
 	// yamlManagedKeys stores flat keys (module_field or single keys) that are managed by YAML
 	// and must not be overwritten by DB nor written back to DB.
 	yamlManagedKeys map[string]bool
+	// Extra stores arbitrary key/value pairs migrated from the old KeyValue table.
+	Extra map[string]string `yaml:"extra" json:"extra"`
 }
 
 func NewConfigManager() *ConfigManager {
@@ -206,6 +208,60 @@ func (cm *ConfigManager) ReloadConfig() error {
 	cm.Base.Port = curPort
 	cm.AdminToken = curAdmin
 	return nil
+}
+
+// initExtra ensures Extra map is initialized.
+func (cm *ConfigManager) initExtra() {
+	if cm.Extra == nil {
+		cm.Extra = make(map[string]string)
+	}
+}
+
+// UpdateKeyValue updates an arbitrary key/value and persists it to the YAML config file.
+func (cm *ConfigManager) UpdateKeyValue(key, value string) error {
+	cm.initExtra()
+	cm.Extra[key] = value
+	return cm.Persist()
+}
+
+// GetKeyValue returns an extra key value and whether it exists.
+func (cm *ConfigManager) GetKeyValue(key string) (string, bool) {
+	if cm.Extra == nil {
+		return "", false
+	}
+	v, ok := cm.Extra[key]
+	return v, ok
+}
+
+// Persist writes the current `extra` mapping back to the YAML config file (CONFIG_PATH or ./config.yaml).
+// It will preserve other top-level keys in the existing YAML file.
+func (cm *ConfigManager) Persist() error {
+	path := os.Getenv("CONFIG_PATH")
+	if path == "" {
+		path = "./config.yaml"
+	}
+
+	// Load existing YAML into a generic map (if present)
+	doc := make(map[string]any)
+	if b, err := os.ReadFile(path); err == nil {
+		var tmp map[string]any
+		if err := yaml.Unmarshal(b, &tmp); err == nil && tmp != nil {
+			doc = tmp
+		}
+	}
+
+	// Convert Extra to map[string]any for marshaling
+	extraAny := make(map[string]any)
+	for k, v := range cm.Extra {
+		extraAny[k] = v
+	}
+	doc["extra"] = extraAny
+
+	out, err := yaml.Marshal(doc)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, out, 0o644)
 }
 
 func (cm *ConfigManager) applyEnvironmentOverrides() {

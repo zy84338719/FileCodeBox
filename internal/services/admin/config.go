@@ -447,7 +447,7 @@ func (s *Service) SaveConfigUpdate(configUpdate *models.ConfigUpdateFields) erro
 			valueStr = string(jsonBytes)
 		}
 
-		if err := s.repositoryManager.KeyValue.SetValue(key, valueStr); err != nil {
+		if err := s.manager.UpdateKeyValue(key, valueStr); err != nil {
 			return fmt.Errorf("保存配置失败: %w", err)
 		}
 	}

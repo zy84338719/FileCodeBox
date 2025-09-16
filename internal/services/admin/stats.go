@@ -63,14 +63,12 @@ func (s *Service) GetStats() (*web.AdminStatsResponse, error) {
 	stats.TotalSize = totalSize
 
 	// 系统启动时间
-	sysStart, err := s.repositoryManager.KeyValue.GetByKey("sys_start")
-	if err == nil {
-		stats.SysStart = sysStart.Value
+	if v, ok := s.manager.GetKeyValue("sys_start"); ok {
+		stats.SysStart = v
 	} else {
 		// 如果没有记录，创建一个
 		startTime := fmt.Sprintf("%d", time.Now().UnixMilli())
-		err := s.repositoryManager.KeyValue.SetValue("sys_start", startTime)
-		if err != nil {
+		if err := s.manager.UpdateKeyValue("sys_start", startTime); err != nil {
 			return nil, fmt.Errorf("设置系统启动时间失败: %v", err)
 		}
 		stats.SysStart = startTime
