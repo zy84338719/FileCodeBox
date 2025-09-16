@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
@@ -27,7 +28,8 @@ func SetupUserRoutes(
 		// 公开路由（不需要认证）
 		userGroup.POST("/register", userHandler.Register)
 		userGroup.POST("/login", userHandler.Login)
-		userGroup.GET("/system-info", userHandler.GetSystemInfo)
+		// `/user/system-info` 由 `SetupBaseRoutes` 全局注册并在有 `userHandler` 时委托处理，
+		// 因此在此处不要重复注册以避免路由冲突（Gin 在重复注册同一路径时会 panic）
 		userGroup.GET("/check-initialization", userHandler.CheckSystemInitialization)
 
 		// 需要认证的路由
@@ -73,7 +75,14 @@ func ServeUserPage(c *gin.Context, cfg *config.ConfigManager, pageName string) {
 		return
 	}
 
+	html := string(content)
+	// 将相对静态资源路径转换为绝对路径，避免在子路径下（如 /user/login）请求到 /user/js/... 导致返回 HTML
+	html = strings.ReplaceAll(html, "src=\"js/", "src=\"/js/")
+	html = strings.ReplaceAll(html, "href=\"css/", "href=\"/css/")
+	html = strings.ReplaceAll(html, "src=\"assets/", "src=\"/assets/")
+	html = strings.ReplaceAll(html, "href=\"assets/", "href=\"/assets/")
+
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.String(http.StatusOK, string(content))
+	c.String(http.StatusOK, html)
 }

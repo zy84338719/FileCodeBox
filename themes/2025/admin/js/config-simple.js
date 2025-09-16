@@ -69,7 +69,8 @@ function fillConfigForm(config) {
         setFieldValue('themes_select', config.themes_select);
         
         // 用户系统设置 (始终启用)
-        setCheckboxValue('allow_user_registration', config.user?.allow_user_registration);
+    // config.user.allow_user_registration 可能为 0/1，setCheckboxValue 接受布尔化
+    setCheckboxValue('allow_user_registration', config.user?.allow_user_registration);
         setCheckboxValue('require_email_verify', config.user?.require_email_verify);
         setFieldValue('user_storage_quota_mb', bytesToMB(config.user?.user_storage_quota || 0));
         setFieldValue('user_upload_size_mb', bytesToMB(config.user?.user_upload_size || 0));

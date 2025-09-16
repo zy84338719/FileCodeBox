@@ -384,6 +384,43 @@ async function loadStats() {
             if (dashboardActiveUsersEl) dashboardActiveUsersEl.textContent = stats.active_files || 0; // 临时使用active_files作为活跃用户数
             if (dashboardTotalStorageEl) dashboardTotalStorageEl.textContent = formatFileSize(stats.total_size || 0);
             
+            // 更新趋势百分比（如果后端提供）
+            const filesTrendEl = document.getElementById('files-trend');
+            const uploadsTrendEl = document.getElementById('uploads-trend');
+            const usersTrendEl = document.getElementById('users-trend');
+            const storageTrendEl = document.getElementById('storage-trend');
+
+            if (filesTrendEl) {
+                if (stats.files_change_percent !== undefined && stats.files_change_percent !== null) {
+                    filesTrendEl.textContent = (stats.files_change_percent > 0 ? '+' : '') + stats.files_change_percent + '%';
+                } else {
+                    filesTrendEl.textContent = '—';
+                }
+            }
+
+            if (uploadsTrendEl) {
+                if (stats.uploads_change_percent !== undefined && stats.uploads_change_percent !== null) {
+                    uploadsTrendEl.textContent = (stats.uploads_change_percent > 0 ? '+' : '') + stats.uploads_change_percent + '%';
+                } else {
+                    uploadsTrendEl.textContent = '—';
+                }
+            }
+
+            if (usersTrendEl) {
+                if (stats.users_change_percent !== undefined && stats.users_change_percent !== null) {
+                    usersTrendEl.textContent = (stats.users_change_percent > 0 ? '+' : '') + stats.users_change_percent + '%';
+                } else {
+                    usersTrendEl.textContent = '—';
+                }
+            }
+
+            if (storageTrendEl) {
+                if (stats.storage_change_percent !== undefined && stats.storage_change_percent !== null) {
+                    storageTrendEl.textContent = (stats.storage_change_percent > 0 ? '+' : '') + stats.storage_change_percent + '%';
+                } else {
+                    storageTrendEl.textContent = '—';
+                }
+            }
             // 更新存储使用率（如果API提供了相关数据）
             const storageUsageEl = document.getElementById('storage-usage');
             if (storageUsageEl && stats.storage_usage_percent) {

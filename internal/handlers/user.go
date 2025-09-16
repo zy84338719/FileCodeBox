@@ -318,10 +318,20 @@ func (h *UserHandler) CheckAuth(c *gin.Context) {
 
 // GetSystemInfo 获取系统信息（公开接口）
 func (h *UserHandler) GetSystemInfo(c *gin.Context) {
+	// 将布尔值转换为 0/1 整数，保持 API 一致性
+	enabled := 0
+	if h.userService.IsUserSystemEnabled() {
+		enabled = 1
+	}
+	allowReg := 0
+	if h.userService.IsRegistrationAllowed() {
+		allowReg = 1
+	}
+
 	response := &web.UserSystemInfoResponse{
-		UserSystemEnabled:        h.userService.IsUserSystemEnabled(),
-		AllowUserRegistration:    h.userService.IsRegistrationAllowed(),
-		RequireEmailVerification: false, // 这里需要从配置获取
+		UserSystemEnabled:        enabled,
+		AllowUserRegistration:    allowReg,
+		RequireEmailVerification: 0, // TODO: 从配置获取真实值（目前保留为0）
 	}
 
 	common.SuccessResponse(c, response)

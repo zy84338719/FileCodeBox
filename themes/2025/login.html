@@ -87,7 +87,7 @@
                 // 用户系统始终启用，直接显示登录界面
                 loginWrapper.classList.remove('hidden-content');
                 
-                if (result.code === 200 && result.data && result.data.allow_user_registration) {
+                if (result.code === 200 && result.data && result.data.allow_user_registration === 1) {
                     // 允许注册，显示注册区域
                     registerSection.classList.remove('hidden-content');
                     console.log('用户注册已启用');

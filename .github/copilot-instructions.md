@@ -20,7 +20,7 @@ FileCodeBox 是一个高性能的文件快传系统的 Go 实现，基于现代�
 ```go
 // 通过 ConfigManager 统一管理所有配置
 manager := config.InitManager()
-manager.InitWithDB(db) // 数据库驱动的动态配置
+manager.SetDB(db) // 注入数据库连接（配置读取现在以 config.yaml 和 环境变量为准）
 ```
 
 配置分为多个模块：`BaseConfig`, `DatabaseConfig`, `StorageConfig`, `UserSystemConfig`, `MCPConfig`

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/zy84338719/filecodebox/internal/models"
+	"github.com/zy84338719/filecodebox/internal/utils"
 )
 
 // CleanupExpiredFiles 清理过期文件
@@ -151,14 +152,39 @@ func (s *Service) GetStorageStatus() (*models.StorageStatus, error) {
 		return nil, err
 	}
 
+	details := map[string]interface{}{
+		"used_storage": totalSize,
+	}
+
+	// 根据当前配置尝试附加 path 与使用率信息
+	storageType := s.manager.Storage.Type
+	if storageType == "local" {
+		details["storage_path"] = s.manager.Storage.StoragePath
+		if s.manager.Storage.StoragePath != "" {
+			if usage, err := utils.GetUsagePercent(s.manager.Storage.StoragePath); err == nil {
+				// 四舍五入到整数
+				details["usage_percent"] = int(usage)
+			}
+		}
+	} else if storageType == "s3" {
+		if s.manager.Storage.S3 != nil {
+			details["storage_path"] = s.manager.Storage.S3.BucketName
+		}
+	} else if storageType == "webdav" {
+		if s.manager.Storage.WebDAV != nil {
+			details["storage_path"] = s.manager.Storage.WebDAV.Hostname
+		}
+	} else if storageType == "nfs" {
+		if s.manager.Storage.NFS != nil {
+			details["storage_path"] = s.manager.Storage.NFS.MountPoint
+		}
+	}
+
 	return &models.StorageStatus{
-		Type:      s.manager.Storage.Type,
+		Type:      storageType,
 		Status:    "active",
 		Available: true,
-		Details: map[string]string{
-			"storage_path": s.manager.Storage.StoragePath,
-			"used_storage": fmt.Sprintf("%d", totalSize),
-		},
+		Details:   details,
 	}, nil
 }
 
@@ -233,6 +259,8 @@ func (s *Service) GetSystemInfo() (*models.SystemInfo, error) {
 		Uptime:       "1h0m0s",
 	}, nil
 }
+
+// ...existing code...
 
 // CleanInvalidRecords 清理无效记录 (兼容性方法)
 func (s *Service) CleanInvalidRecords() (int, error) {

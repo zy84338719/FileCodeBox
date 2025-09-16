@@ -166,8 +166,6 @@ func (s *Service) UpdateConfigFromRequest(configRequest *web.AdminConfigRequest)
 	return s.UpdateConfig(configUpdates)
 }
 
-
-
 // flattenConfig 扁平化配置数据
 func (s *Service) flattenConfig(prefix string, value interface{}, result map[string]interface{}) error {
 	switch v := value.(type) {

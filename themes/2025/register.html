@@ -97,7 +97,8 @@
                     systemInfo = data.data;
                     
                     // 用户系统始终可用（系统已初始化），只检查是否允许注册
-                    if (!systemInfo.allow_user_registration) {
+                    // 后端返回 0/1 表示开关，使用严格比较
+                    if (systemInfo.allow_user_registration !== 1) {
                         showAlert('当前不允许用户注册', 'error');
                         document.getElementById('registerForm').style.display = 'none';
                         return;
@@ -320,7 +321,8 @@
             const btnText = registerBtn.querySelector('.btn-text');
             
             // 检查系统是否允许注册
-            if (systemInfo && !systemInfo.allow_user_registration) {
+            // 使用严格比较，后端返回 0/1
+            if (systemInfo && systemInfo.allow_user_registration !== 1) {
                 showAlert('当前不允许用户注册', 'error');
                 return;
             }

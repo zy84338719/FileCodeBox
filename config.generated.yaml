@@ -1,0 +1,55 @@
+base:
+  data_path: /tmp/filecodebox_test
+  description: 开箱即用的文件快传系统
+  host: 0
+  name: FileCodeBox
+  port: 12346
+  production: false
+database:
+  host: ""
+  name: ./data/filecodebox.db
+  port: 0
+  ssl: disable
+  type: sqlite
+  user: ""
+mcp:
+  host: 0
+  port: 8081
+storage: {}
+ui:
+  admin_token: zhangyi
+  allow_user_registration: 0
+  background: ""
+  chunk_size: 2097152
+  download_timeout: 300
+  enable_chunk: 0
+  enable_concurrent_download: 1
+  enable_mcp_server: 0
+  error_count: 1
+  error_minute: 1
+  file_storage: local
+  jwt_secret: FileCodeBox2025JWT
+  keywords: FileCodeBox, 文件快递柜, 口令传送箱, 匿名口令分享文本, 文件
+  max_concurrent_downloads: 10
+  max_save_seconds: 0
+  max_sessions_per_user: 5
+  notify_content: 欢迎使用 FileCodeBox，本程序开源于 <a href="https://github.com/vastsa/FileCodeBox" target="_blank">Github</a> ，欢迎Star和Fork。
+  notify_title: 系统通知
+  opacity: 0
+  open_upload: 1
+  page_explain: 请勿上传或分享违法内容。根据《中华人民共和国网络安全法》、《中华人民共和国刑法》、《中华人民共和国治安管理处罚法》等相关规定。 传播或存储违法、违规内容，会受到相关处罚，严重者将承担刑事责任。本站坚决配合相关部门，确保网络内容的安全，和谐，打造绿色网络环境。
+  require_email_verify: 0
+  robots_text: |-
+    User-agent: *
+    Disallow: /
+  session_expiry_hours: 168
+  show_admin_address: 0
+  storage_path: ""
+  sys_start: 1757914992279
+  themes_select: themes/2025
+  upload_count: 10
+  upload_minute: 1
+  upload_size: 100
+  user_storage_quota: 1073741824
+  user_upload_size: 52428800
+user: {}

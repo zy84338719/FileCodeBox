@@ -185,6 +185,10 @@ func setupUserRoutes(authGroup *gin.RouterGroup, adminHandler *handlers.AdminHan
 	authGroup.PUT("/users/:id/status", adminHandler.UpdateUserStatus)
 	authGroup.GET("/users/:id/files", adminHandler.GetUserFiles)
 	authGroup.GET("/users/export", adminHandler.ExportUsers)
+	// 批量用户操作
+	authGroup.POST("/users/batch-enable", adminHandler.BatchEnableUsers)
+	authGroup.POST("/users/batch-disable", adminHandler.BatchDisableUsers)
+	authGroup.POST("/users/batch-delete", adminHandler.BatchDeleteUsers)
 }
 
 // setupStorageRoutes 设置存储管理路由

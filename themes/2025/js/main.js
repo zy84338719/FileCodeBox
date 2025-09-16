@@ -17,6 +17,29 @@ class FileCodeBoxApp {
     constructor() {
         this.modules = [];
         this.eventListeners = [];
+        // AbortController 用于统一管理并移除通过 signal 注册的事件监听器
+        this.abortController = new AbortController();
+    }
+
+    /**
+     * 统一注册全局事件监听器，优先使用 AbortController.signal（可统一取消），
+     * 不支持时退回到手动记录并在 destroy 时移除。
+     */
+    addGlobalListener(element, event, handler, options) {
+        try {
+            if (this.abortController && this.abortController.signal) {
+                // 合并 options，确保 signal 被传入
+                const opts = Object.assign({}, options || {}, { signal: this.abortController.signal });
+                element.addEventListener(event, handler, opts);
+                return;
+            }
+        } catch (err) {
+            // 有些浏览器可能不支持 signal 参数，我们将回退到手动管理
+        }
+
+        // 回退：手动注册并记录以便在 destroy 中移除
+        element.addEventListener(event, handler, options);
+        this.eventListeners.push({ element, event, handler });
     }
     
     /**
@@ -106,8 +129,8 @@ class FileCodeBoxApp {
      * 设置全局事件监听器
      */
     setupGlobalEvents() {
-        // 页面可见性变化
-        document.addEventListener('visibilitychange', () => {
+        // 页面可见性变化（使用统一注册函数以便回退处理）
+        this.addGlobalListener(document, 'visibilitychange', () => {
             if (document.visibilityState === 'visible') {
                 // 页面变为可见时，检查用户状态
                 if (UserAuth.isLoggedIn()) {
@@ -117,24 +140,55 @@ class FileCodeBoxApp {
         });
         
         // 窗口大小变化
-        window.addEventListener('resize', debounce(() => {
+        this.addGlobalListener(window, 'resize', debounce(() => {
             this.handleResize();
         }, 250));
         
         // 在线/离线状态
-        window.addEventListener('online', () => {
+        this.addGlobalListener(window, 'online', () => {
             showNotification('网络连接已恢复', 'success');
         });
-        
-        window.addEventListener('offline', () => {
+
+        this.addGlobalListener(window, 'offline', () => {
             showNotification('网络连接已断开', 'warning');
         });
         
         // 键盘快捷键
-        document.addEventListener('keydown', (e) => {
+        this.addGlobalListener(document, 'keydown', (e) => {
             this.handleKeyboard(e);
         });
-        
+        // 诊断：捕获所有锚点点击，记录可能阻止导航的事件
+        const logAnchorClicks = function(e) {
+            try {
+                const target = e.target;
+                if (!target) return;
+                // 找到最近的锚点元素
+                const anchor = target.closest && target.closest('a');
+                if (anchor && anchor.href) {
+                    // 只关注以 /user/ 开头或指向站内的链接
+                    try {
+                        const url = new URL(anchor.href, window.location.origin);
+                        if (url.pathname.startsWith('/user')) {
+                            console.log('[diag] anchor click', {
+                                href: anchor.href,
+                                pathname: url.pathname,
+                                defaultPrevented: e.defaultPrevented,
+                                button: e.button,
+                                ctrlKey: e.ctrlKey,
+                                metaKey: e.metaKey
+                            });
+                        }
+                    } catch (err) {
+                        console.log('[diag] anchor click (raw)', anchor.href, 'error parsing URL', err);
+                    }
+                }
+            } catch (err) {
+                console.error('[diag] logAnchorClicks error', err);
+            }
+        };
+
+        this.addGlobalListener(document, 'click', logAnchorClicks);
+
         console.log('全局事件监听器已设置');
     }
     
@@ -288,14 +342,14 @@ class FileCodeBoxApp {
      */
     setupGlobalErrorHandling() {
         // 捕获未处理的Promise错误
-        window.addEventListener('unhandledrejection', (event) => {
+        this.addGlobalListener(window, 'unhandledrejection', (event) => {
             console.error('未处理的Promise错误:', event.reason);
             showNotification('发生了未知错误', 'error');
             event.preventDefault();
         });
         
         // 捕获JavaScript错误
-        window.addEventListener('error', (event) => {
+        this.addGlobalListener(window, 'error', (event) => {
             console.error('JavaScript错误:', event.error);
             // 只在开发模式下显示详细错误
             if (window.location.hostname === 'localhost') {
@@ -308,10 +362,17 @@ class FileCodeBoxApp {
      * 销毁应用程序
      */
     destroy() {
-        // 清理事件监听器
-        this.eventListeners.forEach(({ element, event, handler }) => {
-            element.removeEventListener(event, handler);
-        });
+        // 使用 AbortController 统一取消所有通过 signal 注册的监听器
+        try {
+            if (this.abortController) {
+                this.abortController.abort();
+            }
+        } catch (err) {
+            console.warn('AbortController abort 失败：', err);
+        }
+
+        // 如果还存在以手动方式记录的监听器，可选地清理数组（兼容历史代码）
+        this.eventListeners = [];
         
         // 重置状态
         AppState.initialized = false;

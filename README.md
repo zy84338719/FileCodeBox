@@ -1,3 +1,63 @@
+# FileCodeBox (Go)
+
+轻量且高性能的文件/文本分享服务，使用 Go 实现，支持分片上传、秒传、断点续传与多种存储后端。
+
+核心目标是提供一个易部署、易扩展的文件快传系统，适合自托管与容器化部署场景。
+
+## 主要特性
+
+- 高性能：基于 Go 的并发能力构建，低延迟与内存占用
+- 文件/文本分享：支持短链接分享文本和文件
+- 分片上传：大文件分片、断点续传、上传校验与秒传支持
+- 管理后台：内置管理控制台，可管理文件、配置与用户
+- 多存储后端：支持本地、S3、WebDAV、OneDrive（可扩展）
+- 容器友好：提供 Docker 与 docker-compose 支持
+- 主题系统：前端主题可替换与定制
+
+## 环境要求
+
+开发推荐使用 Go 1.25+。项目默认使用 SQLite 作为开发环境的轻量数据库。生产环境请按需选择存储与资源配置。
+
+## 部署建议（简要）
+
+- 推荐使用 Docker + 反向代理（Nginx）启用 HTTPS
+- 将 `data/` 目录做定期备份
+- 将服务放入进程管理（systemd / 容器重启策略）
+
+## 开发与扩展
+
+- 新增存储：实现 `storage.StorageInterface` 并在 `storage.NewStorageManager` 注册
+- 新增接口：在 `internal/services` 实现业务逻辑，并在 `internal/handlers` 与 `internal/routes` 添加路由
+
+运行测试与示例脚本请查看 `tests/` 目录。
+
+---
+
+## 常见问题与排查（示例）
+
+- 检查端口占用：
+
+```bash
+lsof -ti:12345
+```
+
+- 如果数据库被锁或服务异常，尝试重启服务或检查 `data/` 下的 sqlite 文件权限。
+
+---
+
+## 许可证
+
+MIT
+
+---
+
+如需我继续：
+
+- 将 README 翻译为英文
+- 自动生成或更新 Swagger 文档
+- 补全详细部署示例（Kubernetes / systemd）
+
+请告诉我接下来要做哪个扩展。
 <div align="center">
   <img src="assets/images/logos/logo.svg" alt="FileCodeBox Logo" width="200"/>
   

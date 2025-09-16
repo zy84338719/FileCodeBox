@@ -166,7 +166,8 @@ const UserSystem = {
                     console.log('用户系统已启用');
                     
                     // 检查是否允许注册，动态显示注册链接
-                    const allowRegistration = result.data.allow_user_registration;
+                    // 后端使用 0/1 表示开关，严格比较为 1
+                    const allowRegistration = result.data.allow_user_registration === 1;
                     const guestLinks = document.getElementById('guest-links');
                     
                     if (guestLinks) {

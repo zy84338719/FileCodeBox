@@ -916,14 +916,89 @@ func (h *AdminHandler) ExportUsers(c *gin.Context) {
 		)
 	}
 
-	// 设置响应头
-	c.Header("Content-Type", "text/csv; charset=utf-8")
-	c.Header("Content-Disposition", "attachment; filename=users_export.csv")
-	c.Header("Content-Length", strconv.Itoa(len(csvContent)))
-
 	// 添加UTF-8 BOM以确保Excel正确显示中文
 	bomContent := "\xEF\xBB\xBF" + csvContent
-	c.String(200, bomContent)
+
+	// 设置响应头（Content-Length 使用实际发送的字节长度）
+	c.Header("Content-Type", "text/csv; charset=utf-8")
+	c.Header("Content-Disposition", "attachment; filename=users_export.csv")
+	c.Header("Content-Length", strconv.Itoa(len([]byte(bomContent))))
+
+	// 使用 Write 写入原始字节，避免框架对长度的二次处理
+	c.Writer.WriteHeader(200)
+	_, _ = c.Writer.Write([]byte(bomContent))
+}
+
+// BatchEnableUsers 批量启用用户
+func (h *AdminHandler) BatchEnableUsers(c *gin.Context) {
+	var req struct {
+		UserIDs []uint `json:"user_ids" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
+		return
+	}
+
+	if len(req.UserIDs) == 0 {
+		common.BadRequestResponse(c, "user_ids 不能为空")
+		return
+	}
+
+	if err := h.service.BatchUpdateUserStatus(req.UserIDs, true); err != nil {
+		common.InternalServerErrorResponse(c, "批量启用用户失败: "+err.Error())
+		return
+	}
+
+	common.SuccessWithMessage(c, "批量启用成功", nil)
+}
+
+// BatchDisableUsers 批量禁用用户
+func (h *AdminHandler) BatchDisableUsers(c *gin.Context) {
+	var req struct {
+		UserIDs []uint `json:"user_ids" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
+		return
+	}
+
+	if len(req.UserIDs) == 0 {
+		common.BadRequestResponse(c, "user_ids 不能为空")
+		return
+	}
+
+	if err := h.service.BatchUpdateUserStatus(req.UserIDs, false); err != nil {
+		common.InternalServerErrorResponse(c, "批量禁用用户失败: "+err.Error())
+		return
+	}
+
+	common.SuccessWithMessage(c, "批量禁用成功", nil)
+}
+
+// BatchDeleteUsers 批量删除用户
+func (h *AdminHandler) BatchDeleteUsers(c *gin.Context) {
+	var req struct {
+		UserIDs []uint `json:"user_ids" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
+		return
+	}
+
+	if len(req.UserIDs) == 0 {
+		common.BadRequestResponse(c, "user_ids 不能为空")
+		return
+	}
+
+	if err := h.service.BatchDeleteUsers(req.UserIDs); err != nil {
+		common.InternalServerErrorResponse(c, "批量删除用户失败: "+err.Error())
+		return
+	}
+
+	common.SuccessWithMessage(c, "批量删除成功", nil)
 }
 
 // GetMCPConfig 获取 MCP 配置

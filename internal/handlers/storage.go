@@ -5,6 +5,7 @@ import (
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/models/web"
 	"github.com/zy84338719/filecodebox/internal/storage"
+	"github.com/zy84338719/filecodebox/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -43,6 +44,33 @@ func (sh *StorageHandler) GetStorageInfo(c *gin.Context) {
 		if err := sh.storageManager.TestStorage(storageType); err != nil {
 			detail.Available = false
 			detail.Error = err.Error()
+		}
+
+		// 尝试附加路径与使用率信息
+		if storageType == "local" {
+			// 本地存储使用配置中的 StoragePath
+			detail.StoragePath = sh.storageConfig.StoragePath
+
+			// 尝试读取磁盘使用率（若可用）
+			if sh.storageConfig.StoragePath != "" {
+				if usagePercent, err := utils.GetUsagePercent(sh.storageConfig.StoragePath); err == nil {
+					val := int(usagePercent)
+					detail.UsagePercent = &val
+				}
+			}
+		} else if storageType == "s3" {
+			// S3 使用 bucket 名称作为标识
+			if sh.storageConfig.S3 != nil {
+				detail.StoragePath = sh.storageConfig.S3.BucketName
+			}
+		} else if storageType == "webdav" {
+			if sh.storageConfig.WebDAV != nil {
+				detail.StoragePath = sh.storageConfig.WebDAV.Hostname
+			}
+		} else if storageType == "nfs" {
+			if sh.storageConfig.NFS != nil {
+				detail.StoragePath = sh.storageConfig.NFS.MountPoint
+			}
 		}
 
 		storageDetails[storageType] = detail
@@ -360,3 +388,5 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 
 	common.SuccessWithMessage(c, "存储配置更新成功", nil)
 }
+
+// ...existing code...

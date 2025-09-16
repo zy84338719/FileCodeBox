@@ -1013,37 +1013,47 @@ function formatRelativeTime(dateString) {
     return `${Math.floor(diffDays / 365)}年前`;
 }
 
-// 事件监听器
-document.addEventListener('click', function(e) {
-    // 点击模态框外部关闭
-    if (e.target.classList.contains('modal')) {
-        closeUserModal();
-    }
-    
-    // 点击下拉菜单外部关闭
-    if (!e.target.closest('.dropdown')) {
-        const menus = document.querySelectorAll('.dropdown-menu');
-        menus.forEach(menu => menu.classList.remove('show'));
-    }
-    
-    // 更新复选框状态
-    if (e.target.classList.contains('user-checkbox')) {
-        updateSelectAllState();
-    }
-});
+// 事件监听器（通过 app.addGlobalListener 注册以便统一管理）
+;(function() {
+    function onDocumentClick(e) {
+        // 点击模态框外部关闭
+        if (e.target.classList.contains('modal')) {
+            closeUserModal();
+        }
 
-// 键盘事件监听
-document.addEventListener('keydown', function(e) {
-    // ESC键关闭模态框
-    if (e.key === 'Escape') {
-        closeUserModal();
+        // 点击下拉菜单外部关闭
+        if (!e.target.closest('.dropdown')) {
+            const menus = document.querySelectorAll('.dropdown-menu');
+            menus.forEach(menu => menu.classList.remove('show'));
+        }
+
+        // 更新复选框状态
+        if (e.target.classList.contains('user-checkbox')) {
+            updateSelectAllState();
+        }
     }
-    
-    // 回车键搜索
-    if (e.key === 'Enter' && e.target.id === 'user-search-input') {
-        searchUsers();
+
+    function onDocumentKeydown(e) {
+        // ESC键关闭模态框
+        if (e.key === 'Escape') {
+            closeUserModal();
+        }
+
+        // 回车键搜索
+        if (e.key === 'Enter' && e.target.id === 'user-search-input') {
+            searchUsers();
+        }
     }
-});
+
+    if (window.app && typeof window.app.addGlobalListener === 'function') {
+        window.app.addGlobalListener(document, 'click', onDocumentClick);
+        window.app.addGlobalListener(document, 'keydown', onDocumentKeydown);
+    } else {
+        // 回退：直接注册监听器
+        document.addEventListener('click', onDocumentClick);
+        document.addEventListener('keydown', onDocumentKeydown);
+    }
+})();
 
 // 将函数暴露到全局作用域
 window.initUserInterface = initUserInterface;

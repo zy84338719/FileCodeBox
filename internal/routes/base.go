@@ -65,6 +65,44 @@ func SetupBaseRoutes(router *gin.Engine, userHandler *handlers.UserHandler, cfg 
 		ServeSetup(c, cfg)
 	})
 
+	// 永远注册 /user/system-info 接口：
+	// - 明确返回 JSON（即使在未初始化数据库时也不会返回 HTML）
+	// - 如果传入了 userHandler（数据库已初始化），则委托给 userHandler.GetSystemInfo
+	// - 否则返回一个轻量的 JSON 响应，避免返回 HTML 导致前端解析失败
+	router.GET("/user/system-info", func(c *gin.Context) {
+		// 明确设置 JSON 响应头，避免被其他中间件或 NoRoute 覆盖成 HTML
+		c.Header("Cache-Control", "no-cache")
+		c.Header("Content-Type", "application/json; charset=utf-8")
+
+		if userHandler != nil {
+			// Delegate to the real handler which also writes JSON
+			userHandler.GetSystemInfo(c)
+			// Ensure no further handlers run
+			c.Abort()
+			return
+		}
+
+		// 返回轻量的 JSON 响应（与前端兼容）
+		// 返回与后端其他字段类型一致的整数值（0/1），避免前端对布尔/整型的解析差异
+		allowReg := 0
+		if cfg.User.AllowUserRegistration == 1 {
+			allowReg = 1
+		}
+		c.JSON(200, gin.H{
+			"code": 200,
+			"data": gin.H{
+				"user_system_enabled":     1,
+				"allow_user_registration": allowReg,
+			},
+		})
+		c.Abort()
+	})
+
+	// 兼容：在未初始化数据库时，允许 POST /setup 用于提交扁平表单风格的初始化请求
+	if cfg != nil && cfg.GetDB() == nil {
+		router.POST("/setup", handlers.InitializeNoDB(cfg))
+	}
+
 	router.NoRoute(func(c *gin.Context) {
 		ServeIndex(c, cfg)
 	})
@@ -110,7 +148,12 @@ func ServeIndex(c *gin.Context, cfg *config.ConfigManager) {
 	html = strings.ReplaceAll(html, "{{keywords}}", cfg.Base.Keywords)
 	html = strings.ReplaceAll(html, "{{page_explain}}", cfg.PageExplain)
 	html = strings.ReplaceAll(html, "{{opacity}}", fmt.Sprintf("%.1f", cfg.Opacity))
-	html = strings.ReplaceAll(html, `"/assets/`, `"assets/`)
+	// 将相对路径转换为绝对路径，避免在子路径下请求相对路径（例如 /user/login -> /user/js/...）
+	html = strings.ReplaceAll(html, "src=\"js/", "src=\"/js/")
+	html = strings.ReplaceAll(html, "href=\"css/", "href=\"/css/")
+	html = strings.ReplaceAll(html, "src=\"assets/", "src=\"/assets/")
+	html = strings.ReplaceAll(html, "href=\"assets/", "href=\"/assets/")
+	html = strings.ReplaceAll(html, "src=\"components/", "src=\"/components/")
 	html = strings.ReplaceAll(html, "{{background}}", cfg.Background)
 
 	c.Header("Cache-Control", "no-cache")
@@ -133,7 +176,10 @@ func ServeSetup(c *gin.Context, cfg *config.ConfigManager) {
 	html = strings.ReplaceAll(html, "{{title}}", cfg.Base.Name+" - 系统初始化")
 	html = strings.ReplaceAll(html, "{{description}}", cfg.Base.Description)
 	html = strings.ReplaceAll(html, "{{keywords}}", cfg.Base.Keywords)
-	html = strings.ReplaceAll(html, `"/assets/`, `"assets/`)
+	// 将相对资源路径转换为绝对路径
+	html = strings.ReplaceAll(html, "src=\"js/", "src=\"/js/")
+	html = strings.ReplaceAll(html, "href=\"css/", "href=\"/css/")
+	html = strings.ReplaceAll(html, "src=\"assets/", "src=\"/assets/")
 
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Content-Type", "text/html; charset=utf-8")

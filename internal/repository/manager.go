@@ -32,3 +32,8 @@ func NewRepositoryManager(db *gorm.DB) *RepositoryManager {
 func (m *RepositoryManager) BeginTransaction() *gorm.DB {
 	return m.db.Begin()
 }
+
+// DB 返回底层 gorm.DB 引用（只读）
+func (m *RepositoryManager) DB() *gorm.DB {
+	return m.db
+}

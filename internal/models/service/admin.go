@@ -83,10 +83,10 @@ type DatabaseStats struct {
 
 // StorageStatus 存储状态信息
 type StorageStatus struct {
-	Type      string            `json:"type"`
-	Status    string            `json:"status"`
-	Available bool              `json:"available"`
-	Details   map[string]string `json:"details"`
+	Type      string                 `json:"type"`
+	Status    string                 `json:"status"`
+	Available bool                   `json:"available"`
+	Details   map[string]interface{} `json:"details"`
 }
 
 // DiskUsage 磁盘使用情况

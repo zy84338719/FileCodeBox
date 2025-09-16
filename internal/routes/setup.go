@@ -85,6 +85,29 @@ func CreateAndSetupRouter(
 	router.Use(middleware.CORS())
 	router.Use(middleware.RateLimit(manager))
 
+	// 如果 daoManager 为 nil，表示尚未初始化数据库，只注册基础和初始化相关的路由
+	if daoManager == nil {
+		// 基础路由（不传 userHandler）
+		SetupBaseRoutes(router, nil, manager)
+
+		// 提供一个不依赖数据库的初始化 POST 接口，由 handlers.InitializeNoDB 处理
+		router.POST("/setup/initialize", handlers.InitializeNoDB(manager))
+
+		// 即便数据库尚未初始化，也应当能访问用户登录/注册页面（只返回静态HTML），
+		// 以便用户能够在首次部署时完成初始化或查看登录页面。
+		router.GET("/user/login", func(c *gin.Context) {
+			ServeUserPage(c, manager, "login.html")
+		})
+		router.GET("/user/register", func(c *gin.Context) {
+			ServeUserPage(c, manager, "register.html")
+		})
+		router.GET("/user/forgot-password", func(c *gin.Context) {
+			ServeUserPage(c, manager, "forgot-password.html")
+		})
+
+		return router
+	}
+
 	// 设置路由（自动初始化所有服务和处理器）
 	SetupAllRoutesWithDependencies(router, manager, daoManager, storageManager)
 
@@ -117,6 +140,37 @@ func SetupAllRoutesWithDependencies(
 
 	// 设置所有路由
 	SetupAllRoutes(router, shareHandler, chunkHandler, adminHandler, storageHandler, userHandler, setupHandler, manager, userService)
+}
+
+// RegisterDynamicRoutes 在数据库可用后注册需要数据库的路由（不包含基础路由）
+func RegisterDynamicRoutes(
+	router *gin.Engine,
+	manager *config.ConfigManager,
+	daoManager *repository.RepositoryManager,
+	storageManager *storage.StorageManager,
+) {
+	// 创建具体的存储服务
+	storageService := storage.NewConcreteStorageService(manager)
+
+	// 初始化服务
+	userService := services.NewUserService(daoManager, manager)
+	shareServiceInstance := services.NewShareService(daoManager, manager, storageService, userService)
+	chunkService := services.NewChunkService(daoManager, manager, storageService)
+	adminService := services.NewAdminService(daoManager, manager, storageService)
+
+	// 初始化处理器
+	shareHandler := handlers.NewShareHandler(shareServiceInstance)
+	chunkHandler := handlers.NewChunkHandler(chunkService)
+	adminHandler := handlers.NewAdminHandler(adminService, manager)
+	storageHandler := handlers.NewStorageHandler(storageManager, manager.Storage, manager)
+	userHandler := handlers.NewUserHandler(userService)
+	// 设置分享、用户、分片、管理员等路由（不重复注册基础路由）
+	// 注意：SetupAllRoutes 会调用 SetupBaseRoutes，因此我们直接调用 SetupShareRoutes 等单独函数
+	SetupShareRoutes(router, shareHandler, manager, userService)
+	SetupUserRoutes(router, userHandler, manager, userService)
+	SetupChunkRoutes(router, chunkHandler, manager)
+	SetupAdminRoutes(router, adminHandler, storageHandler, manager, userService)
+	// System init routes are no longer needed after DB init
 }
 
 // SetupAllRoutes 设置所有路由（使用已初始化的处理器）

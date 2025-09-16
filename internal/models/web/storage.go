@@ -13,6 +13,10 @@ type StorageDetail struct {
 	Type      string `json:"type"`
 	Available bool   `json:"available"`
 	Error     string `json:"error,omitempty"`
+	// StoragePath 本存储的路径或标识（例如本地目录、S3 bucket）
+	StoragePath string `json:"storage_path,omitempty"`
+	// UsagePercent 使用率（0-100），如果无法获取则为 nil
+	UsagePercent *int `json:"usage_percent,omitempty"`
 }
 
 // StorageTestRequest 存储测试请求

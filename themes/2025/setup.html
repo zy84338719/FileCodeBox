@@ -242,13 +242,35 @@
                                    placeholder="系统管理令牌，用于管理后台登录" required>
                         </div>
 
-                        <div class="form-group password-field">
-                            <label for="adminPassword">管理员密码</label>
-                            <input type="password" id="adminPassword" name="admin_password" class="form-control" 
-                                   placeholder="管理员登录密码" required>
-                            <button type="button" class="password-toggle-btn" onclick="togglePassword('adminPassword')">
-                                <span id="adminPasswordToggle">👁️</span>
-                            </button>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="adminUsername">管理员用户名</label>
+                                <input type="text" id="adminUsername" name="admin_username" class="form-control" 
+                                       placeholder="管理员用户名（至少3个字符）" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="adminEmail">管理员邮箱</label>
+                                <input type="email" id="adminEmail" name="admin_email" class="form-control" 
+                                       placeholder="admin@localhost" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group password-field">
+                                <label for="adminPassword">管理员密码</label>
+                                <input type="password" id="adminPassword" name="admin_password" class="form-control" 
+                                       placeholder="管理员登录密码（至少6个字符）" required>
+                                <button type="button" class="password-toggle-btn" onclick="togglePassword('adminPassword')">
+                                    <span id="adminPasswordToggle">👁️</span>
+                                </button>
+                            </div>
+                            <div class="form-group password-field">
+                                <label for="adminPasswordConfirm">确认密码</label>
+                                <input type="password" id="adminPasswordConfirm" name="admin_password_confirm" class="form-control" 
+                                       placeholder="再次输入密码" required>
+                                <button type="button" class="password-toggle-btn" onclick="togglePassword('adminPasswordConfirm')">
+                                    <span id="adminPasswordConfirmToggle">👁️</span>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="setup-actions">
@@ -298,6 +320,12 @@
                             </div>
                         </div>
 
+                        <div id="localStorageConfig" class="form-group hidden">
+                            <label for="localStoragePath">本地存储路径</label>
+                            <input type="text" id="localStoragePath" name="storage_path" class="form-control" placeholder="例如: ./uploads 或 /var/lib/filecodebox/uploads">
+                            <div class="form-help">如果使用本地存储，请指定一个目录用于保存文件。</div>
+                        </div>
+
                         <div class="setup-actions">
                             <button type="button" class="btn-secondary" onclick="prevStep(2)">上一步</button>
                             <button type="submit" class="auth-btn" id="setupBtn">完成设置</button>
@@ -324,6 +352,25 @@
             
             // 设置表单提交处理
             document.getElementById('setupForm').addEventListener('submit', handleSetup);
+            // 存储类型变更显示本地存储配置
+            const storageType = document.getElementById('storageType');
+            storageType && storageType.addEventListener('change', function() {
+                const localCfg = document.getElementById('localStorageConfig');
+                if (this.value === 'local') {
+                    localCfg.classList.remove('hidden');
+                } else {
+                    localCfg.classList.add('hidden');
+                }
+            });
+            // 页面初次加载时，根据当前选择的 storageType 设置本地存储配置的可见性（修复未切换时不显示的问题）
+            if (storageType) {
+                const localCfg = document.getElementById('localStorageConfig');
+                if (storageType.value === 'local') {
+                    localCfg.classList.remove('hidden');
+                } else {
+                    localCfg.classList.add('hidden');
+                }
+            }
         }
 
         function setupEventListeners() {
@@ -496,6 +543,26 @@
             try {
                 const formData = new FormData(e.target);
                 const setupData = Object.fromEntries(formData.entries());
+
+                // 密码确认校验
+                if (setupData.admin_password && setupData.admin_password_confirm) {
+                    if (setupData.admin_password !== setupData.admin_password_confirm) {
+                        showAlert('两次输入的管理员密码不一致', 'error');
+                        return;
+                    }
+                    if (setupData.admin_password.length < 6) {
+                        showAlert('管理员密码长度至少6个字符', 'error');
+                        return;
+                    }
+                }
+
+                // 如果使用本地存储，确保 storage_path 字段存在
+                if (setupData.storage_type === 'local') {
+                    if (!setupData.storage_path || setupData.storage_path.trim() === '') {
+                        showAlert('请选择本地存储路径', 'error');
+                        return;
+                    }
+                }
                 
                 const response = await fetch('/setup', {
                     method: 'POST',

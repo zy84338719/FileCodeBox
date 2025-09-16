@@ -74,36 +74,46 @@ function displayStorageInfo(data) {
 function updateCurrentStorageDisplay(data) {
     const currentStorageContainer = document.getElementById('current-storage-display');
     if (!currentStorageContainer) return;
-    
-    const currentType = data.current;
+    const currentType = data && data.current ? data.current : null;
+    const storageDetails = data && data.storage_details ? data.storage_details : {};
+    const detail = currentType ? (storageDetails[currentType] || {}) : {};
+
     const typeNames = {
         'local': '本地存储',
         'webdav': 'WebDAV存储',
         'nfs': 'NFS网络存储',
         's3': 'S3对象存储'
     };
-    
+
+    const available = Boolean(detail.available);
+    const usage = detail.usage_percent !== undefined ? detail.usage_percent : null;
+    const storagePath = detail.storage_path || detail.path || '';
+
     const html = `
         <div class="current-storage-card">
             <div class="current-storage-header">
                 <h4><i class="fas fa-hdd"></i> 当前存储</h4>
                 <div class="current-storage-status">
-                    <span class="storage-type-badge">${typeNames[currentType] || currentType}</span>
-                    <span class="storage-status-badge status-${data.storage_details[currentType]?.available ? 'success' : 'error'}">
-                        <i class="fas fa-${data.storage_details[currentType]?.available ? 'check-circle' : 'exclamation-circle'}"></i>
-                        ${data.storage_details[currentType]?.available ? '正常' : '异常'}
+                    <span class="storage-type-badge">${typeNames[currentType] || (currentType || '未配置')}</span>
+                    <span class="storage-status-badge ${available ? 'status-success' : 'status-error'}">
+                        <i class="fas fa-${available ? 'check-circle' : 'exclamation-circle'}"></i>
+                        ${available ? '正常' : '异常'}
                     </span>
                 </div>
             </div>
-            ${!data.storage_details[currentType]?.available ? `
-                <div class="storage-error">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>${data.storage_details[currentType]?.error || '存储连接异常'}</span>
-                </div>
-            ` : ''}
+            <div class="current-storage-body">
+                <div class="storage-path">存储路径: <strong>${storagePath || '未配置'}</strong></div>
+                ${usage !== null ? `<div class="storage-usage">使用率: <strong>${usage}%</strong></div>` : ''}
+                ${!available && (detail.error || '') ? `
+                    <div class="storage-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>${detail.error || '存储连接异常'}</span>
+                    </div>
+                ` : ''}
+            </div>
         </div>
     `;
-    
+
     currentStorageContainer.innerHTML = html;
 }
 
@@ -111,41 +121,42 @@ function updateCurrentStorageDisplay(data) {
  * 更新存储卡片
  */
 function updateStorageCards(data) {
-    const currentType = data.current;
-    const storageDetails = data.storage_details;
-    
+    const currentType = data && data.current ? data.current : null;
+    const storageDetails = data && data.storage_details ? data.storage_details : {};
+
     // 更新每个存储卡片的状态
     Object.keys(storageDetails).forEach(type => {
         const card = document.getElementById(`${type}-storage-card`);
         if (!card) return;
-        
-        const detail = storageDetails[type];
-        
+
+        const detail = storageDetails[type] || {};
+
         // 移除所有状态类
         card.classList.remove('current-storage', 'storage-available', 'storage-unavailable');
-        
+
         // 添加当前状态类
         if (type === currentType) {
             card.classList.add('current-storage');
         }
-        
+
         if (detail.available) {
             card.classList.add('storage-available');
         } else {
             card.classList.add('storage-unavailable');
         }
-        
+
         // 更新状态徽章
         const statusBadge = card.querySelector('.storage-status-badge');
         if (statusBadge) {
-            statusBadge.className = `storage-status-badge status-${detail.available ? 'success' : 'error'}`;
+            const available = Boolean(detail.available);
+            statusBadge.className = `storage-status-badge ${available ? 'status-success' : 'status-error'}`;
             statusBadge.innerHTML = `
-                <i class="fas fa-${detail.available ? 'check-circle' : 'exclamation-circle'}"></i>
-                ${detail.available ? '可用' : '不可用'}
+                <i class="fas fa-${available ? 'check-circle' : 'exclamation-circle'}"></i>
+                ${available ? '可用' : '不可用'}
             `;
         }
-        
-        // 更新错误信息
+
+        // 更新错误信息与显示路径/usage
         const errorDisplay = card.querySelector('.storage-error-display');
         if (errorDisplay) {
             if (!detail.available && detail.error) {
@@ -155,6 +166,18 @@ function updateStorageCards(data) {
                 errorDisplay.style.display = 'none';
             }
         }
+
+        // 在卡片底部显示路径和使用率（防御性）
+        let metaEl = card.querySelector('.storage-meta');
+        if (!metaEl) {
+            metaEl = document.createElement('div');
+            metaEl.className = 'storage-meta';
+            card.appendChild(metaEl);
+        }
+
+        const pathText = detail.storage_path || detail.path || '未配置';
+        const usageText = detail.usage_percent !== undefined ? `${detail.usage_percent}% 已用` : '';
+        metaEl.innerHTML = `<div class="meta-path">路径: <strong>${pathText}</strong></div>${usageText ? `<div class="meta-usage">${usageText}</div>` : ''}`;
     });
 }
 

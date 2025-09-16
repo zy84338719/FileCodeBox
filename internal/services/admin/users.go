@@ -149,3 +149,46 @@ func (s *Service) ToggleUserStatus(id uint) error {
 func (s *Service) GetUserByID(id uint) (*models.User, error) {
 	return s.GetUser(id)
 }
+
+// BatchUpdateUserStatus 批量更新用户状态：enable=true 表示启用(active)，false 表示禁用(inactive)
+func (s *Service) BatchUpdateUserStatus(userIDs []uint, enable bool) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	status := "inactive"
+	if enable {
+		status = "active"
+	}
+
+	tx := s.repositoryManager.BeginTransaction()
+	if tx == nil {
+		return errors.New("无法开始数据库事务")
+	}
+
+	if err := tx.Model(&models.User{}).Where("id IN ?", userIDs).Update("status", status).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
+// BatchDeleteUsers 批量删除用户
+func (s *Service) BatchDeleteUsers(userIDs []uint) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	tx := s.repositoryManager.BeginTransaction()
+	if tx == nil {
+		return errors.New("无法开始数据库事务")
+	}
+
+	if err := tx.Where("id IN ?", userIDs).Delete(&models.User{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}

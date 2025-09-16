@@ -23,31 +23,7 @@
     <!-- 图标库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- 强制桌面端布局 -->
-    <style>
-        /* 强制桌面端布局 */
-        @media screen {
-            .container {
-                max-width: none !important;
-                width: 95vw !important;
-                margin: 0 auto !important;
-            }
-            
-            .stats-grid {
-                display: grid !important;
-                grid-template-columns: repeat(4, 1fr) !important;
-                gap: 20px !important;
-            }
-            
-            .mobile-menu-toggle {
-                display: none !important;
-            }
-            
-            body {
-                min-width: 1200px !important;
-            }
-        }
-    </style>
+    <!-- 管理后台专用桌面样式已移动到 `css/users.css`，请编辑该文件进行样式调整 -->
 </head>
 <body>
     <!-- 移动端菜单按钮 -->
@@ -129,7 +105,7 @@
                                     <div class="stat-label">总文件数</div>
                                     <div class="stat-trend">
                                         <i class="fas fa-arrow-up"></i>
-                                        <span id="files-trend">+12%</span>
+                                        <span id="files-trend">—</span>
                                     </div>
                                 </div>
                             </div>
@@ -142,7 +118,7 @@
                                     <div class="stat-label">今日上传</div>
                                     <div class="stat-trend">
                                         <i class="fas fa-arrow-up"></i>
-                                        <span id="uploads-trend">+8%</span>
+                                        <span id="uploads-trend">—</span>
                                     </div>
                                 </div>
                             </div>
@@ -155,7 +131,7 @@
                                     <div class="stat-label">活跃用户</div>
                                     <div class="stat-trend">
                                         <i class="fas fa-arrow-up"></i>
-                                        <span id="users-trend">+5%</span>
+                                        <span id="users-trend">—</span>
                                     </div>
                                 </div>
                             </div>
@@ -168,7 +144,7 @@
                                     <div class="stat-label">总存储大小</div>
                                     <div class="stat-trend">
                                         <i class="fas fa-arrow-up"></i>
-                                        <span id="storage-trend">+15%</span>
+                                        <span id="storage-trend">—</span>
                                     </div>
                                 </div>
                             </div>

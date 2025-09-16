@@ -22,19 +22,17 @@ package main
 // @securityDefinitions.basic BasicAuth
 
 import (
-	"flag"
-	"fmt"
+	"context"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/zy84338719/filecodebox/internal/cli"
 	"github.com/zy84338719/filecodebox/internal/config"
-	"github.com/zy84338719/filecodebox/internal/database"
 	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/mcp"
-	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/repository"
 	"github.com/zy84338719/filecodebox/internal/routes"
 	"github.com/zy84338719/filecodebox/internal/services"
@@ -48,104 +46,109 @@ import (
 )
 
 func main() {
-	// 解析命令行参数
-	var showVersion = flag.Bool("version", false, "show version information")
-	flag.Parse()
-
-	if *showVersion {
-		buildInfo := models.GetBuildInfo()
-		fmt.Printf("FileCodeBox %s\n", buildInfo.Version)
-		fmt.Printf("Commit: %s\n", buildInfo.GitCommit)
-		fmt.Printf("Built: %s\n", buildInfo.BuildTime)
-		fmt.Printf("Go Version: %s\n", runtime.Version())
+	// 如果有子命令参数，切换到 CLI 模式（使用 Cobra）
+	if len(os.Args) > 1 {
+		// delay import of CLI to avoid cycles
+		cli.Execute()
 		return
 	}
 
 	// 初始化日志
 	logrus.SetLevel(logrus.InfoLevel)
-	logrus.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp: true,
-	})
+	logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
 
 	logrus.Info("正在初始化应用...")
 
-	// 初始化新的配置管理器
+	// 使用上下文管理生命周期
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// 初始化配置管理器
 	manager := config.InitManager()
 
-	// 初始化数据库 - 使用manager而不是cfg
-	db, err := database.InitWithManager(manager)
-	if err != nil {
-		logrus.Fatal("初始化数据库失败:", err)
-	}
+	// 延迟数据库初始化：不在启动时创建 DB，让用户通过 /setup/initialize 触发
 
-	// 自动迁移
-	err = db.AutoMigrate(&models.FileCode{},
-		&models.UploadChunk{}, &models.KeyValue{}, &models.User{}, &models.UserSession{})
-	if err != nil {
-		logrus.Fatal("数据库迁移失败:", err)
-	}
-
-	// 使用数据库初始化配置管理器
-	if err := manager.InitWithDB(db); err != nil {
-		logrus.Fatal("初始化配置管理器失败:", err)
-	}
-
-	// 初始化存储
+	// 初始化存储（不依赖数据库）
 	storageManager := storage.NewStorageManager(manager)
 
-	// 初始化 DAO 管理器
-	daoManager := repository.NewRepositoryManager(db)
-
-	// 创建具体的存储服务
-	storageService := storage.NewConcreteStorageService(manager)
-
-	// 初始化服务（为了MCP服务器）
-	userService := services.NewUserService(daoManager, manager)
-	shareService := services.NewShareService(daoManager, manager, storageService, userService)
-	adminService := services.NewAdminService(daoManager, manager, storageService)
-
-	// 初始化清理任务
-	taskManager := tasks.NewTaskManager(daoManager, storageManager, manager.Base.DataPath)
-	taskManager.Start()
-	defer taskManager.Stop()
-
-	// 初始化 MCP 管理器
-	mcpManager := mcp.NewMCPManager(manager, daoManager, storageManager, shareService, adminService, userService)
-
-	// 设置全局 MCP 管理器（供 admin handler 使用）
-	handlers.SetMCPManager(mcpManager)
-
-	// 创建并配置路由（包含Gin初始化、中间件、路由设置）
+	// 创建并启动最小 HTTP 服务器（daoManager 传 nil）
+	var daoManager *repository.RepositoryManager = nil
 	srv, err := routes.CreateAndStartServer(manager, daoManager, storageManager)
 	if err != nil {
-		logrus.Fatal("创建服务器失败:", err)
+		logrus.Fatalf("创建服务器失败: %v", err)
 	}
 
-	// 根据配置启动 MCP 服务器
-	if manager.MCP.EnableMCPServer == 1 {
-		if err := mcpManager.StartMCPServer(manager.MCP.MCPPort); err != nil {
-			logrus.Fatal("启动 MCP 服务器失败: ", err)
+	// 从 srv.Handler 获取 router（gin 引擎），用于动态注册路由
+	routerEngine := srv.Handler
+
+	// 设置 OnDatabaseInitialized 回调：当 /setup/initialize 完成数据库初始化后会调用此回调
+	handlers.OnDatabaseInitialized = func(dmgr *repository.RepositoryManager) {
+		// 这里创建 DB 相关的服务、任务与 MCP，并动态注册路由
+		logrus.Info("收到数据库初始化完成回调，开始挂载动态路由与启动后台服务")
+
+		// 创建具体的存储服务（基于 manager）
+		storageService := storage.NewConcreteStorageService(manager)
+
+		// 初始化服务
+		userService := services.NewUserService(dmgr, manager)
+		shareService := services.NewShareService(dmgr, manager, storageService, userService)
+		adminService := services.NewAdminService(dmgr, manager, storageService)
+
+		// 启动任务管理器
+		taskManager := tasks.NewTaskManager(dmgr, storageManager, manager.Base.DataPath)
+		taskManager.Start()
+		// 注意：taskManager 的停止将在主结束时处理（可以扩展保存引用以便停止）
+
+		// 初始化 MCP 管理器并根据配置启动
+		mcpManager := mcp.NewMCPManager(manager, dmgr, storageManager, shareService, adminService, userService)
+		handlers.SetMCPManager(mcpManager)
+		if manager.MCP.EnableMCPServer == 1 {
+			if err := mcpManager.StartMCPServer(manager.MCP.MCPPort); err != nil {
+				logrus.Errorf("启动 MCP 服务器失败: %v", err)
+			} else {
+				logrus.Info("MCP 服务器已启动")
+			}
 		}
-		logrus.Info("MCP 服务器已在主程序启动时自动启动")
+
+		// 将 DAO 底层 DB 注入 manager
+		if dmdb := dmgr.DB(); dmdb != nil {
+			manager.SetDB(dmdb)
+		}
+
+		// 动态注册需要数据库支持的路由
+		if ginEngine, ok := routerEngine.(*gin.Engine); ok {
+			routes.RegisterDynamicRoutes(ginEngine, manager, dmgr, storageManager)
+		} else {
+			logrus.Warn("无法获取 gin 引擎实例，动态路由未注册")
+		}
 	}
 
 	logrus.Info("应用初始化完成")
 
-	// 等待中断信号
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	// 等待中断信号，优雅退出
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	logrus.Info("正在关闭服务器...")
-
-	// 优雅关闭
-	if err := routes.GracefulShutdown(srv, 30*time.Second); err != nil {
-		logrus.Fatal("关闭服务器失败:", err)
+	select {
+	case <-ctx.Done():
+		logrus.Info("上下文已取消，开始关闭...")
+	case sig := <-sigCh:
+		logrus.Infof("收到信号 %v，开始关闭...", sig)
 	}
-	// 关闭数据库连接
-	if sqlDB, err := db.DB(); err == nil {
-		if err := sqlDB.Close(); err != nil {
-			logrus.Error("关闭数据库连接失败:", err)
+
+	// 优雅关闭 HTTP 服务器
+	if err := routes.GracefulShutdown(srv, 30*time.Second); err != nil {
+		logrus.Errorf("关闭服务器失败: %v", err)
+	}
+
+	// 关闭数据库连接（如果已初始化）
+	if dbPtr := manager.GetDB(); dbPtr != nil {
+		if sqlDB, err := dbPtr.DB(); err == nil {
+			if err := sqlDB.Close(); err != nil {
+				logrus.Errorf("关闭数据库连接失败: %v", err)
+			}
+		} else {
+			logrus.Errorf("获取数据库底层连接失败: %v", err)
 		}
 	}
 }

@@ -1,1471 +1,424 @@
-swagger: "2.0"
+basePath: /
+definitions:
+  handlers.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+      timestamp:
+        example: "2025-09-11T10:00:00Z"
+        type: string
+      uptime:
+        example: 2h30m15s
+        type: string
+      version:
+        example: 1.0.0
+        type: string
+    type: object
+  handlers.SystemConfig:
+    properties:
+      description:
+        example: 文件分享系统
+        type: string
+      enableChunk:
+        example: 1
+        type: integer
+      expireStyle:
+        example:
+        - minute
+        - hour
+        - day
+        - week
+        - month
+        - year
+        - forever
+        items:
+          type: string
+        type: array
+      name:
+        example: FileCodeBox
+        type: string
+      openUpload:
+        example: 1
+        type: integer
+      uploadSize:
+        example: 100
+        type: integer
+    type: object
+host: localhost:12345
 info:
-  title: "FileCodeBox API"
-  description: "FileCodeBox 是一个用于文件分享和代码片段管理的 Web 应用程序"
-  version: "1.0"
-  termsOfService: "http://swagger.io/terms/"
   contact:
-    name: "API Support"
-    url: "http://www.swagger.io/support"
-    email: "support@swagger.io"
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: FileCodeBox 是一个用于文件分享和代码片段管理的 Web 应用程序
   license:
-    name: "MIT"
-    url: "https://github.com/zy84338719/filecodebox/blob/main/LICENSE"
-
-host: "localhost:12345"
-basePath: "/"
-schemes:
-  - "http"
-  - "https"
-
-securityDefinitions:
-  ApiKeyAuth:
-    type: "apiKey"
-    name: "X-API-Key"
-    in: "header"
-  BearerAuth:
-    type: "apiKey"
-    name: "Authorization"
-    in: "header"
-  BasicAuth:
-    type: "basic"
-
-tags:
-  - name: "系统"
-    description: "系统相关接口"
-  - name: "分享"
-    description: "文件和文本分享接口"
-  - name: "分片上传"
-    description: "大文件分片上传接口"
-  - name: "用户"
-    description: "用户认证和管理接口"
-  - name: "管理员"
-    description: "管理员接口"
-  - name: "存储"
-    description: "存储管理接口"
-  - name: "MCP"
-    description: "Model Context Protocol 接口"
-
+    name: MIT
+    url: https://github.com/zy84338719/filecodebox/blob/main/LICENSE
+  termsOfService: http://swagger.io/terms/
+  title: FileCodeBox API
+  version: "1.0"
 paths:
-  # 系统接口
-  /health:
-    get:
-      tags: ["系统"]
-      summary: "健康检查"
-      description: "检查服务器健康状态"
-      produces:
-        - "application/json"
-      responses:
-        200:
-          description: "健康状态信息"
-          schema:
-            type: "object"
-            properties:
-              status:
-                type: "string"
-                example: "ok"
-              timestamp:
-                type: "string"
-                example: "2025-09-11T10:00:00Z"
-              version:
-                type: "string"
-                example: "1.0.0"
-              uptime:
-                type: "string"
-                example: "2h30m15s"
-
   /api/config:
     get:
-      tags: ["系统"]
-      summary: "获取系统配置"
-      description: "获取前端所需的系统配置信息"
-      produces:
-        - "application/json"
-      responses:
-        200:
-          description: "系统配置信息"
-          schema:
-            $ref: "#/definitions/SystemConfig"
-
-  # 分享接口
-  /share/text/:
-    post:
-      tags: ["分享"]
-      summary: "分享文本内容"
-      description: "分享文本内容并生成分享代码"
       consumes:
-        - "multipart/form-data"
-        - "application/json"
+      - application/json
+      description: 获取前端所需的系统配置信息
       produces:
-        - "application/json"
-      parameters:
-        - name: "text"
-          in: "formData"
-          type: "string"
-          required: true
-          description: "文本内容"
-        - name: "expire_value"
-          in: "formData"
-          type: "integer"
-          default: 1
-          description: "过期值"
-        - name: "expire_style"
-          in: "formData"
-          type: "string"
-          enum: ["minute", "hour", "day", "week", "month", "year", "forever"]
-          default: "day"
-          description: "过期样式"
-        - name: "require_auth"
-          in: "formData"
-          type: "boolean"
-          default: false
-          description: "是否需要认证"
-      security:
-        - BearerAuth: []
+      - application/json
       responses:
-        200:
-          description: "分享成功"
+        "200":
+          description: 系统配置信息
           schema:
-            $ref: "#/definitions/ShareResponse"
-        400:
-          description: "请求参数错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        401:
-          description: "认证失败"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: "服务器内部错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /share/file/:
-    post:
-      tags: ["分享"]
-      summary: "分享文件"
-      description: "上传并分享文件，生成分享代码"
-      consumes:
-        - "multipart/form-data"
-      produces:
-        - "application/json"
-      parameters:
-        - name: "file"
-          in: "formData"
-          type: "file"
-          required: true
-          description: "要分享的文件"
-        - name: "expire_value"
-          in: "formData"
-          type: "integer"
-          default: 1
-          description: "过期值"
-        - name: "expire_style"
-          in: "formData"
-          type: "string"
-          enum: ["minute", "hour", "day", "week", "month", "year", "forever"]
-          default: "day"
-          description: "过期样式"
-        - name: "require_auth"
-          in: "formData"
-          type: "boolean"
-          default: false
-          description: "是否需要认证"
-      security:
-        - BearerAuth: []
-      responses:
-        200:
-          description: "分享成功"
-          schema:
-            $ref: "#/definitions/ShareResponse"
-        400:
-          description: "请求参数错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        413:
-          description: "文件过大"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: "服务器内部错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /share/select/:
-    get:
-      tags: ["分享"]
-      summary: "获取分享信息"
-      description: "根据分享代码获取文件或文本的详细信息"
-      produces:
-        - "application/json"
-      parameters:
-        - name: "code"
-          in: "query"
-          type: "string"
-          required: true
-          description: "分享代码"
-      responses:
-        200:
-          description: "分享信息"
-          schema:
-            $ref: "#/definitions/ShareInfo"
-        400:
-          description: "请求参数错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        404:
-          description: "分享代码不存在"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        410:
-          description: "分享已过期"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-    post:
-      tags: ["分享"]
-      summary: "获取分享信息"
-      description: "根据分享代码获取文件或文本的详细信息（POST方式）"
-      consumes:
-        - "application/json"
-        - "multipart/form-data"
-      produces:
-        - "application/json"
-      parameters:
-        - name: "code"
-          in: "formData"
-          type: "string"
-          required: true
-          description: "分享代码"
-      responses:
-        200:
-          description: "分享信息"
-          schema:
-            $ref: "#/definitions/ShareInfo"
-        400:
-          description: "请求参数错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        404:
-          description: "分享代码不存在"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /share/download:
-    get:
-      tags: ["分享"]
-      summary: "下载分享文件"
-      description: "根据分享代码下载文件或获取文本内容"
-      produces:
-        - "application/octet-stream"
-        - "application/json"
-      parameters:
-        - name: "code"
-          in: "query"
-          type: "string"
-          required: true
-          description: "分享代码"
-      security:
-        - BearerAuth: []
-      responses:
-        200:
-          description: "文件下载或文本内容"
-        400:
-          description: "请求参数错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        401:
-          description: "需要认证"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        404:
-          description: "分享代码不存在"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        410:
-          description: "分享已过期"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  # 分片上传接口
-  /chunk/upload/init/:
-    post:
-      tags: ["分片上传"]
-      summary: "初始化分片上传"
-      description: "初始化文件分片上传，返回上传ID和分片信息"
-      consumes:
-        - "application/json"
-      produces:
-        - "application/json"
-      parameters:
-        - name: "request"
-          in: "body"
-          required: true
-          description: "上传初始化参数"
-          schema:
-            $ref: "#/definitions/ChunkInitRequest"
-      security:
-        - BearerAuth: []
-      responses:
-        200:
-          description: "初始化成功"
-          schema:
-            $ref: "#/definitions/ChunkInitResponse"
-        400:
-          description: "请求参数错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        413:
-          description: "文件过大"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: "服务器内部错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
+            $ref: '#/definitions/handlers.SystemConfig'
+      summary: 获取系统配置
+      tags:
+      - 系统
   /chunk/upload/chunk/{upload_id}/{chunk_index}:
     post:
-      tags: ["分片上传"]
-      summary: "上传文件分片"
-      description: "上传指定索引的文件分片"
       consumes:
-        - "multipart/form-data"
-      produces:
-        - "application/json"
+      - multipart/form-data
+      description: 上传指定索引的文件分片
       parameters:
-        - name: "upload_id"
-          in: "path"
-          type: "string"
-          required: true
-          description: "上传ID"
-        - name: "chunk_index"
-          in: "path"
-          type: "integer"
-          required: true
-          description: "分片索引"
-        - name: "chunk"
-          in: "formData"
-          type: "file"
-          required: true
-          description: "分片文件"
-      security:
-        - BearerAuth: []
+      - description: 上传ID
+        in: path
+        name: upload_id
+        required: true
+        type: string
+      - description: 分片索引
+        in: path
+        name: chunk_index
+        required: true
+        type: integer
+      - description: 分片文件
+        in: formData
+        name: chunk
+        required: true
+        type: file
+      produces:
+      - application/json
       responses:
-        200:
-          description: "上传成功"
+        "200":
+          description: 上传成功，返回分片哈希
           schema:
-            $ref: "#/definitions/ChunkUploadResponse"
-        400:
-          description: "请求参数错误"
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
           schema:
-            $ref: "#/definitions/ErrorResponse"
-        404:
-          description: "上传ID不存在"
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
           schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: "服务器内部错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
+            additionalProperties: true
+            type: object
+      summary: 上传文件分片
+      tags:
+      - 分片上传
   /chunk/upload/complete/{upload_id}:
     post:
-      tags: ["分片上传"]
-      summary: "完成分片上传"
-      description: "完成所有分片上传，合并文件并生成分享代码"
       consumes:
-        - "application/json"
-      produces:
-        - "application/json"
+      - application/json
+      description: 完成所有分片上传，合并文件并生成分享代码
       parameters:
-        - name: "upload_id"
-          in: "path"
-          type: "string"
-          required: true
-          description: "上传ID"
-        - name: "request"
-          in: "body"
-          required: true
-          description: "完成上传参数"
-          schema:
-            $ref: "#/definitions/ChunkCompleteRequest"
-      security:
-        - BearerAuth: []
-      responses:
-        200:
-          description: "上传完成"
-          schema:
-            $ref: "#/definitions/ShareResponse"
-        400:
-          description: "请求参数错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        404:
-          description: "上传ID不存在"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: "服务器内部错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /chunk/upload/status/{upload_id}:
-    get:
-      tags: ["分片上传"]
-      summary: "获取上传状态"
-      description: "获取分片上传的进度和状态"
+      - description: 上传ID
+        in: path
+        name: upload_id
+        required: true
+        type: string
+      - description: 完成上传参数
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
       produces:
-        - "application/json"
-      parameters:
-        - name: "upload_id"
-          in: "path"
-          type: "string"
-          required: true
-          description: "上传ID"
-      security:
-        - BearerAuth: []
+      - application/json
       responses:
-        200:
-          description: "上传状态"
+        "200":
+          description: 上传完成，返回分享代码
           schema:
-            $ref: "#/definitions/ChunkStatusResponse"
-        404:
-          description: "上传ID不存在"
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
           schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /chunk/upload/cancel/{upload_id}:
-    delete:
-      tags: ["分片上传"]
-      summary: "取消分片上传"
-      description: "取消分片上传并清理相关文件"
-      produces:
-        - "application/json"
-      parameters:
-        - name: "upload_id"
-          in: "path"
-          type: "string"
-          required: true
-          description: "上传ID"
-      security:
-        - BearerAuth: []
-      responses:
-        200:
-          description: "取消成功"
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
           schema:
-            $ref: "#/definitions/SuccessResponse"
-        404:
-          description: "上传ID不存在"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: "服务器内部错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  # 用户接口
-  /user/register:
+            additionalProperties: true
+            type: object
+      summary: 完成分片上传
+      tags:
+      - 分片上传
+  /chunk/upload/init/:
     post:
-      tags: ["用户"]
-      summary: "用户注册"
-      description: "注册新用户账号"
       consumes:
-        - "application/json"
-      produces:
-        - "application/json"
+      - application/json
+      description: 初始化文件分片上传，返回上传ID和分片信息
       parameters:
-        - name: "request"
-          in: "body"
-          required: true
-          description: "注册信息"
-          schema:
-            $ref: "#/definitions/RegisterRequest"
+      - description: 上传初始化参数
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
       responses:
-        200:
-          description: "注册成功"
+        "200":
+          description: 初始化成功，返回上传ID和分片信息
           schema:
-            $ref: "#/definitions/UserResponse"
-        400:
-          description: "请求参数错误"
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
           schema:
-            $ref: "#/definitions/ErrorResponse"
-        409:
-          description: "用户已存在"
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
           schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: "服务器内部错误"
+            additionalProperties: true
+            type: object
+      summary: 初始化分片上传
+      tags:
+      - 分片上传
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: 检查服务器健康状态和构建信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 健康状态信息和构建信息
           schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /user/login:
+            $ref: '#/definitions/handlers.HealthResponse'
+      summary: 健康检查
+      tags:
+      - 系统
+  /share/download:
+    get:
+      consumes:
+      - application/json
+      description: 根据分享代码下载文件或获取文本内容
+      parameters:
+      - description: 分享代码
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      - application/json
+      responses:
+        "200":
+          description: 文本内容
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 分享代码不存在
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 下载分享文件
+      tags:
+      - 分享
+  /share/file/:
     post:
-      tags: ["用户"]
-      summary: "用户登录"
-      description: "用户登录认证"
       consumes:
-        - "application/json"
-      produces:
-        - "application/json"
+      - multipart/form-data
+      description: 上传并分享文件，生成分享代码
       parameters:
-        - name: "request"
-          in: "body"
-          required: true
-          description: "登录信息"
-          schema:
-            $ref: "#/definitions/LoginRequest"
+      - description: 要分享的文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      - default: 1
+        description: 过期值
+        in: formData
+        name: expire_value
+        type: integer
+      - default: day
+        description: 过期样式
+        enum:
+        - minute
+        - hour
+        - day
+        - week
+        - month
+        - year
+        - forever
+        in: formData
+        name: expire_style
+        type: string
+      - default: false
+        description: 是否需要认证
+        in: formData
+        name: require_auth
+        type: boolean
+      produces:
+      - application/json
       responses:
-        200:
-          description: "登录成功"
+        "200":
+          description: 分享成功，返回分享代码和文件信息
           schema:
-            $ref: "#/definitions/LoginResponse"
-        400:
-          description: "请求参数错误"
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
           schema:
-            $ref: "#/definitions/ErrorResponse"
-        401:
-          description: "用户名或密码错误"
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
           schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: "服务器内部错误"
+            additionalProperties: true
+            type: object
+      summary: 分享文件
+      tags:
+      - 分享
+  /share/select/:
+    get:
+      consumes:
+      - application/json
+      description: 根据分享代码获取文件或文本的详细信息
+      parameters:
+      - description: 分享代码(GET方式)
+        in: query
+        name: code
+        type: string
+      - description: 分享代码(POST方式)
+        in: formData
+        name: code
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 文件信息
           schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /user/logout:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 分享代码不存在
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取分享文件信息
+      tags:
+      - 分享
     post:
-      tags: ["用户"]
-      summary: "用户退出"
-      description: "用户退出登录"
-      produces:
-        - "application/json"
-      security:
-        - BearerAuth: []
-      responses:
-        200:
-          description: "退出成功"
-          schema:
-            $ref: "#/definitions/SuccessResponse"
-        401:
-          description: "未认证"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /user/profile:
-    get:
-      tags: ["用户"]
-      summary: "获取用户信息"
-      description: "获取当前用户的详细信息"
-      produces:
-        - "application/json"
-      security:
-        - BearerAuth: []
-      responses:
-        200:
-          description: "用户信息"
-          schema:
-            $ref: "#/definitions/UserResponse"
-        401:
-          description: "未认证"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-    put:
-      tags: ["用户"]
-      summary: "更新用户信息"
-      description: "更新当前用户的信息"
       consumes:
-        - "application/json"
-      produces:
-        - "application/json"
+      - application/json
+      description: 根据分享代码获取文件或文本的详细信息
       parameters:
-        - name: "request"
-          in: "body"
-          required: true
-          description: "用户信息"
-          schema:
-            $ref: "#/definitions/UpdateUserRequest"
-      security:
-        - BearerAuth: []
-      responses:
-        200:
-          description: "更新成功"
-          schema:
-            $ref: "#/definitions/UserResponse"
-        400:
-          description: "请求参数错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        401:
-          description: "未认证"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /user/files:
-    get:
-      tags: ["用户"]
-      summary: "获取用户文件列表"
-      description: "获取当前用户上传的文件列表"
+      - description: 分享代码(GET方式)
+        in: query
+        name: code
+        type: string
+      - description: 分享代码(POST方式)
+        in: formData
+        name: code
+        type: string
       produces:
-        - "application/json"
-      parameters:
-        - name: "page"
-          in: "query"
-          type: "integer"
-          default: 1
-          description: "页码"
-        - name: "limit"
-          in: "query"
-          type: "integer"
-          default: 20
-          description: "每页数量"
-      security:
-        - BearerAuth: []
+      - application/json
       responses:
-        200:
-          description: "文件列表"
+        "200":
+          description: 文件信息
           schema:
-            $ref: "#/definitions/FileListResponse"
-        401:
-          description: "未认证"
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
           schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  # 管理员接口
-  /admin/stats:
-    get:
-      tags: ["管理员"]
-      summary: "获取系统统计"
-      description: "获取系统统计信息"
-      produces:
-        - "application/json"
-      security:
-        - ApiKeyAuth: []
-      responses:
-        200:
-          description: "统计信息"
+            additionalProperties: true
+            type: object
+        "404":
+          description: 分享代码不存在
           schema:
-            $ref: "#/definitions/AdminStatsResponse"
-        401:
-          description: "未认证"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        403:
-          description: "权限不足"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /admin/files:
-    get:
-      tags: ["管理员"]
-      summary: "获取所有文件列表"
-      description: "获取系统中所有文件的列表"
-      produces:
-        - "application/json"
-      parameters:
-        - name: "page"
-          in: "query"
-          type: "integer"
-          default: 1
-          description: "页码"
-        - name: "limit"
-          in: "query"
-          type: "integer"
-          default: 20
-          description: "每页数量"
-        - name: "search"
-          in: "query"
-          type: "string"
-          description: "搜索关键词"
-        - name: "sort"
-          in: "query"
-          type: "string"
-          enum: ["created_at", "size", "used_count"]
-          default: "created_at"
-          description: "排序字段"
-        - name: "order"
-          in: "query"
-          type: "string"
-          enum: ["asc", "desc"]
-          default: "desc"
-          description: "排序方式"
-      security:
-        - ApiKeyAuth: []
-      responses:
-        200:
-          description: "文件列表"
-          schema:
-            $ref: "#/definitions/AdminFileListResponse"
-        401:
-          description: "未认证"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        403:
-          description: "权限不足"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /admin/files/{id}:
-    delete:
-      tags: ["管理员"]
-      summary: "删除文件"
-      description: "删除指定的文件"
-      produces:
-        - "application/json"
-      parameters:
-        - name: "id"
-          in: "path"
-          type: "integer"
-          required: true
-          description: "文件ID"
-      security:
-        - ApiKeyAuth: []
-      responses:
-        200:
-          description: "删除成功"
-          schema:
-            $ref: "#/definitions/SuccessResponse"
-        401:
-          description: "未认证"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        403:
-          description: "权限不足"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        404:
-          description: "文件不存在"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /admin/config:
-    get:
-      tags: ["管理员"]
-      summary: "获取系统配置"
-      description: "获取完整的系统配置"
-      produces:
-        - "application/json"
-      security:
-        - ApiKeyAuth: []
-      responses:
-        200:
-          description: "系统配置"
-          schema:
-            $ref: "#/definitions/AdminConfigResponse"
-        401:
-          description: "未认证"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        403:
-          description: "权限不足"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-    put:
-      tags: ["管理员"]
-      summary: "更新系统配置"
-      description: "更新系统配置"
-      consumes:
-        - "application/json"
-      produces:
-        - "application/json"
-      parameters:
-        - name: "config"
-          in: "body"
-          required: true
-          description: "配置信息"
-          schema:
-            $ref: "#/definitions/AdminConfigRequest"
-      security:
-        - ApiKeyAuth: []
-      responses:
-        200:
-          description: "更新成功"
-          schema:
-            $ref: "#/definitions/SuccessResponse"
-        400:
-          description: "请求参数错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        401:
-          description: "未认证"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        403:
-          description: "权限不足"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  # 存储管理接口
-  /admin/storage/test:
+            additionalProperties: true
+            type: object
+      summary: 获取分享文件信息
+      tags:
+      - 分享
+  /share/text/:
     post:
-      tags: ["存储"]
-      summary: "测试存储连接"
-      description: "测试指定存储配置的连接"
       consumes:
-        - "application/json"
-      produces:
-        - "application/json"
+      - multipart/form-data
+      description: 分享文本内容并生成分享代码
       parameters:
-        - name: "config"
-          in: "body"
-          required: true
-          description: "存储配置"
-          schema:
-            $ref: "#/definitions/StorageTestRequest"
-      security:
-        - ApiKeyAuth: []
-      responses:
-        200:
-          description: "测试成功"
-          schema:
-            $ref: "#/definitions/StorageTestResponse"
-        400:
-          description: "请求参数错误"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        401:
-          description: "未认证"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        403:
-          description: "权限不足"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-  /admin/storage/switch:
-    post:
-      tags: ["存储"]
-      summary: "切换存储方式"
-      description: "切换到指定的存储方式"
-      consumes:
-        - "application/json"
+      - description: 文本内容
+        in: formData
+        name: text
+        required: true
+        type: string
+      - default: 1
+        description: 过期值
+        in: formData
+        name: expire_value
+        type: integer
+      - default: day
+        description: 过期样式
+        enum:
+        - minute
+        - hour
+        - day
+        - week
+        - month
+        - year
+        - forever
+        in: formData
+        name: expire_style
+        type: string
+      - default: false
+        description: 是否需要认证
+        in: formData
+        name: require_auth
+        type: boolean
       produces:
-        - "application/json"
-      parameters:
-        - name: "request"
-          in: "body"
-          required: true
-          description: "存储切换请求"
-          schema:
-            $ref: "#/definitions/StorageSwitchRequest"
-      security:
-        - ApiKeyAuth: []
+      - application/json
       responses:
-        200:
-          description: "切换成功"
+        "200":
+          description: 分享成功，返回分享代码
           schema:
-            $ref: "#/definitions/SuccessResponse"
-        400:
-          description: "请求参数错误"
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
           schema:
-            $ref: "#/definitions/ErrorResponse"
-        401:
-          description: "未认证"
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
           schema:
-            $ref: "#/definitions/ErrorResponse"
-        403:
-          description: "权限不足"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-
-definitions:
-  # 通用响应
-  SuccessResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        type: "object"
-
-  ErrorResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 400
-      message:
-        type: "string"
-        example: "error message"
-      error:
-        type: "string"
-        example: "detailed error"
-
-  # 系统配置
-  SystemConfig:
-    type: "object"
-    properties:
-      name:
-        type: "string"
-        description: "站点名称"
-      description:
-        type: "string"
-        description: "站点描述"
-      uploadSize:
-        type: "integer"
-        description: "最大上传大小(MB)"
-      enableChunk:
-        type: "integer"
-        description: "是否启用分片上传"
-      openUpload:
-        type: "boolean"
-        description: "是否开放上传"
-      expireStyle:
-        type: "array"
-        items:
-          type: "string"
-        description: "过期时间选项"
-
-  # 分享相关
-  ShareResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        type: "object"
-        properties:
-          code:
-            type: "string"
-            description: "分享代码"
-          download_url:
-            type: "string"
-            description: "下载URL"
-          share_url:
-            type: "string"
-            description: "分享URL"
-          expired_at:
-            type: "string"
-            format: "date-time"
-            description: "过期时间"
-
-  ShareInfo:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        type: "object"
-        properties:
-          code:
-            type: "string"
-            description: "分享代码"
-          type:
-            type: "string"
-            enum: ["text", "file"]
-            description: "分享类型"
-          filename:
-            type: "string"
-            description: "文件名（文件类型时）"
-          size:
-            type: "integer"
-            description: "文件大小（文件类型时）"
-          text:
-            type: "string"
-            description: "文本内容（文本类型时）"
-          expired_at:
-            type: "string"
-            format: "date-time"
-            description: "过期时间"
-          used_count:
-            type: "integer"
-            description: "已使用次数"
-          expired_count:
-            type: "integer"
-            description: "最大使用次数"
-          require_auth:
-            type: "boolean"
-            description: "是否需要认证"
-
-  # 分片上传相关
-  ChunkInitRequest:
-    type: "object"
-    required: ["filename", "filesize", "chunk_size"]
-    properties:
-      filename:
-        type: "string"
-        description: "文件名"
-      filesize:
-        type: "integer"
-        description: "文件总大小"
-      chunk_size:
-        type: "integer"
-        description: "分片大小"
-      file_hash:
-        type: "string"
-        description: "文件哈希（可选，用于秒传）"
-      expire_value:
-        type: "integer"
-        default: 1
-        description: "过期值"
-      expire_style:
-        type: "string"
-        enum: ["minute", "hour", "day", "week", "month", "year", "forever"]
-        default: "day"
-        description: "过期样式"
-      require_auth:
-        type: "boolean"
-        default: false
-        description: "是否需要认证"
-
-  ChunkInitResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        type: "object"
-        properties:
-          upload_id:
-            type: "string"
-            description: "上传ID"
-          total_chunks:
-            type: "integer"
-            description: "总分片数"
-          chunk_size:
-            type: "integer"
-            description: "分片大小"
-          uploaded_chunks:
-            type: "array"
-            items:
-              type: "integer"
-            description: "已上传的分片索引"
-          existing_file:
-            type: "boolean"
-            description: "文件是否已存在（秒传）"
-
-  ChunkUploadResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        type: "object"
-        properties:
-          chunk_index:
-            type: "integer"
-            description: "分片索引"
-          chunk_hash:
-            type: "string"
-            description: "分片哈希"
-          progress:
-            type: "number"
-            description: "上传进度(0-100)"
-
-  ChunkCompleteRequest:
-    type: "object"
-    required: ["filename"]
-    properties:
-      filename:
-        type: "string"
-        description: "最终文件名"
-      expire_value:
-        type: "integer"
-        default: 1
-        description: "过期值"
-      expire_style:
-        type: "string"
-        enum: ["minute", "hour", "day", "week", "month", "year", "forever"]
-        default: "day"
-        description: "过期样式"
-      require_auth:
-        type: "boolean"
-        default: false
-        description: "是否需要认证"
-
-  ChunkStatusResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        type: "object"
-        properties:
-          upload_id:
-            type: "string"
-            description: "上传ID"
-          progress:
-            type: "number"
-            description: "上传进度(0-100)"
-          total_chunks:
-            type: "integer"
-            description: "总分片数"
-          uploaded_chunks:
-            type: "integer"
-            description: "已上传分片数"
-          status:
-            type: "string"
-            enum: ["pending", "uploading", "completed", "failed"]
-            description: "上传状态"
-
-  # 用户相关
-  RegisterRequest:
-    type: "object"
-    required: ["username", "email", "password"]
-    properties:
-      username:
-        type: "string"
-        minLength: 3
-        maxLength: 50
-        description: "用户名"
-      email:
-        type: "string"
-        format: "email"
-        description: "邮箱地址"
-      password:
-        type: "string"
-        minLength: 6
-        description: "密码"
-      nickname:
-        type: "string"
-        maxLength: 50
-        description: "昵称"
-
-  LoginRequest:
-    type: "object"
-    required: ["username", "password"]
-    properties:
-      username:
-        type: "string"
-        description: "用户名或邮箱"
-      password:
-        type: "string"
-        description: "密码"
-
-  LoginResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        type: "object"
-        properties:
-          token:
-            type: "string"
-            description: "认证令牌"
-          user:
-            $ref: "#/definitions/User"
-
-  UserResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        $ref: "#/definitions/User"
-
-  User:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        description: "用户ID"
-      username:
-        type: "string"
-        description: "用户名"
-      email:
-        type: "string"
-        description: "邮箱地址"
-      nickname:
-        type: "string"
-        description: "昵称"
-      avatar:
-        type: "string"
-        description: "头像URL"
-      role:
-        type: "string"
-        enum: ["admin", "user"]
-        description: "用户角色"
-      status:
-        type: "string"
-        enum: ["active", "inactive", "banned"]
-        description: "用户状态"
-      total_uploads:
-        type: "integer"
-        description: "总上传次数"
-      total_downloads:
-        type: "integer"
-        description: "总下载次数"
-      total_storage:
-        type: "integer"
-        description: "总存储大小"
-      created_at:
-        type: "string"
-        format: "date-time"
-        description: "创建时间"
-
-  UpdateUserRequest:
-    type: "object"
-    properties:
-      nickname:
-        type: "string"
-        maxLength: 50
-        description: "昵称"
-      avatar:
-        type: "string"
-        description: "头像URL"
-      email:
-        type: "string"
-        format: "email"
-        description: "邮箱地址"
-
-  FileListResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        type: "object"
-        properties:
-          files:
-            type: "array"
-            items:
-              $ref: "#/definitions/FileItem"
-          pagination:
-            $ref: "#/definitions/Pagination"
-
-  FileItem:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        description: "文件ID"
-      code:
-        type: "string"
-        description: "分享代码"
-      filename:
-        type: "string"
-        description: "文件名"
-      size:
-        type: "integer"
-        description: "文件大小"
-      type:
-        type: "string"
-        enum: ["text", "file"]
-        description: "类型"
-      used_count:
-        type: "integer"
-        description: "使用次数"
-      expired_count:
-        type: "integer"
-        description: "过期次数"
-      expired_at:
-        type: "string"
-        format: "date-time"
-        description: "过期时间"
-      created_at:
-        type: "string"
-        format: "date-time"
-        description: "创建时间"
-
-  # 管理员相关
-  AdminStatsResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        type: "object"
-        properties:
-          total_files:
-            type: "integer"
-            description: "总文件数"
-          total_users:
-            type: "integer"
-            description: "总用户数"
-          total_storage:
-            type: "integer"
-            description: "总存储大小"
-          total_downloads:
-            type: "integer"
-            description: "总下载次数"
-          active_shares:
-            type: "integer"
-            description: "活跃分享数"
-          expired_shares:
-            type: "integer"
-            description: "过期分享数"
-
-  AdminFileListResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        type: "object"
-        properties:
-          files:
-            type: "array"
-            items:
-              $ref: "#/definitions/AdminFileItem"
-          pagination:
-            $ref: "#/definitions/Pagination"
-
-  AdminFileItem:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        description: "文件ID"
-      code:
-        type: "string"
-        description: "分享代码"
-      filename:
-        type: "string"
-        description: "文件名"
-      size:
-        type: "integer"
-        description: "文件大小"
-      type:
-        type: "string"
-        enum: ["text", "file"]
-        description: "类型"
-      used_count:
-        type: "integer"
-        description: "使用次数"
-      expired_count:
-        type: "integer"
-        description: "过期次数"
-      expired_at:
-        type: "string"
-        format: "date-time"
-        description: "过期时间"
-      user_id:
-        type: "integer"
-        description: "上传用户ID"
-      username:
-        type: "string"
-        description: "上传用户名"
-      owner_ip:
-        type: "string"
-        description: "上传者IP"
-      created_at:
-        type: "string"
-        format: "date-time"
-        description: "创建时间"
-
-  AdminConfigResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        type: "object"
-        description: "完整的系统配置"
-
-  AdminConfigRequest:
-    type: "object"
-    description: "系统配置更新请求"
-
-  # 存储相关
-  StorageTestRequest:
-    type: "object"
-    required: ["storage_type"]
-    properties:
-      storage_type:
-        type: "string"
-        enum: ["local", "s3", "webdav", "onedrive"]
-        description: "存储类型"
-      config:
-        type: "object"
-        description: "存储配置参数"
-
-  StorageTestResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        example: 200
-      message:
-        type: "string"
-        example: "success"
-      data:
-        type: "object"
-        properties:
-          status:
-            type: "string"
-            enum: ["success", "failed"]
-            description: "测试状态"
-          message:
-            type: "string"
-            description: "测试结果信息"
-          latency:
-            type: "integer"
-            description: "响应延迟(ms)"
-
-  StorageSwitchRequest:
-    type: "object"
-    required: ["storage_type"]
-    properties:
-      storage_type:
-        type: "string"
-        enum: ["local", "s3", "webdav", "onedrive"]
-        description: "目标存储类型"
-      migrate_data:
-        type: "boolean"
-        default: false
-        description: "是否迁移现有数据"
-
-  # 通用分页
-  Pagination:
-    type: "object"
-    properties:
-      page:
-        type: "integer"
-        description: "当前页码"
-      limit:
-        type: "integer"
-        description: "每页数量"
-      total:
-        type: "integer"
-        description: "总数量"
-      pages:
-        type: "integer"
-        description: "总页数"
+            additionalProperties: true
+            type: object
+      summary: 分享文本内容
+      tags:
+      - 分享
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: X-API-Key
+    type: apiKey
+  BasicAuth:
+    type: basic
+swagger: "2.0"
