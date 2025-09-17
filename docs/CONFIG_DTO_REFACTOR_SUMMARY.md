@@ -4,36 +4,21 @@
 
 根据用户要求："请将struct 放到models里相应位置 make(map[string]interface{}) 这个替换成结构体 依次类推 该创建对应的dto就去创建 使用 可以改变 请求返回值 记得改动对应的前端代码"
 
-本次重构将临时struct定义移至models包，并用结构化DTO替换了所有`map[string]interface{}`用法，实现了类型安全的配置管理系统。
+本次重构精简了配置更新路径，移除了原来以 DTO（数据传输对象）为中心的多层转换逻辑，采用更直接的 map 驱动更新和 YAML-first 的持久化策略：
+
+- 接收结构化或扁平化的更新请求（由 handlers 解析），服务层统一将其转换为嵌套的 `map[string]interface{}` 结构；
+- 对应的配置模块实现 `Update(map[string]interface{})` 方法，直接在内存配置上应用变更；
+- 所有配置的持久化以 `config.yaml` 为首选存储（YAML-first），在更新后通过 `PersistYAML()` 保存并通过 `ReloadConfig()` 热重载生效；
+- 为了减少重复与兼容层，原来的 DTO 定义与繁重的转换逻辑已移除，只保留清晰的模块接口与文档说明。
 
 ## 主要变更
 
 ### 1. 模型层 (Models Layer)
 
-#### 新增文件：`models/dto/config_updates.go`
-- **ConfigUpdateFields**: 主要的配置更新DTO结构
-- **FlatConfigUpdate**: 平面化配置更新DTO（向后兼容）
-- **16个专门的配置DTO**：
-  - `BaseConfigUpdate`: 基础配置
-  - `MCPConfigUpdate`: MCP服务器配置
-  - `UserConfigUpdate`: 用户系统配置
-  - `TransferConfigUpdate`: 传输配置
-  - `DatabaseConfigUpdate`: 数据库配置
-  - `StorageConfigUpdate`: 存储配置
-  - `S3ConfigUpdate`: S3存储配置
-  - `OneDriveConfigUpdate`: OneDrive存储配置
-  - `WebDAVConfigUpdate`: WebDAV存储配置
-  - `NFSConfigUpdate`: NFS存储配置
-  - `NotificationConfigUpdate`: 通知配置
-  - `EmailConfigUpdate`: 邮件配置
-  - `ThemeConfigUpdate`: 主题配置
-  - `SecurityConfigUpdate`: 安全配置
-  - `SystemConfigUpdate`: 系统配置
-  - `CacheConfigUpdate`: 缓存配置
+> 注意：原先提到的 `models/dto` 文件夹与 DTO 类型定义已被清理，本项目现以模块 `Update(map[string]interface{})` 接口与配置管理器为主进行配置变更管理。
 
 #### 更新文件：`models/models.go`
-- 添加了16个DTO类型别名，提供统一的导入接口
-- 保持向后兼容性，便于其他包引用
+- 保持模型导出与类型别名（db/service/mcp）用于兼容历史代码，删除了对 `dto` 层的依赖。
 
 ### 2. 服务层 (Service Layer)
 
