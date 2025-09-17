@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/zy84338719/filecodebox/internal/models"
-	"github.com/zy84338719/filecodebox/internal/models/dto"
 )
 
 // GenerateToken 生成管理员JWT令牌
@@ -97,8 +97,8 @@ func (s *Service) ResetUserPassword(userID uint, newPassword string) error {
 		return err
 	}
 
-	updateFields := &dto.UserUpdateFields{
-		PasswordHash: &hashedPassword,
+	updateFields := models.User{
+		PasswordHash: hashedPassword,
 	}
 	return s.repositoryManager.User.UpdateUserFields(userID, updateFields)
 }
@@ -152,8 +152,8 @@ func (s *Service) UpdateUserStatus(userID uint, isActive bool) error {
 		status = "active"
 	}
 
-	updateFields := &dto.UserUpdateFields{
-		Status: &status,
+	updateFields := models.User{
+		Status: status,
 	}
 	return s.repositoryManager.User.UpdateUserFields(userID, updateFields)
 }

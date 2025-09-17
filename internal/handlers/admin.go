@@ -677,7 +677,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 
 	// 更新用户
-	err = h.service.UpdateUser(uint(userID64), userData.Email, userData.Password, userData.Nickname, role, status)
+	err = h.service.UpdateUser(userData, role, status)
 	if err != nil {
 		common.InternalServerErrorResponse(c, "更新用户失败: "+err.Error())
 		return

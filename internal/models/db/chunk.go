@@ -8,25 +8,24 @@ import (
 
 // UploadChunk 上传分片模型
 type UploadChunk struct {
-	ID          uint      `gorm:"primarykey" json:"id"`
-	UploadID    string    `gorm:"index;size:36" json:"upload_id"`
-	ChunkIndex  int       `json:"chunk_index"`
-	ChunkHash   string    `gorm:"size:64" json:"chunk_hash"`
-	TotalChunks int       `json:"total_chunks"`
-	FileSize    int64     `json:"file_size"`
-	ChunkSize   int       `json:"chunk_size"`
-	FileName    string    `gorm:"size:255" json:"file_name"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	Completed   bool      `gorm:"default:false" json:"completed"`
-	RetryCount  int       `gorm:"default:0" json:"retry_count"`            // 重试次数
-	LastError   string    `gorm:"type:text" json:"last_error"`             // 最后错误信息
-	Status      string    `gorm:"size:20;default:'pending'" json:"status"` // pending, uploading, completed, failed
+	gorm.Model
+
+	UploadID    string `gorm:"index;size:36" json:"upload_id"`
+	ChunkIndex  int    `json:"chunk_index"`
+	ChunkHash   string `gorm:"size:64" json:"chunk_hash"`
+	TotalChunks int    `json:"total_chunks"`
+	FileSize    int64  `json:"file_size"`
+	ChunkSize   int    `json:"chunk_size"`
+	FileName    string `gorm:"size:255" json:"file_name"`
+
+	Completed  bool   `gorm:"default:false" json:"completed"`
+	RetryCount int    `gorm:"default:0" json:"retry_count"`            // 重试次数
+	LastError  string `gorm:"type:text" json:"last_error"`             // 最后错误信息
+	Status     string `gorm:"size:20;default:'pending'" json:"status"` // pending, uploading, completed, failed
 }
 
 // ChunkQuery 分片查询条件
 type ChunkQuery struct {
-	gorm.Model
 	UploadID   string `json:"upload_id"`
 	ChunkIndex *int   `json:"chunk_index"`
 	Status     string `json:"status"`

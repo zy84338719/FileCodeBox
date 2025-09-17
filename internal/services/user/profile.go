@@ -35,7 +35,7 @@ func (s *Service) UpdateProfile(userID uint, updates map[string]interface{}) err
 	}
 
 	// 准备结构化更新字段
-	profileFields := &models.UserProfileUpdateFields{}
+	profileFields := &models.User{}
 
 	// 检查邮箱是否已被其他用户使用
 	if email, ok := updates["email"]; ok {
@@ -46,17 +46,17 @@ func (s *Service) UpdateProfile(userID uint, updates map[string]interface{}) err
 				return errors.New("email already in use")
 			}
 		}
-		profileFields.Email = &emailStr
+		profileFields.Email = emailStr
 	}
 
 	if nickname, ok := updates["nickname"]; ok {
 		nicknameStr := nickname.(string)
-		profileFields.Nickname = &nicknameStr
+		profileFields.Nickname = nicknameStr
 	}
 
 	if avatar, ok := updates["avatar"]; ok {
 		avatarStr := avatar.(string)
-		profileFields.Avatar = &avatarStr
+		profileFields.Avatar = avatarStr
 	}
 
 	// 使用结构化更新

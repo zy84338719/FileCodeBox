@@ -38,19 +38,3 @@ type SessionUpdate struct {
 	ExpiresAt *time.Time `json:"expires_at"`
 	UpdatedAt *time.Time `json:"updated_at"`
 }
-
-// KeyValueQuery 键值对查询条件
-type KeyValueQuery struct {
-	gorm.Model
-	Key       string `json:"key"`
-	KeyPrefix string `json:"key_prefix"` // 前缀匹配
-	Limit     int    `json:"limit"`
-	Offset    int    `json:"offset"`
-}
-
-// KeyValueUpdate 键值对更新数据
-type KeyValueUpdate struct {
-	gorm.Model
-	Value     *string    `json:"value"`
-	UpdatedAt *time.Time `json:"updated_at"`
-}

@@ -74,23 +74,23 @@ func (dao *UserDAO) UpdateColumns(id uint, updates map[string]interface{}) error
 }
 
 // UpdateUserFields 更新用户字段（结构化方式）
-func (dao *UserDAO) UpdateUserFields(id uint, updateFields *models.UserUpdateFields) error {
-	if updateFields == nil || !updateFields.HasUpdates() {
+func (dao *UserDAO) UpdateUserFields(id uint, user models.User) error {
+
+	userMap := user.ToMap()
+	if len(userMap) == 0 {
 		return errors.New("没有需要更新的字段")
 	}
 
-	updates := updateFields.ToMap()
-	return dao.db.Model(&models.User{}).Where("id = ?", id).Updates(updates).Error
+	return dao.db.Model(&models.User{}).Where("id = ?", id).Updates(userMap).Error
 }
 
 // UpdateUserProfile 更新用户资料（用户自己更新）
-func (dao *UserDAO) UpdateUserProfile(id uint, profileFields *models.UserProfileUpdateFields) error {
-	if profileFields == nil || !profileFields.HasUpdates() {
-		return errors.New("没有需要更新的字段")
+func (dao *UserDAO) UpdateUserProfile(id uint, user *models.User) error {
+	if user == nil {
+		return errors.New("用户信息不能为空")
 	}
 
-	updates := profileFields.ToMap()
-	return dao.db.Model(&models.User{}).Where("id = ?", id).Updates(updates).Error
+	return dao.db.Model(&models.User{}).Where("id = ?", id).Updates(user.ToMap()).Error
 }
 
 // UpdateUserStats 更新用户统计信息

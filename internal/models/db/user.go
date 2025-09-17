@@ -30,7 +30,6 @@ type User struct {
 
 // UserQuery 用户查询条件
 type UserQuery struct {
-	gorm.Model
 	ID       *uint  `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -41,27 +40,55 @@ type UserQuery struct {
 	Offset   int    `json:"offset"`
 }
 
-// UserUpdate 用户更新数据
-type UserUpdate struct {
-	gorm.Model
-	Username      *string    `json:"username"`
-	Email         *string    `json:"email"`
-	PasswordHash  *string    `json:"password_hash"`
-	Nickname      *string    `json:"nickname"`
-	Avatar        *string    `json:"avatar"`
-	Role          *string    `json:"role"`
-	Status        *string    `json:"status"`
-	EmailVerified *bool      `json:"email_verified"`
-	LastLoginAt   *time.Time `json:"last_login_at"`
-	LastLoginIP   *string    `json:"last_login_ip"`
-}
-
 // UserStats 用户统计查询结果
 type UserStats struct {
-	gorm.Model
 	UserID         uint  `json:"user_id"`
 	TotalUploads   int   `json:"total_uploads"`
 	TotalDownloads int   `json:"total_downloads"`
 	TotalStorage   int64 `json:"total_storage"`
 	FileCount      int   `json:"file_count"`
+}
+
+// ToMap 将结构体转换为 map，只包含非空字段
+func (u *User) ToMap() map[string]interface{} {
+	updates := make(map[string]interface{})
+
+	if u.Email != "" {
+		updates["email"] = u.Email
+	}
+	if u.PasswordHash != "" {
+		updates["password_hash"] = u.PasswordHash
+	}
+	if u.Nickname != "" {
+		updates["nickname"] = u.Nickname
+	}
+	if u.Avatar != "" {
+		updates["avatar"] = u.Avatar
+	}
+	if u.Role != "" {
+		updates["role"] = u.Role
+	}
+	if u.Status != "" {
+		updates["status"] = u.Status
+	}
+	if !u.EmailVerified {
+		updates["email_verified"] = u.EmailVerified
+	}
+	if u.LastLoginAt != nil {
+		updates["last_login_at"] = u.LastLoginAt
+	}
+	if u.LastLoginIP != "" {
+		updates["last_login_ip"] = u.LastLoginIP
+	}
+	if u.TotalUploads != 0 {
+		updates["total_uploads"] = u.TotalUploads
+	}
+	if u.TotalDownloads != 0 {
+		updates["total_downloads"] = u.TotalDownloads
+	}
+	if u.TotalStorage != 0 {
+		updates["total_storage"] = u.TotalStorage
+	}
+
+	return updates
 }
