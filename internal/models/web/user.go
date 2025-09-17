@@ -69,3 +69,12 @@ type UserSystemInfoResponse struct {
 	AllowUserRegistration    int `json:"allow_user_registration"`
 	RequireEmailVerification int `json:"require_email_verification"`
 }
+
+type UserDataRequest struct {
+	Username string `json:"username" binding:"required"`
+	Email    string `json:"email" binding:"omitempty,email"`
+	Password string `json:"password" binding:"required"`
+	Nickname string `json:"nickname"`
+	IsAdmin  bool   `json:"is_admin"`
+	IsActive bool   `json:"is_active"`
+}

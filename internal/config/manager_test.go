@@ -35,17 +35,7 @@ func TestLoadFromYAML(t *testing.T) {
 	if cm.ThemesSelect != "themes/test" {
 		t.Fatalf("expected themes_select themes/test, got %s", cm.ThemesSelect)
 	}
-	// Ensure at least one of Base.ToMap() keys is present in yamlManagedKeys
-	found := false
-	for k := range cm.Base.ToMap() {
-		if cm.yamlManagedKeys[k] {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Fatalf("expected some base.* key to be recorded in yamlManagedKeys, got none")
-	}
+	// basic fields loaded
 }
 
 // TestEnvOverride ensures environment variables override YAML values

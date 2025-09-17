@@ -26,7 +26,7 @@ manager.SetDB(db) // 注入数据库连接（配置读取现在以 config.yaml �
 配置分为多个模块：`BaseConfig`, `DatabaseConfig`, `StorageConfig`, `UserSystemConfig`, `MCPConfig`
 
 支持环境变量优先级覆盖、数据库持久化存储、热重载机制：
-- **环境变量优先级**：PORT、ADMIN_TOKEN 等关键配置始终优先使用环境变量
+- **环境变量优先级**：PORT、DATA_PATH 等关键配置始终优先使用环境变量
 - **数据库持久化**：配置自动保存到 key_value 表，支持动态更新
 - **热重载机制**：通过 ReloadConfig() 方法实现运行时配置更新
 - **配置验证**：每个配置模块都有独立的验证方法

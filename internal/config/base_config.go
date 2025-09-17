@@ -4,7 +4,6 @@ package config
 import (
 	"fmt"
 	"net"
-	"strconv"
 	"strings"
 )
 
@@ -107,35 +106,6 @@ func (bc *BaseConfig) ToMap() map[string]string {
 		"data_path":   bc.DataPath,
 		"production":  fmt.Sprintf("%t", bc.Production),
 	}
-}
-
-// FromMap 从map加载配置
-func (bc *BaseConfig) FromMap(data map[string]string) error {
-	if val, ok := data["name"]; ok {
-		bc.Name = val
-	}
-	if val, ok := data["description"]; ok {
-		bc.Description = val
-	}
-	if val, ok := data["keywords"]; ok {
-		bc.Keywords = val
-	}
-	if val, ok := data["port"]; ok {
-		if port, err := strconv.Atoi(val); err == nil {
-			bc.Port = port
-		}
-	}
-	if val, ok := data["host"]; ok {
-		bc.Host = val
-	}
-	if val, ok := data["data_path"]; ok {
-		bc.DataPath = val
-	}
-	if val, ok := data["production"]; ok {
-		bc.Production = val == "true"
-	}
-
-	return bc.Validate()
 }
 
 // Update 更新配置

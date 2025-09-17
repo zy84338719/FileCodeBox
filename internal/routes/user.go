@@ -22,6 +22,36 @@ func SetupUserRoutes(
 		ValidateToken(string) (interface{}, error)
 	},
 ) {
+	// 注册完整的用户路由（API + 页面）
+	SetupUserAPIRoutes(router, userHandler, cfg, userService)
+
+	// 用户页面路由
+	userPageGroup := router.Group("/user")
+	{
+		userPageGroup.GET("/login", func(c *gin.Context) {
+			ServeUserPage(c, cfg, "login.html")
+		})
+		userPageGroup.GET("/register", func(c *gin.Context) {
+			ServeUserPage(c, cfg, "register.html")
+		})
+		userPageGroup.GET("/dashboard", func(c *gin.Context) {
+			ServeUserPage(c, cfg, "dashboard.html")
+		})
+		userPageGroup.GET("/forgot-password", func(c *gin.Context) {
+			ServeUserPage(c, cfg, "forgot-password.html")
+		})
+	}
+}
+
+// SetupUserAPIRoutes 仅注册用户相关的 API 路由（供动态注册时使用，避免重复注册页面路由）
+func SetupUserAPIRoutes(
+	router *gin.Engine,
+	userHandler *handlers.UserHandler,
+	cfg *config.ConfigManager,
+	userService interface {
+		ValidateToken(string) (interface{}, error)
+	},
+) {
 	// 用户系统路由
 	userGroup := router.Group("/user")
 	{
@@ -45,23 +75,6 @@ func SetupUserRoutes(
 			authGroup.GET("/check-auth", userHandler.CheckAuth)
 			authGroup.DELETE("/files/:id", userHandler.DeleteFile)
 		}
-	}
-
-	// 用户页面路由
-	userPageGroup := router.Group("/user")
-	{
-		userPageGroup.GET("/login", func(c *gin.Context) {
-			ServeUserPage(c, cfg, "login.html")
-		})
-		userPageGroup.GET("/register", func(c *gin.Context) {
-			ServeUserPage(c, cfg, "register.html")
-		})
-		userPageGroup.GET("/dashboard", func(c *gin.Context) {
-			ServeUserPage(c, cfg, "dashboard.html")
-		})
-		userPageGroup.GET("/forgot-password", func(c *gin.Context) {
-			ServeUserPage(c, cfg, "forgot-password.html")
-		})
 	}
 }
 

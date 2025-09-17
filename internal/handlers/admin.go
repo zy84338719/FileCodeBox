@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -15,7 +14,6 @@ import (
 	"github.com/zy84338719/filecodebox/internal/services"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
 )
 
 // AdminHandler 管理处理器
@@ -39,21 +37,10 @@ func (h *AdminHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// 验证密码
-	if req.Password != h.config.AdminToken {
-		common.UnauthorizedResponse(c, "密码错误")
-		return
-	}
-
-	// 生成JWT token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"is_admin": true,
-		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24小时过期
-	})
-
-	tokenString, err := token.SignedString([]byte(h.config.AdminToken))
+	// 使用 AdminService 进行管理员凭据验证并生成 token
+	tokenString, err := h.service.GenerateTokenForAdmin(req.Username, req.Password)
 	if err != nil {
-		common.InternalServerErrorResponse(c, "生成token失败")
+		common.UnauthorizedResponse(c, "认证失败: "+err.Error())
 		return
 	}
 
@@ -155,72 +142,19 @@ func (h *AdminHandler) GetConfig(c *gin.Context) {
 
 // UpdateConfig 更新配置
 func (h *AdminHandler) UpdateConfig(c *gin.Context) {
-	// 首先尝试获取原始JSON数据
-	jsonData, err := c.GetRawData()
-	if err != nil {
-		common.BadRequestResponse(c, "无法读取请求数据: "+err.Error())
-		return
-	}
 
 	// 尝试绑定到结构化配置更新DTO
 	var configUpdate models.ConfigUpdateFields
-	if err := json.Unmarshal(jsonData, &configUpdate); err == nil && configUpdate.HasUpdates() {
+	if err := c.ShouldBind(&configUpdate); err != nil {
+		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	if configUpdate.HasUpdates() {
 		// 使用结构化配置更新
-		err = h.service.UpdateConfigWithDTO(&configUpdate)
-		if err != nil {
+		if err := h.service.UpdateConfigWithDTO(&configUpdate); err != nil {
 			common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
 			return
-		}
-	} else {
-		// 尝试绑定到平面化配置更新DTO
-		var flatConfigUpdate models.FlatConfigUpdate
-		if err2 := json.Unmarshal(jsonData, &flatConfigUpdate); err2 == nil && flatConfigUpdate.HasUpdates() {
-			// 使用平面化配置更新
-			err = h.service.UpdateConfigWithFlatDTO(&flatConfigUpdate)
-			if err != nil {
-				common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
-				return
-			}
-		} else {
-			// 最后尝试绑定到结构化请求（保持兼容性）
-			var configRequest web.AdminConfigRequest
-			if err3 := json.Unmarshal(jsonData, &configRequest); err3 == nil {
-				// 检查是否有有效的结构化数据
-				hasValidStructuredData := (configRequest.Base != nil) ||
-					(configRequest.Transfer != nil) ||
-					(configRequest.User != nil) ||
-					(configRequest.NotifyTitle != nil) ||
-					(configRequest.NotifyContent != nil) ||
-					(configRequest.PageExplain != nil) ||
-					(configRequest.Opacity != nil) ||
-					(configRequest.ThemesSelect != nil)
-
-				if hasValidStructuredData {
-					// 使用结构化的配置请求
-					err = h.service.UpdateConfigFromRequest(&configRequest)
-					if err != nil {
-						common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
-						return
-					}
-				} else {
-					// 回退到原始的map处理
-					var flatConfig map[string]interface{}
-					if err4 := json.Unmarshal(jsonData, &flatConfig); err4 != nil {
-						common.BadRequestResponse(c, "配置参数错误: 无法解析请求数据")
-						return
-					}
-
-					// 使用原始map配置更新
-					err = h.service.UpdateConfig(flatConfig)
-					if err != nil {
-						common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
-						return
-					}
-				}
-			} else {
-				common.BadRequestResponse(c, "配置参数错误: 无法解析请求数据")
-				return
-			}
 		}
 	}
 
@@ -680,15 +614,7 @@ func (h *AdminHandler) GetUser(c *gin.Context) {
 
 // CreateUser 创建用户
 func (h *AdminHandler) CreateUser(c *gin.Context) {
-	var userData struct {
-		Username string `json:"username" binding:"required"`
-		Email    string `json:"email" binding:"omitempty,email"`
-		Password string `json:"password" binding:"required"`
-		Nickname string `json:"nickname"`
-		IsAdmin  bool   `json:"is_admin"`
-		IsActive bool   `json:"is_active"`
-	}
-
+	var userData web.UserDataRequest
 	if err := c.ShouldBindJSON(&userData); err != nil {
 		common.BadRequestResponse(c, "参数错误: "+err.Error())
 		return

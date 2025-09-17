@@ -945,7 +945,7 @@ async function exportUsers() {
     try {
         safeShowAlert('正在导出用户列表...', 'info');
         
-        const currentAuthToken = window.authToken || localStorage.getItem('admin_token');
+    const currentAuthToken = window.authToken || localStorage.getItem('auth_token');
         const response = await fetch('/admin/users/export', {
             headers: {
                 'Authorization': `Bearer ${currentAuthToken}`

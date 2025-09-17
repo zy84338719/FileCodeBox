@@ -1,7 +1,7 @@
 base:
   data_path: /tmp/filecodebox_test
   description: 开箱即用的文件快传系统
-  host: 0
+  host: 0.0.0.0
   name: FileCodeBox
   port: 12346
   production: false
@@ -13,11 +13,10 @@ database:
   type: sqlite
   user: ""
 mcp:
-  host: 0
+  host: 0.0.0.0
   port: 8081
 storage: {}
 ui:
-  admin_token: zhangyi
   allow_user_registration: 0
   background: ""
   chunk_size: 2097152
@@ -33,7 +32,7 @@ ui:
   max_concurrent_downloads: 10
   max_save_seconds: 0
   max_sessions_per_user: 5
-  notify_content: "欢迎使用 FileCodeBox，本程序开源于 <a href=\"https://github.com/vastsa/FileCodeBox\" target=\"_blank\">Github</a> ，欢迎Star和Fork。"
+  notify_content: "欢迎使用 FileCodeBox，本程序开源于 <a href=\"https://github.com/zy84338719/FileCodeBox\" target=\"_blank\">Github</a> ，欢迎Star和Fork。"
   notify_title: 系统通知
   opacity: 0
   open_upload: 1

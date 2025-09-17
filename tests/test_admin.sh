@@ -145,31 +145,31 @@ echo
 # 测试获取统计信息
 echo "1. 测试获取统计信息..."
 curl -s -X GET "${BASE_URL}/admin/stats" \
-  -H "Admin-Token: ${ADMIN_TOKEN}" | jq '.'
+    
 echo
 
 # 测试获取文件列表
 echo "2. 测试获取文件列表..."
 curl -s -X GET "${BASE_URL}/admin/files?page=1&page_size=10" \
-  -H "Admin-Token: ${ADMIN_TOKEN}" | jq '.'
+    -H "Authorization: Bearer ${TOKEN}" | jq '.'
 echo
 
 # 测试获取配置
 echo "3. 测试获取配置..."
 curl -s -X GET "${BASE_URL}/admin/config" \
-  -H "Admin-Token: ${ADMIN_TOKEN}" | jq '.detail.name, .detail.port, .detail.upload_size'
+    -H "Authorization: Bearer ${TOKEN}" | jq '.detail.name, .detail.port, .detail.upload_size'
 echo
 
 # 测试清理过期文件
 echo "4. 测试清理过期文件..."
 curl -s -X POST "${BASE_URL}/admin/clean" \
-  -H "Admin-Token: ${ADMIN_TOKEN}" | jq '.'
+    -H "Authorization: Bearer ${TOKEN}" | jq '.'
 echo
 
 # 测试无效token
 echo "5. 测试无效token..."
 curl -s -X GET "${BASE_URL}/admin/stats" \
-  -H "Admin-Token: invalid" | jq '.'
+    -H "Authorization: Bearer invalid" | jq '.'
 echo
 
 echo "=== 管理API测试完成 ==="

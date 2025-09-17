@@ -1,13 +1,11 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
@@ -220,161 +218,43 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 		}
 		defer atomic.StoreInt32(&initInProgress, 0)
 		var req SetupRequest
-
-		// 读取原始请求体，支持两种格式：嵌套 JSON（{database:{}, admin:{}}）和扁平表单风格 JSON（db_type, db_path, admin_token, admin_password 等）
-		data, err := c.GetRawData()
-		if err != nil {
-			common.BadRequestResponse(c, "无法读取请求体: "+err.Error())
+		if err := c.ShouldBindJSON(&req); err != nil {
+			common.BadRequestResponse(c, "请求参数错误: "+err.Error())
 			return
 		}
 
-		// 先尝试解码为嵌套结构
-		// 注意：如果前端提交的是扁平字段（如 db_type, admin_password 等），
-		// json.Unmarshal 会成功但会留下空的嵌套结构。我们在解码成功后仍需
-		// 检查是否需要回退到扁平映射解析。
-		if err := json.Unmarshal(data, &req); err != nil || (req.Database.Type == "" && req.Admin.Username == "" && req.Admin.Password == "") {
-			// 尝试扁平化映射
-			var flat map[string]interface{}
-			if err := json.Unmarshal(data, &flat); err != nil {
-				common.BadRequestResponse(c, "请求参数错误: 无法解析 JSON")
-				return
-			}
-
-			// 映射常见字段
-			if v, ok := flat["db_type"].(string); ok {
-				req.Database.Type = v
-			}
-			if v, ok := flat["db_path"].(string); ok {
-				req.Database.File = v
-			}
-			if v, ok := flat["db_file"].(string); ok && req.Database.File == "" {
-				req.Database.File = v
-			}
-			if v, ok := flat["db_host"].(string); ok {
-				req.Database.Host = v
-			}
-			if v, ok := flat["db_user"].(string); ok {
-				req.Database.User = v
-			}
-			if v, ok := flat["db_password"].(string); ok {
-				req.Database.Password = v
-			}
-			if v, ok := flat["db_name"].(string); ok {
-				req.Database.Database = v
-			}
-			if v, ok := flat["admin_password"].(string); ok {
-				req.Admin.Password = v
-			}
-			// 读取密码确认
-			if v, ok := flat["admin_password_confirm"].(string); ok {
-				req.Admin.Confirm = v
-			}
-			if v, ok := flat["admin_username"].(string); ok {
-				req.Admin.Username = v
-			}
-			if v, ok := flat["admin_email"].(string); ok {
-				req.Admin.Email = v
-			}
-			if v, ok := flat["admin_nickname"].(string); ok {
-				req.Admin.Nickname = v
-			}
-			// enable_user_system may be "true"/"false" 或 布尔
-			if v, ok := flat["enable_user_system"].(string); ok {
-				if b, err := strconv.ParseBool(v); err == nil && b {
-					req.Admin.AllowUserRegistration = true
-				}
-			} else if v, ok := flat["enable_user_system"].(bool); ok {
-				req.Admin.AllowUserRegistration = v
-			}
-
-			// 兼容前端 admin_token：视为系统管理员令牌（Manager.AdminToken）
-			if v, ok := flat["admin_token"].(string); ok && v != "" {
-				manager.AdminToken = v
-			}
-
-			// 兼容前端 site_name, storage_type, max_file_size，先写入 manager 内存结构（将在 Save 时持久化）
-			if v, ok := flat["site_name"].(string); ok && v != "" {
-				manager.Base.Name = v
-			}
-			if v, ok := flat["storage_type"].(string); ok && v != "" {
-				manager.Storage.Type = v
-			}
-			if v, ok := flat["max_file_size"].(string); ok && v != "" {
-				if n, err := strconv.Atoi(v); err == nil {
-					manager.Transfer.Upload.UploadSize = int64(n)
-				}
-			} else if v, ok := flat["max_file_size"].(float64); ok {
-				manager.Transfer.Upload.UploadSize = int64(v)
-			}
-
-			// 如果提供了 sqlite 文件路径（例如 ./data/filecodebox.db），将目录设置为 Base.DataPath
-			if req.Database.File != "" && req.Database.Type == "sqlite" {
-				dir := filepath.Dir(req.Database.File)
-				if dir == "." || dir == "" {
-					// 使用默认数据目录
-				} else {
-					manager.Base.DataPath = dir
-				}
-			}
-
-			// 如果前端没有提供管理员用户名/email，使用合理的默认值
-			if req.Admin.Username == "" {
-				// 尝试从 manager.AdminToken 派生用户名，否则使用 "admin"
-				if manager != nil && manager.AdminToken != "" {
-					req.Admin.Username = manager.AdminToken
-				} else {
-					req.Admin.Username = "admin"
-				}
-			}
-			if req.Admin.Email == "" {
-				req.Admin.Email = "admin@localhost"
-			}
-
-		}
-
 		// 继续使用 req 进行验证和初始化
-		// 捕获并验证扁平字段中的 storage_path（如果提供并且 storage 类型为 local），但不要立刻写入 manager
 		var desiredStoragePath string
 		if manager.Storage.Type == "local" {
-			// 尝试从原始请求体的扁平映射中读取 storage_path
-			var flat map[string]interface{}
-			_ = json.Unmarshal(data, &flat)
-			if v, ok := flat["storage_path"].(string); ok {
-				sp := v
-				if sp == "" {
-					common.BadRequestResponse(c, "本地存储时必须提供 storage_path")
-					return
-				}
-
-				// 若为相对路径，则相对于 manager.Base.DataPath
-				if !filepath.IsAbs(sp) {
-					if manager.Base != nil && manager.Base.DataPath != "" {
-						sp = filepath.Join(manager.Base.DataPath, sp)
-					} else {
-						sp, _ = filepath.Abs(sp)
-					}
-				}
-
-				// 尝试创建目录（如果不存在）
-				if _, err := os.Stat(sp); os.IsNotExist(err) {
-					if err := os.MkdirAll(sp, 0755); err != nil {
-						common.InternalServerErrorResponse(c, "创建本地存储目录失败: "+err.Error())
-						return
-					}
-				}
-
-				// 检查是否可写：尝试在目录中创建一个临时文件
-				testFile := filepath.Join(sp, ".perm_check")
-				if f, err := os.Create(testFile); err != nil {
-					common.InternalServerErrorResponse(c, "本地存储路径不可写: "+err.Error())
-					return
+			sp := manager.Storage.StoragePath
+			// 若为相对路径，则相对于 manager.Base.DataPath
+			if !filepath.IsAbs(sp) {
+				if manager.Base != nil && manager.Base.DataPath != "" {
+					sp = filepath.Join(manager.Base.DataPath, sp)
 				} else {
-					f.Close()
-					_ = os.Remove(testFile)
+					sp, _ = filepath.Abs(sp)
 				}
-
-				desiredStoragePath = sp
 			}
+
+			// 尝试创建目录（如果不存在）
+			if _, err := os.Stat(sp); os.IsNotExist(err) {
+				if err := os.MkdirAll(sp, 0755); err != nil {
+					common.InternalServerErrorResponse(c, "创建本地存储目录失败: "+err.Error())
+					return
+				}
+			}
+
+			// 检查是否可写：尝试在目录中创建一个临时文件
+			testFile := filepath.Join(sp, ".perm_check")
+			if f, err := os.Create(testFile); err != nil {
+				common.InternalServerErrorResponse(c, "本地存储路径不可写: "+err.Error())
+				return
+			} else {
+				f.Close()
+				_ = os.Remove(testFile)
+			}
+
+			desiredStoragePath = sp
 		}
 
 		// 验证管理员信息
@@ -433,6 +313,45 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 		// 后续将在数据库初始化并注入 manager 后再次保存配置。
 
 		// 初始化数据库连接并执行自动迁移
+		// Ensure Base config exists
+		if manager.Base == nil {
+			manager.Base = &config.BaseConfig{}
+		}
+
+		// For sqlite, determine DataPath from provided database file if not already set
+		if manager.Database.Type == "sqlite" {
+			dataFile := manager.Database.Name
+			if dataFile == "" {
+				dataFile = req.Database.File
+			}
+			var dataDir string
+			if dataFile != "" {
+				dataDir = filepath.Dir(dataFile)
+				if dataDir == "." || dataDir == "" {
+					dataDir = "./data"
+				}
+				// make absolute if possible
+				if !filepath.IsAbs(dataDir) {
+					if abs, err := filepath.Abs(dataDir); err == nil {
+						dataDir = abs
+					}
+				}
+				manager.Base.DataPath = dataDir
+			} else if manager.Base.DataPath == "" {
+				// fallback default
+				manager.Base.DataPath = "./data"
+				if abs, err := filepath.Abs(manager.Base.DataPath); err == nil {
+					manager.Base.DataPath = abs
+				}
+			}
+
+			// ensure directory exists before InitWithManager attempts to mkdir
+			if err := os.MkdirAll(manager.Base.DataPath, 0750); err != nil {
+				common.InternalServerErrorResponse(c, "创建SQLite数据目录失败: "+err.Error())
+				return
+			}
+		}
+
 		log.Printf("[InitializeNoDB] 开始调用 database.InitWithManager, dbType=%s, dataPath=%s", manager.Database.Type, manager.Base.DataPath)
 		db, err := database.InitWithManager(manager)
 		if err != nil {
@@ -527,135 +446,9 @@ func (h *SetupHandler) Initialize(c *gin.Context) {
 	}
 
 	var req SetupRequest
-
-	data, err := c.GetRawData()
-	if err != nil {
-		common.BadRequestResponse(c, "无法读取请求体: "+err.Error())
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
 		return
-	}
-
-	// 先尝试解析为嵌套结构
-	if err := json.Unmarshal(data, &req); err != nil {
-		// 解析为扁平 map 并映射
-		var flat map[string]interface{}
-		if err := json.Unmarshal(data, &flat); err != nil {
-			common.BadRequestResponse(c, "请求参数错误: 无法解析 JSON")
-			return
-		}
-		if v, ok := flat["db_type"].(string); ok {
-			req.Database.Type = v
-		}
-		if v, ok := flat["db_path"].(string); ok {
-			req.Database.File = v
-		}
-		if v, ok := flat["db_file"].(string); ok && req.Database.File == "" {
-			req.Database.File = v
-		}
-		if v, ok := flat["db_host"].(string); ok {
-			req.Database.Host = v
-		}
-		if v, ok := flat["db_user"].(string); ok {
-			req.Database.User = v
-		}
-		if v, ok := flat["db_password"].(string); ok {
-			req.Database.Password = v
-		}
-		if v, ok := flat["db_name"].(string); ok {
-			req.Database.Database = v
-		}
-		if v, ok := flat["admin_password"].(string); ok {
-			req.Admin.Password = v
-		}
-		if v, ok := flat["admin_username"].(string); ok {
-			req.Admin.Username = v
-		}
-		if v, ok := flat["admin_email"].(string); ok {
-			req.Admin.Email = v
-		}
-		// 存储路径（local 存储时使用）
-		if v, ok := flat["storage_path"].(string); ok {
-			h.manager.Storage.StoragePath = v
-		}
-		// 读取密码确认
-		if v, ok := flat["admin_password_confirm"].(string); ok {
-			req.Admin.Confirm = v
-		}
-		if v, ok := flat["admin_nickname"].(string); ok {
-			req.Admin.Nickname = v
-		}
-		if v, ok := flat["enable_user_system"].(string); ok {
-			if b, err := strconv.ParseBool(v); err == nil && b {
-				req.Admin.AllowUserRegistration = true
-			}
-		} else if v, ok := flat["enable_user_system"].(bool); ok {
-			req.Admin.AllowUserRegistration = v
-		}
-
-		// 兼容前端 admin_token：视为系统管理员令牌（Manager.AdminToken）
-		if v, ok := flat["admin_token"].(string); ok && v != "" {
-			h.manager.AdminToken = v
-		}
-
-		// 如果前端没有提供管理员用户名/email，使用合理的默认值
-		if req.Admin.Username == "" {
-			// 尝试从 manager.AdminToken 派生用户名，否则使用 "admin"
-			if h.manager != nil && h.manager.AdminToken != "" {
-				req.Admin.Username = h.manager.AdminToken
-			} else {
-				req.Admin.Username = "admin"
-			}
-		}
-		if req.Admin.Email == "" {
-			req.Admin.Email = "admin@localhost"
-		}
-
-		// 如果 storage_type 是 local，则处理 storage_path（扁平字段）
-		if h.manager.Storage.Type == "local" {
-			if v, ok := flat["storage_path"].(string); ok {
-				sp := v
-				if sp == "" {
-					common.BadRequestResponse(c, "本地存储时必须提供 storage_path")
-					return
-				}
-
-				// 若为相对路径，则相对于 h.manager.Base.DataPath
-				if !filepath.IsAbs(sp) {
-					if h.manager.Base != nil && h.manager.Base.DataPath != "" {
-						sp = filepath.Join(h.manager.Base.DataPath, sp)
-					} else {
-						sp, _ = filepath.Abs(sp)
-					}
-				}
-
-				// 尝试创建目录（如果不存在）
-				if _, err := os.Stat(sp); os.IsNotExist(err) {
-					if err := os.MkdirAll(sp, 0755); err != nil {
-						common.InternalServerErrorResponse(c, "创建本地存储目录失败: "+err.Error())
-						return
-					}
-				}
-
-				// 检查是否可写：尝试在目录中创建一个临时文件
-				testFile := filepath.Join(sp, ".perm_check")
-				if f, err := os.Create(testFile); err != nil {
-					common.InternalServerErrorResponse(c, "本地存储路径不可写: "+err.Error())
-					return
-				} else {
-					f.Close()
-					_ = os.Remove(testFile)
-				}
-
-				h.manager.Storage.StoragePath = sp
-				if err := h.manager.Save(); err != nil {
-					common.InternalServerErrorResponse(c, "保存存储配置失败: "+err.Error())
-					return
-				}
-			} else {
-				// 如果没有传 storage_path，前端应已校验，但服务器端也需要确保
-				common.BadRequestResponse(c, "本地存储时必须提供 storage_path")
-				return
-			}
-		}
 	}
 
 	// 验证管理员信息

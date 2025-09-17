@@ -147,24 +147,24 @@ echo
 echo "5. 测试管理员功能 (AdminService DAO)..."
 
 # 管理员登录
-ADMIN_LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/admin/login" \
+    ADMIN_LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/admin/login" \
   -H "Content-Type: application/json" \
-  -d '{"password": "FileCodeBox2025"}')
+  -d '{"username":"admin","password": "FileCodeBox2025"}')
 
-if check_response "$ADMIN_LOGIN_RESPONSE" "管理员登录"; then
-    ADMIN_TOKEN=$(echo "$ADMIN_LOGIN_RESPONSE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
-    echo "  管理员Token获取成功"
+    if check_response "$ADMIN_LOGIN_RESPONSE" "管理员登录"; then
+  ADMIN_JWT=$(echo "$ADMIN_LOGIN_RESPONSE" | grep -o '"token":"[^\"]*"' | cut -d'"' -f4)
+  echo "  管理员JWT获取成功"
     
-    # 测试仪表盘
-    DASHBOARD_RESPONSE=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$BASE_URL/admin/dashboard")
+  # 测试仪表盘
+  DASHBOARD_RESPONSE=$(curl -s -H "Authorization: Bearer $ADMIN_JWT" "$BASE_URL/admin/dashboard")
     check_response "$DASHBOARD_RESPONSE" "管理员仪表盘"
     
-    # 测试文件列表
-    FILES_RESPONSE=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$BASE_URL/admin/files?page=1&page_size=5")
+  # 测试文件列表
+  FILES_RESPONSE=$(curl -s -H "Authorization: Bearer $ADMIN_JWT" "$BASE_URL/admin/files?page=1&page_size=5")
     check_response "$FILES_RESPONSE" "文件列表获取"
     
-    # 测试配置获取
-    CONFIG_ADMIN_RESPONSE=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$BASE_URL/admin/config")
+  # 测试配置获取
+  CONFIG_ADMIN_RESPONSE=$(curl -s -H "Authorization: Bearer $ADMIN_JWT" "$BASE_URL/admin/config")
     check_response "$CONFIG_ADMIN_RESPONSE" "管理员配置获取"
 fi
 echo

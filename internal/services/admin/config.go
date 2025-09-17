@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/zy84338719/filecodebox/internal/config"
@@ -19,17 +18,13 @@ func (s *Service) UpdateConfig(configData map[string]interface{}) error {
 	// 过滤掉端口和管理员密码配置，这些不应该通过API更新
 	filteredConfigData := make(map[string]interface{})
 	for key, value := range configData {
-		// 跳过端口和管理员密码配置
-		if key == "port" || key == "admin_token" {
+		if key == "port" {
 			continue
 		}
 		filteredConfigData[key] = value
 	}
 
-	// 转换为结构化配置更新
 	configUpdates := s.convertMapToConfigUpdate(filteredConfigData)
-
-	// 保存配置更新
 	return s.SaveConfigUpdate(configUpdates)
 }
 
@@ -412,47 +407,56 @@ func (s *Service) convertFlatDTOToNested(flatUpdate *models.FlatConfigUpdate) *m
 func (s *Service) SaveConfigUpdate(configUpdate *models.ConfigUpdateFields) error {
 	// 转换为map格式
 	configMap := configUpdate.ToMap()
-
-	// 扁平化配置数据
-	flattenedConfig := make(map[string]interface{})
-	for key, value := range configMap {
-		if err := s.flattenConfig(key, value, flattenedConfig); err != nil {
-			return fmt.Errorf("处理配置数据失败: %w", err)
+	// Apply structured updates to the ConfigManager modules
+	if cfgBase, ok := configMap["base"].(map[string]interface{}); ok {
+		if err := s.manager.Base.Update(cfgBase); err != nil {
+			return fmt.Errorf("更新 base 配置失败: %w", err)
+		}
+	}
+	if cfgTransfer, ok := configMap["transfer"].(map[string]interface{}); ok {
+		if upload, ok2 := cfgTransfer["upload"].(map[string]interface{}); ok2 {
+			if err := s.manager.Transfer.Upload.Update(upload); err != nil {
+				return fmt.Errorf("更新 transfer.upload 配置失败: %w", err)
+			}
+		}
+		if download, ok2 := cfgTransfer["download"].(map[string]interface{}); ok2 {
+			if err := s.manager.Transfer.Download.Update(download); err != nil {
+				return fmt.Errorf("更新 transfer.download 配置失败: %w", err)
+			}
+		}
+	}
+	if cfgUser, ok := configMap["user"].(map[string]interface{}); ok {
+		if err := s.manager.User.Update(cfgUser); err != nil {
+			return fmt.Errorf("更新 user 配置失败: %w", err)
+		}
+	}
+	if cfgMCP, ok := configMap["mcp"].(map[string]interface{}); ok {
+		if err := s.manager.MCP.Update(cfgMCP); err != nil {
+			return fmt.Errorf("更新 mcp 配置失败: %w", err)
 		}
 	}
 
-	// 保存扁平化的配置
-	for key, value := range flattenedConfig {
-		// 将value转换为字符串
-		var valueStr string
-		switch v := value.(type) {
-		case string:
-			valueStr = v
-		case int, int32, int64:
-			valueStr = fmt.Sprintf("%d", v)
-		case float32, float64:
-			valueStr = fmt.Sprintf("%g", v)
-		case bool:
-			if v {
-				valueStr = "1"
-			} else {
-				valueStr = "0"
-			}
-		default:
-			// 对于复杂类型，序列化为JSON
-			jsonBytes, err := json.Marshal(v)
-			if err != nil {
-				return fmt.Errorf("序列化配置值失败: %w", err)
-			}
-			valueStr = string(jsonBytes)
-		}
-
-		if err := s.manager.UpdateKeyValue(key, valueStr); err != nil {
-			return fmt.Errorf("保存配置失败: %w", err)
-		}
+	// Other top-level fields
+	if v, ok := configMap["notify_title"].(string); ok {
+		s.manager.NotifyTitle = v
+	}
+	if v, ok := configMap["notify_content"].(string); ok {
+		s.manager.NotifyContent = v
+	}
+	if v, ok := configMap["page_explain"].(string); ok {
+		s.manager.PageExplain = v
+	}
+	if v, ok := configMap["opacity"].(int); ok {
+		s.manager.Opacity = float64(v)
+	}
+	if v, ok := configMap["themes_select"].(string); ok {
+		s.manager.ThemesSelect = v
 	}
 
-	// 配置保存成功后，执行热重载
+	// Persist structured config to YAML and reload
+	if err := s.manager.PersistYAML(); err != nil {
+		return fmt.Errorf("持久化配置到config.yaml失败: %w", err)
+	}
 	if err := s.manager.ReloadConfig(); err != nil {
 		return fmt.Errorf("热重载配置失败: %w", err)
 	}

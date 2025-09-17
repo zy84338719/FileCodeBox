@@ -34,6 +34,28 @@ func SetupAdminRoutes(
 			ServeAdminPage(c, cfg)
 		})
 
+		// 管理员登录（通过用户名/密码获取 JWT）
+		// 如果已经存在相同的 POST /admin/login 路由（例如在未初始化数据库时注册的占位处理器），
+		// 则跳过注册以避免 gin 的 "handlers are already registered for path" panic。
+		// If a placeholder route was registered earlier (no-DB mode), skip; otherwise register.
+		exists := false
+		for _, r := range router.Routes() {
+			if r.Method == "POST" && r.Path == "/admin/login" {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			adminGroup.POST("/login", func(c *gin.Context) {
+				// 尝试从全局注入获取真实 handler（SetInjectedAdminHandler）
+				if injected := handlers.GetInjectedAdminHandler(); injected != nil {
+					injected.Login(c)
+					return
+				}
+				c.JSON(404, gin.H{"code": 404, "message": "admin handler not configured"})
+			})
+		}
+
 		// 模块化管理后台静态文件
 		themeDir := fmt.Sprintf("./%s", cfg.ThemesSelect)
 		adminGroup.Static("/css", fmt.Sprintf("%s/admin/css", themeDir))
@@ -66,14 +88,7 @@ func SetupAdminRoutes(
 					}
 				}
 
-				// JWT验证失败，尝试管理员token认证
-				if tokenParts[1] == cfg.AdminToken {
-					c.Set("is_admin", true)
-					c.Set("role", "admin")
-					c.Set("auth_type", "admin_token")
-					c.Next()
-					return
-				}
+				// JWT验证失败，不再支持静态管理员令牌回退
 			}
 		}
 

@@ -62,15 +62,12 @@ func (s *Service) GetStats() (*web.AdminStatsResponse, error) {
 	}
 	stats.TotalSize = totalSize
 
-	// 系统启动时间
-	if v, ok := s.manager.GetKeyValue("sys_start"); ok {
-		stats.SysStart = v
+	// 系统启动时间 - 使用 Service 的内存字段 SysStart
+	if s.SysStart != "" {
+		stats.SysStart = s.SysStart
 	} else {
-		// 如果没有记录，创建一个
 		startTime := fmt.Sprintf("%d", time.Now().UnixMilli())
-		if err := s.manager.UpdateKeyValue("sys_start", startTime); err != nil {
-			return nil, fmt.Errorf("设置系统启动时间失败: %v", err)
-		}
+		s.SysStart = startTime
 		stats.SysStart = startTime
 	}
 

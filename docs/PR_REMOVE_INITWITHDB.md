@@ -15,7 +15,7 @@ Key changes
 Migration guidance
 ------------------
 1. Provide configuration via `config.yaml` at the repository root or set `CONFIG_PATH` to point to your YAML configuration file.
-2. Environment variables take precedence for runtime overrides (`PORT`, `ADMIN_TOKEN`, `DATA_PATH`, etc.).
+2. Environment variables take precedence for runtime overrides (`PORT`, `DATA_PATH`, etc.).
 3. If you previously relied on DB rows for config, export them to YAML using the included script `scripts/export_config_from_db.go` and place the resulting file as `config.yaml`.
 
 Why this change

@@ -64,7 +64,7 @@ combinedAuthMiddleware := func(c *gin.Context) {
             if tokenParts[1] == cfg.AdminToken {
                 c.Set("is_admin", true)
                 c.Set("role", "admin")
-                c.Set("auth_type", "admin_token")
+                c.Set("auth_type", "jwt")
                 c.Next()
                 return
             }
@@ -97,7 +97,7 @@ combinedAuthMiddleware := func(c *gin.Context) {
 **管理员Token认证**：
 - `is_admin`: true
 - `role`: "admin"
-- `auth_type`: "admin_token"
+- `auth_type`: "jwt"
 
 ## 测试验证
 

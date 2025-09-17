@@ -15,7 +15,6 @@ type ConfigStorageType string
 const (
 	StorageTypeFile     ConfigStorageType = "file"     // 配置文件
 	StorageTypeDatabase ConfigStorageType = "database" // 数据库表
-	StorageTypeKeyValue ConfigStorageType = "keyvalue" // 键值对存储
 	StorageTypeJSON     ConfigStorageType = "json"     // JSON配置
 )
 
@@ -233,8 +232,6 @@ func (s *ConfigStorageStrategy) GetConfig(key string, result interface{}) error 
 		return s.getDatabaseConfig(key, metadata, result)
 	case StorageTypeJSON:
 		return s.getJSONConfig(key, metadata, result)
-	case StorageTypeKeyValue:
-		return s.getKeyValueConfig(key, metadata, result)
 	default:
 		return fmt.Errorf("不支持的存储类型: %s", metadata.StorageType)
 	}
@@ -254,8 +251,6 @@ func (s *ConfigStorageStrategy) SetConfig(key string, value interface{}) error {
 		return s.setDatabaseConfig(key, metadata, value)
 	case StorageTypeJSON:
 		return s.setJSONConfig(key, metadata, value)
-	case StorageTypeKeyValue:
-		return s.setKeyValueConfig(key, metadata, value)
 	default:
 		return fmt.Errorf("不支持的存储类型: %s", metadata.StorageType)
 	}
@@ -344,39 +339,6 @@ func (s *ConfigStorageStrategy) setJSONConfig(key string, metadata ConfigMetadat
 	}
 
 	return s.db.Save(&systemConfig).Error
-}
-
-// 键值对配置操作
-func (s *ConfigStorageStrategy) getKeyValueConfig(key string, metadata ConfigMetadata, result interface{}) error {
-	// 从现有的KeyValue表获取
-	var keyValue struct {
-		Key   string `gorm:"primaryKey"`
-		Value string
-	}
-
-	err := s.db.Table("key_values").Where("key = ?", key).First(&keyValue).Error
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal([]byte(keyValue.Value), result)
-}
-
-func (s *ConfigStorageStrategy) setKeyValueConfig(key string, metadata ConfigMetadata, value interface{}) error {
-	valueBytes, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	keyValue := struct {
-		Key   string `gorm:"primaryKey"`
-		Value string
-	}{
-		Key:   key,
-		Value: string(valueBytes),
-	}
-
-	return s.db.Table("key_values").Save(&keyValue).Error
 }
 
 // InitTables 初始化配置相关表

@@ -132,7 +132,7 @@ docker-compose up -d
 - `name`: 站点名称
 - `upload_size`: 最大上传大小
 - `file_storage`: 存储类型（local/s3/webdav/onedrive）
-- `admin_token`: 管理员访问令牌
+- 管理员认证改为使用管理员用户名/密码登录并通过 `Authorization: Bearer <token>` 使用 JWT（不再使用静态管理员令牌配置）
 
 ## 管理员后台
 

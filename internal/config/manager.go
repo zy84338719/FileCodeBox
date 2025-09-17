@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strconv"
 
@@ -23,15 +22,21 @@ type ConfigManager struct {
 
 	NotifyTitle   string
 	NotifyContent string
-	AdminToken    string
 
-	// UI / Theme / Page fields (kept at top-level for backward compatibility with callers)
+	// UI config grouped under `ui` in config.yaml. We keep top-level
+	// compatibility fields but prefer `UI` when loading/saving YAML.
+	UI *UIConfig `yaml:"ui" json:"ui"`
+
+	// UI / Theme / Page top-level compatibility fields
 	ThemesSelect  string  `yaml:"themes_select" json:"themes_select"`
 	RobotsText    string  `yaml:"robots_text" json:"robots_text"`
 	PageExplain   string  `yaml:"page_explain" json:"page_explain"`
 	ShowAdminAddr int     `yaml:"show_admin_addr" json:"show_admin_addr"`
 	Opacity       float64 `yaml:"opacity" json:"opacity"`
 	Background    string  `yaml:"background" json:"background"`
+
+	// Persistent runtime metadata
+	SysStart string `yaml:"sys_start" json:"sys_start"`
 
 	// rate limit / business fields (kept at top-level for backwards compatibility)
 	UploadMinute int      `yaml:"upload_minute" json:"upload_minute"`
@@ -42,11 +47,7 @@ type ConfigManager struct {
 
 	db *gorm.DB
 
-	// yamlManagedKeys stores flat keys (module_field or single keys) that are managed by YAML
-	// and must not be overwritten by DB nor written back to DB.
-	yamlManagedKeys map[string]bool
-	// Extra stores arbitrary key/value pairs migrated from the old KeyValue table.
-	Extra map[string]string `yaml:"extra" json:"extra"`
+	// ConfigManager now reads/writes the whole struct directly to YAML.
 }
 
 func NewConfigManager() *ConfigManager {
@@ -57,6 +58,7 @@ func NewConfigManager() *ConfigManager {
 		Storage:  NewStorageConfig(),
 		User:     NewUserSystemConfig(),
 		MCP:      NewMCPConfig(),
+		UI:       &UIConfig{},
 	}
 }
 
@@ -85,193 +87,156 @@ func (cm *ConfigManager) LoadFromYAML(path string) error {
 	if err := yaml.Unmarshal(b, &fileCfg); err != nil {
 		return err
 	}
-	if cm.yamlManagedKeys == nil {
-		cm.yamlManagedKeys = make(map[string]bool)
-	}
 	if fileCfg.Base != nil {
 		cm.Base = fileCfg.Base
-		for k := range cm.Base.ToMap() {
-			cm.yamlManagedKeys[k] = true
-		}
 	}
 	if fileCfg.Database != nil {
 		cm.Database = fileCfg.Database
-		for k := range cm.Database.ToMap() {
-			cm.yamlManagedKeys[k] = true
-		}
 	}
 	if fileCfg.Transfer != nil {
 		cm.Transfer = fileCfg.Transfer
-		for k := range cm.Transfer.ToMap() {
-			cm.yamlManagedKeys[k] = true
-		}
 	}
 	if fileCfg.Storage != nil {
 		cm.Storage = fileCfg.Storage
-		for k := range cm.Storage.ToMap() {
-			cm.yamlManagedKeys[k] = true
-		}
 	}
 	if fileCfg.User != nil {
 		cm.User = fileCfg.User
-		for k := range cm.User.ToMap() {
-			cm.yamlManagedKeys[k] = true
-		}
 	}
 	if fileCfg.MCP != nil {
 		cm.MCP = fileCfg.MCP
-		for k := range cm.MCP.ToMap() {
-			cm.yamlManagedKeys[k] = true
-		}
 	}
 	if fileCfg.NotifyTitle != "" {
 		cm.NotifyTitle = fileCfg.NotifyTitle
-		cm.yamlManagedKeys["notify_title"] = true
 	}
 	if fileCfg.NotifyContent != "" {
 		cm.NotifyContent = fileCfg.NotifyContent
-		cm.yamlManagedKeys["notify_content"] = true
 	}
-	if fileCfg.AdminToken != "" {
-		cm.AdminToken = fileCfg.AdminToken
-		cm.yamlManagedKeys["admin_token"] = true
+
+	// Prefer structured UI block if present; otherwise fallback to legacy top-level fields.
+	if fileCfg.UI != nil {
+		cm.UI = fileCfg.UI
+		// sync top-level compatibility fields
+		cm.ThemesSelect = cm.UI.ThemesSelect
+		cm.Background = cm.UI.Background
+		cm.PageExplain = cm.UI.PageExplain
+		cm.Opacity = cm.UI.Opacity
+		cm.RobotsText = cm.UI.RobotsText
+		cm.ShowAdminAddr = cm.UI.ShowAdminAddr
+	} else {
+		if fileCfg.ThemesSelect != "" {
+			cm.ThemesSelect = fileCfg.ThemesSelect
+			cm.UI.ThemesSelect = fileCfg.ThemesSelect
+		}
+		if fileCfg.RobotsText != "" {
+			cm.RobotsText = fileCfg.RobotsText
+			cm.UI.RobotsText = fileCfg.RobotsText
+		}
+		if fileCfg.PageExplain != "" {
+			cm.PageExplain = fileCfg.PageExplain
+			cm.UI.PageExplain = fileCfg.PageExplain
+		}
+		if fileCfg.ShowAdminAddr != 0 {
+			cm.ShowAdminAddr = fileCfg.ShowAdminAddr
+			cm.UI.ShowAdminAddr = fileCfg.ShowAdminAddr
+		}
+		if fileCfg.Opacity != 0 {
+			cm.Opacity = fileCfg.Opacity
+			cm.UI.Opacity = fileCfg.Opacity
+		}
+		if fileCfg.Background != "" {
+			cm.Background = fileCfg.Background
+			cm.UI.Background = fileCfg.Background
+		}
 	}
-	if fileCfg.ThemesSelect != "" {
-		cm.ThemesSelect = fileCfg.ThemesSelect
-		cm.yamlManagedKeys["themes_select"] = true
+
+	// Persistent runtime metadata
+	if fileCfg.SysStart != "" {
+		cm.SysStart = fileCfg.SysStart
 	}
-	if fileCfg.RobotsText != "" {
-		cm.RobotsText = fileCfg.RobotsText
-		cm.yamlManagedKeys["robots_text"] = true
-	}
-	if fileCfg.PageExplain != "" {
-		cm.PageExplain = fileCfg.PageExplain
-		cm.yamlManagedKeys["page_explain"] = true
-	}
-	if fileCfg.ShowAdminAddr != 0 {
-		cm.ShowAdminAddr = fileCfg.ShowAdminAddr
-		cm.yamlManagedKeys["show_admin_addr"] = true
-	}
-	if fileCfg.Opacity != 0 {
-		cm.Opacity = fileCfg.Opacity
-		cm.yamlManagedKeys["opacity"] = true
-	}
-	if fileCfg.Background != "" {
-		cm.Background = fileCfg.Background
-		cm.yamlManagedKeys["background"] = true
+	// no runtime KeyValues persisted here anymore
+	// Backwards-compat: some configs place UI-related fields under a `ui` map
+	// (e.g. config.yaml uses `ui: { themes_select: themes/2025 }`). Parse the
+	// raw YAML and copy `ui.themes_select` into the top-level ThemesSelect when
+	// present so ServeAdminPage and static file routes resolve correctly.
+	var raw map[string]any
+	if err := yaml.Unmarshal(b, &raw); err == nil && raw != nil {
+		if uiRaw, ok := raw["ui"]; ok {
+			if uiMap, ok2 := uiRaw.(map[string]any); ok2 {
+				if ts, ok3 := uiMap["themes_select"].(string); ok3 && ts != "" {
+					cm.ThemesSelect = ts
+				}
+				if bg, ok3 := uiMap["background"].(string); ok3 && bg != "" {
+					cm.Background = bg
+				}
+				if pe, ok3 := uiMap["page_explain"].(string); ok3 && pe != "" {
+					cm.PageExplain = pe
+				}
+				if opacityVal, ok3 := uiMap["opacity"]; ok3 {
+					// Keep existing numeric parsing in callers; only set when simple types present
+					switch v := opacityVal.(type) {
+					case float64:
+						if v != 0 {
+							cm.Opacity = v
+						}
+					case int:
+						if float64(v) != 0 {
+							cm.Opacity = float64(v)
+						}
+					}
+				}
+			}
+		}
 	}
 	return nil
 }
 
 // InitWithDB has been removed. Use SetDB(db) to inject a database connection.
 
-// buildConfigMap flattens modules to module_field keys
-func (cm *ConfigManager) buildConfigMap() map[string]string {
-	out := make(map[string]string)
-	for k, v := range cm.Base.ToMap() {
-		out[k] = v
-	}
-	for k, v := range cm.Database.ToMap() {
-		out[k] = v
-	}
-	for k, v := range cm.Transfer.ToMap() {
-		out[k] = v
-	}
-	for k, v := range cm.Storage.ToMap() {
-		out[k] = v
-	}
-	for k, v := range cm.User.ToMap() {
-		out[k] = v
-	}
-	for k, v := range cm.MCP.ToMap() {
-		out[k] = v
-	}
-	out["notify_title"] = cm.NotifyTitle
-	out["notify_content"] = cm.NotifyContent
-	out["admin_token"] = cm.AdminToken
-	out["themes_select"] = cm.ThemesSelect
-	out["robots_text"] = cm.RobotsText
-	out["page_explain"] = cm.PageExplain
-	out["show_admin_addr"] = fmt.Sprintf("%d", cm.ShowAdminAddr)
-	out["opacity"] = fmt.Sprintf("%v", cm.Opacity)
-	out["background"] = cm.Background
-	return out
-}
-
 func (cm *ConfigManager) ReloadConfig() error {
 	// ReloadConfig no longer reads configuration from the database.
 	// Configuration should be provided via `config.yaml` and environment variables.
-	// Preserve in-memory immutable fields across reload (port/admin token).
+	// Preserve in-memory immutable fields across reload (port).
 	curPort := cm.Base.Port
-	curAdmin := cm.AdminToken
 	cm.applyEnvironmentOverrides()
 	cm.Base.Port = curPort
-	cm.AdminToken = curAdmin
 	return nil
 }
 
-// initExtra ensures Extra map is initialized.
-func (cm *ConfigManager) initExtra() {
-	if cm.Extra == nil {
-		cm.Extra = make(map[string]string)
-	}
-}
-
-// UpdateKeyValue updates an arbitrary key/value and persists it to the YAML config file.
-func (cm *ConfigManager) UpdateKeyValue(key, value string) error {
-	cm.initExtra()
-	cm.Extra[key] = value
-	return cm.Persist()
-}
-
-// GetKeyValue returns an extra key value and whether it exists.
-func (cm *ConfigManager) GetKeyValue(key string) (string, bool) {
-	if cm.Extra == nil {
-		return "", false
-	}
-	v, ok := cm.Extra[key]
-	return v, ok
-}
-
-// Persist writes the current `extra` mapping back to the YAML config file (CONFIG_PATH or ./config.yaml).
-// It will preserve other top-level keys in the existing YAML file.
-func (cm *ConfigManager) Persist() error {
+// PersistYAML writes the current ConfigManager to the YAML config file (CONFIG_PATH or ./config.yaml).
+// It serializes the entire struct (yaml tags) and overwrites the file.
+func (cm *ConfigManager) PersistYAML() error {
 	path := os.Getenv("CONFIG_PATH")
 	if path == "" {
 		path = "./config.yaml"
 	}
 
-	// Load existing YAML into a generic map (if present)
-	doc := make(map[string]any)
-	if b, err := os.ReadFile(path); err == nil {
-		var tmp map[string]any
-		if err := yaml.Unmarshal(b, &tmp); err == nil && tmp != nil {
-			doc = tmp
-		}
+	// Ensure UI block reflects top-level compatibility fields before marshalling
+	if cm.UI == nil {
+		cm.UI = &UIConfig{}
 	}
+	cm.UI.ThemesSelect = cm.ThemesSelect
+	cm.UI.Background = cm.Background
+	cm.UI.PageExplain = cm.PageExplain
+	cm.UI.Opacity = cm.Opacity
+	cm.UI.RobotsText = cm.RobotsText
+	cm.UI.ShowAdminAddr = cm.ShowAdminAddr
 
-	// Convert Extra to map[string]any for marshaling
-	extraAny := make(map[string]any)
-	for k, v := range cm.Extra {
-		extraAny[k] = v
-	}
-	doc["extra"] = extraAny
-
-	out, err := yaml.Marshal(doc)
+	out, err := yaml.Marshal(cm)
 	if err != nil {
 		return err
 	}
 	return os.WriteFile(path, out, 0o644)
 }
 
+// Runtime key/value helpers removed: runtime arbitrary key storage is no longer
+// persisted inside `ConfigManager`. Configuration should be updated via the
+// structured module Update(...) methods and persisted with PersistYAML().
+
 func (cm *ConfigManager) applyEnvironmentOverrides() {
 	if p := os.Getenv("PORT"); p != "" {
 		if n, err := strconv.Atoi(p); err == nil {
 			cm.Base.Port = n
 		}
-	}
-	if t := os.Getenv("ADMIN_TOKEN"); t != "" {
-		cm.AdminToken = t
 	}
 	if dp := os.Getenv("DATA_PATH"); dp != "" {
 		cm.Base.DataPath = dp
@@ -300,7 +265,12 @@ func (cm *ConfigManager) Clone() *ConfigManager {
 	nc.MCP = cm.MCP.Clone()
 	nc.NotifyTitle = cm.NotifyTitle
 	nc.NotifyContent = cm.NotifyContent
-	nc.AdminToken = cm.AdminToken
+	if cm.UI != nil {
+		ui := *cm.UI
+		nc.UI = &ui
+	}
+	nc.SysStart = cm.SysStart
+	// AdminToken removed
 	return nc
 }
 

@@ -2,6 +2,7 @@ package web
 
 // AdminLoginRequest 管理员登录请求
 type AdminLoginRequest struct {
+	Username string `json:"username,omitempty"`
 	Password string `json:"password" binding:"required"`
 }
 

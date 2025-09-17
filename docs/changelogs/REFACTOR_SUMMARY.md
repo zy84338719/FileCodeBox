@@ -13,7 +13,7 @@
 
 #### 2. 配置管理系统完善
 - **分层配置架构**：`BaseConfig`, `DatabaseConfig`, `StorageConfig`, `UserSystemConfig`, `MCPConfig`
-- **环境变量优先级**：PORT、ADMIN_TOKEN 等关键配置优先使用环境变量
+- **环境变量优先级**：PORT、DATA_PATH 等关键配置优先使用环境变量
 - **数据库持久化**：配置自动保存到 key_value 表，支持运行时动态更新
 - **热重载机制**：通过 ReloadConfig() 方法实现配置的运行时更新
 - **完整验证**：每个配置模块都有独立的验证方法

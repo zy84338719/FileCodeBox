@@ -49,7 +49,7 @@ function fillConfigForm(config) {
         setFieldValue('base_name', config.base?.name);
         setFieldValue('base_description', config.base?.description);
         setFieldValue('base_keywords', config.base?.keywords);
-        setFieldValue('admin_token', ''); // 不回显密码
+    // 管理员令牌字段已移除，不回显任何敏感字段
         setFieldValue('notify_title', config.notify_title);
         setFieldValue('notify_content', config.notify_content);
         setFieldValue('page_explain', config.page_explain);
@@ -167,11 +167,7 @@ async function handleConfigSubmit(e) {
             themes_select: getFieldValue('themes_select')
         };
         
-        // 如果密码字段有值，添加到配置中
-        const adminToken = getFieldValue('admin_token');
-        if (adminToken && adminToken.trim()) {
-            config.admin_token = adminToken.trim();
-        }
+        // 管理员令牌字段已移除，不会写入到配置中。
         
         console.log('准备提交的配置:', config);
         
@@ -182,8 +178,7 @@ async function handleConfigSubmit(e) {
         
         if (result.code === 200) {
             safeShowAlert('配置保存成功！', 'success');
-            // 清空密码字段
-            setFieldValue('admin_token', '');
+            // 管理员令牌字段已移除，无需清空
         } else {
             throw new Error(result.message || '保存失败');
         }

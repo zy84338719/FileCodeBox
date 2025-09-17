@@ -9,8 +9,8 @@
  * @returns {Promise} 请求结果
  */
 async function apiRequest(url, options = {}) {
-    // 动态获取当前的authToken
-    const currentAuthToken = window.authToken || localStorage.getItem('admin_token');
+    // 动态获取当前的authToken（优先检查内存变量，再检查 localStorage 的新键 auth_token）
+    const currentAuthToken = window.authToken || localStorage.getItem('auth_token');
     
     const defaultOptions = {
         headers: {
@@ -115,7 +115,7 @@ async function apiDelete(url) {
  */
 async function apiUpload(url, formData, onProgress = null) {
     return new Promise((resolve, reject) => {
-        const currentAuthToken = window.authToken || localStorage.getItem('admin_token');
+        const currentAuthToken = window.authToken || localStorage.getItem('auth_token');
         const xhr = new XMLHttpRequest();
         
         // 设置上传进度监听
@@ -175,7 +175,7 @@ async function apiUpload(url, formData, onProgress = null) {
  */
 async function apiDownload(url, filename = 'download') {
     try {
-        const currentAuthToken = window.authToken || localStorage.getItem('admin_token');
+    const currentAuthToken = window.authToken || localStorage.getItem('auth_token');
         const headers = {};
         
         if (currentAuthToken) {
@@ -278,7 +278,7 @@ function handleAuthError() {
     if (typeof window !== 'undefined') {
         window.authToken = null;
     }
-    localStorage.removeItem('admin_token');
+    localStorage.removeItem('auth_token');
     
     // 如果当前不在登录页面，跳转到登录页面
     if (typeof showLoginPage === 'function') {
@@ -299,9 +299,9 @@ function setAuthToken(token) {
         window.authToken = token;
     }
     if (token) {
-        localStorage.setItem('admin_token', token);
+        localStorage.setItem('auth_token', token);
     } else {
-        localStorage.removeItem('admin_token');
+        localStorage.removeItem('auth_token');
     }
 }
 
@@ -310,7 +310,7 @@ function setAuthToken(token) {
  * @returns {string|null} 认证令牌
  */
 function getAuthToken() {
-    return (typeof window !== 'undefined' ? window.authToken : null) || localStorage.getItem('admin_token');
+    return (typeof window !== 'undefined' ? window.authToken : null) || localStorage.getItem('auth_token');
 }
 
 /**
@@ -318,7 +318,7 @@ function getAuthToken() {
  * @returns {boolean} 是否已认证
  */
 function isAuthenticated() {
-    const currentAuthToken = (typeof window !== 'undefined' ? window.authToken : null) || localStorage.getItem('admin_token');
+    const currentAuthToken = (typeof window !== 'undefined' ? window.authToken : null) || localStorage.getItem('auth_token');
     return !!currentAuthToken;
 }
 
