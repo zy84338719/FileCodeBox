@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	_ "github.com/zy84338719/filecodebox/internal/config"
 	_ "github.com/zy84338719/filecodebox/internal/database"
+	"github.com/zy84338719/filecodebox/internal/models"
 	_ "github.com/zy84338719/filecodebox/internal/repository"
 	_ "github.com/zy84338719/filecodebox/internal/services"
 	"golang.org/x/term"
@@ -114,7 +115,16 @@ var adminResetCmd = &cobra.Command{
 			}
 		}
 
-		return adminSvc.UpdateUser(userID, "", newPass, "", "", "")
+		// Build models.User with ID and new password (service will handle update semantics)
+		user := models.User{}
+		// set ID via embedded gorm.Model field
+		// using reflection-free assignment
+		// gorm.Model exposes ID field; set using map-style assignment
+		// but we set via simple field since it's promoted
+		user.ID = userID
+		// Store new password in PasswordHash field temporarily; repository will map it to password_hash
+		user.PasswordHash = newPass
+		return adminSvc.UpdateUser(user)
 	},
 }
 

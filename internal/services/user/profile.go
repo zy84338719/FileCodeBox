@@ -16,18 +16,6 @@ func (s *Service) GetProfile(userID uint) (*models.User, error) {
 
 // UpdateProfile 更新用户资料 - 使用结构化更新
 func (s *Service) UpdateProfile(userID uint, updates map[string]interface{}) error {
-	// 验证更新字段
-	allowedFields := map[string]bool{
-		"nickname": true,
-		"email":    true,
-		"avatar":   true,
-	}
-
-	for key := range updates {
-		if !allowedFields[key] {
-			return errors.New("field not allowed to update: " + key)
-		}
-	}
 
 	user, err := s.repositoryManager.User.GetByID(userID)
 	if err != nil {

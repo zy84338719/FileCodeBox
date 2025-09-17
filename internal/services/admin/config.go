@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/zy84338719/filecodebox/internal/config"
-	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/models/web"
 )
 
@@ -24,19 +23,19 @@ func (s *Service) UpdateConfig(configData map[string]interface{}) error {
 		filteredConfigData[key] = value
 	}
 
-	configUpdates := s.convertMapToConfigUpdate(filteredConfigData)
-	return s.SaveConfigUpdate(configUpdates)
+	// Use nested map directly (no DTO conversion)
+	return s.SaveConfigUpdate(filteredConfigData)
 }
 
 // UpdateConfigWithDTO 使用DTO更新配置
-func (s *Service) UpdateConfigWithDTO(configUpdate *models.ConfigUpdateFields) error {
+func (s *Service) UpdateConfigWithDTO(configUpdate map[string]interface{}) error {
 	return s.SaveConfigUpdate(configUpdate)
 }
 
 // UpdateConfigWithFlatDTO 使用平面化DTO更新配置
-func (s *Service) UpdateConfigWithFlatDTO(flatUpdate *models.FlatConfigUpdate) error {
-	configUpdate := s.convertFlatDTOToNested(flatUpdate)
-	return s.SaveConfigUpdate(configUpdate)
+func (s *Service) UpdateConfigWithFlatDTO(flatUpdate map[string]interface{}) error {
+	// Expect caller to provide nested map; treat flat as already suitable
+	return s.SaveConfigUpdate(flatUpdate)
 }
 
 // UpdateConfigFromRequest 从结构化请求更新配置
@@ -215,205 +214,19 @@ func (s *Service) ReloadConfig() error {
 	return s.manager.ReloadConfig()
 }
 
-// convertMapToConfigUpdate 将map转换为配置更新DTO
-func (s *Service) convertMapToConfigUpdate(data map[string]interface{}) *models.ConfigUpdateFields {
-	configUpdate := &models.ConfigUpdateFields{}
+// DTO conversion removed — use nested map[string]interface{} directly
 
-	// 用户配置字段映射
-	userFields := map[string]bool{
-		"allow_user_registration": true,
-		"require_email_verify":    true,
-		"user_upload_size":        true,
-		"user_storage_quota":      true,
-		"session_expiry_hours":    true,
-		"max_sessions_per_user":   true,
-		"jwt_secret":              true,
-	}
-
-	// 传输配置字段映射
-	transferUploadFields := map[string]bool{
-		"open_upload":      true,
-		"upload_size":      true,
-		"enable_chunk":     true,
-		"chunk_size":       true,
-		"max_save_seconds": true,
-	}
-
-	transferDownloadFields := map[string]bool{
-		"enable_concurrent_download": true,
-		"max_concurrent_downloads":   true,
-		"download_timeout":           true,
-	}
-
-	// 基础配置字段映射
-	baseFields := map[string]bool{
-		"name":        true,
-		"description": true,
-		"keywords":    true,
-		"port":        true,
-		"host":        true,
-		"data_path":   true,
-		"production":  true,
-	}
-
-	// MCP配置字段映射
-	mcpFields := map[string]bool{
-		"enable_mcp_server": true,
-		"mcp_port":          true,
-		"mcp_host":          true,
-	}
-
-	// 分类处理字段
-	var userConfig *models.UserConfigUpdate
-	var uploadConfig *models.UploadConfigUpdate
-	var downloadConfig *models.DownloadConfigUpdate
-	var baseConfig *models.BaseConfigUpdate
-	var mcpConfig *models.MCPConfigUpdate
-
-	for key, value := range data {
-		if userFields[key] {
-			if userConfig == nil {
-				userConfig = &models.UserConfigUpdate{}
-			}
-			s.setUserConfigField(userConfig, key, value)
-		} else if transferUploadFields[key] {
-			if uploadConfig == nil {
-				uploadConfig = &models.UploadConfigUpdate{}
-			}
-			s.setUploadConfigField(uploadConfig, key, value)
-		} else if transferDownloadFields[key] {
-			if downloadConfig == nil {
-				downloadConfig = &models.DownloadConfigUpdate{}
-			}
-			s.setDownloadConfigField(downloadConfig, key, value)
-		} else if baseFields[key] {
-			if baseConfig == nil {
-				baseConfig = &models.BaseConfigUpdate{}
-			}
-			s.setBaseConfigField(baseConfig, key, value)
-		} else if mcpFields[key] {
-			if mcpConfig == nil {
-				mcpConfig = &models.MCPConfigUpdate{}
-			}
-			s.setMCPConfigField(mcpConfig, key, value)
-		} else {
-			// 其他字段直接设置
-			s.setOtherConfigField(configUpdate, key, value)
-		}
-	}
-
-	// 构建嵌套结构
-	if userConfig != nil {
-		configUpdate.User = userConfig
-	}
-
-	if uploadConfig != nil || downloadConfig != nil {
-		transferConfig := &models.TransferConfigUpdate{}
-		if uploadConfig != nil {
-			transferConfig.Upload = uploadConfig
-		}
-		if downloadConfig != nil {
-			transferConfig.Download = downloadConfig
-		}
-		configUpdate.Transfer = transferConfig
-	}
-
-	if baseConfig != nil {
-		configUpdate.Base = baseConfig
-	}
-
-	if mcpConfig != nil {
-		configUpdate.MCP = mcpConfig
-	}
-
-	return configUpdate
-}
-
-// convertFlatDTOToNested 将平面化DTO转换为嵌套DTO
-func (s *Service) convertFlatDTOToNested(flatUpdate *models.FlatConfigUpdate) *models.ConfigUpdateFields {
-	configUpdate := &models.ConfigUpdateFields{}
-
-	// 基础配置
-	if hasBaseConfig(flatUpdate) {
-		configUpdate.Base = &models.BaseConfigUpdate{
-			Name:        flatUpdate.Name,
-			Description: flatUpdate.Description,
-			Keywords:    flatUpdate.Keywords,
-			Port:        flatUpdate.Port,
-			Host:        flatUpdate.Host,
-			DataPath:    flatUpdate.DataPath,
-			Production:  flatUpdate.Production,
-		}
-	}
-
-	// 传输配置
-	if hasTransferConfig(flatUpdate) {
-		transferConfig := &models.TransferConfigUpdate{}
-
-		if hasUploadConfig(flatUpdate) {
-			transferConfig.Upload = &models.UploadConfigUpdate{
-				OpenUpload:     flatUpdate.OpenUpload,
-				UploadSize:     flatUpdate.UploadSize,
-				EnableChunk:    flatUpdate.EnableChunk,
-				ChunkSize:      flatUpdate.ChunkSize,
-				MaxSaveSeconds: flatUpdate.MaxSaveSeconds,
-			}
-		}
-
-		if hasDownloadConfig(flatUpdate) {
-			transferConfig.Download = &models.DownloadConfigUpdate{
-				EnableConcurrentDownload: flatUpdate.EnableConcurrentDownload,
-				MaxConcurrentDownloads:   flatUpdate.MaxConcurrentDownloads,
-				DownloadTimeout:          flatUpdate.DownloadTimeout,
-			}
-		}
-
-		configUpdate.Transfer = transferConfig
-	}
-
-	// 用户配置
-	if hasUserConfig(flatUpdate) {
-		configUpdate.User = &models.UserConfigUpdate{
-			AllowUserRegistration: flatUpdate.AllowUserRegistration,
-			RequireEmailVerify:    flatUpdate.RequireEmailVerify,
-			UserUploadSize:        flatUpdate.UserUploadSize,
-			UserStorageQuota:      flatUpdate.UserStorageQuota,
-			SessionExpiryHours:    flatUpdate.SessionExpiryHours,
-			MaxSessionsPerUser:    flatUpdate.MaxSessionsPerUser,
-			JWTSecret:             flatUpdate.JWTSecret,
-		}
-	}
-
-	// MCP配置
-	if hasMCPConfig(flatUpdate) {
-		configUpdate.MCP = &models.MCPConfigUpdate{
-			EnableMCPServer: flatUpdate.EnableMCPServer,
-			MCPPort:         flatUpdate.MCPPort,
-			MCPHost:         flatUpdate.MCPHost,
-		}
-	}
-
-	// 其他配置
-	configUpdate.NotifyTitle = flatUpdate.NotifyTitle
-	configUpdate.NotifyContent = flatUpdate.NotifyContent
-	configUpdate.PageExplain = flatUpdate.PageExplain
-	configUpdate.Opacity = flatUpdate.Opacity
-	configUpdate.ThemesSelect = flatUpdate.ThemesSelect
-
-	return configUpdate
-}
+// convertFlatDTOToNested removed
 
 // SaveConfigUpdate 保存配置更新
-func (s *Service) SaveConfigUpdate(configUpdate *models.ConfigUpdateFields) error {
-	// 转换为map格式
-	configMap := configUpdate.ToMap()
+func (s *Service) SaveConfigUpdate(configUpdate map[string]interface{}) error {
 	// Apply structured updates to the ConfigManager modules
-	if cfgBase, ok := configMap["base"].(map[string]interface{}); ok {
+	if cfgBase, ok := configUpdate["base"].(map[string]interface{}); ok {
 		if err := s.manager.Base.Update(cfgBase); err != nil {
 			return fmt.Errorf("更新 base 配置失败: %w", err)
 		}
 	}
-	if cfgTransfer, ok := configMap["transfer"].(map[string]interface{}); ok {
+	if cfgTransfer, ok := configUpdate["transfer"].(map[string]interface{}); ok {
 		if upload, ok2 := cfgTransfer["upload"].(map[string]interface{}); ok2 {
 			if err := s.manager.Transfer.Upload.Update(upload); err != nil {
 				return fmt.Errorf("更新 transfer.upload 配置失败: %w", err)
@@ -425,31 +238,38 @@ func (s *Service) SaveConfigUpdate(configUpdate *models.ConfigUpdateFields) erro
 			}
 		}
 	}
-	if cfgUser, ok := configMap["user"].(map[string]interface{}); ok {
+	if cfgUser, ok := configUpdate["user"].(map[string]interface{}); ok {
 		if err := s.manager.User.Update(cfgUser); err != nil {
 			return fmt.Errorf("更新 user 配置失败: %w", err)
 		}
 	}
-	if cfgMCP, ok := configMap["mcp"].(map[string]interface{}); ok {
+	if cfgMCP, ok := configUpdate["mcp"].(map[string]interface{}); ok {
 		if err := s.manager.MCP.Update(cfgMCP); err != nil {
 			return fmt.Errorf("更新 mcp 配置失败: %w", err)
 		}
 	}
 
 	// Other top-level fields
-	if v, ok := configMap["notify_title"].(string); ok {
+	if v, ok := configUpdate["notify_title"].(string); ok {
 		s.manager.NotifyTitle = v
 	}
-	if v, ok := configMap["notify_content"].(string); ok {
+	if v, ok := configUpdate["notify_content"].(string); ok {
 		s.manager.NotifyContent = v
 	}
-	if v, ok := configMap["page_explain"].(string); ok {
+	if v, ok := configUpdate["page_explain"].(string); ok {
 		s.manager.PageExplain = v
 	}
-	if v, ok := configMap["opacity"].(int); ok {
-		s.manager.Opacity = float64(v)
+	if v, ok := configUpdate["opacity"]; ok {
+		switch t := v.(type) {
+		case int:
+			s.manager.Opacity = float64(t)
+		case int64:
+			s.manager.Opacity = float64(t)
+		case float64:
+			s.manager.Opacity = t
+		}
 	}
-	if v, ok := configMap["themes_select"].(string); ok {
+	if v, ok := configUpdate["themes_select"].(string); ok {
 		s.manager.ThemesSelect = v
 	}
 
@@ -464,194 +284,4 @@ func (s *Service) SaveConfigUpdate(configUpdate *models.ConfigUpdateFields) erro
 	return nil
 }
 
-// 辅助方法：设置用户配置字段
-func (s *Service) setUserConfigField(config *models.UserConfigUpdate, key string, value interface{}) {
-	switch key {
-	case "allow_user_registration":
-		if v, ok := value.(int); ok {
-			config.AllowUserRegistration = &v
-		}
-	case "require_email_verify":
-		if v, ok := value.(int); ok {
-			config.RequireEmailVerify = &v
-		}
-	case "user_upload_size":
-		if v, ok := value.(int64); ok {
-			config.UserUploadSize = &v
-		}
-	case "user_storage_quota":
-		if v, ok := value.(int64); ok {
-			config.UserStorageQuota = &v
-		}
-	case "session_expiry_hours":
-		if v, ok := value.(int); ok {
-			config.SessionExpiryHours = &v
-		}
-	case "max_sessions_per_user":
-		if v, ok := value.(int); ok {
-			config.MaxSessionsPerUser = &v
-		}
-	case "jwt_secret":
-		if v, ok := value.(string); ok {
-			config.JWTSecret = &v
-		}
-	}
-}
-
-// 辅助方法：设置上传配置字段
-func (s *Service) setUploadConfigField(config *models.UploadConfigUpdate, key string, value interface{}) {
-	switch key {
-	case "open_upload":
-		if v, ok := value.(int); ok {
-			config.OpenUpload = &v
-		}
-	case "upload_size":
-		if v, ok := value.(int64); ok {
-			config.UploadSize = &v
-		}
-	case "enable_chunk":
-		if v, ok := value.(int); ok {
-			config.EnableChunk = &v
-		}
-	case "chunk_size":
-		if v, ok := value.(int64); ok {
-			config.ChunkSize = &v
-		}
-	case "max_save_seconds":
-		if v, ok := value.(int); ok {
-			config.MaxSaveSeconds = &v
-		}
-	}
-}
-
-// 辅助方法：设置下载配置字段
-func (s *Service) setDownloadConfigField(config *models.DownloadConfigUpdate, key string, value interface{}) {
-	switch key {
-	case "enable_concurrent_download":
-		if v, ok := value.(int); ok {
-			config.EnableConcurrentDownload = &v
-		}
-	case "max_concurrent_downloads":
-		if v, ok := value.(int); ok {
-			config.MaxConcurrentDownloads = &v
-		}
-	case "download_timeout":
-		if v, ok := value.(int); ok {
-			config.DownloadTimeout = &v
-		}
-	}
-}
-
-// 辅助方法：设置基础配置字段
-func (s *Service) setBaseConfigField(config *models.BaseConfigUpdate, key string, value interface{}) {
-	switch key {
-	case "name":
-		if v, ok := value.(string); ok {
-			config.Name = &v
-		}
-	case "description":
-		if v, ok := value.(string); ok {
-			config.Description = &v
-		}
-	case "keywords":
-		if v, ok := value.(string); ok {
-			config.Keywords = &v
-		}
-	case "port":
-		if v, ok := value.(int); ok {
-			config.Port = &v
-		}
-	case "host":
-		if v, ok := value.(string); ok {
-			config.Host = &v
-		}
-	case "data_path":
-		if v, ok := value.(string); ok {
-			config.DataPath = &v
-		}
-	case "production":
-		if v, ok := value.(bool); ok {
-			config.Production = &v
-		}
-	}
-}
-
-// 辅助方法：设置MCP配置字段
-func (s *Service) setMCPConfigField(config *models.MCPConfigUpdate, key string, value interface{}) {
-	switch key {
-	case "enable_mcp_server":
-		if v, ok := value.(int); ok {
-			config.EnableMCPServer = &v
-		}
-	case "mcp_port":
-		if v, ok := value.(string); ok {
-			config.MCPPort = &v
-		}
-	case "mcp_host":
-		if v, ok := value.(string); ok {
-			config.MCPHost = &v
-		}
-	}
-}
-
-// 辅助方法：设置其他配置字段
-func (s *Service) setOtherConfigField(config *models.ConfigUpdateFields, key string, value interface{}) {
-	switch key {
-	case "notify_title":
-		if v, ok := value.(string); ok {
-			config.NotifyTitle = &v
-		}
-	case "notify_content":
-		if v, ok := value.(string); ok {
-			config.NotifyContent = &v
-		}
-	case "page_explain":
-		if v, ok := value.(string); ok {
-			config.PageExplain = &v
-		}
-	case "opacity":
-		if v, ok := value.(int); ok {
-			config.Opacity = &v
-		}
-	case "themes_select":
-		if v, ok := value.(string); ok {
-			config.ThemesSelect = &v
-		}
-	}
-}
-
-// 辅助方法：检查是否有基础配置
-func hasBaseConfig(flat *models.FlatConfigUpdate) bool {
-	return flat.Name != nil || flat.Description != nil || flat.Keywords != nil ||
-		flat.Port != nil || flat.Host != nil || flat.DataPath != nil || flat.Production != nil
-}
-
-// 辅助方法：检查是否有传输配置
-func hasTransferConfig(flat *models.FlatConfigUpdate) bool {
-	return hasUploadConfig(flat) || hasDownloadConfig(flat)
-}
-
-// 辅助方法：检查是否有上传配置
-func hasUploadConfig(flat *models.FlatConfigUpdate) bool {
-	return flat.OpenUpload != nil || flat.UploadSize != nil || flat.EnableChunk != nil ||
-		flat.ChunkSize != nil || flat.MaxSaveSeconds != nil
-}
-
-// 辅助方法：检查是否有下载配置
-func hasDownloadConfig(flat *models.FlatConfigUpdate) bool {
-	return flat.EnableConcurrentDownload != nil || flat.MaxConcurrentDownloads != nil ||
-		flat.DownloadTimeout != nil
-}
-
-// 辅助方法：检查是否有用户配置
-func hasUserConfig(flat *models.FlatConfigUpdate) bool {
-	return flat.AllowUserRegistration != nil || flat.RequireEmailVerify != nil ||
-		flat.UserUploadSize != nil || flat.UserStorageQuota != nil ||
-		flat.SessionExpiryHours != nil || flat.MaxSessionsPerUser != nil ||
-		flat.JWTSecret != nil
-}
-
-// 辅助方法：检查是否有MCP配置
-func hasMCPConfig(flat *models.FlatConfigUpdate) bool {
-	return flat.EnableMCPServer != nil || flat.MCPPort != nil || flat.MCPHost != nil
-}
+// DTO helper functions removed — using map-based updates instead

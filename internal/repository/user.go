@@ -93,16 +93,6 @@ func (dao *UserDAO) UpdateUserProfile(id uint, user *models.User) error {
 	return dao.db.Model(&models.User{}).Where("id = ?", id).Updates(user.ToMap()).Error
 }
 
-// UpdateUserStats 更新用户统计信息
-func (dao *UserDAO) UpdateUserStats(id uint, statsFields *models.UserStatsUpdateFields) error {
-	if statsFields == nil || !statsFields.HasUpdates() {
-		return errors.New("没有需要更新的统计字段")
-	}
-
-	updates := statsFields.ToMap()
-	return dao.db.Model(&models.User{}).Where("id = ?", id).Updates(updates).Error
-}
-
 // UpdatePassword 更新用户密码
 func (dao *UserDAO) UpdatePassword(id uint, passwordHash string) error {
 	return dao.db.Model(&models.User{}).Where("id = ?", id).Update("password_hash", passwordHash).Error

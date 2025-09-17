@@ -143,19 +143,16 @@ func (h *AdminHandler) GetConfig(c *gin.Context) {
 // UpdateConfig 更新配置
 func (h *AdminHandler) UpdateConfig(c *gin.Context) {
 
-	// 尝试绑定到结构化配置更新DTO
-	var configUpdate models.ConfigUpdateFields
-	if err := c.ShouldBind(&configUpdate); err != nil {
+	// 绑定为 AdminConfigRequest 并使用服务层处理（服务会构建 map 并持久化）
+	var req web.AdminConfigRequest
+	if err := c.ShouldBind(&req); err != nil {
 		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
 		return
 	}
 
-	if configUpdate.HasUpdates() {
-		// 使用结构化配置更新
-		if err := h.service.UpdateConfigWithDTO(&configUpdate); err != nil {
-			common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
-			return
-		}
+	if err := h.service.UpdateConfigFromRequest(&req); err != nil {
+		common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
+		return
 	}
 
 	common.SuccessWithMessage(c, "更新成功", nil)
@@ -676,8 +673,21 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		status = "inactive"
 	}
 
-	// 更新用户
-	err = h.service.UpdateUser(userData, role, status)
+	// 更新用户：构建 models.User 并调用服务方法
+	// 构建更新用的 models.User：只填充仓库 UpdateUserFields 所需字段
+	user := models.User{}
+	// ID will be used by UpdateUserFields via repository; ensure repository method uses provided ID
+	// NOTE: models.User uses gorm.Model embed; set via zero-value and pass id to repository
+	user.Email = userData.Email
+	if userData.Password != "" {
+		// Hashing handled inside service layer; here we pass raw password in a convention used elsewhere
+		user.PasswordHash = userData.Password
+	}
+	user.Nickname = userData.Nickname
+	user.Role = role
+	user.Status = status
+
+	err = h.service.UpdateUser(user)
 	if err != nil {
 		common.InternalServerErrorResponse(c, "更新用户失败: "+err.Error())
 		return

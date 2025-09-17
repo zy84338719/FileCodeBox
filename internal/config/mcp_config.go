@@ -53,42 +53,6 @@ func (mc *MCPConfig) IsMCPEnabled() bool {
 	return mc.EnableMCPServer == 1
 }
 
-// GetMCPAddress 获取MCP服务器地址
-func (mc *MCPConfig) GetMCPAddress() string {
-	return fmt.Sprintf("%s:%s", mc.MCPHost, mc.MCPPort)
-}
-
-// GetMCPPortInt 获取MCP端口号（整数）
-func (mc *MCPConfig) GetMCPPortInt() (int, error) {
-	return strconv.Atoi(mc.MCPPort)
-}
-
-// ToMap 转换为map格式
-func (mc *MCPConfig) ToMap() map[string]string {
-	return map[string]string{
-		"enable_mcp_server": fmt.Sprintf("%d", mc.EnableMCPServer),
-		"mcp_port":          mc.MCPPort,
-		"mcp_host":          mc.MCPHost,
-	}
-}
-
-// FromMap 从map加载配置
-func (mc *MCPConfig) FromMap(data map[string]string) error {
-	if val, ok := data["enable_mcp_server"]; ok {
-		if v, err := strconv.Atoi(val); err == nil {
-			mc.EnableMCPServer = v
-		}
-	}
-	if val, ok := data["mcp_port"]; ok {
-		mc.MCPPort = val
-	}
-	if val, ok := data["mcp_host"]; ok {
-		mc.MCPHost = val
-	}
-
-	return mc.Validate()
-}
-
 // Update 更新配置
 func (mc *MCPConfig) Update(updates map[string]interface{}) error {
 	if enableMCP, ok := updates["enable_mcp_server"].(int); ok {
@@ -111,26 +75,4 @@ func (mc *MCPConfig) Clone() *MCPConfig {
 		MCPPort:         mc.MCPPort,
 		MCPHost:         mc.MCPHost,
 	}
-}
-
-// EnableMCP 启用MCP服务器
-func (mc *MCPConfig) EnableMCP() {
-	mc.EnableMCPServer = 1
-}
-
-// DisableMCP 禁用MCP服务器
-func (mc *MCPConfig) DisableMCP() {
-	mc.EnableMCPServer = 0
-}
-
-// SetPort 设置端口
-func (mc *MCPConfig) SetPort(port string) error {
-	mc.MCPPort = port
-	return mc.Validate()
-}
-
-// SetHost 设置主机地址
-func (mc *MCPConfig) SetHost(host string) error {
-	mc.MCPHost = host
-	return mc.Validate()
 }
