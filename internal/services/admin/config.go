@@ -27,17 +27,6 @@ func (s *Service) UpdateConfig(configData map[string]interface{}) error {
 	return s.SaveConfigUpdate(filteredConfigData)
 }
 
-// UpdateConfigWithDTO 使用DTO更新配置
-func (s *Service) UpdateConfigWithDTO(configUpdate map[string]interface{}) error {
-	return s.SaveConfigUpdate(configUpdate)
-}
-
-// UpdateConfigWithFlatDTO 使用平面化DTO更新配置
-func (s *Service) UpdateConfigWithFlatDTO(flatUpdate map[string]interface{}) error {
-	// Expect caller to provide nested map; treat flat as already suitable
-	return s.SaveConfigUpdate(flatUpdate)
-}
-
 // UpdateConfigFromRequest 从结构化请求更新配置
 func (s *Service) UpdateConfigFromRequest(configRequest *web.AdminConfigRequest) error {
 	// 构建配置更新数据
@@ -161,27 +150,7 @@ func (s *Service) UpdateConfigFromRequest(configRequest *web.AdminConfigRequest)
 }
 
 // flattenConfig 扁平化配置数据
-func (s *Service) flattenConfig(prefix string, value interface{}, result map[string]interface{}) error {
-	switch v := value.(type) {
-	case map[string]interface{}:
-		// 对于嵌套的对象，递归处理
-		for key, val := range v {
-			newKey := key
-			if prefix != "" {
-				newKey = prefix + "." + key
-			}
-			if err := s.flattenConfig(newKey, val, result); err != nil {
-				return err
-			}
-		}
-	default:
-		// 直接的值
-		if prefix != "" {
-			result[prefix] = value
-		}
-	}
-	return nil
-}
+// flattenConfig removed - not used after refactor
 
 // GetFullConfig 获取完整配置 - 返回配置管理器结构体
 func (s *Service) GetFullConfig() *config.ConfigManager {

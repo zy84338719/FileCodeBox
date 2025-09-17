@@ -59,32 +59,6 @@ type AdminConfig struct {
 	AllowUserRegistration bool   `json:"allowUserRegistration"`
 }
 
-// validateDatabaseConfig 验证数据库配置
-func (h *SetupHandler) validateDatabaseConfig(db DatabaseConfig) error {
-	switch db.Type {
-	case "sqlite":
-		if db.File == "" {
-			return fmt.Errorf("SQLite 数据库文件路径不能为空")
-		}
-	case "mysql", "postgres":
-		if db.Host == "" {
-			return fmt.Errorf("数据库主机地址不能为空")
-		}
-		if db.Port <= 0 || db.Port > 65535 {
-			return fmt.Errorf("数据库端口无效")
-		}
-		if db.User == "" {
-			return fmt.Errorf("数据库用户名不能为空")
-		}
-		if db.Database == "" {
-			return fmt.Errorf("数据库名不能为空")
-		}
-	default:
-		return fmt.Errorf("不支持的数据库类型: %s", db.Type)
-	}
-	return nil
-}
-
 // updateDatabaseConfig 更新数据库配置
 func (h *SetupHandler) updateDatabaseConfig(db DatabaseConfig) error {
 	// 更新配置管理器中的数据库配置
@@ -250,7 +224,9 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 				common.InternalServerErrorResponse(c, "本地存储路径不可写: "+err.Error())
 				return
 			} else {
-				f.Close()
+				if err := f.Close(); err != nil {
+					log.Printf("warning: failed to close perm check file: %v", err)
+				}
 				_ = os.Remove(testFile)
 			}
 

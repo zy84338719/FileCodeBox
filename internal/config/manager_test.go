@@ -23,7 +23,7 @@ func TestLoadFromYAML(t *testing.T) {
 	if err := os.WriteFile(f, b, 0644); err != nil {
 		t.Fatalf("write tmp yaml: %v", err)
 	}
-	defer os.Remove(f)
+	defer func() { _ = os.Remove(f) }()
 
 	cm := NewConfigManager()
 	if err := cm.LoadFromYAML(f); err != nil {
@@ -51,10 +51,12 @@ func TestEnvOverride(t *testing.T) {
 	if err := os.WriteFile(f, b2, 0644); err != nil {
 		t.Fatalf("write tmp yaml: %v", err)
 	}
-	defer os.Remove(f)
+	defer func() { _ = os.Remove(f) }()
 
-	os.Setenv("PORT", "9090")
-	defer os.Unsetenv("PORT")
+	if err := os.Setenv("PORT", "9090"); err != nil {
+		t.Fatalf("setenv failed: %v", err)
+	}
+	defer func() { _ = os.Unsetenv("PORT") }()
 
 	cm := NewConfigManager()
 	if err := cm.LoadFromYAML(f); err != nil {

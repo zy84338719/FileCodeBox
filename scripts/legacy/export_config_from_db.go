@@ -25,13 +25,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("open db: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	r, err := db.Query("SELECT key, value FROM key_values")
 	if err != nil {
 		log.Fatalf("query: %v", err)
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	cfg := make(map[string]map[string]interface{})
 	cfg["base"] = map[string]interface{}{}
@@ -96,7 +96,9 @@ func main() {
 	if err := enc.Encode(cfg); err != nil {
 		log.Fatalf("encode yaml: %v", err)
 	}
-	outF.Close()
+	if err := outF.Close(); err != nil {
+		log.Printf("warning: failed to close outF: %v", err)
+	}
 	fmt.Printf("wrote %s\n", *out)
 }
 

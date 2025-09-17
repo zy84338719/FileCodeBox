@@ -158,7 +158,8 @@ func (s *Service) GetStorageStatus() (*models.StorageStatus, error) {
 
 	// 根据当前配置尝试附加 path 与使用率信息
 	storageType := s.manager.Storage.Type
-	if storageType == "local" {
+	switch storageType {
+	case "local":
 		details["storage_path"] = s.manager.Storage.StoragePath
 		if s.manager.Storage.StoragePath != "" {
 			if usage, err := utils.GetUsagePercent(s.manager.Storage.StoragePath); err == nil {
@@ -166,18 +167,20 @@ func (s *Service) GetStorageStatus() (*models.StorageStatus, error) {
 				details["usage_percent"] = int(usage)
 			}
 		}
-	} else if storageType == "s3" {
+	case "s3":
 		if s.manager.Storage.S3 != nil {
 			details["storage_path"] = s.manager.Storage.S3.BucketName
 		}
-	} else if storageType == "webdav" {
+	case "webdav":
 		if s.manager.Storage.WebDAV != nil {
 			details["storage_path"] = s.manager.Storage.WebDAV.Hostname
 		}
-	} else if storageType == "nfs" {
+	case "nfs":
 		if s.manager.Storage.NFS != nil {
 			details["storage_path"] = s.manager.Storage.NFS.MountPoint
 		}
+	default:
+		// Handle other storage types if necessary
 	}
 
 	return &models.StorageStatus{

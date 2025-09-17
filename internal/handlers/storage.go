@@ -47,7 +47,8 @@ func (sh *StorageHandler) GetStorageInfo(c *gin.Context) {
 		}
 
 		// 尝试附加路径与使用率信息
-		if storageType == "local" {
+		switch storageType {
+		case "local":
 			// 本地存储使用配置中的 StoragePath
 			detail.StoragePath = sh.storageConfig.StoragePath
 
@@ -58,16 +59,16 @@ func (sh *StorageHandler) GetStorageInfo(c *gin.Context) {
 					detail.UsagePercent = &val
 				}
 			}
-		} else if storageType == "s3" {
+		case "s3":
 			// S3 使用 bucket 名称作为标识
 			if sh.storageConfig.S3 != nil {
 				detail.StoragePath = sh.storageConfig.S3.BucketName
 			}
-		} else if storageType == "webdav" {
+		case "webdav":
 			if sh.storageConfig.WebDAV != nil {
 				detail.StoragePath = sh.storageConfig.WebDAV.Hostname
 			}
-		} else if storageType == "nfs" {
+		case "nfs":
 			if sh.storageConfig.NFS != nil {
 				detail.StoragePath = sh.storageConfig.NFS.MountPoint
 			}
