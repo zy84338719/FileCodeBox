@@ -153,6 +153,20 @@ docker-compose up -d
 3. 设置合适的上传大小限制
 4. 配置站点名称和描述信息
 
+### 管理后台静态资源的安全说明
+
+管理后台使用了一组专用静态资源（位于 `themes/<theme>/admin/`），这些文件包含管理界面的 JavaScript、CSS 与模板。
+
+为了避免未授权用户直接访问管理后台页面并读取敏感前端逻辑，服务已将管理专用静态资源改为仅在管理员认证后提供：
+
+- 管理前端入口 `GET /admin/` 需要有效的管理员 JWT（通过 `Authorization: Bearer <token>` 方式传递）。
+- 管理专用静态路径（例如 `/admin/js/*`, `/admin/css/*`, `/admin/templates/*`, `/admin/assets/*`, `/admin/components/*`）也仅在认证通过后提供。
+- 公共资源（用户前端和通用资源）仍通过 `/js/*`, `/css/*`, `/assets/*`, `/components/*` 对外公开，以支持用户页面和登录流程。
+
+部署注意：如果你的生产环境在前面放了 Nginx、CDN 或其它反向代理，请确保对 `/admin/*` 不做缓存并`不要`将 admin 静态事先缓存到代理上，否则可能绕过后端认证。建议在代理上为 `/admin/*` 添加 `Cache-Control: no-store` 或根据代理文档设置不缓存规则。
+
+如果需要把少量引导或 favicon 等资产在未认证时可用，请将这些文件放入主题的 `assets/` 目录（由 `/assets/*` 提供），不要将管理专用目录下的文件放到公共路径。
+
 ## API接口
 
 ### 分享文本
