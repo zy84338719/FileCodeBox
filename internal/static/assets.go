@@ -21,18 +21,11 @@ func RegisterStaticRoutes(router *gin.Engine, cfg *config.ConfigManager) {
 	router.Static("/components", fmt.Sprintf("%s/components", themeDir))
 }
 
-// RegisterAdminStaticRoutes registers admin panel static routes (admin css/js/templates)
-func RegisterAdminStaticRoutes(adminGroup *gin.RouterGroup, cfg *config.ConfigManager) {
-	// Deprecated: do NOT register admin static routes publicly here.
-	// Admin static assets are security-sensitive and must be served
-	// through protected handlers (see internal/routes/admin.go) which
-	// apply the required authentication middleware. Keeping this
-	// function as a no-op avoids accidental public registration while
-	// preserving the API for older callers.
-	_ = adminGroup
-	_ = cfg
-	return
-}
+// Note: admin static routes are intentionally not registered here.
+// Admin-specific assets must be served through protected handlers
+// in `internal/routes/admin.go` where authentication middleware is
+// applied. This avoids accidentally exposing admin-only files via
+// public `router.Static` registrations.
 
 // ServeIndex serves the main index page with basic template replacements.
 func ServeIndex(c *gin.Context, cfg *config.ConfigManager) {

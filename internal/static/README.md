@@ -10,8 +10,7 @@
 - `RegisterStaticRoutes(router *gin.Engine, cfg *config.ConfigManager)`
   - 在应用根上注册公共静态资源（`/assets`, `/css`, `/js`, `/components`）。
 
-- `RegisterAdminStaticRoutes(adminGroup *gin.RouterGroup, cfg *config.ConfigManager)`
-  - 在管理路由组上注册管理后台需要的静态资源（例如 `/admin/css`, `/admin/js`, `/admin/templates` 等）。
+注意: 管理后台静态资源需要鉴权，已改为在 `internal/routes/admin.go` 中由受保护的处理器提供，避免在这里公开注册。
 
 使用示例
 --------
