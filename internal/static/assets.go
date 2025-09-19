@@ -23,12 +23,15 @@ func RegisterStaticRoutes(router *gin.Engine, cfg *config.ConfigManager) {
 
 // RegisterAdminStaticRoutes registers admin panel static routes (admin css/js/templates)
 func RegisterAdminStaticRoutes(adminGroup *gin.RouterGroup, cfg *config.ConfigManager) {
-	themeDir := fmt.Sprintf("./%s", cfg.ThemesSelect)
-	adminGroup.Static("/css", fmt.Sprintf("%s/admin/css", themeDir))
-	adminGroup.Static("/js", fmt.Sprintf("%s/admin/js", themeDir))
-	adminGroup.Static("/templates", fmt.Sprintf("%s/admin/templates", themeDir))
-	adminGroup.Static("/assets", fmt.Sprintf("%s/assets", themeDir))
-	adminGroup.Static("/components", fmt.Sprintf("%s/components", themeDir))
+	// Deprecated: do NOT register admin static routes publicly here.
+	// Admin static assets are security-sensitive and must be served
+	// through protected handlers (see internal/routes/admin.go) which
+	// apply the required authentication middleware. Keeping this
+	// function as a no-op avoids accidental public registration while
+	// preserving the API for older callers.
+	_ = adminGroup
+	_ = cfg
+	return
 }
 
 // ServeIndex serves the main index page with basic template replacements.
@@ -96,4 +99,26 @@ func ServeAdminPage(c *gin.Context, cfg *config.ConfigManager) {
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	c.String(http.StatusOK, string(content))
+}
+
+// ServeUserPage serves user-facing static pages (login/register/dashboard/etc.)
+func ServeUserPage(c *gin.Context, cfg *config.ConfigManager, pageName string) {
+	userPagePath := filepath.Join(".", cfg.ThemesSelect, pageName)
+
+	content, err := os.ReadFile(userPagePath)
+	if err != nil {
+		c.String(http.StatusNotFound, "User page not found: "+pageName)
+		return
+	}
+
+	html := string(content)
+	// normalize relative static paths to absolute paths so pages under /user/* load correctly
+	html = strings.ReplaceAll(html, "src=\"js/", "src=\"/js/")
+	html = strings.ReplaceAll(html, "href=\"css/", "href=\"/css/")
+	html = strings.ReplaceAll(html, "src=\"assets/", "src=\"/assets/")
+	html = strings.ReplaceAll(html, "href=\"assets/", "href=\"/assets/")
+
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	c.String(http.StatusOK, html)
 }

@@ -298,9 +298,14 @@ class FileCodeBoxApp {
     applyTemplateConfig() {
         if (window.AppConfig) {
             // 应用不透明度
-            if (window.AppConfig.opacity && window.AppConfig.opacity !== '{{opacity}}') {
-                document.body.style.opacity = window.AppConfig.opacity;
-            }
+                if (window.AppConfig.opacity && window.AppConfig.opacity !== '{{opacity}}') {
+                    // 如果 opacity 为字符串 '0' 或 '0.0'，不应把整个页面设为完全透明。
+                    // 只在解析为数字且大于0时应用不透明度设置。
+                    const op = parseFloat(window.AppConfig.opacity);
+                    if (!isNaN(op) && op > 0) {
+                        document.body.style.opacity = op;
+                    }
+                }
             
             // 应用背景图片
             if (window.AppConfig.background && window.AppConfig.background !== '{{background}}') {

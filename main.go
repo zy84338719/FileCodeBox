@@ -25,12 +25,14 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zy84338719/filecodebox/internal/cli"
 	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/database"
 	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/mcp"
 	"github.com/zy84338719/filecodebox/internal/repository"
@@ -124,6 +126,67 @@ func main() {
 	}
 
 	logrus.Info("应用初始化完成")
+
+	// 如果 data/filecodebox.db 已经存在，尝试提前初始化数据库并注册动态路由，
+	// 这样在已初始化环境下，API（如 POST /user/login）能直接可用，而不是返回静态 HTML。
+	// 这对于用户已经自行初始化数据库但以 "daoManager == nil" 启动的场景非常重要。
+	// 尝试多路径检测数据库文件：优先使用 manager.Database.Name（若配置了），其次尝试基于 Base.DataPath 的常见位置
+	var candidates []string
+	if manager.Database.Name != "" {
+		candidates = append(candidates, manager.Database.Name)
+	}
+	if manager.Base != nil && manager.Base.DataPath != "" {
+		candidates = append(candidates, filepath.Join(manager.Base.DataPath, "filecodebox.db"))
+		// 如果 manager.Database.Name 是相对路径，尝试基于 DataPath 拼接
+		if manager.Database.Name != "" && !filepath.IsAbs(manager.Database.Name) {
+			candidates = append(candidates, filepath.Join(manager.Base.DataPath, manager.Database.Name))
+		}
+	}
+
+	logrus.Infof("数据库检测候选路径: %v", candidates)
+	found := ""
+	for _, dbFile := range candidates {
+		if dbFile == "" {
+			continue
+		}
+		if _, err := os.Stat(dbFile); err == nil {
+			found = dbFile
+			break
+		}
+	}
+
+	if found != "" {
+		logrus.Infof("检测到已有数据库文件，尝试提前初始化数据库: %s", found)
+		// 如果 Base.DataPath 为空，设置为 found 的目录，避免 database.InitWithManager 在创建目录时使用空字符串
+		if manager.Base == nil {
+			manager.Base = &config.BaseConfig{}
+		}
+		if manager.Base.DataPath == "" {
+			dir := filepath.Dir(found)
+			if dir == "." || dir == "" {
+				dir = "./data"
+			}
+			if abs, err := filepath.Abs(dir); err == nil {
+				manager.Base.DataPath = abs
+			} else {
+				manager.Base.DataPath = dir
+			}
+			logrus.Infof("为 manager.Base.DataPath 赋值: %s", manager.Base.DataPath)
+		}
+
+		if db, err := database.InitWithManager(manager); err == nil {
+			if db != nil {
+				manager.SetDB(db)
+				dmgr := repository.NewRepositoryManager(db)
+				if ginEngine, ok := routerEngine.(*gin.Engine); ok {
+					routes.RegisterDynamicRoutes(ginEngine, manager, dmgr, storageManager)
+					logrus.Info("动态路由已注册（基于已存在的数据库）")
+				}
+			}
+		} else {
+			logrus.Warnf("尝试提前初始化数据库失败: %v", err)
+		}
+	}
 
 	// 等待中断信号，优雅退出
 	sigCh := make(chan os.Signal, 1)

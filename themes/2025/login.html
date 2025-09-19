@@ -130,20 +130,48 @@
                 const result = await response.json();
                 
                 if (result.code === 200) {
+                    // 存储 token
                     localStorage.setItem('user_token', result.data.token);
-                    showMessage('登录成功！正在跳转...', false);
-                    
+                    console.log('[login] 登录成功，已保存 token');
+                    showMessage('登录成功！正在获取用户信息...', false);
+
+                    // 立即请求用户信息并保存到 localStorage，以便前端其它模块不会因为缺少 user_info 而阻塞渲染
+                    try {
+                        const profileResp = await fetch('/user/profile', {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + result.data.token
+                            }
+                        });
+
+                        const profileResult = await profileResp.json();
+                        if (profileResult && profileResult.code === 200 && profileResult.data) {
+                            localStorage.setItem('user_info', JSON.stringify(profileResult.data));
+                            console.log('[login] 已获取并保存 user_info');
+                        } else {
+                            console.warn('[login] 获取 user_info 未返回预期结果', profileResult);
+                        }
+                    } catch (err) {
+                        console.error('[login] 获取用户信息失败:', err);
+                        // 不阻塞跳转，仅告知用户
+                        showMessage('登录成功，但获取用户信息失败，稍后可能需要刷新页面', true);
+                    }
+
+                    // 跳转到期望页面（使用 replace 更可靠，不会留下历史记录）
                     setTimeout(() => {
-                        // 检查是否需要跳转回管理页面
                         const redirectUrl = sessionStorage.getItem('redirect_after_login');
                         if (redirectUrl) {
                             sessionStorage.removeItem('redirect_after_login');
-                            window.location.href = redirectUrl;
+                            console.log('[login] 跳转到 redirect_after_login:', redirectUrl);
+                            window.location.replace(redirectUrl);
                         } else {
-                            window.location.href = '/user/dashboard';
+                            console.log('[login] 跳转到 /user/dashboard');
+                            window.location.replace('/user/dashboard');
                         }
-                    }, 1000);
+                    }, 800);
                 } else {
+                    console.log('[login] 登录失败响应:', result);
                     showMessage(result.message || '登录失败，请检查用户名和密码');
                 }
             } catch (error) {

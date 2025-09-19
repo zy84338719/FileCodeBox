@@ -12,6 +12,7 @@ import (
 	"github.com/zy84338719/filecodebox/internal/middleware"
 	"github.com/zy84338719/filecodebox/internal/repository"
 	"github.com/zy84338719/filecodebox/internal/services"
+	"github.com/zy84338719/filecodebox/internal/static"
 	"github.com/zy84338719/filecodebox/internal/storage"
 
 	"github.com/gin-gonic/gin"
@@ -96,13 +97,17 @@ func CreateAndSetupRouter(
 		// 即便数据库尚未初始化，也应当能访问用户登录/注册页面（只返回静态HTML），
 		// 以便用户能够在首次部署时完成初始化或查看登录页面。
 		router.GET("/user/login", func(c *gin.Context) {
-			ServeUserPage(c, manager, "login.html")
+			static.ServeUserPage(c, manager, "login.html")
 		})
 		router.GET("/user/register", func(c *gin.Context) {
-			ServeUserPage(c, manager, "register.html")
+			static.ServeUserPage(c, manager, "register.html")
+		})
+		// 在未初始化数据库时，也允许访问用户仪表板静态页面，避免被 NoRoute 回退到首页
+		router.GET("/user/dashboard", func(c *gin.Context) {
+			static.ServeUserPage(c, manager, "dashboard.html")
 		})
 		router.GET("/user/forgot-password", func(c *gin.Context) {
-			ServeUserPage(c, manager, "forgot-password.html")
+			static.ServeUserPage(c, manager, "forgot-password.html")
 		})
 
 		// 在未初始化数据库时，不直接注册真实的 POST /admin/login 处理器以避免后续动态注册冲突。

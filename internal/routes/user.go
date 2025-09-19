@@ -1,14 +1,10 @@
 package routes
 
 import (
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
-
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/middleware"
+	"github.com/zy84338719/filecodebox/internal/static"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,16 +25,16 @@ func SetupUserRoutes(
 	userPageGroup := router.Group("/user")
 	{
 		userPageGroup.GET("/login", func(c *gin.Context) {
-			ServeUserPage(c, cfg, "login.html")
+			static.ServeUserPage(c, cfg, "login.html")
 		})
 		userPageGroup.GET("/register", func(c *gin.Context) {
-			ServeUserPage(c, cfg, "register.html")
+			static.ServeUserPage(c, cfg, "register.html")
 		})
 		userPageGroup.GET("/dashboard", func(c *gin.Context) {
-			ServeUserPage(c, cfg, "dashboard.html")
+			static.ServeUserPage(c, cfg, "dashboard.html")
 		})
 		userPageGroup.GET("/forgot-password", func(c *gin.Context) {
-			ServeUserPage(c, cfg, "forgot-password.html")
+			static.ServeUserPage(c, cfg, "forgot-password.html")
 		})
 	}
 }
@@ -79,23 +75,4 @@ func SetupUserAPIRoutes(
 }
 
 // ServeUserPage 服务用户页面
-func ServeUserPage(c *gin.Context, cfg *config.ConfigManager, pageName string) {
-	userPagePath := filepath.Join(".", cfg.ThemesSelect, pageName)
-
-	content, err := os.ReadFile(userPagePath)
-	if err != nil {
-		c.String(http.StatusNotFound, "User page not found: "+pageName)
-		return
-	}
-
-	html := string(content)
-	// 将相对静态资源路径转换为绝对路径，避免在子路径下（如 /user/login）请求到 /user/js/... 导致返回 HTML
-	html = strings.ReplaceAll(html, "src=\"js/", "src=\"/js/")
-	html = strings.ReplaceAll(html, "href=\"css/", "href=\"/css/")
-	html = strings.ReplaceAll(html, "src=\"assets/", "src=\"/assets/")
-	html = strings.ReplaceAll(html, "href=\"assets/", "href=\"/assets/")
-
-	c.Header("Cache-Control", "no-cache")
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.String(http.StatusOK, html)
-}
+// ServeUserPage has been moved to internal/static package (static.ServeUserPage)

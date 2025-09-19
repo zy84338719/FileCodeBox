@@ -1,6 +1,9 @@
 package routes
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/middleware"
@@ -22,12 +25,10 @@ func SetupAdminRoutes(
 	// 管理相关路由
 	adminGroup := router.Group("/admin")
 
-	// 管理页面和静态文件 - 不需要认证就能访问HTML和静态资源
+	// 管理页面和静态文件 - 管理页面本身应当需要管理员认证，静态资源仍然注册为公开以便前端加载
 	{
-		// 管理页面
-		adminGroup.GET("/", func(c *gin.Context) {
-			static.ServeAdminPage(c, cfg)
-		})
+		// 管理页面 - 不在此注册（移到需要认证的路由组），确保只有管理员可以访问前端入口
+		// 登录接口保持公开
 
 		// 管理员登录（通过用户名/密码获取 JWT）
 		// 如果已经存在相同的 POST /admin/login 路由（例如在未初始化数据库时注册的占位处理器），
@@ -51,8 +52,6 @@ func SetupAdminRoutes(
 			})
 		}
 
-		// 模块化管理后台静态文件
-		static.RegisterAdminStaticRoutes(adminGroup, cfg)
 	}
 
 	// 使用复用的中间件实现（JWT 用户认证并要求 admin 角色）
@@ -62,6 +61,67 @@ func SetupAdminRoutes(
 	authGroup := adminGroup.Group("")
 	authGroup.Use(combinedAuthMiddleware)
 	{
+		// 显式为管理后台静态资源注册受保护的 GET 处理器，确保这些静态文件也需要管理员认证
+		themeDir := "./" + cfg.ThemesSelect
+
+		// css
+		authGroup.GET("/css/*filepath", func(c *gin.Context) {
+			fp := c.Param("filepath")
+			p := filepath.Join(themeDir, "admin", "css", fp)
+			if _, err := os.Stat(p); err != nil {
+				c.Status(404)
+				return
+			}
+			c.File(p)
+		})
+
+		// js
+		authGroup.GET("/js/*filepath", func(c *gin.Context) {
+			fp := c.Param("filepath")
+			p := filepath.Join(themeDir, "admin", "js", fp)
+			if _, err := os.Stat(p); err != nil {
+				c.Status(404)
+				return
+			}
+			c.File(p)
+		})
+
+		// templates
+		authGroup.GET("/templates/*filepath", func(c *gin.Context) {
+			fp := c.Param("filepath")
+			p := filepath.Join(themeDir, "admin", "templates", fp)
+			if _, err := os.Stat(p); err != nil {
+				c.Status(404)
+				return
+			}
+			c.File(p)
+		})
+
+		// assets and components
+		authGroup.GET("/assets/*filepath", func(c *gin.Context) {
+			fp := c.Param("filepath")
+			p := filepath.Join(themeDir, "assets", fp)
+			if _, err := os.Stat(p); err != nil {
+				c.Status(404)
+				return
+			}
+			c.File(p)
+		})
+		authGroup.GET("/components/*filepath", func(c *gin.Context) {
+			fp := c.Param("filepath")
+			p := filepath.Join(themeDir, "components", fp)
+			if _, err := os.Stat(p); err != nil {
+				c.Status(404)
+				return
+			}
+			c.File(p)
+		})
+
+		// 管理前端入口受保护：仅管理员可访问 /admin/
+		authGroup.GET("/", func(c *gin.Context) {
+			static.ServeAdminPage(c, cfg)
+		})
+
 		// 仪表板和统计
 		authGroup.GET("/dashboard", adminHandler.Dashboard)
 		authGroup.GET("/stats", adminHandler.GetStats)

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -100,7 +101,28 @@ func (cm *ConfigManager) LoadFromYAML(path string) error {
 		cm.Storage = fileCfg.Storage
 	}
 	if fileCfg.User != nil {
-		cm.User = fileCfg.User
+		// Merge user config fields rather than clobbering defaults with an empty struct
+		if fileCfg.User.AllowUserRegistration != 0 {
+			cm.User.AllowUserRegistration = fileCfg.User.AllowUserRegistration
+		}
+		if fileCfg.User.RequireEmailVerify != 0 {
+			cm.User.RequireEmailVerify = fileCfg.User.RequireEmailVerify
+		}
+		if fileCfg.User.UserUploadSize != 0 {
+			cm.User.UserUploadSize = fileCfg.User.UserUploadSize
+		}
+		if fileCfg.User.UserStorageQuota != 0 {
+			cm.User.UserStorageQuota = fileCfg.User.UserStorageQuota
+		}
+		if fileCfg.User.SessionExpiryHours != 0 {
+			cm.User.SessionExpiryHours = fileCfg.User.SessionExpiryHours
+		}
+		if fileCfg.User.MaxSessionsPerUser != 0 {
+			cm.User.MaxSessionsPerUser = fileCfg.User.MaxSessionsPerUser
+		}
+		if strings.TrimSpace(fileCfg.User.JWTSecret) != "" {
+			cm.User.JWTSecret = fileCfg.User.JWTSecret
+		}
 	}
 	if fileCfg.MCP != nil {
 		cm.MCP = fileCfg.MCP

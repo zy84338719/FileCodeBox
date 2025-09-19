@@ -18,7 +18,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// SetupHandler 系统初始化处理器
 type SetupHandler struct {
 	daoManager *repository.RepositoryManager
 	manager    *config.ConfigManager
@@ -175,6 +174,8 @@ func contains(s, substr string) bool {
 	return false
 }
 
+// legacy flat mapping removed per request - only nested JSON supported now
+
 // OnDatabaseInitialized 当数据库初始化完成时，handlers 包中的回调（由 main 设置）
 var OnDatabaseInitialized func(daoManager *repository.RepositoryManager)
 
@@ -191,14 +192,16 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 			return
 		}
 		defer atomic.StoreInt32(&initInProgress, 0)
+		// 解析 JSON（仅接受嵌套结构），不再兼容 legacy 扁平字段
 		var req SetupRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			common.BadRequestResponse(c, "请求参数错误: "+err.Error())
 			return
 		}
-
 		// 继续使用 req 进行验证和初始化
 		var desiredStoragePath string
+		// 不再从请求体中读取 legacy storage_path；如果配置管理器已包含 storage path，则后续逻辑会处理
+
 		if manager.Storage.Type == "local" {
 			sp := manager.Storage.StoragePath
 			// 若为相对路径，则相对于 manager.Base.DataPath

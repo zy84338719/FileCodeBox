@@ -12,10 +12,33 @@ const Dashboard = {
      * 初始化仪表板
      */
     async init() {
+        // 如果有 token 但缺少 user_info，先尝试在初始化阶段拉取用户信息（自愈），最多重试3次
+        const token = UserAuth.getToken();
+        if (token && !UserAuth.getUserInfo()) {
+            console.log('[dashboard] 检测到 token 存在但 user_info 缺失，开始最多 3 次尝试拉取用户信息');
+            let success = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    console.log(`[dashboard] 拉取 user_info 尝试 #${attempt}`);
+                    const userInfo = await this.loadUserInfo();
+                    if (userInfo) {
+                        success = true;
+                        break;
+                    }
+                } catch (err) {
+                    console.error('[dashboard] 尝试拉取 user_info 时出错:', err);
+                }
+                // 指数退避等待
+                await new Promise(res => setTimeout(res, 300 * attempt));
+            }
+            if (!success) {
+                console.warn('[dashboard] 多次尝试后仍无法获取 user_info');
+                this.showProfileRetryPrompt();
+            }
+        }
+
+        // 认证检查（如果没有 token，会在页面内显示登录提示）
         if (!this.checkAuth()) return;
-        
-        // 加载用户信息
-        await this.loadUserInfo();
         
         const userInfo = UserAuth.getUserInfo();
         if (userInfo) {
@@ -44,10 +67,55 @@ const Dashboard = {
     checkAuth() {
         const token = UserAuth.getToken();
         if (!token) {
-            window.location.href = '/user/login';
+            // 不再直接重定向到登录页，避免在某些环境下导致页面闪现为空白。
+            // 改为在页面内显示友好的登录提示，用户可以点击跳转登录。
+            this.showLoginPrompt();
             return false;
         }
         return true;
+    },
+
+    /**
+     * 在页面中间显示登录提示（当用户未登录或 token 缺失时）
+     */
+    showLoginPrompt() {
+        try {
+            const container = document.querySelector('.container') || document.body;
+            // 避免重复创建
+            if (document.getElementById('dashboard-login-prompt')) return;
+
+            const prompt = document.createElement('div');
+            prompt.id = 'dashboard-login-prompt';
+            prompt.style.position = 'fixed';
+            prompt.style.left = '50%';
+            prompt.style.top = '50%';
+            prompt.style.transform = 'translate(-50%, -50%)';
+            prompt.style.zIndex = '9999';
+            prompt.style.background = 'rgba(255,255,255,0.96)';
+            prompt.style.padding = '24px 32px';
+            prompt.style.borderRadius = '8px';
+            prompt.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)';
+            prompt.style.textAlign = 'center';
+            prompt.innerHTML = `
+                <h3 style="margin:0 0 8px 0;">您尚未登录</h3>
+                <p style="margin:0 0 12px 0;color:#666;">要访问用户中心，请先登录账户。</p>
+                <div>
+                    <button id="dashboard-login-btn" class="btn" style="margin-right:8px;">去登录</button>
+                    <button id="dashboard-refresh-btn" class="btn btn-secondary">刷新页面</button>
+                </div>
+            `;
+
+            container.appendChild(prompt);
+
+            document.getElementById('dashboard-login-btn').addEventListener('click', () => {
+                window.location.href = '/user/login';
+            });
+            document.getElementById('dashboard-refresh-btn').addEventListener('click', () => {
+                window.location.reload();
+            });
+        } catch (err) {
+            console.error('显示登录提示失败:', err);
+        }
     },
     
     /**
@@ -73,19 +141,92 @@ const Dashboard = {
             const response = await fetch('/user/profile', {
                 headers: UserAuth.getAuthHeaders()
             });
-            
-            if (response.ok) {
-                const result = await response.json();
+            if (!response.ok) {
+                console.warn('[dashboard] /user/profile 返回非 2xx 状态', response.status);
+                return null;
+            }
+
+            const result = await response.json().catch(err => {
+                console.error('[dashboard] 解析 /user/profile 返回 JSON 失败:', err);
+                return null;
+            });
+
+            if (!result) return null;
+
+            if (result.code === 200 && result.data) {
                 const userInfo = result.data;
                 UserAuth.setUserInfo(userInfo);
+                // 更新 UI 状态以反映登录状态
+                UserAuth.updateUI();
+                console.log('[dashboard] 已获取并保存 user_info');
                 return userInfo;
+            } else {
+                console.warn('[dashboard] /user/profile 返回结构非预期:', result);
+                return null;
             }
         } catch (error) {
             console.error('获取用户信息失败:', error);
         }
         return null;
     },
-    
+
+    /**
+     * 当拉取 user_info 多次失败时，提供一个可操作提示（重试或重新登录）
+     */
+    showProfileRetryPrompt() {
+        try {
+            const container = document.querySelector('.container') || document.body;
+            // 避免重复创建
+            if (document.getElementById('dashboard-profile-retry')) return;
+
+            const prompt = document.createElement('div');
+            prompt.id = 'dashboard-profile-retry';
+            prompt.style.position = 'fixed';
+            prompt.style.left = '50%';
+            prompt.style.top = '60%';
+            prompt.style.transform = 'translate(-50%, -50%)';
+            prompt.style.zIndex = '9999';
+            prompt.style.background = 'rgba(255,255,255,0.96)';
+            prompt.style.padding = '16px 20px';
+            prompt.style.borderRadius = '6px';
+            prompt.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)';
+            prompt.style.textAlign = 'center';
+            prompt.innerHTML = `
+                <div style="margin-bottom:8px;color:#333;">获取用户信息失败</div>
+                <div style="margin-bottom:12px;color:#666;font-size:13px;">系统检测到你已登录（token 存在），但无法获取到账户信息，可能是网络或会话问题。</div>
+                <div>
+                    <button id="dashboard-retry-profile" class="btn" style="margin-right:8px;">重试获取用户信息</button>
+                    <button id="dashboard-rel-login" class="btn btn-secondary">重新登录</button>
+                </div>
+            `;
+
+            container.appendChild(prompt);
+
+            document.getElementById('dashboard-retry-profile').addEventListener('click', async () => {
+                document.getElementById('dashboard-profile-retry').remove();
+                console.log('[dashboard] 用户触发重试获取 user_info');
+                await this.loadUserInfo();
+                const ui = UserAuth.getUserInfo();
+                if (ui) {
+                    this.updateUserDisplay(ui);
+                    this.loadDashboard();
+                } else {
+                    // 如果仍失败，重新展示提示
+                    this.showProfileRetryPrompt();
+                }
+            });
+
+            document.getElementById('dashboard-rel-login').addEventListener('click', () => {
+                // 清理本地登录信息并跳转登录页
+                UserAuth.removeToken();
+                UserAuth.removeUserInfo();
+                window.location.href = '/user/login';
+            });
+        } catch (err) {
+            console.error('显示 profile 重试提示失败:', err);
+        }
+    },
+
     /**
      * 切换标签页
      */
