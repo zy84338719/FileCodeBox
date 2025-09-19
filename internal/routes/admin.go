@@ -75,8 +75,30 @@ func SetupAdminRoutes(
 			c.File(p)
 		})
 
+		// HEAD for css (ensure middleware runs for HEAD as well)
+		authGroup.HEAD("/css/*filepath", func(c *gin.Context) {
+			fp := c.Param("filepath")
+			p := filepath.Join(themeDir, "admin", "css", fp)
+			if _, err := os.Stat(p); err != nil {
+				c.Status(404)
+				return
+			}
+			c.File(p)
+		})
+
 		// js
 		authGroup.GET("/js/*filepath", func(c *gin.Context) {
+			fp := c.Param("filepath")
+			p := filepath.Join(themeDir, "admin", "js", fp)
+			if _, err := os.Stat(p); err != nil {
+				c.Status(404)
+				return
+			}
+			c.File(p)
+		})
+
+		// HEAD for js
+		authGroup.HEAD("/js/*filepath", func(c *gin.Context) {
 			fp := c.Param("filepath")
 			p := filepath.Join(themeDir, "admin", "js", fp)
 			if _, err := os.Stat(p); err != nil {
@@ -97,8 +119,30 @@ func SetupAdminRoutes(
 			c.File(p)
 		})
 
+		// HEAD for templates
+		authGroup.HEAD("/templates/*filepath", func(c *gin.Context) {
+			fp := c.Param("filepath")
+			p := filepath.Join(themeDir, "admin", "templates", fp)
+			if _, err := os.Stat(p); err != nil {
+				c.Status(404)
+				return
+			}
+			c.File(p)
+		})
+
 		// assets and components
 		authGroup.GET("/assets/*filepath", func(c *gin.Context) {
+			fp := c.Param("filepath")
+			p := filepath.Join(themeDir, "assets", fp)
+			if _, err := os.Stat(p); err != nil {
+				c.Status(404)
+				return
+			}
+			c.File(p)
+		})
+
+		// HEAD for assets
+		authGroup.HEAD("/assets/*filepath", func(c *gin.Context) {
 			fp := c.Param("filepath")
 			p := filepath.Join(themeDir, "assets", fp)
 			if _, err := os.Stat(p); err != nil {
@@ -117,8 +161,32 @@ func SetupAdminRoutes(
 			c.File(p)
 		})
 
+		// HEAD for components
+		authGroup.HEAD("/components/*filepath", func(c *gin.Context) {
+			fp := c.Param("filepath")
+			p := filepath.Join(themeDir, "components", fp)
+			if _, err := os.Stat(p); err != nil {
+				c.Status(404)
+				return
+			}
+			c.File(p)
+		})
+		authGroup.GET("/components/*filepath", func(c *gin.Context) {
+			fp := c.Param("filepath")
+			p := filepath.Join(themeDir, "components", fp)
+			if _, err := os.Stat(p); err != nil {
+				c.Status(404)
+				return
+			}
+			c.File(p)
+		})
+
 		// 管理前端入口受保护：仅管理员可访问 /admin/
 		authGroup.GET("/", func(c *gin.Context) {
+			static.ServeAdminPage(c, cfg)
+		})
+		// HEAD for admin entry
+		authGroup.HEAD("/", func(c *gin.Context) {
 			static.ServeAdminPage(c, cfg)
 		})
 
