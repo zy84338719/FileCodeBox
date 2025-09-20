@@ -3,7 +3,8 @@
 # 测试 WebDAV 存储配置
 
 BASE_URL="http://localhost:12345"
-# 注意：静态管理员令牌已弃用。请先通过管理员用户名/密码登录并获取 JWT，用于后续请求（或通过 ADMIN_JWT 环境变量注入）。
+# 注意：后端接口已去除 `admin_` 字段前缀（返回使用 `username`），但测试脚本保持对环境变量 `ADMIN_USERNAME`/`ADMIN_PASSWORD` 的兼容性。
+# 请先通过管理员用户名/密码登录并获取 JWT，用于后续请求（或通过 ADMIN_JWT 环境变量注入）。
 ADMIN_JWT=""
 
 echo "=== 测试 WebDAV 存储配置 ==="

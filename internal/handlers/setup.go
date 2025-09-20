@@ -182,6 +182,9 @@ var OnDatabaseInitialized func(daoManager *repository.RepositoryManager)
 // initInProgress 用于防止并发初始化
 var initInProgress int32 = 0
 
+// onDBInitCalled 防止重复调用 OnDatabaseInitialized（多次 POST /setup 导致重复注册路由）
+var onDBInitCalled int32 = 0
+
 // InitializeNoDB 用于在没有 daoManager 的情况下处理 /setup/initialize 请求
 // 它会：验证请求、使用配置管理器初始化数据库、创建 daoManager、创建管理员用户，最后触发 OnDatabaseInitialized 回调
 func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
@@ -394,13 +397,18 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 
 		// 触发回调以让主程序挂载其余路由并启动后台任务
 		if OnDatabaseInitialized != nil {
-			OnDatabaseInitialized(daoManager)
+			// 只允许调用一次，避免重复注册路由导致 gin panic
+			if atomic.CompareAndSwapInt32(&onDBInitCalled, 0, 1) {
+				OnDatabaseInitialized(daoManager)
+			} else {
+				log.Printf("[InitializeNoDB] OnDatabaseInitialized 已调用，跳过重复挂载")
+			}
 		}
 
 		common.SuccessWithMessage(c, "系统初始化成功", map[string]interface{}{
-			"message":        "系统初始化完成",
-			"admin_username": req.Admin.Username,
-			"database_type":  req.Database.Type,
+			"message":       "系统初始化完成",
+			"username":      req.Admin.Username,
+			"database_type": req.Database.Type,
 		})
 	}
 }
@@ -467,7 +475,7 @@ func (h *SetupHandler) Initialize(c *gin.Context) {
 	}
 
 	common.SuccessWithMessage(c, "系统初始化成功", map[string]interface{}{
-		"message":        "系统初始化完成",
-		"admin_username": req.Admin.Username,
+		"message":  "系统初始化完成",
+		"username": req.Admin.Username,
 	})
 }

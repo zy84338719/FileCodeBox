@@ -15,6 +15,9 @@ import (
 	"github.com/zy84338719/filecodebox/internal/static"
 	"github.com/zy84338719/filecodebox/internal/storage"
 
+	"sync"
+	"sync/atomic"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -168,6 +171,22 @@ func RegisterDynamicRoutes(
 	daoManager *repository.RepositoryManager,
 	storageManager *storage.StorageManager,
 ) {
+	// 序列化注册，防止并发导致的重复注册 panic
+	dynamicRegisterMu.Lock()
+	defer dynamicRegisterMu.Unlock()
+
+	// 使用原子标志防止重复调用
+	if registerDynamicOnce() {
+		logrus.Info("动态路由已注册（atomic），跳过 RegisterDynamicRoutes")
+		return
+	}
+	// 如果动态路由已经注册（例如 /share/text/ 已存在），则跳过注册以防止重复注册导致 panic
+	for _, r := range router.Routes() {
+		if r.Method == "POST" && r.Path == "/share/text/" {
+			logrus.Info("动态路由已存在，跳过 RegisterDynamicRoutes")
+			return
+		}
+	}
 	// 创建具体的存储服务
 	storageService := storage.NewConcreteStorageService(manager)
 
@@ -194,6 +213,21 @@ func RegisterDynamicRoutes(
 	SetupAdminRoutes(router, adminHandler, storageHandler, manager, userService)
 	// System init routes are no longer needed after DB init
 }
+
+// package-level atomic to ensure RegisterDynamicRoutes runs only once
+var dynamicRoutesRegistered int32 = 0
+
+func registerDynamicOnce() bool {
+	// 如果已经设置，则返回 true
+	if atomic.LoadInt32(&dynamicRoutesRegistered) == 1 {
+		return true
+	}
+	// 尝试设置为 1
+	return !atomic.CompareAndSwapInt32(&dynamicRoutesRegistered, 0, 1)
+}
+
+// mutex to serialize dynamic route registration
+var dynamicRegisterMu sync.Mutex
 
 // SetupAllRoutes 设置所有路由（使用已初始化的处理器）
 func SetupAllRoutes(

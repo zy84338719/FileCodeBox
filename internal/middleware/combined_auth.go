@@ -15,6 +15,17 @@ func CombinedAdminAuth(manager *config.ConfigManager, userService interface {
 	ValidateToken(string) (interface{}, error)
 }) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Allow public access to admin front-end entry and static assets
+		// This prevents accidental interception of requests for the login page
+		// when an invalid/stale Authorization header is present.
+		p := c.Request.URL.Path
+		if p == "/admin/" || p == "/admin" ||
+			strings.HasPrefix(p, "/admin/css/") || strings.HasPrefix(p, "/admin/js/") ||
+			strings.HasPrefix(p, "/admin/assets/") || strings.HasPrefix(p, "/admin/templates/") ||
+			strings.HasPrefix(p, "/admin/components/") {
+			c.Next()
+			return
+		}
 		// 先尝试JWT用户认证
 		authHeader := c.GetHeader("Authorization")
 		if authHeader != "" {

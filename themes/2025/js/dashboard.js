@@ -7,6 +7,30 @@ const Dashboard = {
     // 分页配置
     currentPage: 1,
     pageSize: 20,
+
+    // Helper: 安全解析 JSON
+    async parseJsonSafe(response) {
+        try {
+            return await response.json();
+        } catch (err) {
+            console.error('[dashboard] 解析 JSON 失败:', err);
+            return null;
+        }
+    },
+
+    // Helper: 处理认证相关返回（401/403）
+    handleAuthError(result) {
+        if (!result) return false;
+        if (result.code === 401 || result.code === 403) {
+            // 清理本地登录信息并提示重新登录
+            UserAuth.removeToken();
+            UserAuth.removeUserInfo();
+            UserAuth.updateUI();
+            this.showLoginPrompt();
+            return true;
+        }
+        return false;
+    },
     
     /**
      * 初始化仪表板
@@ -141,19 +165,9 @@ const Dashboard = {
             const response = await fetch('/user/profile', {
                 headers: UserAuth.getAuthHeaders()
             });
-            if (!response.ok) {
-                console.warn('[dashboard] /user/profile 返回非 2xx 状态', response.status);
-                return null;
-            }
-
-            const result = await response.json().catch(err => {
-                console.error('[dashboard] 解析 /user/profile 返回 JSON 失败:', err);
-                return null;
-            });
-
-            if (!result) return null;
-
-            if (result.code === 200 && result.data) {
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return null;
+            if (result && result.code === 200 && result.data) {
                 const userInfo = result.data;
                 UserAuth.setUserInfo(userInfo);
                 // 更新 UI 状态以反映登录状态
@@ -279,16 +293,14 @@ const Dashboard = {
             const response = await fetch('/user/stats', {
                 headers: UserAuth.getAuthHeaders()
             });
-            
-            if (response.ok) {
-                const result = await response.json();
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return;
+            if (result && result.code === 200 && result.data) {
                 const stats = result.data;
-                
-                // 更新统计卡片
                 this.updateStatsCards(stats);
-                
-                // 更新存储进度条
                 this.updateStorageProgress(stats);
+            } else {
+                console.warn('[dashboard] /user/stats 返回非预期结果:', result);
             }
         } catch (error) {
             console.error('加载仪表板数据失败:', error);
@@ -349,13 +361,14 @@ const Dashboard = {
             const response = await fetch(`/user/files?page=${page}&page_size=${this.pageSize}`, {
                 headers: UserAuth.getAuthHeaders()
             });
-            
-            if (response.ok) {
-                const result = await response.json();
-                const files = result.data.files;
-                const pagination = result.data.pagination;
-                
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return;
+            if (result && result.code === 200 && result.data) {
+                const files = result.data.files || [];
+                const pagination = result.data.pagination || { page: 1, total_pages: 1, total: 0 };
                 this.renderFilesList(files, pagination);
+            } else {
+                console.warn('[dashboard] /user/files 返回非预期结果:', result);
             }
         } catch (error) {
             console.error('加载文件列表失败:', error);
@@ -554,21 +567,20 @@ const Dashboard = {
             const response = await fetch('/user/profile', {
                 headers: UserAuth.getAuthHeaders()
             });
-            
-            if (response.ok) {
-                const result = await response.json();
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return;
+            if (result && result.code === 200 && result.data) {
                 const profile = result.data;
-                
                 const form = document.getElementById('profile-form');
                 if (form) {
-                    form.username.value = profile.username;
-                    form.email.value = profile.email;
-                    form.nickname.value = profile.nickname;
-                    
-                    // 处理日期字段，如果不存在则显示暂无数据
+                    form.username.value = profile.username || '';
+                    form.email.value = profile.email || '';
+                    form.nickname.value = profile.nickname || '';
                     form.created_at.value = profile.created_at ? formatDateTime(profile.created_at) : '暂无数据';
                     form.last_login_at.value = profile.last_login_at ? formatDateTime(profile.last_login_at) : '暂无数据';
                 }
+            } else {
+                console.warn('[dashboard] /user/profile 返回非预期结果:', result);
             }
         } catch (error) {
             console.error('加载个人资料失败:', error);
@@ -619,13 +631,13 @@ const Dashboard = {
                 method: 'DELETE',
                 headers: UserAuth.getAuthHeaders()
             });
-            
-            if (response.ok) {
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return;
+            if (result && result.code === 200) {
                 showNotification('文件删除成功', 'success');
                 this.loadMyFiles(this.currentPage);
             } else {
-                const result = await response.json();
-                showNotification('删除失败: ' + (result.message || '未知错误'), 'error');
+                showNotification('删除失败: ' + (result && result.message ? result.message : '未知错误'), 'error');
             }
         } catch (error) {
             console.error('删除文件失败:', error);
@@ -833,10 +845,10 @@ const Dashboard = {
                     headers: UserAuth.getAuthHeaders(),
                     body: JSON.stringify(data)
                 });
-                
-                if (response.ok) {
+                const result = await this.parseJsonSafe(response);
+                if (this.handleAuthError(result)) return;
+                if (result && result.code === 200) {
                     showNotification('资料更新成功', 'success');
-                    
                     // 更新本地存储的用户信息
                     const userInfo = UserAuth.getUserInfo();
                     if (userInfo) {
@@ -845,8 +857,7 @@ const Dashboard = {
                         this.updateUserDisplay(userInfo);
                     }
                 } else {
-                    const result = await response.json();
-                    showNotification('更新失败: ' + result.message, 'error');
+                    showNotification('更新失败: ' + (result && result.message ? result.message : '未知错误'), 'error');
                 }
             } catch (error) {
                 showNotification('更新失败: ' + error.message, 'error');

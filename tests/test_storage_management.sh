@@ -3,7 +3,8 @@
 # 测试存储管理功能
 
 BASE_URL="http://localhost:12345"
-# 注意：静态管理员令牌已弃用。测试请先通过管理员用户名/密码登录获取 JWT（可通过 ADMIN_JWT 环境变量注入）
+# 注意：后端接口已去除 `admin_` 字段前缀（返回使用 `username`），但测试脚本保持对环境变量 `ADMIN_USERNAME`/`ADMIN_PASSWORD` 的兼容性。
+# 请使用管理员用户名/密码登录获取 JWT（也可通过 ADMIN_JWT 环境变量注入）
 # 示例：ADMIN_JWT=$(curl -s -X POST "$BASE_URL/admin/login" -d '{"username":"admin","password":"yourpass"}' | jq -r '.data.token')
 ADMIN_JWT=""
 

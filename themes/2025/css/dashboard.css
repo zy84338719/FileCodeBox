@@ -751,3 +751,90 @@ body {
         gap: var(--spacing-sm);
     }
 }
+
+/* ===== Migrated overrides from dashboard.html inline styles ===== */
+.container {
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+}
+
+.logo-icon { width: 36px; height: 36px; }
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: inline-block;
+}
+
+.nav-tabs { margin-top: 20px; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; justify-content: flex-start; }
+
+.tab {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #e6e6e6;
+    background: #fff;
+    cursor: pointer;
+}
+
+.tab.active { background: #007bff; color: #fff; border-color: #007bff; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+
+.content-section {
+    background: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    margin-bottom: 20px;
+}
+
+.section-header { display: flex; align-items: center; justify-content: space-between; }
+
+.form-row { display: flex; gap: 16px; flex-wrap: wrap; }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; min-width: 200px; flex: 1; }
+
+.upload-area { border: 2px dashed #ccc; border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; }
+
+.btn { padding: 10px 16px; border-radius: 6px; background: #007bff; color: #fff; border: none; cursor: pointer; }
+.btn-secondary { background: #6c757d; }
+
+.progress { height: 8px; background: #f1f1f1; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+.progress-fill { height: 100%; background: #007bff; width: 0%; }
+
+@media (max-width: 600px) {
+    .form-row { flex-direction: column; }
+    .tabs { flex-wrap: wrap; }
+    .user-name { display: none; }
+    .container { padding: 12px; }
+}
+
+/* End migrated overrides */
