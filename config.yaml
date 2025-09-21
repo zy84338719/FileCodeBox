@@ -2,7 +2,7 @@ base:
     name: FileCodeBox
     description: 开箱即用的文件快传系统
     keywords: ""
-    port: 12346
+    port: 12345
     host: 0.0.0.0
     datapath: /Users/zhangyi/zy/FileCodeBox/data
     production: false
