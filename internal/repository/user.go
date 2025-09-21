@@ -75,13 +75,15 @@ func (dao *UserDAO) UpdateColumns(id uint, updates map[string]interface{}) error
 
 // UpdateUserFields 更新用户字段（结构化方式）
 func (dao *UserDAO) UpdateUserFields(id uint, user models.User) error {
-
-	userMap := user.ToMap()
-	if len(userMap) == 0 {
-		return errors.New("没有需要更新的字段")
+	// 直接使用结构体进行更新，GORM 会自动处理非零值字段
+	result := dao.db.Model(&models.User{}).Where("id = ?", id).Updates(user)
+	if result.Error != nil {
+		return result.Error
 	}
-
-	return dao.db.Model(&models.User{}).Where("id = ?", id).Updates(userMap).Error
+	if result.RowsAffected == 0 {
+		return errors.New("没有需要更新的字段或用户不存在")
+	}
+	return nil
 }
 
 // UpdateUserProfile 更新用户资料（用户自己更新）
@@ -90,7 +92,8 @@ func (dao *UserDAO) UpdateUserProfile(id uint, user *models.User) error {
 		return errors.New("用户信息不能为空")
 	}
 
-	return dao.db.Model(&models.User{}).Where("id = ?", id).Updates(user.ToMap()).Error
+	// 直接使用结构体进行更新，GORM 会自动处理非零值字段
+	return dao.db.Model(&models.User{}).Where("id = ?", id).Updates(user).Error
 }
 
 // UpdatePassword 更新用户密码

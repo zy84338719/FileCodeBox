@@ -15,6 +15,13 @@ import (
 	"github.com/zy84338719/filecodebox/internal/storage"
 )
 
+// MCPStatus MCP服务器状态
+type MCPStatus struct {
+	Running    bool       `json:"running"`
+	Timestamp  string     `json:"timestamp"`
+	ServerInfo ServerInfo `json:"server_info,omitempty"`
+}
+
 // MCPManager MCP 服务器管理器
 type MCPManager struct {
 	manager        *config.ConfigManager
@@ -161,19 +168,19 @@ func (m *MCPManager) IsRunning() bool {
 }
 
 // GetStatus 获取 MCP 服务器状态
-func (m *MCPManager) GetStatus() map[string]interface{} {
+func (m *MCPManager) GetStatus() MCPStatus {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	status := map[string]interface{}{
-		"running":   m.running,
-		"timestamp": time.Now().Format("2006-01-02 15:04:05"),
+	status := MCPStatus{
+		Running:   m.running,
+		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
 	if m.running && m.server != nil {
-		status["server_info"] = map[string]interface{}{
-			"name":    "FileCodeBox MCP Server",
-			"version": "1.0.0",
+		status.ServerInfo = ServerInfo{
+			Name:    "FileCodeBox MCP Server",
+			Version: "1.0.0",
 		}
 	}
 

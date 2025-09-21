@@ -425,10 +425,10 @@ const Dashboard = {
         `;
         
         files.forEach(file => {
-            const fileName = file.file_name || (file.prefix + file.suffix);
+            const fileName = file.file_name || `文件-${file.code}`;
             const uploadType = file.upload_type === 'authenticated' ? '认证上传' : '匿名上传';
             const authRequired = file.require_auth ? '🔒' : '🔓';
-            const fileExtension = fileName.split('.').pop().toUpperCase();
+            const fileExtension = fileName ? fileName.split('.').pop().toUpperCase() : 'FILE';
             
             // 根据文件扩展名选择图标
             const fileIcon = this.getFileIcon(fileExtension);
@@ -457,7 +457,7 @@ const Dashboard = {
                             <a href="/share/download?code=${file.code}" class="btn-sm btn-success" title="下载文件">
                                 📥 下载
                             </a>
-                            <button class="btn-sm btn-danger" onclick="Dashboard.deleteFile('${file.id}')" title="删除文件">
+                            <button class="btn-sm btn-danger" onclick="Dashboard.deleteFile('${file.code}')" title="删除文件">
                                 🗑️ 删除
                             </button>
                         </div>
@@ -649,14 +649,52 @@ const Dashboard = {
      * 设置文件上传
      */
     setupFileUpload() {
-        const uploadArea = document.querySelector('.upload-area');
+        this.setupFileInput();
+        this.setupDragAndDrop();
+    },
+
+    /**
+     * 设置文件输入
+     */
+    setupFileInput() {
         const fileInput = document.getElementById('file-input');
+        const folderInput = document.getElementById('folder-input');
         const uploadText = document.getElementById('upload-text');
         
-        if (!uploadArea || !fileInput || !uploadText) return;
+        if (!fileInput || !folderInput || !uploadText) return;
         
-        // 点击选择文件
-        uploadArea.addEventListener('click', () => fileInput.click());
+        // 文件选择
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                uploadText.textContent = `已选择: ${file.name} (${fileSizeMB}MB)`;
+                // 清空文件夹输入
+                folderInput.value = '';
+            }
+        });
+
+        // 文件夹选择
+        folderInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files.length > 0) {
+                this.updateFolderDisplay(files, uploadText);
+                // 清空文件输入
+                fileInput.value = '';
+            }
+        });
+    },
+
+    /**
+     * 设置拖拽上传
+     */
+    setupDragAndDrop() {
+        const uploadArea = document.querySelector('.upload-area');
+        const fileInput = document.getElementById('file-input');
+        const folderInput = document.getElementById('folder-input');
+        const uploadText = document.getElementById('upload-text');
+        
+        if (!uploadArea || !fileInput || !folderInput || !uploadText) return;
         
         // 拖拽上传
         uploadArea.addEventListener('dragover', (e) => {
@@ -672,22 +710,64 @@ const Dashboard = {
             e.preventDefault();
             uploadArea.classList.remove('dragover');
             
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                fileInput.files = files;
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length === 0) return;
+
+            // 检查是否拖拽了文件夹（通过检查DataTransfer items）
+            const items = e.dataTransfer.items;
+            let hasFolders = false;
+            
+            if (items) {
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (item.webkitGetAsEntry && item.webkitGetAsEntry().isDirectory) {
+                        hasFolders = true;
+                        break;
+                    }
+                }
+            }
+
+            if (hasFolders) {
+                // 文件夹拖拽，需要处理文件夹结构
+                this.handleFolderDrop(e.dataTransfer, uploadText);
+            } else if (files.length === 1) {
+                // 单文件
+                fileInput.files = e.dataTransfer.files;
                 const fileSizeMB = (files[0].size / 1024 / 1024).toFixed(2);
                 uploadText.textContent = `已选择: ${files[0].name} (${fileSizeMB}MB)`;
+            } else {
+                // 多文件，模拟文件夹上传
+                this.updateFolderDisplay(files, uploadText);
+                // 创建新的FileList并赋值给folderInput
+                const dt = new DataTransfer();
+                files.forEach(file => dt.items.add(file));
+                folderInput.files = dt.files;
             }
         });
+    },
+
+    /**
+     * 处理文件夹拖拽
+     */
+    async handleFolderDrop(dataTransfer, uploadText) {
+        // 这里可以实现更复杂的文件夹拖拽处理
+        // 目前先显示提示信息
+        uploadText.textContent = '检测到文件夹，请使用"选择文件夹"按钮';
+    },
+
+    /**
+     * 更新文件夹显示
+     */
+    updateFolderDisplay(files, uploadText) {
+        const fileCount = files.length;
+        let totalSize = 0;
         
-        // 文件选择
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
-                uploadText.textContent = `已选择: ${file.name} (${fileSizeMB}MB)`;
-            }
-        });
+        for (let i = 0; i < files.length; i++) {
+            totalSize += files[i].size;
+        }
+        
+        const totalSizeMB = (totalSize / 1024 / 1024).toFixed(2);
+        uploadText.textContent = `已选择 ${fileCount} 个文件 (总计 ${totalSizeMB}MB)`;
     },
     
     /**
@@ -710,14 +790,20 @@ const Dashboard = {
             e.preventDefault();
             
             const fileInput = document.getElementById('file-input');
-            const file = fileInput.files[0];
+            const folderInput = document.getElementById('folder-input');
             
-            if (!file) {
-                showNotification('请选择文件', 'error');
+            // 检查是单文件还是文件夹
+            if (fileInput.files.length > 0) {
+                // 单文件上传
+                const file = fileInput.files[0];
+                await this.handleFileUpload(e.target, file);
+            } else if (folderInput.files.length > 0) {
+                // 文件夹上传
+                await this.handleFolderUpload(e.target, folderInput.files);
+            } else {
+                showNotification('请选择文件或文件夹', 'error');
                 return;
             }
-            
-            await this.handleFileUpload(e.target, file);
         });
     },
     
@@ -801,8 +887,17 @@ const Dashboard = {
         // 重置表单
         form.reset();
         const uploadText = document.getElementById('upload-text');
+        const fileInput = document.getElementById('file-input');
+        const folderInput = document.getElementById('folder-input');
+        
         if (uploadText) {
             uploadText.textContent = '点击选择文件或拖拽到此处';
+        }
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        if (folderInput) {
+            folderInput.value = '';
         }
         
         // 刷新统计
@@ -822,6 +917,129 @@ const Dashboard = {
             </div>
         `;
         showNotification('上传失败: ' + message, 'error');
+    },
+
+    /**
+     * 处理文件夹上传
+     */
+    async handleFolderUpload(form, files) {
+        const uploadBtn = document.getElementById('upload-btn');
+        const uploadProgress = document.getElementById('upload-progress');
+        const uploadProgressFill = document.getElementById('upload-progress-fill');
+        const uploadResult = document.getElementById('upload-result');
+        
+        if (!uploadBtn || !uploadProgress || !uploadProgressFill || !uploadResult) return;
+        
+        // 检查JSZip是否可用
+        if (typeof JSZip === 'undefined') {
+            this.showUploadError('JSZip库未加载，无法上传文件夹', uploadResult);
+            return;
+        }
+        
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = '压缩中...';
+        uploadProgress.style.display = 'block';
+        
+        try {
+            // 创建ZIP文件
+            const zip = new JSZip();
+            const fileArray = Array.from(files);
+            
+            // 获取文件夹名称（从第一个文件的路径中提取）
+            let folderName = 'folder';
+            if (fileArray.length > 0 && fileArray[0].webkitRelativePath) {
+                const pathParts = fileArray[0].webkitRelativePath.split('/');
+                folderName = pathParts[0] || 'folder';
+            }
+            
+            // 添加所有文件到ZIP
+            for (let i = 0; i < fileArray.length; i++) {
+                const file = fileArray[i];
+                const relativePath = file.webkitRelativePath || file.name;
+                zip.file(relativePath, file);
+                
+                // 更新进度（压缩阶段占50%）
+                const progress = Math.floor((i / fileArray.length) * 50);
+                uploadProgressFill.style.width = progress + '%';
+            }
+            
+            uploadBtn.textContent = '生成压缩包...';
+            
+            // 生成ZIP blob
+            const zipBlob = await zip.generateAsync({ 
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 6 }
+            }, (metadata) => {
+                // 更新压缩进度（50%-80%）
+                const progress = 50 + Math.floor(metadata.percent * 0.3);
+                uploadProgressFill.style.width = progress + '%';
+            });
+            
+            uploadBtn.textContent = '上传中...';
+            
+            // 创建新的File对象
+            const zipFile = new File([zipBlob], `${folderName}.zip`, { type: 'application/zip' });
+            
+            // 上传ZIP文件
+            await this.uploadSingleFile(form, zipFile, uploadProgressFill, uploadResult);
+            
+        } catch (error) {
+            console.error('文件夹上传失败:', error);
+            this.showUploadError(error.message, uploadResult);
+        } finally {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = '上传文件';
+            setTimeout(() => {
+                uploadProgress.style.display = 'none';
+                uploadProgressFill.style.width = '0%';
+            }, 1000);
+        }
+    },
+
+    /**
+     * 上传单个文件（用于文件夹上传中的ZIP文件）
+     */
+    async uploadSingleFile(form, file, uploadProgressFill, uploadResult) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('expire_style', form.expire_style.value);
+        formData.append('expire_value', form.expire_value.value);
+        formData.append('require_auth', form.require_auth.checked ? 'true' : 'false');
+
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            
+            // 上传进度（80%-100%）
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const progress = 80 + Math.floor((e.loaded / e.total) * 20);
+                    uploadProgressFill.style.width = progress + '%';
+                }
+            });
+            
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const result = JSON.parse(xhr.responseText);
+                    if (result.code === 200) {
+                        this.showUploadSuccess(result.data, uploadResult, form);
+                        resolve(result);
+                    } else {
+                        reject(new Error(result.message));
+                    }
+                } else {
+                    reject(new Error('上传失败'));
+                }
+            };
+            
+            xhr.onerror = () => {
+                reject(new Error('网络错误'));
+            };
+            
+            xhr.open('POST', '/share/file/');
+            xhr.setRequestHeader('Authorization', 'Bearer ' + UserAuth.getToken());
+            xhr.send(formData);
+        });
     },
     
     /**

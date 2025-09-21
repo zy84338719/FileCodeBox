@@ -9,6 +9,7 @@ import (
 
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
+	"github.com/zy84338719/filecodebox/internal/mcp"
 	"github.com/zy84338719/filecodebox/internal/middleware"
 	"github.com/zy84338719/filecodebox/internal/repository"
 	"github.com/zy84338719/filecodebox/internal/services"
@@ -195,6 +196,19 @@ func RegisterDynamicRoutes(
 	shareServiceInstance := services.NewShareService(daoManager, manager, storageService, userService)
 	chunkService := services.NewChunkService(daoManager, manager, storageService)
 	adminService := services.NewAdminService(daoManager, manager, storageService)
+
+	// 重新初始化 MCP 管理器并根据配置启动（确保动态路由注册时MCP管理器可用）
+	mcpManager := mcp.NewMCPManager(manager, daoManager, storageManager, shareServiceInstance, adminService, userService)
+	handlers.SetMCPManager(mcpManager)
+	if manager.MCP.EnableMCPServer == 1 {
+		if err := mcpManager.StartMCPServer(manager.MCP.MCPPort); err != nil {
+			logrus.Errorf("启动 MCP 服务器失败: %v", err)
+		} else {
+			logrus.Info("MCP 服务器已启动")
+		}
+	} else {
+		logrus.Info("MCP 服务器未启用")
+	}
 
 	// 初始化处理器
 	shareHandler := handlers.NewShareHandler(shareServiceInstance)

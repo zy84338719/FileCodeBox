@@ -54,20 +54,6 @@ func (mc *MCPConfig) IsMCPEnabled() bool {
 }
 
 // Update 更新配置
-func (mc *MCPConfig) Update(updates map[string]interface{}) error {
-	if enableMCP, ok := updates["enable_mcp_server"].(int); ok {
-		mc.EnableMCPServer = enableMCP
-	}
-	if port, ok := updates["mcp_port"].(string); ok {
-		mc.MCPPort = port
-	}
-	if host, ok := updates["mcp_host"].(string); ok {
-		mc.MCPHost = host
-	}
-
-	return mc.Validate()
-}
-
 // Clone 克隆配置
 func (mc *MCPConfig) Clone() *MCPConfig {
 	return &MCPConfig{

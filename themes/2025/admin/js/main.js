@@ -138,6 +138,64 @@ function initApp() {
 }
 
 /**
+ * 处理管理员登录
+ */
+async function handleAdminLogin(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('admin-username').value;
+    const password = document.getElementById('admin-password').value;
+    const errorDiv = document.getElementById('login-error');
+    
+    if (!username || !password) {
+        errorDiv.textContent = '请输入用户名和密码';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    try {
+        showLoading('正在登录...');
+        
+        const response = await fetch('/admin/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.code === 200 && result.data && result.data.token) {
+            // 保存token
+            authToken = result.data.token;
+            window.authToken = authToken;
+            localStorage.setItem('user_token', authToken);
+            
+            // 隐藏错误信息
+            errorDiv.style.display = 'none';
+            
+            // 显示管理页面
+            await showAdminPage();
+            
+            showAlert('登录成功！', 'success');
+        } else {
+            errorDiv.textContent = result.message || '登录失败';
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        errorDiv.textContent = '登录请求失败: ' + error.message;
+        errorDiv.style.display = 'block';
+    } finally {
+        hideLoading();
+    }
+}
+
+/**
  * 跳转到用户登录页面
  */
 function redirectToUserLogin() {
@@ -167,27 +225,43 @@ function showLoginPrompt() {
                 <div style="max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
                     <i class="fas fa-user-shield" style="font-size: 48px; color: #007bff; margin-bottom: 20px;"></i>
                     <h2 style="color: #333; margin-bottom: 16px;">管理员登录</h2>
-                    <p style="color: #666; margin-bottom: 30px;">您需要登录管理员账户才能访问管理面板</p>
-                    <button onclick="redirectToUserLogin()" class="btn btn-primary" style="padding: 12px 30px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.3s;">
-                        前往登录
-                    </button>
+                    <form id="admin-login-form" style="text-align: left;">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; color: #555;">用户名</label>
+                            <input type="text" id="admin-username" placeholder="请输入管理员用户名" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 5px; color: #555;">密码</label>
+                            <input type="password" id="admin-password" placeholder="请输入密码" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                        </div>
+                        <button type="submit" style="width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                            登录
+                        </button>
+                        <div id="login-error" style="margin-top: 10px; color: #dc3545; display: none;"></div>
+                    </form>
                 </div>
             </div>
         `;
         
         // 添加到标签页容器中
-        const tabsContainer = document.querySelector('.tabs-container');
+        const tabsContainer = document.querySelector('#tab-content-container');
         if (tabsContainer) {
             tabsContainer.appendChild(loginPrompt);
         } else {
             document.body.appendChild(loginPrompt);
+        }
+        
+        // 绑定登录表单事件
+        const form = document.getElementById('admin-login-form');
+        if (form) {
+            form.addEventListener('submit', handleAdminLogin);
         }
     } else {
         loginPrompt.classList.add('active');
     }
     
     // 隐藏所有标签按钮的active状态
-    document.querySelectorAll('.tab-item').forEach(btn => {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
 }

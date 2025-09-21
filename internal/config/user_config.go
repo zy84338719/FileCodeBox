@@ -3,7 +3,6 @@ package config
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -124,85 +123,6 @@ func (usc *UserSystemConfig) GetSessionExpiryDays() float64 {
 // IsStorageQuotaUnlimited 判断存储配额是否无限制
 func (usc *UserSystemConfig) IsStorageQuotaUnlimited() bool {
 	return usc.UserStorageQuota == 0
-}
-
-// ToMap 转换为map格式
-func (usc *UserSystemConfig) ToMap() map[string]string {
-	return map[string]string{
-		"allow_user_registration": fmt.Sprintf("%d", usc.AllowUserRegistration),
-		"require_email_verify":    fmt.Sprintf("%d", usc.RequireEmailVerify),
-		"user_upload_size":        fmt.Sprintf("%d", usc.UserUploadSize),
-		"user_storage_quota":      fmt.Sprintf("%d", usc.UserStorageQuota),
-		"session_expiry_hours":    fmt.Sprintf("%d", usc.SessionExpiryHours),
-		"max_sessions_per_user":   fmt.Sprintf("%d", usc.MaxSessionsPerUser),
-		"jwt_secret":              usc.JWTSecret,
-	}
-}
-
-// FromMap 从map加载配置
-func (usc *UserSystemConfig) FromMap(data map[string]string) error {
-	if val, ok := data["allow_user_registration"]; ok {
-		if v, err := strconv.Atoi(val); err == nil {
-			usc.AllowUserRegistration = v
-		}
-	}
-	if val, ok := data["require_email_verify"]; ok {
-		if v, err := strconv.Atoi(val); err == nil {
-			usc.RequireEmailVerify = v
-		}
-	}
-	if val, ok := data["user_upload_size"]; ok {
-		if v, err := strconv.ParseInt(val, 10, 64); err == nil {
-			usc.UserUploadSize = v
-		}
-	}
-	if val, ok := data["user_storage_quota"]; ok {
-		if v, err := strconv.ParseInt(val, 10, 64); err == nil {
-			usc.UserStorageQuota = v
-		}
-	}
-	if val, ok := data["session_expiry_hours"]; ok {
-		if v, err := strconv.Atoi(val); err == nil {
-			usc.SessionExpiryHours = v
-		}
-	}
-	if val, ok := data["max_sessions_per_user"]; ok {
-		if v, err := strconv.Atoi(val); err == nil {
-			usc.MaxSessionsPerUser = v
-		}
-	}
-	if val, ok := data["jwt_secret"]; ok {
-		usc.JWTSecret = val
-	}
-
-	return usc.Validate()
-}
-
-// Update 更新配置
-func (usc *UserSystemConfig) Update(updates map[string]interface{}) error {
-	if allowRegistration, ok := updates["allow_user_registration"].(int); ok {
-		usc.AllowUserRegistration = allowRegistration
-	}
-	if requireEmailVerify, ok := updates["require_email_verify"].(int); ok {
-		usc.RequireEmailVerify = requireEmailVerify
-	}
-	if userUploadSize, ok := updates["user_upload_size"].(int64); ok {
-		usc.UserUploadSize = userUploadSize
-	}
-	if userStorageQuota, ok := updates["user_storage_quota"].(int64); ok {
-		usc.UserStorageQuota = userStorageQuota
-	}
-	if sessionExpiryHours, ok := updates["session_expiry_hours"].(int); ok {
-		usc.SessionExpiryHours = sessionExpiryHours
-	}
-	if maxSessionsPerUser, ok := updates["max_sessions_per_user"].(int); ok {
-		usc.MaxSessionsPerUser = maxSessionsPerUser
-	}
-	if jwtSecret, ok := updates["jwt_secret"].(string); ok {
-		usc.JWTSecret = jwtSecret
-	}
-
-	return usc.Validate()
 }
 
 // Clone 克隆配置

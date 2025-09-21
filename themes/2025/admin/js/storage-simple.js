@@ -189,8 +189,8 @@ function fillStorageConfigForms(storageConfig) {
     
     // 本地存储配置
     const localPath = document.getElementById('local-storage-path');
-    if (localPath && storageConfig.local) {
-        localPath.value = storageConfig.local.storage_path || '';
+    if (localPath) {
+        localPath.value = storageConfig.storage_path || '';
     }
     
     // WebDAV存储配置
@@ -200,10 +200,10 @@ function fillStorageConfigForms(storageConfig) {
         const webdavPassword = document.getElementById('webdav-password');
         const webdavRootPath = document.getElementById('webdav-root-path');
         
-        if (webdavHostname) webdavHostname.value = storageConfig.webdav.hostname || '';
-        if (webdavUsername) webdavUsername.value = storageConfig.webdav.username || '';
+        if (webdavHostname) webdavHostname.value = storageConfig.webdav.webdav_hostname || '';
+        if (webdavUsername) webdavUsername.value = storageConfig.webdav.webdav_username || '';
         if (webdavPassword) webdavPassword.value = ''; // 不回显密码
-        if (webdavRootPath) webdavRootPath.value = storageConfig.webdav.root_path || '';
+        if (webdavRootPath) webdavRootPath.value = storageConfig.webdav.webdav_root_path || '';
     }
     
     // NFS存储配置
@@ -214,11 +214,11 @@ function fillStorageConfigForms(storageConfig) {
         const nfsVersion = document.getElementById('nfs-version');
         const nfsOptions = document.getElementById('nfs-options');
         
-        if (nfsServer) nfsServer.value = storageConfig.nfs.server || '';
+        if (nfsServer) nfsServer.value = storageConfig.nfs.nfs_server || '';
         if (nfsPath) nfsPath.value = storageConfig.nfs.nfs_path || '';
-        if (nfsMountPoint) nfsMountPoint.value = storageConfig.nfs.mount_point || '';
-        if (nfsVersion) nfsVersion.value = storageConfig.nfs.version || 'v3';
-        if (nfsOptions) nfsOptions.value = storageConfig.nfs.options || '';
+        if (nfsMountPoint) nfsMountPoint.value = storageConfig.nfs.nfs_mount_point || '';
+        if (nfsVersion) nfsVersion.value = storageConfig.nfs.nfs_version || '4';
+        if (nfsOptions) nfsOptions.value = storageConfig.nfs.nfs_options || '';
     }
     
     // S3存储配置
@@ -229,11 +229,11 @@ function fillStorageConfigForms(storageConfig) {
         const s3EndpointURL = document.getElementById('s3-endpoint-url');
         const s3RegionName = document.getElementById('s3-region-name');
         
-        if (s3AccessKeyID) s3AccessKeyID.value = storageConfig.s3.access_key_id || '';
+        if (s3AccessKeyID) s3AccessKeyID.value = storageConfig.s3.s3_access_key_id || '';
         if (s3SecretAccessKey) s3SecretAccessKey.value = ''; // 不回显密钥
-        if (s3BucketName) s3BucketName.value = storageConfig.s3.bucket_name || '';
-        if (s3EndpointURL) s3EndpointURL.value = storageConfig.s3.endpoint_url || '';
-        if (s3RegionName) s3RegionName.value = storageConfig.s3.region_name || '';
+        if (s3BucketName) s3BucketName.value = storageConfig.s3.s3_bucket_name || '';
+        if (s3EndpointURL) s3EndpointURL.value = storageConfig.s3.s3_endpoint_url || '';
+        if (s3RegionName) s3RegionName.value = storageConfig.s3.s3_region_name || '';
     }
 }
 

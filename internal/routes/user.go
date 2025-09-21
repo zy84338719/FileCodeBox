@@ -69,7 +69,7 @@ func SetupUserAPIRoutes(
 			authGroup.GET("/files", userHandler.GetUserFiles)
 			authGroup.GET("/stats", userHandler.GetUserStats)
 			authGroup.GET("/check-auth", userHandler.CheckAuth)
-			authGroup.DELETE("/files/:id", userHandler.DeleteFile)
+			authGroup.DELETE("/files/:code", userHandler.DeleteFile)
 		}
 	}
 }

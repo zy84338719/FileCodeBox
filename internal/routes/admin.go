@@ -56,7 +56,7 @@ func SetupAdminRoutes(
 
 	// 将管理后台静态资源与前端入口注册为公开路由，允许未认证用户加载登录页面和相关静态资源
 	// 注意：API 路由仍然放在受保护的 authGroup 中
-	themeDir := "./" + cfg.ThemesSelect
+	themeDir := "./" + cfg.UI.ThemesSelect
 
 	// css
 	adminGroup.GET("/css/*filepath", func(c *gin.Context) {

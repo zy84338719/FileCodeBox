@@ -10,10 +10,9 @@ import (
 // TestLoadFromYAML ensures YAML fields are loaded and marked as yamlManaged
 func TestLoadFromYAML(t *testing.T) {
 	data := map[string]interface{}{
-		"base":          map[string]interface{}{"name": "TCB", "port": 12345},
-		"themes_select": "themes/test",
-		"page_explain":  "test explain",
-		"notify_title":  "nt",
+		"base":         map[string]interface{}{"name": "TCB", "port": 12345},
+		"ui":           map[string]interface{}{"themes_select": "themes/test", "page_explain": "test explain"},
+		"notify_title": "nt",
 	}
 	b, err := yaml.Marshal(data)
 	if err != nil {
@@ -32,8 +31,8 @@ func TestLoadFromYAML(t *testing.T) {
 	if cm.Base == nil || cm.Base.Name != "TCB" {
 		t.Fatalf("expected base.name TCB, got %#v", cm.Base)
 	}
-	if cm.ThemesSelect != "themes/test" {
-		t.Fatalf("expected themes_select themes/test, got %s", cm.ThemesSelect)
+	if cm.UI == nil || cm.UI.ThemesSelect != "themes/test" {
+		t.Fatalf("expected ui.themes_select themes/test, got %#v", cm.UI)
 	}
 	// basic fields loaded
 }

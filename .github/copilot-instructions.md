@@ -30,7 +30,7 @@ manager.SetDB(db) // 注入数据库连接（配置读取现在以 config.yaml �
 - **数据库持久化**：配置自动保存到 key_value 表，支持动态更新
 - **热重载机制**：通过 ReloadConfig() 方法实现运行时配置更新
 - **配置验证**：每个配置模块都有独立的验证方法
-- **分层映射**：ToMap() 和 FromMap() 方法支持配置的序列化和反序列化
+- **类型安全配置**：使用结构体 Clone() 方法和直接字段访问，避免 map 转换开销
 
 ### Route Architecture
 完全模块化的路由系统 (`internal/routes/`):

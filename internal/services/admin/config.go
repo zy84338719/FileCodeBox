@@ -12,145 +12,174 @@ func (s *Service) GetConfig() *config.ConfigManager {
 	return s.manager
 }
 
-// UpdateConfig 更新配置 - 使用结构化DTO
+// UpdateConfig 更新配置 - 已弃用，保留向后兼容
 func (s *Service) UpdateConfig(configData map[string]interface{}) error {
-	// 过滤掉端口和管理员密码配置，这些不应该通过API更新
-	filteredConfigData := make(map[string]interface{})
-	for key, value := range configData {
-		if key == "port" {
-			continue
-		}
-		filteredConfigData[key] = value
-	}
-
-	// Use nested map directly (no DTO conversion)
-	return s.SaveConfigUpdate(filteredConfigData)
+	// 这个方法保留用于向后兼容，但不再建议使用
+	// 新代码应该使用 UpdateConfigFromRequest
+	return fmt.Errorf("deprecated: use UpdateConfigFromRequest instead")
 }
 
 // UpdateConfigFromRequest 从结构化请求更新配置
 func (s *Service) UpdateConfigFromRequest(configRequest *web.AdminConfigRequest) error {
-	// 构建配置更新数据
-	configUpdates := make(map[string]interface{})
+	// 直接更新配置管理器的各个模块，不使用 map 转换
 
 	// 处理基础配置
 	if configRequest.Base != nil {
-		base := make(map[string]interface{})
-		if configRequest.Base.Name != nil {
-			base["name"] = *configRequest.Base.Name
+		baseConfig := configRequest.Base
+		if baseConfig.Name != "" {
+			s.manager.Base.Name = baseConfig.Name
 		}
-		if configRequest.Base.Description != nil {
-			base["description"] = *configRequest.Base.Description
+		if baseConfig.Description != "" {
+			s.manager.Base.Description = baseConfig.Description
 		}
-		if configRequest.Base.Keywords != nil {
-			base["keywords"] = *configRequest.Base.Keywords
+		if baseConfig.Keywords != "" {
+			s.manager.Base.Keywords = baseConfig.Keywords
 		}
-		if len(base) > 0 {
-			configUpdates["base"] = base
+		if baseConfig.Port != 0 {
+			s.manager.Base.Port = baseConfig.Port
+		}
+		if baseConfig.Host != "" {
+			s.manager.Base.Host = baseConfig.Host
+		}
+		if baseConfig.DataPath != "" {
+			s.manager.Base.DataPath = baseConfig.DataPath
+		}
+		s.manager.Base.Production = baseConfig.Production
+	}
+
+	// 处理数据库配置
+	if configRequest.Database != nil {
+		dbConfig := configRequest.Database
+		if dbConfig.Type != "" {
+			s.manager.Database.Type = dbConfig.Type
+		}
+		if dbConfig.Host != "" {
+			s.manager.Database.Host = dbConfig.Host
+		}
+		if dbConfig.Port != 0 {
+			s.manager.Database.Port = dbConfig.Port
+		}
+		if dbConfig.Name != "" {
+			s.manager.Database.Name = dbConfig.Name
+		}
+		if dbConfig.User != "" {
+			s.manager.Database.User = dbConfig.User
+		}
+		if dbConfig.Pass != "" {
+			s.manager.Database.Pass = dbConfig.Pass
+		}
+		if dbConfig.SSL != "" {
+			s.manager.Database.SSL = dbConfig.SSL
 		}
 	}
 
 	// 处理传输配置
 	if configRequest.Transfer != nil {
-		transfer := make(map[string]interface{})
-
 		if configRequest.Transfer.Upload != nil {
-			upload := make(map[string]interface{})
 			uploadConfig := configRequest.Transfer.Upload
-			if uploadConfig.OpenUpload != nil {
-				upload["open_upload"] = *uploadConfig.OpenUpload
-			}
-			if uploadConfig.UploadSize != nil {
-				upload["upload_size"] = *uploadConfig.UploadSize
-			}
-			if uploadConfig.EnableChunk != nil {
-				upload["enable_chunk"] = *uploadConfig.EnableChunk
-			}
-			if uploadConfig.ChunkSize != nil {
-				upload["chunk_size"] = *uploadConfig.ChunkSize
-			}
-			if uploadConfig.MaxSaveSeconds != nil {
-				upload["max_save_seconds"] = *uploadConfig.MaxSaveSeconds
-			}
-			if len(upload) > 0 {
-				transfer["upload"] = upload
-			}
+			s.manager.Transfer.Upload.OpenUpload = uploadConfig.OpenUpload
+			s.manager.Transfer.Upload.UploadSize = uploadConfig.UploadSize
+			s.manager.Transfer.Upload.EnableChunk = uploadConfig.EnableChunk
+			s.manager.Transfer.Upload.ChunkSize = uploadConfig.ChunkSize
+			s.manager.Transfer.Upload.MaxSaveSeconds = uploadConfig.MaxSaveSeconds
 		}
 
 		if configRequest.Transfer.Download != nil {
-			download := make(map[string]interface{})
 			downloadConfig := configRequest.Transfer.Download
-			if downloadConfig.EnableConcurrentDownload != nil {
-				download["enable_concurrent_download"] = *downloadConfig.EnableConcurrentDownload
-			}
-			if downloadConfig.MaxConcurrentDownloads != nil {
-				download["max_concurrent_downloads"] = *downloadConfig.MaxConcurrentDownloads
-			}
-			if downloadConfig.DownloadTimeout != nil {
-				download["download_timeout"] = *downloadConfig.DownloadTimeout
-			}
-			if len(download) > 0 {
-				transfer["download"] = download
-			}
-		}
-
-		if len(transfer) > 0 {
-			configUpdates["transfer"] = transfer
+			s.manager.Transfer.Download.EnableConcurrentDownload = downloadConfig.EnableConcurrentDownload
+			s.manager.Transfer.Download.MaxConcurrentDownloads = downloadConfig.MaxConcurrentDownloads
+			s.manager.Transfer.Download.DownloadTimeout = downloadConfig.DownloadTimeout
 		}
 	}
 
-	// 处理用户配置
+	// 处理存储配置
+	if configRequest.Storage != nil {
+		storageConfig := configRequest.Storage
+		if storageConfig.Type != "" {
+			s.manager.Storage.Type = storageConfig.Type
+		}
+		if storageConfig.StoragePath != "" {
+			s.manager.Storage.StoragePath = storageConfig.StoragePath
+		}
+		if storageConfig.S3 != nil {
+			s.manager.Storage.S3 = storageConfig.S3
+		}
+		if storageConfig.WebDAV != nil {
+			s.manager.Storage.WebDAV = storageConfig.WebDAV
+		}
+		if storageConfig.OneDrive != nil {
+			s.manager.Storage.OneDrive = storageConfig.OneDrive
+		}
+		if storageConfig.NFS != nil {
+			s.manager.Storage.NFS = storageConfig.NFS
+		}
+	}
+
+	// 处理用户系统配置
 	if configRequest.User != nil {
-		user := make(map[string]interface{})
 		userConfig := configRequest.User
-		if userConfig.AllowUserRegistration != nil {
-			user["allow_user_registration"] = *userConfig.AllowUserRegistration
+		s.manager.User.AllowUserRegistration = userConfig.AllowUserRegistration
+		s.manager.User.RequireEmailVerify = userConfig.RequireEmailVerify
+		if userConfig.UserStorageQuota != 0 {
+			s.manager.User.UserStorageQuota = userConfig.UserStorageQuota
 		}
-		if userConfig.RequireEmailVerify != nil {
-			user["require_email_verify"] = *userConfig.RequireEmailVerify
+		if userConfig.UserUploadSize != 0 {
+			s.manager.User.UserUploadSize = userConfig.UserUploadSize
 		}
-		if userConfig.UserUploadSize != nil {
-			user["user_upload_size"] = *userConfig.UserUploadSize
+		if userConfig.SessionExpiryHours != 0 {
+			s.manager.User.SessionExpiryHours = userConfig.SessionExpiryHours
 		}
-		if userConfig.UserStorageQuota != nil {
-			user["user_storage_quota"] = *userConfig.UserStorageQuota
+		if userConfig.MaxSessionsPerUser != 0 {
+			s.manager.User.MaxSessionsPerUser = userConfig.MaxSessionsPerUser
 		}
-		if userConfig.SessionExpiryHours != nil {
-			user["session_expiry_hours"] = *userConfig.SessionExpiryHours
-		}
-		if userConfig.MaxSessionsPerUser != nil {
-			user["max_sessions_per_user"] = *userConfig.MaxSessionsPerUser
-		}
-		if userConfig.JWTSecret != nil {
-			user["jwt_secret"] = *userConfig.JWTSecret
-		}
-		if len(user) > 0 {
-			configUpdates["user"] = user
+		if userConfig.JWTSecret != "" {
+			s.manager.User.JWTSecret = userConfig.JWTSecret
 		}
 	}
 
-	// 处理其他配置
-	if configRequest.NotifyTitle != nil {
-		configUpdates["notify_title"] = *configRequest.NotifyTitle
-	}
-	if configRequest.NotifyContent != nil {
-		configUpdates["notify_content"] = *configRequest.NotifyContent
-	}
-	if configRequest.PageExplain != nil {
-		configUpdates["page_explain"] = *configRequest.PageExplain
-	}
-	if configRequest.Opacity != nil {
-		configUpdates["opacity"] = *configRequest.Opacity
-	}
-	if configRequest.ThemesSelect != nil {
-		configUpdates["themes_select"] = *configRequest.ThemesSelect
+	// 处理 MCP 配置
+	if configRequest.MCP != nil {
+		mcpConfig := configRequest.MCP
+		s.manager.MCP.EnableMCPServer = mcpConfig.EnableMCPServer
+		if mcpConfig.MCPPort != "" {
+			s.manager.MCP.MCPPort = mcpConfig.MCPPort
+		}
+		if mcpConfig.MCPHost != "" {
+			s.manager.MCP.MCPHost = mcpConfig.MCPHost
+		}
 	}
 
-	// 调用原有的更新方法
-	return s.UpdateConfig(configUpdates)
+	// 处理 UI 配置
+	if configRequest.UI != nil {
+		uiConfig := configRequest.UI
+		if uiConfig.ThemesSelect != "" {
+			s.manager.UI.ThemesSelect = uiConfig.ThemesSelect
+		}
+		if uiConfig.Background != "" {
+			s.manager.UI.Background = uiConfig.Background
+		}
+		if uiConfig.PageExplain != "" {
+			s.manager.UI.PageExplain = uiConfig.PageExplain
+		}
+		if uiConfig.RobotsText != "" {
+			s.manager.UI.RobotsText = uiConfig.RobotsText
+		}
+		if uiConfig.ShowAdminAddr != 0 {
+			s.manager.UI.ShowAdminAddr = uiConfig.ShowAdminAddr
+		}
+		if uiConfig.Opacity != 0 {
+			s.manager.UI.Opacity = uiConfig.Opacity
+		}
+	}
+
+	// 处理系统运行时字段
+	if configRequest.SysStart != nil {
+		s.manager.SysStart = *configRequest.SysStart
+	}
+
+	// 保存配置到数据库和文件
+	return s.manager.Save()
 }
-
-// flattenConfig 扁平化配置数据
-// flattenConfig removed - not used after refactor
 
 // GetFullConfig 获取完整配置 - 返回配置管理器结构体
 func (s *Service) GetFullConfig() *config.ConfigManager {
@@ -182,75 +211,3 @@ func (s *Service) ValidateConfig() error {
 func (s *Service) ReloadConfig() error {
 	return s.manager.ReloadConfig()
 }
-
-// DTO conversion removed — use nested map[string]interface{} directly
-
-// convertFlatDTOToNested removed
-
-// SaveConfigUpdate 保存配置更新
-func (s *Service) SaveConfigUpdate(configUpdate map[string]interface{}) error {
-	// Apply structured updates to the ConfigManager modules
-	if cfgBase, ok := configUpdate["base"].(map[string]interface{}); ok {
-		if err := s.manager.Base.Update(cfgBase); err != nil {
-			return fmt.Errorf("更新 base 配置失败: %w", err)
-		}
-	}
-	if cfgTransfer, ok := configUpdate["transfer"].(map[string]interface{}); ok {
-		if upload, ok2 := cfgTransfer["upload"].(map[string]interface{}); ok2 {
-			if err := s.manager.Transfer.Upload.Update(upload); err != nil {
-				return fmt.Errorf("更新 transfer.upload 配置失败: %w", err)
-			}
-		}
-		if download, ok2 := cfgTransfer["download"].(map[string]interface{}); ok2 {
-			if err := s.manager.Transfer.Download.Update(download); err != nil {
-				return fmt.Errorf("更新 transfer.download 配置失败: %w", err)
-			}
-		}
-	}
-	if cfgUser, ok := configUpdate["user"].(map[string]interface{}); ok {
-		if err := s.manager.User.Update(cfgUser); err != nil {
-			return fmt.Errorf("更新 user 配置失败: %w", err)
-		}
-	}
-	if cfgMCP, ok := configUpdate["mcp"].(map[string]interface{}); ok {
-		if err := s.manager.MCP.Update(cfgMCP); err != nil {
-			return fmt.Errorf("更新 mcp 配置失败: %w", err)
-		}
-	}
-
-	// Other top-level fields
-	if v, ok := configUpdate["notify_title"].(string); ok {
-		s.manager.NotifyTitle = v
-	}
-	if v, ok := configUpdate["notify_content"].(string); ok {
-		s.manager.NotifyContent = v
-	}
-	if v, ok := configUpdate["page_explain"].(string); ok {
-		s.manager.PageExplain = v
-	}
-	if v, ok := configUpdate["opacity"]; ok {
-		switch t := v.(type) {
-		case int:
-			s.manager.Opacity = float64(t)
-		case int64:
-			s.manager.Opacity = float64(t)
-		case float64:
-			s.manager.Opacity = t
-		}
-	}
-	if v, ok := configUpdate["themes_select"].(string); ok {
-		s.manager.ThemesSelect = v
-	}
-
-	// Persist structured config to YAML and reload
-	if err := s.manager.PersistYAML(); err != nil {
-		return fmt.Errorf("持久化配置到config.yaml失败: %w", err)
-	}
-	if err := s.manager.ReloadConfig(); err != nil {
-		return fmt.Errorf("热重载配置失败: %w", err)
-	}
-
-	return nil
-}
-
-// DTO helper functions removed — using map-based updates instead

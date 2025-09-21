@@ -57,10 +57,15 @@ func RateLimit(manager *config.ConfigManager) gin.HandlerFunc {
 		ip := c.ClientIP()
 
 		if c.Request.URL.Path == "/share/file/" || c.Request.URL.Path == "/share/text/" {
+			// 防止除零错误
+			uploadCount := manager.UploadCount
+			if uploadCount <= 0 {
+				uploadCount = 1 // 默认值
+			}
 			limiter := uploadLimiter.GetLimiter(
 				ip,
-				rate.Every(time.Duration(manager.UploadMinute)*time.Minute/time.Duration(manager.UploadCount)),
-				manager.UploadCount,
+				rate.Every(time.Duration(manager.UploadMinute)*time.Minute/time.Duration(uploadCount)),
+				uploadCount,
 			)
 			if !limiter.Allow() {
 				common.TooManyRequestsResponse(c, "上传频率过快，请稍后再试")
@@ -68,10 +73,15 @@ func RateLimit(manager *config.ConfigManager) gin.HandlerFunc {
 				return
 			}
 		} else if c.Request.URL.Path == "/share/select/" && c.Request.Method == "GET" {
+			// 防止除零错误
+			errorCount := manager.ErrorCount
+			if errorCount <= 0 {
+				errorCount = 1 // 默认值
+			}
 			limiter := errorLimiter.GetLimiter(
 				ip,
-				rate.Every(time.Duration(manager.ErrorMinute)*time.Minute/time.Duration(manager.ErrorCount)),
-				manager.ErrorCount,
+				rate.Every(time.Duration(manager.ErrorMinute)*time.Minute/time.Duration(errorCount)),
+				errorCount,
 			)
 			if !limiter.Allow() {
 				common.TooManyRequestsResponse(c, "请求频率过快，请稍后再试")

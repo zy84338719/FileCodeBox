@@ -83,10 +83,19 @@ type DatabaseStats struct {
 
 // StorageStatus 存储状态信息
 type StorageStatus struct {
-	Type      string                 `json:"type"`
-	Status    string                 `json:"status"`
-	Available bool                   `json:"available"`
-	Details   map[string]interface{} `json:"details"`
+	Type      string             `json:"type"`
+	Status    string             `json:"status"`
+	Available bool               `json:"available"`
+	Details   AdminStorageDetail `json:"details"`
+}
+
+// AdminStorageDetail 管理员视图的存储详细信息
+type AdminStorageDetail struct {
+	TotalSpace     int64   `json:"total_space"`
+	AvailableSpace int64   `json:"available_space"`
+	UsedSpace      int64   `json:"used_space"`
+	UsagePercent   float64 `json:"usage_percent"`
+	Type           string  `json:"type"`
 }
 
 // DiskUsage 磁盘使用情况

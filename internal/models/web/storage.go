@@ -1,15 +1,17 @@
 package web
 
+import "github.com/zy84338719/filecodebox/internal/config"
+
 // StorageInfoResponse 存储信息响应
 type StorageInfoResponse struct {
-	Current        string                   `json:"current"`
-	Available      []string                 `json:"available"`
-	StorageDetails map[string]StorageDetail `json:"storage_details"`
-	StorageConfig  map[string]interface{}   `json:"storage_config"`
+	Current        string                      `json:"current"`
+	Available      []string                    `json:"available"`
+	StorageDetails map[string]WebStorageDetail `json:"storage_details"`
+	StorageConfig  *config.StorageConfig       `json:"storage_config"`
 }
 
-// StorageDetail 存储详情
-type StorageDetail struct {
+// WebStorageDetail Web API 存储详情
+type WebStorageDetail struct {
 	Type      string `json:"type"`
 	Available bool   `json:"available"`
 	Error     string `json:"error,omitempty"`
@@ -21,8 +23,8 @@ type StorageDetail struct {
 
 // StorageTestRequest 存储测试请求
 type StorageTestRequest struct {
-	Type   string                 `json:"type" binding:"required"`
-	Config map[string]interface{} `json:"config" binding:"required"`
+	Type   string                `json:"type" binding:"required"`
+	Config *config.StorageConfig `json:"config" binding:"required"`
 }
 
 // StorageTestResponse 存储测试响应
@@ -34,8 +36,8 @@ type StorageTestResponse struct {
 
 // StorageSwitchRequest 存储切换请求
 type StorageSwitchRequest struct {
-	Type   string                 `json:"type" binding:"required"`
-	Config map[string]interface{} `json:"config" binding:"required"`
+	Type   string                `json:"type" binding:"required"`
+	Config *config.StorageConfig `json:"config,omitempty"`
 }
 
 // StorageSwitchResponse 存储切换响应

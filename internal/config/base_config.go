@@ -95,46 +95,6 @@ func (bc *BaseConfig) IsPublic() bool {
 	return bc.Host == "0.0.0.0"
 }
 
-// ToMap 转换为map格式
-func (bc *BaseConfig) ToMap() map[string]string {
-	return map[string]string{
-		"name":        bc.Name,
-		"description": bc.Description,
-		"keywords":    bc.Keywords,
-		"port":        fmt.Sprintf("%d", bc.Port),
-		"host":        bc.Host,
-		"data_path":   bc.DataPath,
-		"production":  fmt.Sprintf("%t", bc.Production),
-	}
-}
-
-// Update 更新配置
-func (bc *BaseConfig) Update(updates map[string]interface{}) error {
-	if name, ok := updates["name"].(string); ok {
-		bc.Name = name
-	}
-	if desc, ok := updates["description"].(string); ok {
-		bc.Description = desc
-	}
-	if keywords, ok := updates["keywords"].(string); ok {
-		bc.Keywords = keywords
-	}
-	if port, ok := updates["port"].(int); ok {
-		bc.Port = port
-	}
-	if host, ok := updates["host"].(string); ok {
-		bc.Host = host
-	}
-	if dataPath, ok := updates["data_path"].(string); ok {
-		bc.DataPath = dataPath
-	}
-	if production, ok := updates["production"].(bool); ok {
-		bc.Production = production
-	}
-
-	return bc.Validate()
-}
-
 // Clone 克隆配置
 func (bc *BaseConfig) Clone() *BaseConfig {
 	return &BaseConfig{

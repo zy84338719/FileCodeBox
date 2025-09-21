@@ -15,6 +15,7 @@ import (
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/repository"
 	"github.com/zy84338719/filecodebox/internal/services/auth"
+	"github.com/zy84338719/filecodebox/internal/utils"
 	"gorm.io/gorm"
 )
 
@@ -197,8 +198,7 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 		defer atomic.StoreInt32(&initInProgress, 0)
 		// 解析 JSON（仅接受嵌套结构），不再兼容 legacy 扁平字段
 		var req SetupRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			common.BadRequestResponse(c, "请求参数错误: "+err.Error())
+		if !utils.BindJSONWithValidation(c, &req) {
 			return
 		}
 		// 继续使用 req 进行验证和初始化
@@ -433,8 +433,7 @@ func (h *SetupHandler) Initialize(c *gin.Context) {
 	}
 
 	var req SetupRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
+	if !utils.BindJSONWithValidation(c, &req) {
 		return
 	}
 

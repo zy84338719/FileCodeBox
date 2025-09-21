@@ -210,7 +210,6 @@
     padding: 40px 20px;
     text-align: center;
     margin-bottom: 20px;
-    cursor: pointer;
     transition: all 0.3s ease;
     background: rgba(255, 255, 255, 0.5);
 }
@@ -234,6 +233,38 @@
 .upload-text {
     color: #666;
     font-size: 16px;
+    margin-bottom: 20px;
+}
+
+/* 上传选项按钮 */
+.upload-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.upload-option-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.upload-option-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.upload-option-btn:active {
+    transform: translateY(0);
 }
 
 /* 页脚 */

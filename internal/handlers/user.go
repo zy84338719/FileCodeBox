@@ -8,6 +8,7 @@ import (
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/models/web"
 	"github.com/zy84338719/filecodebox/internal/services"
+	"github.com/zy84338719/filecodebox/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,8 +33,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 	}
 
 	var req web.AuthRegisterRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
+	if !utils.BindJSONWithValidation(c, &req) {
 		return
 	}
 
@@ -77,8 +77,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 	}
 
 	var req web.AuthLoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
+	if !utils.BindJSONWithValidation(c, &req) {
 		return
 	}
 
@@ -175,8 +174,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	var req web.UserProfileUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
+	if !utils.BindJSONWithValidation(c, &req) {
 		return
 	}
 
@@ -197,8 +195,7 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 	}
 
 	var req web.UserPasswordChangeRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
+	if !utils.BindJSONWithValidation(c, &req) {
 		return
 	}
 

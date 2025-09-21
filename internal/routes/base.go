@@ -95,7 +95,7 @@ func SetupBaseRoutes(router *gin.Engine, userHandler *handlers.UserHandler, cfg 
 	// robots.txt
 	router.GET("/robots.txt", func(c *gin.Context) {
 		c.Header("Content-Type", "text/plain")
-		c.String(http.StatusOK, cfg.RobotsText)
+		c.String(http.StatusOK, cfg.UI.RobotsText)
 	})
 
 	// 获取配置接口（兼容性保留）
@@ -103,14 +103,14 @@ func SetupBaseRoutes(router *gin.Engine, userHandler *handlers.UserHandler, cfg 
 		common.SuccessResponse(c, gin.H{
 			"name":               cfg.Base.Name,
 			"description":        cfg.Base.Description,
-			"explain":            cfg.PageExplain,
+			"explain":            cfg.UI.PageExplain,
 			"uploadSize":         cfg.Transfer.Upload.UploadSize,
 			"expireStyle":        cfg.ExpireStyle,
 			"enableChunk":        GetEnableChunk(cfg),
 			"openUpload":         cfg.Transfer.Upload.OpenUpload,
 			"notify_title":       cfg.NotifyTitle,
 			"notify_content":     cfg.NotifyContent,
-			"show_admin_address": cfg.ShowAdminAddr,
+			"show_admin_address": cfg.UI.ShowAdminAddr,
 			"max_save_seconds":   cfg.Transfer.Upload.MaxSaveSeconds,
 		})
 	})

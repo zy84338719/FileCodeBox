@@ -44,6 +44,27 @@ async function loadConfig() {
  * 填充配置表单
  */
 function fillConfigForm(config) {
+    // 兼容后端大写字段名（如 Base/Transfer/User/MCP/NotifyTitle...）自动转小写
+    // 只在首次调用时做一次转换
+    if (config && !config.base && config.Base) {
+        // 递归转换对象所有一级大写key为小写
+        const mapKeys = obj => {
+            if (!obj || typeof obj !== 'object') return obj;
+            const newObj = {};
+            for (const k in obj) {
+                if (!Object.hasOwn(obj, k)) continue;
+                // 只转首字母大写的key
+                if (/^[A-Z]/.test(k)) {
+                    const nk = k.charAt(0).toLowerCase() + k.slice(1);
+                    newObj[nk] = mapKeys(obj[k]);
+                } else {
+                    newObj[k] = mapKeys(obj[k]);
+                }
+            }
+            return newObj;
+        };
+        config = mapKeys(config);
+    }
     try {
         // 基础设置
         setFieldValue('base_name', config.base?.name);

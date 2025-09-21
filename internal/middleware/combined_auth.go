@@ -4,36 +4,42 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/services"
 )
 
-// CombinedAdminAuth 尝试基于 JWT 的用户认证并确保角色为 admin
+// CombinedAdminAuth 支持两类管理员认证：
+// - session-based JWT（由 userService.ValidateToken 验证，返回 *services.AuthClaims，且 Role=="admin"）
+// - admin JWT（由 AdminService 生成，使用 manager.User.JWTSecret 签名，claims 为 jwt.MapClaims 且包含 is_admin:true 或 role:"admin"）
 func CombinedAdminAuth(manager *config.ConfigManager, userService interface {
 	ValidateToken(string) (interface{}, error)
 }) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Allow public access to admin front-end entry and static assets
-		// This prevents accidental interception of requests for the login page
-		// when an invalid/stale Authorization header is present.
 		p := c.Request.URL.Path
-		if p == "/admin/" || p == "/admin" ||
-			strings.HasPrefix(p, "/admin/css/") || strings.HasPrefix(p, "/admin/js/") ||
-			strings.HasPrefix(p, "/admin/assets/") || strings.HasPrefix(p, "/admin/templates/") ||
-			strings.HasPrefix(p, "/admin/components/") {
+
+		// 公开静态/入口路径（允许匿名访问 admin 前端和静态资源）
+		if strings.HasPrefix(p, "/admin/css/") || strings.HasPrefix(p, "/admin/js/") || strings.HasPrefix(p, "/admin/templates/") || strings.HasPrefix(p, "/admin/assets/") || strings.HasPrefix(p, "/admin/components/") || p == "/admin" || p == "/admin/" || p == "/admin/login" {
 			c.Next()
 			return
 		}
-		// 先尝试JWT用户认证
+
+		// 读取 Authorization header
 		authHeader := c.GetHeader("Authorization")
+		var tokenStr string
 		if authHeader != "" {
-			tokenParts := strings.SplitN(authHeader, " ", 2)
-			if len(tokenParts) == 2 && tokenParts[0] == "Bearer" {
-				claimsInterface, err := userService.ValidateToken(tokenParts[1])
-				if err == nil {
-					if claims, ok := claimsInterface.(*services.AuthClaims); ok {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				tokenStr = parts[1]
+			}
+		}
+
+		if tokenStr != "" {
+			// 仅使用 session-based token（复用普通用户登录逻辑），并加强角色校验
+			if userService != nil {
+				if claimsIface, err := userService.ValidateToken(tokenStr); err == nil {
+					if claims, ok := claimsIface.(*services.AuthClaims); ok {
+						// 如果不是管理员直接拒绝
 						if claims.Role == "admin" {
 							c.Set("user_id", claims.UserID)
 							c.Set("username", claims.Username)
@@ -43,17 +49,8 @@ func CombinedAdminAuth(manager *config.ConfigManager, userService interface {
 							c.Next()
 							return
 						}
-						// role mismatch
-						if manager == nil || (manager.Base != nil && !manager.Base.Production) {
-							logrus.WithFields(logrus.Fields{"role": claims.Role}).Debug("combined auth: token role is not admin")
-						}
-					}
-				} else {
-					if manager == nil || (manager.Base != nil && !manager.Base.Production) {
-						logrus.WithError(err).Debug("combined auth: ValidateToken returned error")
 					}
 				}
-				// JWT 验证失败或非管理员角色，继续到失败处理（不回退到旧的静态令牌）
 			}
 		}
 

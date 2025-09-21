@@ -13,7 +13,7 @@ import (
 
 // RegisterStaticRoutes registers public-facing static routes (assets, css, js, components)
 func RegisterStaticRoutes(router *gin.Engine, cfg *config.ConfigManager) {
-	themeDir := fmt.Sprintf("./%s", cfg.ThemesSelect)
+	themeDir := fmt.Sprintf("./%s", cfg.UI.ThemesSelect)
 
 	router.Static("/assets", fmt.Sprintf("%s/assets", themeDir))
 	router.Static("/css", fmt.Sprintf("%s/css", themeDir))
@@ -29,7 +29,7 @@ func RegisterStaticRoutes(router *gin.Engine, cfg *config.ConfigManager) {
 
 // ServeIndex serves the main index page with basic template replacements.
 func ServeIndex(c *gin.Context, cfg *config.ConfigManager) {
-	indexPath := filepath.Join(".", cfg.ThemesSelect, "index.html")
+	indexPath := filepath.Join(".", cfg.UI.ThemesSelect, "index.html")
 
 	content, err := os.ReadFile(indexPath)
 	if err != nil {
@@ -42,14 +42,14 @@ func ServeIndex(c *gin.Context, cfg *config.ConfigManager) {
 	html = strings.ReplaceAll(html, "{{title}}", cfg.Base.Name)
 	html = strings.ReplaceAll(html, "{{description}}", cfg.Base.Description)
 	html = strings.ReplaceAll(html, "{{keywords}}", cfg.Base.Keywords)
-	html = strings.ReplaceAll(html, "{{page_explain}}", cfg.PageExplain)
-	html = strings.ReplaceAll(html, "{{opacity}}", fmt.Sprintf("%.1f", cfg.Opacity))
+	html = strings.ReplaceAll(html, "{{page_explain}}", cfg.UI.PageExplain)
+	html = strings.ReplaceAll(html, "{{opacity}}", fmt.Sprintf("%.1f", cfg.UI.Opacity))
 	html = strings.ReplaceAll(html, "src=\"js/", "src=\"/js/")
 	html = strings.ReplaceAll(html, "href=\"css/", "href=\"/css/")
 	html = strings.ReplaceAll(html, "src=\"assets/", "src=\"/assets/")
 	html = strings.ReplaceAll(html, "href=\"assets/", "href=\"/assets/")
 	html = strings.ReplaceAll(html, "src=\"components/", "src=\"/components/")
-	html = strings.ReplaceAll(html, "{{background}}", cfg.Background)
+	html = strings.ReplaceAll(html, "{{background}}", cfg.UI.Background)
 
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Content-Type", "text/html; charset=utf-8")
@@ -58,7 +58,7 @@ func ServeIndex(c *gin.Context, cfg *config.ConfigManager) {
 
 // ServeSetup serves the setup page with template replacements.
 func ServeSetup(c *gin.Context, cfg *config.ConfigManager) {
-	setupPath := filepath.Join(".", cfg.ThemesSelect, "setup.html")
+	setupPath := filepath.Join(".", cfg.UI.ThemesSelect, "setup.html")
 
 	content, err := os.ReadFile(setupPath)
 	if err != nil {
@@ -81,7 +81,7 @@ func ServeSetup(c *gin.Context, cfg *config.ConfigManager) {
 
 // ServeAdminPage serves the admin index page
 func ServeAdminPage(c *gin.Context, cfg *config.ConfigManager) {
-	adminPath := filepath.Join(".", cfg.ThemesSelect, "admin", "index.html")
+	adminPath := filepath.Join(".", cfg.UI.ThemesSelect, "admin", "index.html")
 
 	content, err := os.ReadFile(adminPath)
 	if err != nil {
@@ -96,7 +96,7 @@ func ServeAdminPage(c *gin.Context, cfg *config.ConfigManager) {
 
 // ServeUserPage serves user-facing static pages (login/register/dashboard/etc.)
 func ServeUserPage(c *gin.Context, cfg *config.ConfigManager, pageName string) {
-	userPagePath := filepath.Join(".", cfg.ThemesSelect, pageName)
+	userPagePath := filepath.Join(".", cfg.UI.ThemesSelect, pageName)
 
 	content, err := os.ReadFile(userPagePath)
 	if err != nil {

@@ -56,7 +56,7 @@ func (s *Service) ValidateToken(tokenString string) error {
 	return errors.New("无效的token")
 }
 
-// GenerateTokenForAdmin 验证管理员用户名/密码并生成管理员JWT（使用 user.JWTSecret 签名）
+// GenerateTokenForAdmin 验证管理员用户名/密码并生成 session-based JWT（复用普通用户登录逻辑）
 func (s *Service) GenerateTokenForAdmin(username, password string) (string, error) {
 	// 查找用户
 	user, err := s.repositoryManager.User.GetByUsername(username)
@@ -74,17 +74,10 @@ func (s *Service) GenerateTokenForAdmin(username, password string) (string, erro
 		return "", fmt.Errorf("认证失败")
 	}
 
-	// 创建JWT claims
-	claims := jwt.MapClaims{
-		"is_admin": true,
-		"user_id":  user.ID,
-		"exp":      time.Now().Add(24 * time.Hour).Unix(),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(s.manager.User.JWTSecret))
+	// 使用 authService.CreateUserSession 创建 session-based token，这样能被 userService.ValidateToken 接受
+	tokenString, err := s.authService.CreateUserSession(user, "", "admin-login")
 	if err != nil {
-		return "", fmt.Errorf("生成token失败: %w", err)
+		return "", fmt.Errorf("创建会话失败: %w", err)
 	}
 
 	return tokenString, nil

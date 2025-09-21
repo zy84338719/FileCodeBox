@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/models/web"
 	"github.com/zy84338719/filecodebox/internal/services"
+	"github.com/zy84338719/filecodebox/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,8 +33,7 @@ func NewChunkHandler(service *services.ChunkService) *ChunkHandler {
 // @Router /chunk/upload/init/ [post]
 func (h *ChunkHandler) InitChunkUpload(c *gin.Context) {
 	var req web.ChunkUploadInitRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequestResponse(c, "参数错误: "+err.Error())
+	if !utils.BindJSONWithValidation(c, &req) {
 		return
 	}
 
@@ -67,17 +66,13 @@ func (h *ChunkHandler) InitChunkUpload(c *gin.Context) {
 // @Router /chunk/upload/chunk/{upload_id}/{chunk_index} [post]
 func (h *ChunkHandler) UploadChunk(c *gin.Context) {
 	uploadID := c.Param("upload_id")
-	chunkIndexStr := c.Param("chunk_index")
-
-	chunkIndex, err := strconv.Atoi(chunkIndexStr)
-	if err != nil {
-		common.BadRequestResponse(c, "分片索引错误")
+	chunkIndex, success := utils.ParseIntFromParam(c, "chunk_index", "分片索引错误")
+	if !success {
 		return
 	}
 
-	file, err := c.FormFile("chunk")
-	if err != nil {
-		common.BadRequestResponse(c, "获取分片文件失败")
+	file, success := utils.ParseFileFromForm(c, "chunk")
+	if !success {
 		return
 	}
 
@@ -145,11 +140,9 @@ func (h *ChunkHandler) GetUploadStatus(c *gin.Context) {
 // VerifyChunk 验证分片完整性
 func (h *ChunkHandler) VerifyChunk(c *gin.Context) {
 	uploadID := c.Param("upload_id")
-	chunkIndexStr := c.Param("chunk_index")
 
-	chunkIndex, err := strconv.Atoi(chunkIndexStr)
-	if err != nil {
-		common.BadRequestResponse(c, "分片索引错误")
+	chunkIndex, success := utils.ParseIntFromParam(c, "chunk_index", "分片索引错误")
+	if !success {
 		return
 	}
 
@@ -157,8 +150,7 @@ func (h *ChunkHandler) VerifyChunk(c *gin.Context) {
 		ChunkHash string `json:"chunk_hash" binding:"required"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequestResponse(c, "参数错误: "+err.Error())
+	if !utils.BindJSONWithValidation(c, &req) {
 		return
 	}
 

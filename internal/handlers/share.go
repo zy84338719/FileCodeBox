@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"strconv"
-
 	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/models/web"
 	"github.com/zy84338719/filecodebox/internal/services/share"
 	"github.com/zy84338719/filecodebox/internal/storage"
+	"github.com/zy84338719/filecodebox/internal/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -42,42 +41,28 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 	expireStyle := c.DefaultPostForm("expire_style", "day")
 	requireAuthStr := c.DefaultPostForm("require_auth", "false")
 
-	expireValue, err := strconv.Atoi(expireValueStr)
-	if err != nil {
-		common.BadRequestResponse(c, "过期时间参数错误")
-		return
-	}
-
-	// 对于forever模式，允许expireValue为0
-	// 对于count模式，expireValue必须大于0
-	// 对于时间模式，expireValue必须大于0
-	if expireValue < 0 || (expireStyle != "forever" && expireValue == 0) {
-		common.BadRequestResponse(c, "过期时间参数错误")
-		return
-	}
-
 	if text == "" {
 		common.BadRequestResponse(c, "文本内容不能为空")
 		return
 	}
 
-	// 检查是否需要登录才能下载
-	requireAuth := requireAuthStr == "true"
+	// 解析过期参数
+	expireParams, err := utils.ParseExpireParams(expireValueStr, expireStyle, requireAuthStr)
+	if err != nil {
+		common.BadRequestResponse(c, err.Error())
+		return
+	}
 
 	// 构建请求
 	req := web.ShareTextRequest{
 		Text:        text,
-		ExpireValue: expireValue,
-		ExpireStyle: expireStyle,
-		RequireAuth: requireAuth,
+		ExpireValue: expireParams.ExpireValue,
+		ExpireStyle: expireParams.ExpireStyle,
+		RequireAuth: expireParams.RequireAuth,
 	}
 
 	// 检查是否为认证用户上传
-	var userID *uint
-	if uid, exists := c.Get("user_id"); exists {
-		id := uid.(uint)
-		userID = &id
-	}
+	userID := utils.GetUserIDFromContext(c)
 
 	fileResult, err := h.service.ShareTextWithAuth(req.Text, req.ExpireValue, req.ExpireStyle, userID)
 	if err != nil {
@@ -110,47 +95,33 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /share/file/ [post]
 func (h *ShareHandler) ShareFile(c *gin.Context) {
-	// 绑定表单参数
-	var req web.ShareFileRequest
-	if err := c.ShouldBind(&req); err != nil {
-		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
-		return
-	}
+	// 解析表单参数
+	expireValueStr := c.DefaultPostForm("expire_value", "1")
+	expireStyle := c.DefaultPostForm("expire_style", "day")
+	requireAuthStr := c.DefaultPostForm("require_auth", "false")
 
-	// 默认值处理和验证
-	if req.ExpireValue < 0 {
-		common.BadRequestResponse(c, "过期时间参数不能为负数")
-		return
-	}
-
-	// 对于非forever模式，ExpireValue不能为0
-	if req.ExpireStyle != "forever" && req.ExpireValue == 0 {
-		req.ExpireValue = 1 // 默认值
-	}
-
-	if req.ExpireStyle == "" {
-		req.ExpireStyle = "day"
-	}
-
-	file, err := c.FormFile("file")
+	// 解析过期参数
+	expireParams, err := utils.ParseExpireParams(expireValueStr, expireStyle, requireAuthStr)
 	if err != nil {
-		common.BadRequestResponse(c, "获取文件失败")
+		common.BadRequestResponse(c, err.Error())
+		return
+	}
+
+	// 解析文件
+	file, success := utils.ParseFileFromForm(c, "file")
+	if !success {
 		return
 	}
 
 	// 检查是否为认证用户上传
-	var userID *uint
-	if uid, exists := c.Get("user_id"); exists {
-		id := uid.(uint)
-		userID = &id
-	}
+	userID := utils.GetUserIDFromContext(c)
 
 	// 构建服务层请求（这里需要适配服务层的接口）
 	serviceReq := models.ShareFileRequest{
 		File:        file,
-		ExpireValue: req.ExpireValue,
-		ExpireStyle: req.ExpireStyle,
-		RequireAuth: req.RequireAuth,
+		ExpireValue: expireParams.ExpireValue,
+		ExpireStyle: expireParams.ExpireStyle,
+		RequireAuth: expireParams.RequireAuth,
 		ClientIP:    c.ClientIP(),
 		UserID:      userID,
 	}

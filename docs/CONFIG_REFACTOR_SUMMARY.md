@@ -75,8 +75,6 @@
 每个配置模块都实现以下标准接口：
 ```go
 - Validate() error              // 配置验证
-- ToMap() map[string]string     // 转换为键值对
-- FromMap(map[string]string) error // 从键值对加载
 - Update(map[string]interface{}) error // 更新配置
 - Clone() *ConfigType           // 克隆配置
 ```
