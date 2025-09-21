@@ -77,9 +77,9 @@ print_info "  BuildTime:  $BUILD_TIME"
 
 # 定义 ldflags
 LDFLAGS="-s -w"
-LDFLAGS="$LDFLAGS -X 'github.com/zy84338719/filecodebox/internal/models.Version=$VERSION'"
-LDFLAGS="$LDFLAGS -X 'github.com/zy84338719/filecodebox/internal/models.GitCommit=$GIT_COMMIT'"
-LDFLAGS="$LDFLAGS -X 'github.com/zy84338719/filecodebox/internal/models.BuildTime=$BUILD_TIME'"
+LDFLAGS="$LDFLAGS -X 'github.com/zy84338719/filecodebox/internal/models/service.Version=$VERSION'"
+LDFLAGS="$LDFLAGS -X 'github.com/zy84338719/filecodebox/internal/models/service.GitCommit=$GIT_COMMIT'"
+LDFLAGS="$LDFLAGS -X 'github.com/zy84338719/filecodebox/internal/models/service.BuildTime=$BUILD_TIME'"
 
 # 输出目录
 OUTPUT_DIR="build"

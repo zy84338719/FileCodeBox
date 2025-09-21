@@ -8,11 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/config"
-)
-
-// 应用版本号
-const (
-	DefaultVersion = "1.0.0"
+	"github.com/zy84338719/filecodebox/internal/models"
 )
 
 // 应用启动时间
@@ -33,7 +29,7 @@ func NewAPIHandler(manager *config.ConfigManager) *APIHandler {
 type HealthResponse struct {
 	Status    string `json:"status" example:"ok"`
 	Timestamp string `json:"timestamp" example:"2025-09-11T10:00:00Z"`
-	Version   string `json:"version" example:"1.0.0"`
+	Version   string `json:"version" example:"1.7.1"`
 	Uptime    string `json:"uptime" example:"2h30m15s"`
 }
 
@@ -49,7 +45,7 @@ func (h *APIHandler) GetHealth(c *gin.Context) {
 	// 从环境变量获取版本号，如果不存在则使用默认版本
 	version := os.Getenv("APP_VERSION")
 	if version == "" {
-		version = DefaultVersion
+		version = models.Version
 	}
 
 	// 检查服务健康状态
