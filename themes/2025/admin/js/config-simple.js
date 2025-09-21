@@ -44,12 +44,33 @@ async function loadConfig() {
  * 填充配置表单
  */
 function fillConfigForm(config) {
+    // 兼容后端大写字段名（如 Base/Transfer/User/MCP/NotifyTitle...）自动转小写
+    // 只在首次调用时做一次转换
+    if (config && !config.base && config.Base) {
+        // 递归转换对象所有一级大写key为小写
+        const mapKeys = obj => {
+            if (!obj || typeof obj !== 'object') return obj;
+            const newObj = {};
+            for (const k in obj) {
+                if (!Object.hasOwn(obj, k)) continue;
+                // 只转首字母大写的key
+                if (/^[A-Z]/.test(k)) {
+                    const nk = k.charAt(0).toLowerCase() + k.slice(1);
+                    newObj[nk] = mapKeys(obj[k]);
+                } else {
+                    newObj[k] = mapKeys(obj[k]);
+                }
+            }
+            return newObj;
+        };
+        config = mapKeys(config);
+    }
     try {
         // 基础设置
         setFieldValue('base_name', config.base?.name);
         setFieldValue('base_description', config.base?.description);
         setFieldValue('base_keywords', config.base?.keywords);
-        setFieldValue('admin_token', ''); // 不回显密码
+    // 管理员令牌字段已移除，不回显任何敏感字段
         setFieldValue('notify_title', config.notify_title);
         setFieldValue('notify_content', config.notify_content);
         setFieldValue('page_explain', config.page_explain);
@@ -69,7 +90,8 @@ function fillConfigForm(config) {
         setFieldValue('themes_select', config.themes_select);
         
         // 用户系统设置 (始终启用)
-        setCheckboxValue('allow_user_registration', config.user?.allow_user_registration);
+    // config.user.allow_user_registration 可能为 0/1，setCheckboxValue 接受布尔化
+    setCheckboxValue('allow_user_registration', config.user?.allow_user_registration);
         setCheckboxValue('require_email_verify', config.user?.require_email_verify);
         setFieldValue('user_storage_quota_mb', bytesToMB(config.user?.user_storage_quota || 0));
         setFieldValue('user_upload_size_mb', bytesToMB(config.user?.user_upload_size || 0));
@@ -166,11 +188,7 @@ async function handleConfigSubmit(e) {
             themes_select: getFieldValue('themes_select')
         };
         
-        // 如果密码字段有值，添加到配置中
-        const adminToken = getFieldValue('admin_token');
-        if (adminToken && adminToken.trim()) {
-            config.admin_token = adminToken.trim();
-        }
+        // 管理员令牌字段已移除，不会写入到配置中。
         
         console.log('准备提交的配置:', config);
         
@@ -181,8 +199,7 @@ async function handleConfigSubmit(e) {
         
         if (result.code === 200) {
             safeShowAlert('配置保存成功！', 'success');
-            // 清空密码字段
-            setFieldValue('admin_token', '');
+            // 管理员令牌字段已移除，无需清空
         } else {
             throw new Error(result.message || '保存失败');
         }

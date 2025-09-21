@@ -12,7 +12,6 @@ type RepositoryManager struct {
 	Chunk       *ChunkDAO
 	UserSession *UserSessionDAO
 	Upload      *ChunkDAO
-	KeyValue    *KeyValueDAO
 }
 
 // NewRepositoryManager 创建新的数据访问管理器
@@ -24,11 +23,15 @@ func NewRepositoryManager(db *gorm.DB) *RepositoryManager {
 		Chunk:       NewChunkDAO(db),
 		UserSession: NewUserSessionDAO(db),
 		Upload:      NewChunkDAO(db), // 别名
-		KeyValue:    NewKeyValueDAO(db),
 	}
 }
 
 // BeginTransaction 开始事务
 func (m *RepositoryManager) BeginTransaction() *gorm.DB {
 	return m.db.Begin()
+}
+
+// DB 返回底层 gorm.DB 引用（只读）
+func (m *RepositoryManager) DB() *gorm.DB {
+	return m.db
 }

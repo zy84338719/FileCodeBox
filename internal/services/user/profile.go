@@ -16,18 +16,6 @@ func (s *Service) GetProfile(userID uint) (*models.User, error) {
 
 // UpdateProfile 更新用户资料 - 使用结构化更新
 func (s *Service) UpdateProfile(userID uint, updates map[string]interface{}) error {
-	// 验证更新字段
-	allowedFields := map[string]bool{
-		"nickname": true,
-		"email":    true,
-		"avatar":   true,
-	}
-
-	for key := range updates {
-		if !allowedFields[key] {
-			return errors.New("field not allowed to update: " + key)
-		}
-	}
 
 	user, err := s.repositoryManager.User.GetByID(userID)
 	if err != nil {
@@ -35,7 +23,7 @@ func (s *Service) UpdateProfile(userID uint, updates map[string]interface{}) err
 	}
 
 	// 准备结构化更新字段
-	profileFields := &models.UserProfileUpdateFields{}
+	profileFields := &models.User{}
 
 	// 检查邮箱是否已被其他用户使用
 	if email, ok := updates["email"]; ok {
@@ -46,17 +34,17 @@ func (s *Service) UpdateProfile(userID uint, updates map[string]interface{}) err
 				return errors.New("email already in use")
 			}
 		}
-		profileFields.Email = &emailStr
+		profileFields.Email = emailStr
 	}
 
 	if nickname, ok := updates["nickname"]; ok {
 		nicknameStr := nickname.(string)
-		profileFields.Nickname = &nicknameStr
+		profileFields.Nickname = nicknameStr
 	}
 
 	if avatar, ok := updates["avatar"]; ok {
 		avatarStr := avatar.(string)
-		profileFields.Avatar = &avatarStr
+		profileFields.Avatar = avatarStr
 	}
 
 	// 使用结构化更新

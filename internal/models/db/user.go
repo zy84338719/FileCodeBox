@@ -30,7 +30,6 @@ type User struct {
 
 // UserQuery 用户查询条件
 type UserQuery struct {
-	gorm.Model
 	ID       *uint  `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -41,24 +40,8 @@ type UserQuery struct {
 	Offset   int    `json:"offset"`
 }
 
-// UserUpdate 用户更新数据
-type UserUpdate struct {
-	gorm.Model
-	Username      *string    `json:"username"`
-	Email         *string    `json:"email"`
-	PasswordHash  *string    `json:"password_hash"`
-	Nickname      *string    `json:"nickname"`
-	Avatar        *string    `json:"avatar"`
-	Role          *string    `json:"role"`
-	Status        *string    `json:"status"`
-	EmailVerified *bool      `json:"email_verified"`
-	LastLoginAt   *time.Time `json:"last_login_at"`
-	LastLoginIP   *string    `json:"last_login_ip"`
-}
-
 // UserStats 用户统计查询结果
 type UserStats struct {
-	gorm.Model
 	UserID         uint  `json:"user_id"`
 	TotalUploads   int   `json:"total_uploads"`
 	TotalDownloads int   `json:"total_downloads"`

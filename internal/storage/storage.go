@@ -38,6 +38,11 @@ func NewStorageManager(manager *config.ConfigManager) *StorageManager {
 		current:  manager.Storage.Type,
 	}
 
+	// 如果配置中的存储类型为空，默认使用本地存储
+	if sm.current == "" {
+		sm.current = "local"
+	}
+
 	// 创建 PathManager
 	basePath := manager.Storage.StoragePath
 	if basePath == "" {

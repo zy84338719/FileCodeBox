@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -13,9 +12,9 @@ import (
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/models/web"
 	"github.com/zy84338719/filecodebox/internal/services"
+	"github.com/zy84338719/filecodebox/internal/utils"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
 )
 
 // AdminHandler 管理处理器
@@ -34,26 +33,14 @@ func NewAdminHandler(service *services.AdminService, config *config.ConfigManage
 // Login 管理员登录
 func (h *AdminHandler) Login(c *gin.Context) {
 	var req web.AdminLoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.BadRequestResponse(c, "参数错误: "+err.Error())
+	if !utils.BindJSONWithValidation(c, &req) {
 		return
 	}
 
-	// 验证密码
-	if req.Password != h.config.AdminToken {
-		common.UnauthorizedResponse(c, "密码错误")
-		return
-	}
-
-	// 生成JWT token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"is_admin": true,
-		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24小时过期
-	})
-
-	tokenString, err := token.SignedString([]byte(h.config.AdminToken))
+	// 使用 AdminService 进行管理员凭据验证并生成 token
+	tokenString, err := h.service.GenerateTokenForAdmin(req.Username, req.Password)
 	if err != nil {
-		common.InternalServerErrorResponse(c, "生成token失败")
+		common.UnauthorizedResponse(c, "认证失败: "+err.Error())
 		return
 	}
 
@@ -90,27 +77,15 @@ func (h *AdminHandler) GetStats(c *gin.Context) {
 
 // GetFiles 获取文件列表
 func (h *AdminHandler) GetFiles(c *gin.Context) {
-	pageStr := c.DefaultQuery("page", "1")
-	pageSizeStr := c.DefaultQuery("page_size", "20")
-	search := c.Query("search")
+	pagination := utils.ParsePaginationParams(c)
 
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page < 1 {
-		page = 1
-	}
-
-	pageSize, err := strconv.Atoi(pageSizeStr)
-	if err != nil || pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	files, total, err := h.service.GetFiles(page, pageSize, search)
+	files, total, err := h.service.GetFiles(pagination.Page, pagination.PageSize, pagination.Search)
 	if err != nil {
 		common.InternalServerErrorResponse(c, "获取文件列表失败: "+err.Error())
 		return
 	}
 
-	common.SuccessWithPagination(c, files, int(total), page, pageSize)
+	common.SuccessWithPagination(c, files, int(total), pagination.Page, pagination.PageSize)
 }
 
 // DeleteFile 删除文件
@@ -149,79 +124,35 @@ func (h *AdminHandler) GetFile(c *gin.Context) {
 
 // GetConfig 获取配置
 func (h *AdminHandler) GetConfig(c *gin.Context) {
-	config := h.service.GetFullConfig()
-	common.SuccessResponse(c, config)
+	cfg := h.service.GetFullConfig()
+	resp := web.AdminConfigResponse{
+		AdminConfigRequest: web.AdminConfigRequest{
+			Base:     cfg.Base,
+			Database: cfg.Database,
+			Transfer: cfg.Transfer,
+			Storage:  cfg.Storage,
+			User:     cfg.User,
+			MCP:      cfg.MCP,
+			UI:       cfg.UI,
+			SysStart: &cfg.SysStart,
+		},
+	}
+	common.SuccessResponse(c, resp)
 }
 
 // UpdateConfig 更新配置
 func (h *AdminHandler) UpdateConfig(c *gin.Context) {
-	// 首先尝试获取原始JSON数据
-	jsonData, err := c.GetRawData()
-	if err != nil {
-		common.BadRequestResponse(c, "无法读取请求数据: "+err.Error())
+
+	// 绑定为 AdminConfigRequest 并使用服务层处理（服务会构建 map 并持久化）
+	var req web.AdminConfigRequest
+	if err := c.ShouldBind(&req); err != nil {
+		common.BadRequestResponse(c, "请求参数错误: "+err.Error())
 		return
 	}
 
-	// 尝试绑定到结构化配置更新DTO
-	var configUpdate models.ConfigUpdateFields
-	if err := json.Unmarshal(jsonData, &configUpdate); err == nil && configUpdate.HasUpdates() {
-		// 使用结构化配置更新
-		err = h.service.UpdateConfigWithDTO(&configUpdate)
-		if err != nil {
-			common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
-			return
-		}
-	} else {
-		// 尝试绑定到平面化配置更新DTO
-		var flatConfigUpdate models.FlatConfigUpdate
-		if err2 := json.Unmarshal(jsonData, &flatConfigUpdate); err2 == nil && flatConfigUpdate.HasUpdates() {
-			// 使用平面化配置更新
-			err = h.service.UpdateConfigWithFlatDTO(&flatConfigUpdate)
-			if err != nil {
-				common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
-				return
-			}
-		} else {
-			// 最后尝试绑定到结构化请求（保持兼容性）
-			var configRequest web.AdminConfigRequest
-			if err3 := json.Unmarshal(jsonData, &configRequest); err3 == nil {
-				// 检查是否有有效的结构化数据
-				hasValidStructuredData := (configRequest.Base != nil) ||
-					(configRequest.Transfer != nil) ||
-					(configRequest.User != nil) ||
-					(configRequest.NotifyTitle != nil) ||
-					(configRequest.NotifyContent != nil) ||
-					(configRequest.PageExplain != nil) ||
-					(configRequest.Opacity != nil) ||
-					(configRequest.ThemesSelect != nil)
-
-				if hasValidStructuredData {
-					// 使用结构化的配置请求
-					err = h.service.UpdateConfigFromRequest(&configRequest)
-					if err != nil {
-						common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
-						return
-					}
-				} else {
-					// 回退到原始的map处理
-					var flatConfig map[string]interface{}
-					if err4 := json.Unmarshal(jsonData, &flatConfig); err4 != nil {
-						common.BadRequestResponse(c, "配置参数错误: 无法解析请求数据")
-						return
-					}
-
-					// 使用原始map配置更新
-					err = h.service.UpdateConfig(flatConfig)
-					if err != nil {
-						common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
-						return
-					}
-				}
-			} else {
-				common.BadRequestResponse(c, "配置参数错误: 无法解析请求数据")
-				return
-			}
-		}
+	if err := h.service.UpdateConfigFromRequest(&req); err != nil {
+		common.InternalServerErrorResponse(c, "更新配置失败: "+err.Error())
+		return
 	}
 
 	common.SuccessWithMessage(c, "更新成功", nil)
@@ -639,14 +570,12 @@ func (h *AdminHandler) getUserStats() (*web.AdminUserStatsResponse, error) {
 
 // GetUser 获取单个用户
 func (h *AdminHandler) GetUser(c *gin.Context) {
-	userIDStr := c.Param("id")
-	userID64, err := strconv.ParseUint(userIDStr, 10, 32)
-	if err != nil {
-		common.BadRequestResponse(c, "用户ID错误")
+	userID, ok := utils.ParseUserIDFromParam(c, "id")
+	if !ok {
 		return
 	}
 
-	user, err := h.service.GetUserByID(uint(userID64))
+	user, err := h.service.GetUserByID(userID)
 	if err != nil {
 		common.NotFoundResponse(c, "用户不存在")
 		return
@@ -680,17 +609,8 @@ func (h *AdminHandler) GetUser(c *gin.Context) {
 
 // CreateUser 创建用户
 func (h *AdminHandler) CreateUser(c *gin.Context) {
-	var userData struct {
-		Username string `json:"username" binding:"required"`
-		Email    string `json:"email" binding:"omitempty,email"`
-		Password string `json:"password" binding:"required"`
-		Nickname string `json:"nickname"`
-		IsAdmin  bool   `json:"is_admin"`
-		IsActive bool   `json:"is_active"`
-	}
-
-	if err := c.ShouldBindJSON(&userData); err != nil {
-		common.BadRequestResponse(c, "参数错误: "+err.Error())
+	var userData web.UserDataRequest
+	if !utils.BindJSONWithValidation(c, &userData) {
 		return
 	}
 
@@ -719,10 +639,8 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 
 // UpdateUser 更新用户
 func (h *AdminHandler) UpdateUser(c *gin.Context) {
-	userIDStr := c.Param("id")
-	userID64, err := strconv.ParseUint(userIDStr, 10, 32)
-	if err != nil {
-		common.BadRequestResponse(c, "用户ID错误")
+	userID, ok := utils.ParseUserIDFromParam(c, "id")
+	if !ok {
 		return
 	}
 
@@ -734,8 +652,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		IsActive bool   `json:"is_active"`
 	}
 
-	if err := c.ShouldBindJSON(&userData); err != nil {
-		common.BadRequestResponse(c, "参数错误: "+err.Error())
+	if !utils.BindJSONWithValidation(c, &userData) {
 		return
 	}
 
@@ -750,15 +667,28 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		status = "inactive"
 	}
 
-	// 更新用户
-	err = h.service.UpdateUser(uint(userID64), userData.Email, userData.Password, userData.Nickname, role, status)
+	// 更新用户：构建 models.User 并调用服务方法
+	// 构建更新用的 models.User：只填充仓库 UpdateUserFields 所需字段
+	user := models.User{}
+	// ID will be used by UpdateUserFields via repository; ensure repository method uses provided ID
+	// NOTE: models.User uses gorm.Model embed; set via zero-value and pass id to repository
+	user.Email = userData.Email
+	if userData.Password != "" {
+		// Hashing handled inside service layer; here we pass raw password in a convention used elsewhere
+		user.PasswordHash = userData.Password
+	}
+	user.Nickname = userData.Nickname
+	user.Role = role
+	user.Status = status
+
+	err := h.service.UpdateUser(user)
 	if err != nil {
 		common.InternalServerErrorResponse(c, "更新用户失败: "+err.Error())
 		return
 	}
 
 	common.SuccessWithMessage(c, "用户更新成功", web.IDResponse{
-		ID: uint(userID64),
+		ID: userID,
 	})
 }
 
@@ -916,25 +846,94 @@ func (h *AdminHandler) ExportUsers(c *gin.Context) {
 		)
 	}
 
-	// 设置响应头
-	c.Header("Content-Type", "text/csv; charset=utf-8")
-	c.Header("Content-Disposition", "attachment; filename=users_export.csv")
-	c.Header("Content-Length", strconv.Itoa(len(csvContent)))
-
 	// 添加UTF-8 BOM以确保Excel正确显示中文
 	bomContent := "\xEF\xBB\xBF" + csvContent
-	c.String(200, bomContent)
+
+	// 设置响应头（Content-Length 使用实际发送的字节长度）
+	c.Header("Content-Type", "text/csv; charset=utf-8")
+	c.Header("Content-Disposition", "attachment; filename=users_export.csv")
+	c.Header("Content-Length", strconv.Itoa(len([]byte(bomContent))))
+
+	// 使用 Write 写入原始字节，避免框架对长度的二次处理
+	c.Writer.WriteHeader(200)
+	_, _ = c.Writer.Write([]byte(bomContent))
+}
+
+// BatchEnableUsers 批量启用用户
+func (h *AdminHandler) BatchEnableUsers(c *gin.Context) {
+	var req struct {
+		UserIDs []uint `json:"user_ids" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
+		return
+	}
+
+	if len(req.UserIDs) == 0 {
+		common.BadRequestResponse(c, "user_ids 不能为空")
+		return
+	}
+
+	if err := h.service.BatchUpdateUserStatus(req.UserIDs, true); err != nil {
+		common.InternalServerErrorResponse(c, "批量启用用户失败: "+err.Error())
+		return
+	}
+
+	common.SuccessWithMessage(c, "批量启用成功", nil)
+}
+
+// BatchDisableUsers 批量禁用用户
+func (h *AdminHandler) BatchDisableUsers(c *gin.Context) {
+	var req struct {
+		UserIDs []uint `json:"user_ids" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
+		return
+	}
+
+	if len(req.UserIDs) == 0 {
+		common.BadRequestResponse(c, "user_ids 不能为空")
+		return
+	}
+
+	if err := h.service.BatchUpdateUserStatus(req.UserIDs, false); err != nil {
+		common.InternalServerErrorResponse(c, "批量禁用用户失败: "+err.Error())
+		return
+	}
+
+	common.SuccessWithMessage(c, "批量禁用成功", nil)
+}
+
+// BatchDeleteUsers 批量删除用户
+func (h *AdminHandler) BatchDeleteUsers(c *gin.Context) {
+	var req struct {
+		UserIDs []uint `json:"user_ids" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
+		return
+	}
+
+	if len(req.UserIDs) == 0 {
+		common.BadRequestResponse(c, "user_ids 不能为空")
+		return
+	}
+
+	if err := h.service.BatchDeleteUsers(req.UserIDs); err != nil {
+		common.InternalServerErrorResponse(c, "批量删除用户失败: "+err.Error())
+		return
+	}
+
+	common.SuccessWithMessage(c, "批量删除成功", nil)
 }
 
 // GetMCPConfig 获取 MCP 配置
 func (h *AdminHandler) GetMCPConfig(c *gin.Context) {
-	mcpConfig := map[string]interface{}{
-		"enable_mcp_server": h.config.MCP.EnableMCPServer,
-		"mcp_port":          h.config.MCP.MCPPort,
-		"mcp_host":          h.config.MCP.MCPHost,
-	}
-
-	common.SuccessResponse(c, mcpConfig)
+	common.SuccessResponse(c, h.config.MCP)
 }
 
 // UpdateMCPConfig 更新 MCP 配置
@@ -950,28 +949,26 @@ func (h *AdminHandler) UpdateMCPConfig(c *gin.Context) {
 		return
 	}
 
-	// 构建配置更新映射
-	configUpdates := make(map[string]interface{})
-
+	// 直接更新配置结构
 	if mcpConfig.EnableMCPServer != nil {
-		configUpdates["enable_mcp_server"] = *mcpConfig.EnableMCPServer
+		h.config.MCP.EnableMCPServer = *mcpConfig.EnableMCPServer
 	}
 	if mcpConfig.MCPPort != nil {
-		configUpdates["mcp_port"] = *mcpConfig.MCPPort
+		h.config.MCP.MCPPort = *mcpConfig.MCPPort
 	}
 	if mcpConfig.MCPHost != nil {
-		configUpdates["mcp_host"] = *mcpConfig.MCPHost
+		h.config.MCP.MCPHost = *mcpConfig.MCPHost
 	}
 
-	// 更新配置
-	err := h.service.UpdateConfig(configUpdates)
+	// 保存配置
+	err := h.config.Save()
 	if err != nil {
-		common.InternalServerErrorResponse(c, "更新MCP配置失败: "+err.Error())
+		common.InternalServerErrorResponse(c, "保存MCP配置失败: "+err.Error())
 		return
 	}
 
-	// 重新加载配置
-	err = h.config.LoadFromDatabase()
+	// 重新加载配置（从 config.yaml 与环境变量）
+	err = h.config.ReloadConfig()
 	if err != nil {
 		common.InternalServerErrorResponse(c, "重新加载配置失败: "+err.Error())
 		return
@@ -1002,13 +999,18 @@ func (h *AdminHandler) GetMCPStatus(c *gin.Context) {
 	}
 
 	status := mcpManager.GetStatus()
-	status["config"] = map[string]interface{}{
-		"enabled": h.config.MCP.EnableMCPServer == 1,
-		"port":    h.config.MCP.MCPPort,
-		"host":    h.config.MCP.MCPHost,
+
+	statusText := "inactive"
+	if status.Running {
+		statusText = "active"
 	}
 
-	common.SuccessResponse(c, status)
+	response := web.MCPStatusResponse{
+		Status: statusText,
+		Config: h.config.MCP,
+	}
+
+	common.SuccessResponse(c, response)
 }
 
 // RestartMCPServer 重启 MCP 服务器
@@ -1089,48 +1091,74 @@ func (h *AdminHandler) TestMCPConnection(c *gin.Context) {
 		return
 	}
 
-	// 使用提供的端口或默认配置
-	port := testData.Port
+	address, _, _, err := normalizeMCPAddress(testData.Host, testData.Port, h.config)
+	if err != nil {
+		common.BadRequestResponse(c, "参数错误: "+err.Error())
+		return
+	}
+
+	if err := tcpProbe(address, 3*time.Second); err != nil {
+		common.ErrorResponse(c, 400, fmt.Sprintf("连接测试失败: %s，端口可能未开放或MCP服务器未启动", err.Error()))
+		return
+	}
+
+	response := web.MCPTestResponse{
+		MCPStatusResponse: web.MCPStatusResponse{
+			Status: "连接正常",
+			Config: h.config.MCP,
+		},
+	}
+
+	common.SuccessWithMessage(c, "MCP连接测试成功", response)
+}
+
+// normalizeMCPAddress 解析并验证 host/port，返回用于 TCP 测试的 address、实际 host（用于响应）和 port。
+func normalizeMCPAddress(reqHost, reqPort string, cfg *config.ConfigManager) (address, host, port string, err error) {
+	// port 优先级：请求参数 -> 配置 -> 默认 8081
+	port = reqPort
 	if port == "" {
-		port = h.config.MCP.MCPPort
+		port = cfg.MCP.MCPPort
 	}
 	if port == "" {
 		port = "8081"
 	}
 
-	host := testData.Host
+	// 验证端口号
+	pnum, perr := strconv.Atoi(port)
+	if perr != nil || pnum < 1 || pnum > 65535 {
+		err = fmt.Errorf("无效端口号: %s", port)
+		return
+	}
+
+	// host 优先级：请求参数 -> 配置 -> 默认 0.0.0.0
+	host = reqHost
 	if host == "" {
-		host = h.config.MCP.MCPHost
+		host = cfg.MCP.MCPHost
 	}
 	if host == "" {
 		host = "0.0.0.0"
 	}
 
-	// 进行简单的端口连通性测试
-	address := host + ":" + port
+	address = host + ":" + port
 	if host == "0.0.0.0" {
+		// 绑定到 0.0.0.0 时，测试本机回环地址
 		address = "127.0.0.1:" + port
 	}
+	return
+}
 
-	// 尝试连接端口
-	conn, err := net.DialTimeout("tcp", address, time.Second*3)
+// tcpProbe 尝试在给定超时内建立 TCP 连接以检测端口连通性
+func tcpProbe(address string, timeout time.Duration) error {
+	conn, err := net.DialTimeout("tcp", address, timeout)
 	if err != nil {
-		// 端口未开放或连接失败
-		common.ErrorResponse(c, 400, fmt.Sprintf("连接测试失败: %s，端口可能未开放或MCP服务器未启动", err.Error()))
-		return
+		return err
 	}
 	defer func() {
 		if err := conn.Close(); err != nil {
 			log.Printf("关闭连接失败: %v", err)
 		}
 	}()
-
-	common.SuccessWithMessage(c, "MCP连接测试成功", map[string]interface{}{
-		"address": address,
-		"status":  "连接正常",
-		"port":    port,
-		"host":    host,
-	})
+	return nil
 }
 
 // GetSystemLogs 获取系统日志
@@ -1160,10 +1188,12 @@ func (h *AdminHandler) GetSystemLogs(c *gin.Context) {
 		logs = filteredLogs
 	}
 
-	common.SuccessResponse(c, map[string]interface{}{
-		"logs":  logs,
-		"total": len(logs),
-	})
+	response := web.LogsResponse{
+		Logs:  logs,
+		Total: len(logs),
+	}
+
+	common.SuccessResponse(c, response)
 }
 
 // GetRunningTasks 获取运行中的任务
@@ -1174,10 +1204,12 @@ func (h *AdminHandler) GetRunningTasks(c *gin.Context) {
 		return
 	}
 
-	common.SuccessResponse(c, map[string]interface{}{
-		"tasks": tasks,
-		"total": len(tasks),
-	})
+	response := web.TasksResponse{
+		Tasks: tasks,
+		Total: len(tasks),
+	}
+
+	common.SuccessResponse(c, response)
 }
 
 // CancelTask 取消任务

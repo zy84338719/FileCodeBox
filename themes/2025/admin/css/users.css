@@ -1016,3 +1016,109 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Begin: 强制桌面端布局 - 这是从 admin/index.html 的内联样式移动到单独css文件的内容 */
+@media screen {
+    .container {
+        max-width: none !important;
+        width: 95vw !important;
+        margin: 0 auto !important;
+    }
+
+    .stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 20px !important;
+    }
+
+    .mobile-menu-toggle {
+        display: none !important;
+    }
+
+    body {
+        min-width: 1200px !important;
+    }
+    /* 为用户过滤器增加简单样式，防止无样式显示 */
+    .user-filters {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        margin: 12px 0 20px 0;
+        flex-wrap: wrap;
+    }
+    .user-filters .filter-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .user-filters label {
+        font-weight: 500;
+        color: #495057;
+        margin-right: 6px;
+    }
+
+    /* 用户工具栏样式（搜索、操作按钮区域） */
+    .user-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin: 12px 0;
+        flex-wrap: wrap;
+    }
+    .search-section {
+        flex: 1 1 480px; /* 允许收缩但优先占据空间 */
+    }
+    .search-box {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .search-input {
+        padding: 8px 12px;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        min-width: 280px;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .action-section {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .btn {
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: none;
+        background: #f5f7fa;
+        color: #333;
+        font-weight: 500;
+    }
+    .btn:hover { opacity: 0.95; }
+    .btn-secondary {
+        background: #ffffff;
+        border: 1px solid #e9ecef;
+    }
+
+    /* 简单的下拉菜单样式（批量操作） */
+    .dropdown { position: relative; }
+    .dropdown-menu {
+        position: absolute;
+        right: 0;
+        top: 100%;
+        background: #ffffff;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+        display: none;
+        min-width: 180px;
+        border-radius: 6px;
+        z-index: 1000;
+        overflow: hidden;
+    }
+    .dropdown-menu a { display: block; padding: 8px 12px; color: #333; text-decoration: none; }
+    .dropdown-menu a:hover { background: #f8f9fa; }
+    .dropdown.open .dropdown-menu { display: block; }
+}
+/* End: 强制桌面端布局 */

@@ -17,6 +17,12 @@ func SetupShareRoutes(
 		ValidateToken(string) (interface{}, error)
 	},
 ) {
+	// 幂等检查：如果 /share/text/ 已注册则跳过（防止重复注册导致 gin panic）
+	for _, r := range router.Routes() {
+		if r.Method == "POST" && r.Path == "/share/text/" {
+			return
+		}
+	}
 	// 分享相关路由
 	shareGroup := router.Group("/share")
 	shareGroup.Use(middleware.ShareAuth(cfg))

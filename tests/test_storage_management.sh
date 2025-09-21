@@ -3,7 +3,10 @@
 # 测试存储管理功能
 
 BASE_URL="http://localhost:12345"
-ADMIN_TOKEN="FileCodeBox2025"
+# 注意：后端接口已去除 `admin_` 字段前缀（返回使用 `username`），但测试脚本保持对环境变量 `ADMIN_USERNAME`/`ADMIN_PASSWORD` 的兼容性。
+# 请使用管理员用户名/密码登录获取 JWT（也可通过 ADMIN_JWT 环境变量注入）
+# 示例：ADMIN_JWT=$(curl -s -X POST "$BASE_URL/admin/login" -d '{"username":"admin","password":"yourpass"}' | jq -r '.data.token')
+ADMIN_JWT=""
 
 echo "=== 测试存储管理功能 ==="
 echo
@@ -17,19 +20,29 @@ fi
 echo "✅ 服务器运行正常"
 echo
 
-# 获取管理员 Token
+# 获取管理员 Token（优先使用 ADMIN_JWT；若未设置则使用 ADMIN_USERNAME/ADMIN_PASSWORD 登录获取）
 echo "1. 管理员登录..."
-LOGIN_RESULT=$(curl -s -X POST "$BASE_URL/admin/login" \
-  -H "Content-Type: application/json" \
-  -d "{\"password\":\"$ADMIN_TOKEN\"}")
-
-if [[ $LOGIN_RESULT == *"token"* ]]; then
-    JWT_TOKEN=$(echo $LOGIN_RESULT | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
-    echo "✅ 管理员登录成功"
+if [[ -n "$ADMIN_JWT" ]]; then
+    JWT_TOKEN="$ADMIN_JWT"
+    echo "✅ 已使用环境提供的 ADMIN_JWT"
 else
-    echo "❌ 管理员登录失败"
-    echo "详细信息: $LOGIN_RESULT"
-    exit 1
+    if [[ -z "$ADMIN_USERNAME" || -z "$ADMIN_PASSWORD" ]]; then
+        echo "❌ 未提供 ADMIN_JWT，也未设置 ADMIN_USERNAME/ADMIN_PASSWORD 环境变量。无法登录。"
+        exit 1
+    fi
+
+    LOGIN_RESULT=$(curl -s -X POST "$BASE_URL/admin/login" \
+      -H "Content-Type: application/json" \
+      -d "{\"username\":\"$ADMIN_USERNAME\",\"password\":\"$ADMIN_PASSWORD\"}")
+
+    if [[ $LOGIN_RESULT == *"token"* ]]; then
+        JWT_TOKEN=$(echo $LOGIN_RESULT | grep -o '"token":"[^\"]*"' | cut -d'"' -f4)
+        echo "✅ 管理员登录成功"
+    else
+        echo "❌ 管理员登录失败"
+        echo "详细信息: $LOGIN_RESULT"
+        exit 1
+    fi
 fi
 echo
 

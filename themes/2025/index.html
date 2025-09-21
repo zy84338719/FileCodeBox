@@ -59,10 +59,15 @@
         <!-- 文件分享标签页 -->
         <div id="file-tab" class="tab-content active">
             <form id="file-form">
-                <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                <div class="upload-area">
                     <div class="upload-icon">📁</div>
                     <div class="upload-text">点击选择文件或拖拽到此处</div>
+                    <div class="upload-options">
+                        <label class="upload-option-btn" for="file-input">选择文件</label>
+                        <label class="upload-option-btn" for="folder-input">选择文件夹</label>
+                    </div>
                     <input type="file" id="file-input" style="display: none;">
+                    <input type="file" id="folder-input" style="display: none;" webkitdirectory multiple>
                 </div>
                 
                 <div class="form-group">
@@ -152,6 +157,8 @@
             background: '{{background}}'
         };
     </script>
+    <!-- 第三方库 -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/upload.js"></script>

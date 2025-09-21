@@ -69,7 +69,7 @@ curl http://localhost:12345/api/doc | jq .
 ### 🔐 认证说明
 
 **管理员认证**:
-- 使用 `Authorization: Bearer {admin_token}` 头部
+- 使用 `Authorization: Bearer {JWT}` 头部（管理员请先通过 `/admin/login` 使用用户名/密码获取 JWT）
 - 通过 `/admin/login` 获取令牌
 
 **用户认证**:

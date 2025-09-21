@@ -1,1 +1,2 @@
-测试文件内容
+Hello World Test File
+This is a test file for upload functionality.

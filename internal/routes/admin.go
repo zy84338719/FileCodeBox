@@ -1,15 +1,13 @@
 package routes
 
 import (
-	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
-	"github.com/zy84338719/filecodebox/internal/services"
+	"github.com/zy84338719/filecodebox/internal/middleware"
+	"github.com/zy84338719/filecodebox/internal/static"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,60 +25,159 @@ func SetupAdminRoutes(
 	// 管理相关路由
 	adminGroup := router.Group("/admin")
 
-	// 管理页面和静态文件 - 不需要认证就能访问HTML和静态资源
+	// 管理页面和静态文件 - 管理页面本身应当需要管理员认证，静态资源仍然注册为公开以便前端加载
 	{
-		// 管理页面
-		adminGroup.GET("/", func(c *gin.Context) {
-			ServeAdminPage(c, cfg)
-		})
+		// 管理页面 - 不在此注册（移到需要认证的路由组），确保只有管理员可以访问前端入口
+		// 登录接口保持公开
 
-		// 模块化管理后台静态文件
-		themeDir := fmt.Sprintf("./%s", cfg.ThemesSelect)
-		adminGroup.Static("/css", fmt.Sprintf("%s/admin/css", themeDir))
-		adminGroup.Static("/js", fmt.Sprintf("%s/admin/js", themeDir))
-		adminGroup.Static("/templates", fmt.Sprintf("%s/admin/templates", themeDir))
-		adminGroup.Static("/assets", fmt.Sprintf("%s/assets", themeDir))
-		adminGroup.Static("/components", fmt.Sprintf("%s/components", themeDir))
-	}
-
-	// 创建一个支持两种认证方式的中间件
-	combinedAuthMiddleware := func(c *gin.Context) {
-		// 先尝试JWT用户认证
-		authHeader := c.GetHeader("Authorization")
-		if authHeader != "" {
-			tokenParts := strings.SplitN(authHeader, " ", 2)
-			if len(tokenParts) == 2 && tokenParts[0] == "Bearer" {
-				// 尝试验证JWT token
-				claimsInterface, err := userService.ValidateToken(tokenParts[1])
-				if err == nil {
-					// JWT验证成功，检查是否为管理员角色
-					if claims, ok := claimsInterface.(*services.AuthClaims); ok && claims.Role == "admin" {
-						// 设置用户信息到上下文
-						c.Set("user_id", claims.UserID)
-						c.Set("username", claims.Username)
-						c.Set("role", claims.Role)
-						c.Set("session_id", claims.SessionID)
-						c.Set("auth_type", "jwt")
-						c.Next()
-						return
-					}
-				}
-
-				// JWT验证失败，尝试管理员token认证
-				if tokenParts[1] == cfg.AdminToken {
-					c.Set("is_admin", true)
-					c.Set("role", "admin")
-					c.Set("auth_type", "admin_token")
-					c.Next()
-					return
-				}
+		// 管理员登录（通过用户名/密码获取 JWT）
+		// 如果已经存在相同的 POST /admin/login 路由（例如在未初始化数据库时注册的占位处理器），
+		// 则跳过注册以避免 gin 的 "handlers are already registered for path" panic。
+		// If a placeholder route was registered earlier (no-DB mode), skip; otherwise register.
+		exists := false
+		for _, r := range router.Routes() {
+			if r.Method == "POST" && r.Path == "/admin/login" {
+				exists = true
+				break
 			}
 		}
+		if !exists {
+			adminGroup.POST("/login", func(c *gin.Context) {
+				// 尝试从全局注入获取真实 handler（SetInjectedAdminHandler）
+				if injected := handlers.GetInjectedAdminHandler(); injected != nil {
+					injected.Login(c)
+					return
+				}
+				c.JSON(404, gin.H{"code": 404, "message": "admin handler not configured"})
+			})
+		}
 
-		// 两种认证都失败
-		c.JSON(401, gin.H{"code": 401, "message": "认证失败"})
-		c.Abort()
 	}
+
+	// 将管理后台静态资源与前端入口注册为公开路由，允许未认证用户加载登录页面和相关静态资源
+	// 注意：API 路由仍然放在受保护的 authGroup 中
+	themeDir := "./" + cfg.UI.ThemesSelect
+
+	// css
+	adminGroup.GET("/css/*filepath", func(c *gin.Context) {
+		fp := c.Param("filepath")
+		p := filepath.Join(themeDir, "admin", "css", fp)
+		if _, err := os.Stat(p); err != nil {
+			c.Status(404)
+			return
+		}
+		c.File(p)
+	})
+
+	// HEAD for css
+	adminGroup.HEAD("/css/*filepath", func(c *gin.Context) {
+		fp := c.Param("filepath")
+		p := filepath.Join(themeDir, "admin", "css", fp)
+		if _, err := os.Stat(p); err != nil {
+			c.Status(404)
+			return
+		}
+		c.File(p)
+	})
+
+	// js
+	adminGroup.GET("/js/*filepath", func(c *gin.Context) {
+		fp := c.Param("filepath")
+		p := filepath.Join(themeDir, "admin", "js", fp)
+		if _, err := os.Stat(p); err != nil {
+			c.Status(404)
+			return
+		}
+		c.File(p)
+	})
+
+	// HEAD for js
+	adminGroup.HEAD("/js/*filepath", func(c *gin.Context) {
+		fp := c.Param("filepath")
+		p := filepath.Join(themeDir, "admin", "js", fp)
+		if _, err := os.Stat(p); err != nil {
+			c.Status(404)
+			return
+		}
+		c.File(p)
+	})
+
+	// templates
+	adminGroup.GET("/templates/*filepath", func(c *gin.Context) {
+		fp := c.Param("filepath")
+		p := filepath.Join(themeDir, "admin", "templates", fp)
+		if _, err := os.Stat(p); err != nil {
+			c.Status(404)
+			return
+		}
+		c.File(p)
+	})
+
+	// HEAD for templates
+	adminGroup.HEAD("/templates/*filepath", func(c *gin.Context) {
+		fp := c.Param("filepath")
+		p := filepath.Join(themeDir, "admin", "templates", fp)
+		if _, err := os.Stat(p); err != nil {
+			c.Status(404)
+			return
+		}
+		c.File(p)
+	})
+
+	// assets and components
+	adminGroup.GET("/assets/*filepath", func(c *gin.Context) {
+		fp := c.Param("filepath")
+		p := filepath.Join(themeDir, "assets", fp)
+		if _, err := os.Stat(p); err != nil {
+			c.Status(404)
+			return
+		}
+		c.File(p)
+	})
+
+	// HEAD for assets
+	adminGroup.HEAD("/assets/*filepath", func(c *gin.Context) {
+		fp := c.Param("filepath")
+		p := filepath.Join(themeDir, "assets", fp)
+		if _, err := os.Stat(p); err != nil {
+			c.Status(404)
+			return
+		}
+		c.File(p)
+	})
+
+	adminGroup.GET("/components/*filepath", func(c *gin.Context) {
+		fp := c.Param("filepath")
+		p := filepath.Join(themeDir, "components", fp)
+		if _, err := os.Stat(p); err != nil {
+			c.Status(404)
+			return
+		}
+		c.File(p)
+	})
+
+	// HEAD for components
+	adminGroup.HEAD("/components/*filepath", func(c *gin.Context) {
+		fp := c.Param("filepath")
+		p := filepath.Join(themeDir, "components", fp)
+		if _, err := os.Stat(p); err != nil {
+			c.Status(404)
+			return
+		}
+		c.File(p)
+	})
+
+	// 管理前端入口公开：允许未认证用户加载登录页面
+	adminGroup.GET("/", func(c *gin.Context) {
+		static.ServeAdminPage(c, cfg)
+	})
+	// HEAD for admin entry
+	adminGroup.HEAD("/", func(c *gin.Context) {
+		static.ServeAdminPage(c, cfg)
+	})
+
+	// 使用复用的中间件实现（JWT 用户认证并要求 admin 角色）
+	combinedAuthMiddleware := middleware.CombinedAdminAuth(cfg, userService)
 
 	// 需要管理员认证的API路由组
 	authGroup := adminGroup.Group("")
@@ -107,29 +204,15 @@ func SetupAdminRoutes(
 		// 用户管理
 		setupUserRoutes(authGroup, adminHandler)
 
-		// 存储管理
-		setupStorageRoutes(adminGroup, storageHandler)
+		// 存储管理 (需要管理员认证)
+		setupStorageRoutes(authGroup, storageHandler)
 
-		// MCP 服务器管理
-		setupMCPRoutes(adminGroup, adminHandler)
+		// MCP 服务器管理 (需要管理员认证)
+		setupMCPRoutes(authGroup, adminHandler)
 	}
 }
 
-// ServeAdminPage 服务管理页面
-func ServeAdminPage(c *gin.Context, cfg *config.ConfigManager) {
-	// 使用新的模块化管理页面
-	adminPath := filepath.Join(".", cfg.ThemesSelect, "admin", "index.html")
-
-	content, err := os.ReadFile(adminPath)
-	if err != nil {
-		c.String(http.StatusNotFound, "Admin page not found")
-		return
-	}
-
-	c.Header("Cache-Control", "no-cache")
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.String(http.StatusOK, string(content))
-}
+// ServeAdminPage moved to internal/static
 
 // setupMaintenanceRoutes 设置系统维护路由
 func setupMaintenanceRoutes(authGroup *gin.RouterGroup, adminHandler *handlers.AdminHandler) {
@@ -185,6 +268,10 @@ func setupUserRoutes(authGroup *gin.RouterGroup, adminHandler *handlers.AdminHan
 	authGroup.PUT("/users/:id/status", adminHandler.UpdateUserStatus)
 	authGroup.GET("/users/:id/files", adminHandler.GetUserFiles)
 	authGroup.GET("/users/export", adminHandler.ExportUsers)
+	// 批量用户操作
+	authGroup.POST("/users/batch-enable", adminHandler.BatchEnableUsers)
+	authGroup.POST("/users/batch-disable", adminHandler.BatchDisableUsers)
+	authGroup.POST("/users/batch-delete", adminHandler.BatchDeleteUsers)
 }
 
 // setupStorageRoutes 设置存储管理路由

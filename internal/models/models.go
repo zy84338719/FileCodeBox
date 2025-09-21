@@ -3,7 +3,6 @@ package models
 
 import (
 	"github.com/zy84338719/filecodebox/internal/models/db"
-	"github.com/zy84338719/filecodebox/internal/models/dto"
 	"github.com/zy84338719/filecodebox/internal/models/mcp"
 	"github.com/zy84338719/filecodebox/internal/models/service"
 )
@@ -13,7 +12,6 @@ type (
 	// 数据库模型别名
 	FileCode    = db.FileCode
 	UploadChunk = db.UploadChunk
-	KeyValue    = db.KeyValue
 	User        = db.User
 	UserSession = db.UserSession
 
@@ -54,24 +52,6 @@ type (
 	ChunkUploadStatusData       = service.ChunkUploadStatusData
 	ChunkVerifyResponse         = service.ChunkVerifyResponse
 	ChunkUploadCompleteResponse = service.ChunkUploadCompleteResponse
-
-	// DTO 模型别名
-	UserUpdateFields        = dto.UserUpdateFields
-	UserProfileUpdateFields = dto.UserProfileUpdateFields
-	UserStatsUpdateFields   = dto.UserStatsUpdateFields
-	ConfigUpdateFields      = dto.ConfigUpdateFields
-	FlatConfigUpdate        = dto.FlatConfigUpdate
-	MCPConfigUpdate         = dto.MCPConfigUpdate
-	BaseConfigUpdate        = dto.BaseConfigUpdate
-	TransferConfigUpdate    = dto.TransferConfigUpdate
-	UploadConfigUpdate      = dto.UploadConfigUpdate
-	DownloadConfigUpdate    = dto.DownloadConfigUpdate
-	UserConfigUpdate        = dto.UserConfigUpdate
-	StorageConfigUpdate     = dto.StorageConfigUpdate
-	S3ConfigUpdate          = dto.S3ConfigUpdate
-	WebDAVConfigUpdate      = dto.WebDAVConfigUpdate
-	OneDriveConfigUpdate    = dto.OneDriveConfigUpdate
-	NFSConfigUpdate         = dto.NFSConfigUpdate
 
 	// MCP 模型别名
 	SystemConfigResponse = mcp.SystemConfigResponse

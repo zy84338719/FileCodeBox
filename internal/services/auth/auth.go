@@ -308,12 +308,18 @@ func (s *Service) CreateUserSession(user *models.User, ipAddress, userAgent stri
 	}
 
 	// 创建会话记录
+	// 确保会话过期时长合理：如果配置为0或负数，使用默认7天（168小时）作为兜底
+	expiryHours := s.manager.User.SessionExpiryHours
+	if expiryHours <= 0 {
+		expiryHours = 24 * 7 // 7天
+	}
+
 	session := &models.UserSession{
 		UserID:    user.ID,
 		SessionID: sessionID,
 		IPAddress: ipAddress,
 		UserAgent: userAgent,
-		ExpiresAt: time.Now().Add(time.Hour * time.Duration(s.manager.User.SessionExpiryHours)),
+		ExpiresAt: time.Now().Add(time.Hour * time.Duration(expiryHours)),
 		IsActive:  true,
 	}
 

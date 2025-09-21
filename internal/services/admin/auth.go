@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/zy84338719/filecodebox/internal/models"
-	"github.com/zy84338719/filecodebox/internal/models/dto"
 )
 
 // GenerateToken 生成管理员JWT令牌
@@ -21,8 +21,9 @@ func (s *Service) GenerateToken() (string, error) {
 	// 创建token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	// 签名token
-	tokenString, err := token.SignedString([]byte(s.manager.AdminToken))
+	// 签名token - 使用 user JWT secret when available
+	secret := s.manager.User.JWTSecret
+	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return "", fmt.Errorf("生成token失败: %w", err)
 	}
@@ -37,7 +38,7 @@ func (s *Service) ValidateToken(tokenString string) error {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(s.manager.AdminToken), nil
+		return []byte(s.manager.User.JWTSecret), nil
 	})
 
 	if err != nil {
@@ -55,6 +56,33 @@ func (s *Service) ValidateToken(tokenString string) error {
 	return errors.New("无效的token")
 }
 
+// GenerateTokenForAdmin 验证管理员用户名/密码并生成 session-based JWT（复用普通用户登录逻辑）
+func (s *Service) GenerateTokenForAdmin(username, password string) (string, error) {
+	// 查找用户
+	user, err := s.repositoryManager.User.GetByUsername(username)
+	if err != nil {
+		return "", fmt.Errorf("用户不存在或认证失败")
+	}
+
+	// 确认角色为 admin
+	if user.Role != "admin" {
+		return "", fmt.Errorf("用户不是管理员")
+	}
+
+	// 验证密码
+	if !s.authService.CheckPassword(password, user.PasswordHash) {
+		return "", fmt.Errorf("认证失败")
+	}
+
+	// 使用 authService.CreateUserSession 创建 session-based token，这样能被 userService.ValidateToken 接受
+	tokenString, err := s.authService.CreateUserSession(user, "", "admin-login")
+	if err != nil {
+		return "", fmt.Errorf("创建会话失败: %w", err)
+	}
+
+	return tokenString, nil
+}
+
 // ResetUserPassword 重置用户密码 - 使用统一的认证服务
 func (s *Service) ResetUserPassword(userID uint, newPassword string) error {
 	hashedPassword, err := s.authService.HashPassword(newPassword)
@@ -62,8 +90,8 @@ func (s *Service) ResetUserPassword(userID uint, newPassword string) error {
 		return err
 	}
 
-	updateFields := &dto.UserUpdateFields{
-		PasswordHash: &hashedPassword,
+	updateFields := models.User{
+		PasswordHash: hashedPassword,
 	}
 	return s.repositoryManager.User.UpdateUserFields(userID, updateFields)
 }
@@ -117,8 +145,8 @@ func (s *Service) UpdateUserStatus(userID uint, isActive bool) error {
 		status = "active"
 	}
 
-	updateFields := &dto.UserUpdateFields{
-		Status: &status,
+	updateFields := models.User{
+		Status: status,
 	}
 	return s.repositoryManager.User.UpdateUserFields(userID, updateFields)
 }

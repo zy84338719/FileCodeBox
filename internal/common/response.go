@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/zy84338719/filecodebox/internal/models/web"
 )
 
@@ -44,6 +45,8 @@ func BadRequestResponse(c *gin.Context, message string) {
 
 // UnauthorizedResponse 401 未授权响应
 func UnauthorizedResponse(c *gin.Context, message string) {
+	// log the unauthorized response with request path to aid debugging
+	logrus.WithField("path", c.Request.URL.Path).Infof("UnauthorizedResponse: %s", message)
 	c.JSON(http.StatusUnauthorized, web.ErrorResponse{
 		Code:    http.StatusUnauthorized,
 		Message: message,

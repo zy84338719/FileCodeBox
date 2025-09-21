@@ -3,18 +3,24 @@
 # 测试 WebDAV 存储配置
 
 BASE_URL="http://localhost:12345"
-ADMIN_TOKEN="FileCodeBox2025"
+# 注意：后端接口已去除 `admin_` 字段前缀（返回使用 `username`），但测试脚本保持对环境变量 `ADMIN_USERNAME`/`ADMIN_PASSWORD` 的兼容性。
+# 请先通过管理员用户名/密码登录并获取 JWT，用于后续请求（或通过 ADMIN_JWT 环境变量注入）。
+ADMIN_JWT=""
 
 echo "=== 测试 WebDAV 存储配置 ==="
 echo
 
-# 管理员登录
+# 管理员登录（示例：使用管理员用户名+密码获取 JWT）
 echo "1. 管理员登录..."
 LOGIN_RESULT=$(curl -s -X POST "$BASE_URL/admin/login" \
   -H "Content-Type: application/json" \
-  -d "{\"password\":\"$ADMIN_TOKEN\"}")
+  -d '{"username":"admin","password":"FileCodeBox2025"}')
 
-JWT_TOKEN=$(echo $LOGIN_RESULT | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+JWT_TOKEN=$(echo $LOGIN_RESULT | grep -o '"token":"[^\"]*"' | cut -d'"' -f4)
+if [ -z "$JWT_TOKEN" ]; then
+  echo "❌ 无法获取 JWT，登录可能失败： $LOGIN_RESULT"
+  exit 1
+fi
 echo "✅ 登录成功"
 echo
 

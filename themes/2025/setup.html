@@ -236,19 +236,41 @@
                             创建系统管理员账户，用于管理系统配置和用户。
                         </div>
 
-                        <div class="form-group">
-                            <label for="adminToken">管理员令牌</label>
-                            <input type="text" id="adminToken" name="admin_token" class="form-control" 
-                                   placeholder="系统管理令牌，用于管理后台登录" required>
+                        <div class="form-group hidden">
+                            <label for="adminToken">管理员令牌（已移除）</label>
+                            <input type="text" id="adminToken" name="password" class="form-control" 
+                                   placeholder="该字段已移除，管理员请使用用户名和密码登录" disabled>
                         </div>
 
-                        <div class="form-group password-field">
-                            <label for="adminPassword">管理员密码</label>
-                            <input type="password" id="adminPassword" name="admin_password" class="form-control" 
-                                   placeholder="管理员登录密码" required>
-                            <button type="button" class="password-toggle-btn" onclick="togglePassword('adminPassword')">
-                                <span id="adminPasswordToggle">👁️</span>
-                            </button>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="adminUsername">管理员用户名</label>
+                                <input type="text" id="adminUsername" name="username" class="form-control" 
+                                       placeholder="管理员用户名（至少3个字符）" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="adminEmail">管理员邮箱</label>
+                                <input type="email" id="adminEmail" name="email" class="form-control" 
+                                       placeholder="admin@localhost" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group password-field">
+                                <label for="adminPassword">管理员密码</label>
+                                <input type="password" id="adminPassword" name="password" class="form-control" 
+                                       placeholder="管理员登录密码（至少6个字符）" required>
+                                <button type="button" class="password-toggle-btn" onclick="togglePassword('adminPassword')">
+                                    <span id="adminPasswordToggle">👁️</span>
+                                </button>
+                            </div>
+                            <div class="form-group password-field">
+                                <label for="adminPasswordConfirm">确认密码</label>
+                                <input type="password" id="adminPasswordConfirm" name="password_confirm" class="form-control" 
+                                       placeholder="再次输入密码" required>
+                                <button type="button" class="password-toggle-btn" onclick="togglePassword('adminPasswordConfirm')">
+                                    <span id="adminPasswordConfirmToggle">👁️</span>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="setup-actions">
@@ -298,6 +320,12 @@
                             </div>
                         </div>
 
+                        <div id="localStorageConfig" class="form-group hidden">
+                            <label for="localStoragePath">本地存储路径</label>
+                            <input type="text" id="localStoragePath" name="storage_path" class="form-control" placeholder="例如: ./uploads 或 /var/lib/filecodebox/uploads">
+                            <div class="form-help">如果使用本地存储，请指定一个目录用于保存文件。</div>
+                        </div>
+
                         <div class="setup-actions">
                             <button type="button" class="btn-secondary" onclick="prevStep(2)">上一步</button>
                             <button type="submit" class="auth-btn" id="setupBtn">完成设置</button>
@@ -324,6 +352,25 @@
             
             // 设置表单提交处理
             document.getElementById('setupForm').addEventListener('submit', handleSetup);
+            // 存储类型变更显示本地存储配置
+            const storageType = document.getElementById('storageType');
+            storageType && storageType.addEventListener('change', function() {
+                const localCfg = document.getElementById('localStorageConfig');
+                if (this.value === 'local') {
+                    localCfg.classList.remove('hidden');
+                } else {
+                    localCfg.classList.add('hidden');
+                }
+            });
+            // 页面初次加载时，根据当前选择的 storageType 设置本地存储配置的可见性（修复未切换时不显示的问题）
+            if (storageType) {
+                const localCfg = document.getElementById('localStorageConfig');
+                if (storageType.value === 'local') {
+                    localCfg.classList.remove('hidden');
+                } else {
+                    localCfg.classList.add('hidden');
+                }
+            }
         }
 
         function setupEventListeners() {
@@ -493,16 +540,66 @@
             setupBtn.classList.add('loading');
             setupBtn.disabled = true;
             
-            try {
+                try {
                 const formData = new FormData(e.target);
-                const setupData = Object.fromEntries(formData.entries());
-                
+                const flat = Object.fromEntries(formData.entries());
+
+                // 密码确认校验（使用去除 admin_ 前缀的字段）
+                if (flat.password && flat.password_confirm) {
+                    if (flat.password !== flat.password_confirm) {
+                        showAlert('两次输入的管理员密码不一致', 'error');
+                        return;
+                    }
+                    if (flat.password.length < 6) {
+                        showAlert('管理员密码长度至少6个字符', 'error');
+                        return;
+                    }
+                }
+
+                // 如果使用本地存储，确保 storage_path 字段存在
+                if (flat.storage_type === 'local') {
+                    if (!flat.storage_path || flat.storage_path.trim() === '') {
+                        showAlert('请选择本地存储路径', 'error');
+                        return;
+                    }
+                }
+
+                // 构建嵌套的 payload（后端现在只接受嵌套 JSON）
+                const payload = { database: {}, admin: {} };
+                const dbType = flat.db_type || document.getElementById('dbType').value || 'sqlite';
+                payload.database.type = dbType;
+
+                if (dbType === 'sqlite') {
+                    payload.database.file = flat.db_path || flat.dbPath || './data/filecodebox.db';
+                } else {
+                    // mysql / postgres
+                    payload.database.host = flat.db_host || flat.dbHost || '';
+                    payload.database.port = flat.db_port ? parseInt(flat.db_port, 10) : (dbType === 'mysql' ? 3306 : 5432);
+                    payload.database.user = flat.db_user || flat.dbUser || '';
+                    payload.database.password = flat.db_password || flat.dbPassword || '';
+                    payload.database.database = flat.db_name || flat.dbName || 'filecodebox';
+                }
+
+                payload.admin.username = flat.username || '';
+                payload.admin.email = flat.email || '';
+                payload.admin.password = flat.password || '';
+                payload.admin.confirm = flat.password_confirm || '';
+                payload.admin.nickname = flat.nickname || payload.admin.username;
+                // allowUserRegistration: convert 'true'/'false' strings to booleans
+                if (typeof flat.enable_user_system === 'string') {
+                    payload.admin.allowUserRegistration = (flat.enable_user_system === 'true');
+                } else if (typeof flat.enable_user_system === 'boolean') {
+                    payload.admin.allowUserRegistration = flat.enable_user_system;
+                } else if (typeof flat.enable_user_registration === 'string') {
+                    payload.admin.allowUserRegistration = (flat.enable_user_registration === 'true');
+                }
+
                 const response = await fetch('/setup', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(setupData)
+                    body: JSON.stringify(payload)
                 });
                 
                 const data = await response.json();

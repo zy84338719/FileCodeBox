@@ -18,9 +18,9 @@
     "host": "localhost:12345",
     "basePath": "/",
     "paths": {
-        "/api/doc": {
+        "/api/config": {
             "get": {
-                "description": "获取完整的API文档信息，包括所有端点和错误码",
+                "description": "获取前端所需的系统配置信息",
                 "consumes": [
                     "application/json"
                 ],
@@ -28,15 +28,14 @@
                     "application/json"
                 ],
                 "tags": [
-                    "API文档"
+                    "系统"
                 ],
-                "summary": "获取API文档",
+                "summary": "获取系统配置",
                 "responses": {
                     "200": {
-                        "description": "API文档信息",
+                        "description": "系统配置信息",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.SystemConfig"
                         }
                     }
                 }
@@ -210,7 +209,7 @@
         },
         "/health": {
             "get": {
-                "description": "检查服务器健康状态",
+                "description": "检查服务器健康状态和构建信息",
                 "consumes": [
                     "application/json"
                 ],
@@ -223,10 +222,9 @@
                 "summary": "健康检查",
                 "responses": {
                     "200": {
-                        "description": "健康状态信息",
+                        "description": "健康状态信息和构建信息",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.HealthResponse"
                         }
                     }
                 }
@@ -533,6 +531,69 @@
                             "additionalProperties": true
                         }
                     }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "timestamp": {
+                    "type": "string",
+                    "example": "2025-09-11T10:00:00Z"
+                },
+                "uptime": {
+                    "type": "string",
+                    "example": "2h30m15s"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "1.0.0"
+                }
+            }
+        },
+        "handlers.SystemConfig": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "文件分享系统"
+                },
+                "enableChunk": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "expireStyle": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "minute",
+                        "hour",
+                        "day",
+                        "week",
+                        "month",
+                        "year",
+                        "forever"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "example": "FileCodeBox"
+                },
+                "openUpload": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "uploadSize": {
+                    "type": "integer",
+                    "example": 100
                 }
             }
         }

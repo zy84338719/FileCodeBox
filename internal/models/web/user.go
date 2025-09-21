@@ -64,7 +64,17 @@ type UserFilesResponse struct {
 
 // UserSystemInfoResponse 用户系统信息响应
 type UserSystemInfoResponse struct {
-	UserSystemEnabled        bool `json:"user_system_enabled"`
-	AllowUserRegistration    bool `json:"allow_user_registration"`
-	RequireEmailVerification bool `json:"require_email_verification"`
+	// 使用整型 0/1 表示开关，以与配置层和前端保持一致
+	UserSystemEnabled        int `json:"user_system_enabled"`
+	AllowUserRegistration    int `json:"allow_user_registration"`
+	RequireEmailVerification int `json:"require_email_verification"`
+}
+
+type UserDataRequest struct {
+	Username string `json:"username" binding:"required"`
+	Email    string `json:"email" binding:"omitempty,email"`
+	Password string `json:"password" binding:"required"`
+	Nickname string `json:"nickname"`
+	IsAdmin  bool   `json:"is_admin"`
+	IsActive bool   `json:"is_active"`
 }

@@ -1,7 +1,10 @@
 package web
 
+import "github.com/zy84338719/filecodebox/internal/config"
+
 // AdminLoginRequest 管理员登录请求
 type AdminLoginRequest struct {
+	Username string `json:"username,omitempty"`
 	Password string `json:"password" binding:"required"`
 }
 
@@ -141,66 +144,22 @@ type AdminUserStatusRequest struct {
 
 // AdminConfigResponse 管理员配置响应
 type AdminConfigResponse struct {
-	Config interface{} `json:"config"`
+	AdminConfigRequest
 }
 
 // AdminConfigRequest 管理员配置更新请求
 type AdminConfigRequest struct {
-	Base     *AdminBaseConfig     `json:"base,omitempty"`
-	Transfer *AdminTransferConfig `json:"transfer,omitempty"`
-	User     *AdminUserConfig     `json:"user,omitempty"`
-	// 其他单独的配置字段
-	NotifyTitle   *string  `json:"notify_title,omitempty"`
-	NotifyContent *string  `json:"notify_content,omitempty"`
-	PageExplain   *string  `json:"page_explain,omitempty"`
-	Opacity       *float64 `json:"opacity,omitempty"`
-	ThemesSelect  *string  `json:"themes_select,omitempty"`
-}
+	// 配置模块，直接使用各配置结构体避免字段重复
+	Base     *config.BaseConfig       `json:"base,omitempty"`
+	Database *config.DatabaseConfig   `json:"database,omitempty"`
+	Transfer *config.TransferConfig   `json:"transfer,omitempty"`
+	Storage  *config.StorageConfig    `json:"storage,omitempty"`
+	User     *config.UserSystemConfig `json:"user,omitempty"`
+	MCP      *config.MCPConfig        `json:"mcp,omitempty"`
+	UI       *config.UIConfig         `json:"ui,omitempty"`
 
-// AdminBaseConfig 基础配置请求
-type AdminBaseConfig struct {
-	Name        *string `json:"name,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Keywords    *string `json:"keywords,omitempty"`
-}
-
-// AdminTransferConfig 传输配置请求
-type AdminTransferConfig struct {
-	Upload   *AdminUploadConfig   `json:"upload,omitempty"`
-	Download *AdminDownloadConfig `json:"download,omitempty"`
-}
-
-// AdminUploadConfig 上传配置请求
-type AdminUploadConfig struct {
-	OpenUpload     *int   `json:"open_upload,omitempty"`
-	UploadSize     *int64 `json:"upload_size,omitempty"`
-	EnableChunk    *int   `json:"enable_chunk,omitempty"`
-	ChunkSize      *int64 `json:"chunk_size,omitempty"`
-	MaxSaveSeconds *int   `json:"max_save_seconds,omitempty"`
-}
-
-// AdminDownloadConfig 下载配置请求
-type AdminDownloadConfig struct {
-	EnableConcurrentDownload *int `json:"enable_concurrent_download,omitempty"`
-	MaxConcurrentDownloads   *int `json:"max_concurrent_downloads,omitempty"`
-	DownloadTimeout          *int `json:"download_timeout,omitempty"`
-}
-
-// AdminUserConfig 用户配置请求
-type AdminUserConfig struct {
-	AllowUserRegistration *int    `json:"allow_user_registration,omitempty"`
-	RequireEmailVerify    *int    `json:"require_email_verify,omitempty"`
-	UserUploadSize        *int64  `json:"user_upload_size,omitempty"`
-	UserStorageQuota      *int64  `json:"user_storage_quota,omitempty"`
-	SessionExpiryHours    *int    `json:"session_expiry_hours,omitempty"`
-	MaxSessionsPerUser    *int    `json:"max_sessions_per_user,omitempty"`
-	JWTSecret             *string `json:"jwt_secret,omitempty"`
-}
-
-// AdminSystemStatusResponse 管理员系统状态响应
-type AdminSystemStatusResponse struct {
-	Status string      `json:"status"`
-	Info   interface{} `json:"info"`
+	// 系统运行时特有字段（不属于配置模块的字段）
+	SysStart *string `json:"sys_start,omitempty"`
 }
 
 // CountResponse 通用计数响应
@@ -286,4 +245,27 @@ type AdminFileDetail struct {
 	CreatedAt    string `json:"created_at"`
 	RequireAuth  bool   `json:"require_auth"`
 	UploadType   string `json:"upload_type"`
+}
+
+// MCPStatusResponse MCP状态响应
+type MCPStatusResponse struct {
+	Status string            `json:"status"`
+	Config *config.MCPConfig `json:"config"`
+}
+
+// MCPTestResponse MCP连接测试响应
+type MCPTestResponse struct {
+	MCPStatusResponse
+}
+
+// LogsResponse 日志响应
+type LogsResponse struct {
+	Logs  []string `json:"logs"`
+	Total int      `json:"total"`
+}
+
+// TasksResponse 任务响应
+type TasksResponse struct {
+	Tasks interface{} `json:"tasks"` // 使用 interface{} 以兼容现有类型
+	Total int         `json:"total"`
 }

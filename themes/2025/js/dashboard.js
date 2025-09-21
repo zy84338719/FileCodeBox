@@ -7,15 +7,62 @@ const Dashboard = {
     // 分页配置
     currentPage: 1,
     pageSize: 20,
+
+    // Helper: 安全解析 JSON
+    async parseJsonSafe(response) {
+        try {
+            return await response.json();
+        } catch (err) {
+            console.error('[dashboard] 解析 JSON 失败:', err);
+            return null;
+        }
+    },
+
+    // Helper: 处理认证相关返回（401/403）
+    handleAuthError(result) {
+        if (!result) return false;
+        if (result.code === 401 || result.code === 403) {
+            // 清理本地登录信息并提示重新登录
+            UserAuth.removeToken();
+            UserAuth.removeUserInfo();
+            UserAuth.updateUI();
+            this.showLoginPrompt();
+            return true;
+        }
+        return false;
+    },
     
     /**
      * 初始化仪表板
      */
     async init() {
+        // 如果有 token 但缺少 user_info，先尝试在初始化阶段拉取用户信息（自愈），最多重试3次
+        const token = UserAuth.getToken();
+        if (token && !UserAuth.getUserInfo()) {
+            console.log('[dashboard] 检测到 token 存在但 user_info 缺失，开始最多 3 次尝试拉取用户信息');
+            let success = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    console.log(`[dashboard] 拉取 user_info 尝试 #${attempt}`);
+                    const userInfo = await this.loadUserInfo();
+                    if (userInfo) {
+                        success = true;
+                        break;
+                    }
+                } catch (err) {
+                    console.error('[dashboard] 尝试拉取 user_info 时出错:', err);
+                }
+                // 指数退避等待
+                await new Promise(res => setTimeout(res, 300 * attempt));
+            }
+            if (!success) {
+                console.warn('[dashboard] 多次尝试后仍无法获取 user_info');
+                this.showProfileRetryPrompt();
+            }
+        }
+
+        // 认证检查（如果没有 token，会在页面内显示登录提示）
         if (!this.checkAuth()) return;
-        
-        // 加载用户信息
-        await this.loadUserInfo();
         
         const userInfo = UserAuth.getUserInfo();
         if (userInfo) {
@@ -44,10 +91,55 @@ const Dashboard = {
     checkAuth() {
         const token = UserAuth.getToken();
         if (!token) {
-            window.location.href = '/user/login';
+            // 不再直接重定向到登录页，避免在某些环境下导致页面闪现为空白。
+            // 改为在页面内显示友好的登录提示，用户可以点击跳转登录。
+            this.showLoginPrompt();
             return false;
         }
         return true;
+    },
+
+    /**
+     * 在页面中间显示登录提示（当用户未登录或 token 缺失时）
+     */
+    showLoginPrompt() {
+        try {
+            const container = document.querySelector('.container') || document.body;
+            // 避免重复创建
+            if (document.getElementById('dashboard-login-prompt')) return;
+
+            const prompt = document.createElement('div');
+            prompt.id = 'dashboard-login-prompt';
+            prompt.style.position = 'fixed';
+            prompt.style.left = '50%';
+            prompt.style.top = '50%';
+            prompt.style.transform = 'translate(-50%, -50%)';
+            prompt.style.zIndex = '9999';
+            prompt.style.background = 'rgba(255,255,255,0.96)';
+            prompt.style.padding = '24px 32px';
+            prompt.style.borderRadius = '8px';
+            prompt.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)';
+            prompt.style.textAlign = 'center';
+            prompt.innerHTML = `
+                <h3 style="margin:0 0 8px 0;">您尚未登录</h3>
+                <p style="margin:0 0 12px 0;color:#666;">要访问用户中心，请先登录账户。</p>
+                <div>
+                    <button id="dashboard-login-btn" class="btn" style="margin-right:8px;">去登录</button>
+                    <button id="dashboard-refresh-btn" class="btn btn-secondary">刷新页面</button>
+                </div>
+            `;
+
+            container.appendChild(prompt);
+
+            document.getElementById('dashboard-login-btn').addEventListener('click', () => {
+                window.location.href = '/user/login';
+            });
+            document.getElementById('dashboard-refresh-btn').addEventListener('click', () => {
+                window.location.reload();
+            });
+        } catch (err) {
+            console.error('显示登录提示失败:', err);
+        }
     },
     
     /**
@@ -73,19 +165,82 @@ const Dashboard = {
             const response = await fetch('/user/profile', {
                 headers: UserAuth.getAuthHeaders()
             });
-            
-            if (response.ok) {
-                const result = await response.json();
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return null;
+            if (result && result.code === 200 && result.data) {
                 const userInfo = result.data;
                 UserAuth.setUserInfo(userInfo);
+                // 更新 UI 状态以反映登录状态
+                UserAuth.updateUI();
+                console.log('[dashboard] 已获取并保存 user_info');
                 return userInfo;
+            } else {
+                console.warn('[dashboard] /user/profile 返回结构非预期:', result);
+                return null;
             }
         } catch (error) {
             console.error('获取用户信息失败:', error);
         }
         return null;
     },
-    
+
+    /**
+     * 当拉取 user_info 多次失败时，提供一个可操作提示（重试或重新登录）
+     */
+    showProfileRetryPrompt() {
+        try {
+            const container = document.querySelector('.container') || document.body;
+            // 避免重复创建
+            if (document.getElementById('dashboard-profile-retry')) return;
+
+            const prompt = document.createElement('div');
+            prompt.id = 'dashboard-profile-retry';
+            prompt.style.position = 'fixed';
+            prompt.style.left = '50%';
+            prompt.style.top = '60%';
+            prompt.style.transform = 'translate(-50%, -50%)';
+            prompt.style.zIndex = '9999';
+            prompt.style.background = 'rgba(255,255,255,0.96)';
+            prompt.style.padding = '16px 20px';
+            prompt.style.borderRadius = '6px';
+            prompt.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)';
+            prompt.style.textAlign = 'center';
+            prompt.innerHTML = `
+                <div style="margin-bottom:8px;color:#333;">获取用户信息失败</div>
+                <div style="margin-bottom:12px;color:#666;font-size:13px;">系统检测到你已登录（token 存在），但无法获取到账户信息，可能是网络或会话问题。</div>
+                <div>
+                    <button id="dashboard-retry-profile" class="btn" style="margin-right:8px;">重试获取用户信息</button>
+                    <button id="dashboard-rel-login" class="btn btn-secondary">重新登录</button>
+                </div>
+            `;
+
+            container.appendChild(prompt);
+
+            document.getElementById('dashboard-retry-profile').addEventListener('click', async () => {
+                document.getElementById('dashboard-profile-retry').remove();
+                console.log('[dashboard] 用户触发重试获取 user_info');
+                await this.loadUserInfo();
+                const ui = UserAuth.getUserInfo();
+                if (ui) {
+                    this.updateUserDisplay(ui);
+                    this.loadDashboard();
+                } else {
+                    // 如果仍失败，重新展示提示
+                    this.showProfileRetryPrompt();
+                }
+            });
+
+            document.getElementById('dashboard-rel-login').addEventListener('click', () => {
+                // 清理本地登录信息并跳转登录页
+                UserAuth.removeToken();
+                UserAuth.removeUserInfo();
+                window.location.href = '/user/login';
+            });
+        } catch (err) {
+            console.error('显示 profile 重试提示失败:', err);
+        }
+    },
+
     /**
      * 切换标签页
      */
@@ -138,16 +293,14 @@ const Dashboard = {
             const response = await fetch('/user/stats', {
                 headers: UserAuth.getAuthHeaders()
             });
-            
-            if (response.ok) {
-                const result = await response.json();
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return;
+            if (result && result.code === 200 && result.data) {
                 const stats = result.data;
-                
-                // 更新统计卡片
                 this.updateStatsCards(stats);
-                
-                // 更新存储进度条
                 this.updateStorageProgress(stats);
+            } else {
+                console.warn('[dashboard] /user/stats 返回非预期结果:', result);
             }
         } catch (error) {
             console.error('加载仪表板数据失败:', error);
@@ -208,13 +361,14 @@ const Dashboard = {
             const response = await fetch(`/user/files?page=${page}&page_size=${this.pageSize}`, {
                 headers: UserAuth.getAuthHeaders()
             });
-            
-            if (response.ok) {
-                const result = await response.json();
-                const files = result.data.files;
-                const pagination = result.data.pagination;
-                
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return;
+            if (result && result.code === 200 && result.data) {
+                const files = result.data.files || [];
+                const pagination = result.data.pagination || { page: 1, total_pages: 1, total: 0 };
                 this.renderFilesList(files, pagination);
+            } else {
+                console.warn('[dashboard] /user/files 返回非预期结果:', result);
             }
         } catch (error) {
             console.error('加载文件列表失败:', error);
@@ -271,10 +425,10 @@ const Dashboard = {
         `;
         
         files.forEach(file => {
-            const fileName = file.file_name || (file.prefix + file.suffix);
+            const fileName = file.file_name || `文件-${file.code}`;
             const uploadType = file.upload_type === 'authenticated' ? '认证上传' : '匿名上传';
             const authRequired = file.require_auth ? '🔒' : '🔓';
-            const fileExtension = fileName.split('.').pop().toUpperCase();
+            const fileExtension = fileName ? fileName.split('.').pop().toUpperCase() : 'FILE';
             
             // 根据文件扩展名选择图标
             const fileIcon = this.getFileIcon(fileExtension);
@@ -303,7 +457,7 @@ const Dashboard = {
                             <a href="/share/download?code=${file.code}" class="btn-sm btn-success" title="下载文件">
                                 📥 下载
                             </a>
-                            <button class="btn-sm btn-danger" onclick="Dashboard.deleteFile('${file.id}')" title="删除文件">
+                            <button class="btn-sm btn-danger" onclick="Dashboard.deleteFile('${file.code}')" title="删除文件">
                                 🗑️ 删除
                             </button>
                         </div>
@@ -413,21 +567,20 @@ const Dashboard = {
             const response = await fetch('/user/profile', {
                 headers: UserAuth.getAuthHeaders()
             });
-            
-            if (response.ok) {
-                const result = await response.json();
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return;
+            if (result && result.code === 200 && result.data) {
                 const profile = result.data;
-                
                 const form = document.getElementById('profile-form');
                 if (form) {
-                    form.username.value = profile.username;
-                    form.email.value = profile.email;
-                    form.nickname.value = profile.nickname;
-                    
-                    // 处理日期字段，如果不存在则显示暂无数据
+                    form.username.value = profile.username || '';
+                    form.email.value = profile.email || '';
+                    form.nickname.value = profile.nickname || '';
                     form.created_at.value = profile.created_at ? formatDateTime(profile.created_at) : '暂无数据';
                     form.last_login_at.value = profile.last_login_at ? formatDateTime(profile.last_login_at) : '暂无数据';
                 }
+            } else {
+                console.warn('[dashboard] /user/profile 返回非预期结果:', result);
             }
         } catch (error) {
             console.error('加载个人资料失败:', error);
@@ -478,13 +631,13 @@ const Dashboard = {
                 method: 'DELETE',
                 headers: UserAuth.getAuthHeaders()
             });
-            
-            if (response.ok) {
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return;
+            if (result && result.code === 200) {
                 showNotification('文件删除成功', 'success');
                 this.loadMyFiles(this.currentPage);
             } else {
-                const result = await response.json();
-                showNotification('删除失败: ' + (result.message || '未知错误'), 'error');
+                showNotification('删除失败: ' + (result && result.message ? result.message : '未知错误'), 'error');
             }
         } catch (error) {
             console.error('删除文件失败:', error);
@@ -496,14 +649,52 @@ const Dashboard = {
      * 设置文件上传
      */
     setupFileUpload() {
-        const uploadArea = document.querySelector('.upload-area');
+        this.setupFileInput();
+        this.setupDragAndDrop();
+    },
+
+    /**
+     * 设置文件输入
+     */
+    setupFileInput() {
         const fileInput = document.getElementById('file-input');
+        const folderInput = document.getElementById('folder-input');
         const uploadText = document.getElementById('upload-text');
         
-        if (!uploadArea || !fileInput || !uploadText) return;
+        if (!fileInput || !folderInput || !uploadText) return;
         
-        // 点击选择文件
-        uploadArea.addEventListener('click', () => fileInput.click());
+        // 文件选择
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                uploadText.textContent = `已选择: ${file.name} (${fileSizeMB}MB)`;
+                // 清空文件夹输入
+                folderInput.value = '';
+            }
+        });
+
+        // 文件夹选择
+        folderInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files.length > 0) {
+                this.updateFolderDisplay(files, uploadText);
+                // 清空文件输入
+                fileInput.value = '';
+            }
+        });
+    },
+
+    /**
+     * 设置拖拽上传
+     */
+    setupDragAndDrop() {
+        const uploadArea = document.querySelector('.upload-area');
+        const fileInput = document.getElementById('file-input');
+        const folderInput = document.getElementById('folder-input');
+        const uploadText = document.getElementById('upload-text');
+        
+        if (!uploadArea || !fileInput || !folderInput || !uploadText) return;
         
         // 拖拽上传
         uploadArea.addEventListener('dragover', (e) => {
@@ -519,22 +710,64 @@ const Dashboard = {
             e.preventDefault();
             uploadArea.classList.remove('dragover');
             
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                fileInput.files = files;
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length === 0) return;
+
+            // 检查是否拖拽了文件夹（通过检查DataTransfer items）
+            const items = e.dataTransfer.items;
+            let hasFolders = false;
+            
+            if (items) {
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (item.webkitGetAsEntry && item.webkitGetAsEntry().isDirectory) {
+                        hasFolders = true;
+                        break;
+                    }
+                }
+            }
+
+            if (hasFolders) {
+                // 文件夹拖拽，需要处理文件夹结构
+                this.handleFolderDrop(e.dataTransfer, uploadText);
+            } else if (files.length === 1) {
+                // 单文件
+                fileInput.files = e.dataTransfer.files;
                 const fileSizeMB = (files[0].size / 1024 / 1024).toFixed(2);
                 uploadText.textContent = `已选择: ${files[0].name} (${fileSizeMB}MB)`;
+            } else {
+                // 多文件，模拟文件夹上传
+                this.updateFolderDisplay(files, uploadText);
+                // 创建新的FileList并赋值给folderInput
+                const dt = new DataTransfer();
+                files.forEach(file => dt.items.add(file));
+                folderInput.files = dt.files;
             }
         });
+    },
+
+    /**
+     * 处理文件夹拖拽
+     */
+    async handleFolderDrop(dataTransfer, uploadText) {
+        // 这里可以实现更复杂的文件夹拖拽处理
+        // 目前先显示提示信息
+        uploadText.textContent = '检测到文件夹，请使用"选择文件夹"按钮';
+    },
+
+    /**
+     * 更新文件夹显示
+     */
+    updateFolderDisplay(files, uploadText) {
+        const fileCount = files.length;
+        let totalSize = 0;
         
-        // 文件选择
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
-                uploadText.textContent = `已选择: ${file.name} (${fileSizeMB}MB)`;
-            }
-        });
+        for (let i = 0; i < files.length; i++) {
+            totalSize += files[i].size;
+        }
+        
+        const totalSizeMB = (totalSize / 1024 / 1024).toFixed(2);
+        uploadText.textContent = `已选择 ${fileCount} 个文件 (总计 ${totalSizeMB}MB)`;
     },
     
     /**
@@ -557,14 +790,20 @@ const Dashboard = {
             e.preventDefault();
             
             const fileInput = document.getElementById('file-input');
-            const file = fileInput.files[0];
+            const folderInput = document.getElementById('folder-input');
             
-            if (!file) {
-                showNotification('请选择文件', 'error');
+            // 检查是单文件还是文件夹
+            if (fileInput.files.length > 0) {
+                // 单文件上传
+                const file = fileInput.files[0];
+                await this.handleFileUpload(e.target, file);
+            } else if (folderInput.files.length > 0) {
+                // 文件夹上传
+                await this.handleFolderUpload(e.target, folderInput.files);
+            } else {
+                showNotification('请选择文件或文件夹', 'error');
                 return;
             }
-            
-            await this.handleFileUpload(e.target, file);
         });
     },
     
@@ -648,8 +887,17 @@ const Dashboard = {
         // 重置表单
         form.reset();
         const uploadText = document.getElementById('upload-text');
+        const fileInput = document.getElementById('file-input');
+        const folderInput = document.getElementById('folder-input');
+        
         if (uploadText) {
             uploadText.textContent = '点击选择文件或拖拽到此处';
+        }
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        if (folderInput) {
+            folderInput.value = '';
         }
         
         // 刷新统计
@@ -669,6 +917,129 @@ const Dashboard = {
             </div>
         `;
         showNotification('上传失败: ' + message, 'error');
+    },
+
+    /**
+     * 处理文件夹上传
+     */
+    async handleFolderUpload(form, files) {
+        const uploadBtn = document.getElementById('upload-btn');
+        const uploadProgress = document.getElementById('upload-progress');
+        const uploadProgressFill = document.getElementById('upload-progress-fill');
+        const uploadResult = document.getElementById('upload-result');
+        
+        if (!uploadBtn || !uploadProgress || !uploadProgressFill || !uploadResult) return;
+        
+        // 检查JSZip是否可用
+        if (typeof JSZip === 'undefined') {
+            this.showUploadError('JSZip库未加载，无法上传文件夹', uploadResult);
+            return;
+        }
+        
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = '压缩中...';
+        uploadProgress.style.display = 'block';
+        
+        try {
+            // 创建ZIP文件
+            const zip = new JSZip();
+            const fileArray = Array.from(files);
+            
+            // 获取文件夹名称（从第一个文件的路径中提取）
+            let folderName = 'folder';
+            if (fileArray.length > 0 && fileArray[0].webkitRelativePath) {
+                const pathParts = fileArray[0].webkitRelativePath.split('/');
+                folderName = pathParts[0] || 'folder';
+            }
+            
+            // 添加所有文件到ZIP
+            for (let i = 0; i < fileArray.length; i++) {
+                const file = fileArray[i];
+                const relativePath = file.webkitRelativePath || file.name;
+                zip.file(relativePath, file);
+                
+                // 更新进度（压缩阶段占50%）
+                const progress = Math.floor((i / fileArray.length) * 50);
+                uploadProgressFill.style.width = progress + '%';
+            }
+            
+            uploadBtn.textContent = '生成压缩包...';
+            
+            // 生成ZIP blob
+            const zipBlob = await zip.generateAsync({ 
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 6 }
+            }, (metadata) => {
+                // 更新压缩进度（50%-80%）
+                const progress = 50 + Math.floor(metadata.percent * 0.3);
+                uploadProgressFill.style.width = progress + '%';
+            });
+            
+            uploadBtn.textContent = '上传中...';
+            
+            // 创建新的File对象
+            const zipFile = new File([zipBlob], `${folderName}.zip`, { type: 'application/zip' });
+            
+            // 上传ZIP文件
+            await this.uploadSingleFile(form, zipFile, uploadProgressFill, uploadResult);
+            
+        } catch (error) {
+            console.error('文件夹上传失败:', error);
+            this.showUploadError(error.message, uploadResult);
+        } finally {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = '上传文件';
+            setTimeout(() => {
+                uploadProgress.style.display = 'none';
+                uploadProgressFill.style.width = '0%';
+            }, 1000);
+        }
+    },
+
+    /**
+     * 上传单个文件（用于文件夹上传中的ZIP文件）
+     */
+    async uploadSingleFile(form, file, uploadProgressFill, uploadResult) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('expire_style', form.expire_style.value);
+        formData.append('expire_value', form.expire_value.value);
+        formData.append('require_auth', form.require_auth.checked ? 'true' : 'false');
+
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            
+            // 上传进度（80%-100%）
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const progress = 80 + Math.floor((e.loaded / e.total) * 20);
+                    uploadProgressFill.style.width = progress + '%';
+                }
+            });
+            
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const result = JSON.parse(xhr.responseText);
+                    if (result.code === 200) {
+                        this.showUploadSuccess(result.data, uploadResult, form);
+                        resolve(result);
+                    } else {
+                        reject(new Error(result.message));
+                    }
+                } else {
+                    reject(new Error('上传失败'));
+                }
+            };
+            
+            xhr.onerror = () => {
+                reject(new Error('网络错误'));
+            };
+            
+            xhr.open('POST', '/share/file/');
+            xhr.setRequestHeader('Authorization', 'Bearer ' + UserAuth.getToken());
+            xhr.send(formData);
+        });
     },
     
     /**
@@ -692,10 +1063,10 @@ const Dashboard = {
                     headers: UserAuth.getAuthHeaders(),
                     body: JSON.stringify(data)
                 });
-                
-                if (response.ok) {
+                const result = await this.parseJsonSafe(response);
+                if (this.handleAuthError(result)) return;
+                if (result && result.code === 200) {
                     showNotification('资料更新成功', 'success');
-                    
                     // 更新本地存储的用户信息
                     const userInfo = UserAuth.getUserInfo();
                     if (userInfo) {
@@ -704,8 +1075,7 @@ const Dashboard = {
                         this.updateUserDisplay(userInfo);
                     }
                 } else {
-                    const result = await response.json();
-                    showNotification('更新失败: ' + result.message, 'error');
+                    showNotification('更新失败: ' + (result && result.message ? result.message : '未知错误'), 'error');
                 }
             } catch (error) {
                 showNotification('更新失败: ' + error.message, 'error');

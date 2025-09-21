@@ -8,13 +8,13 @@ import (
 func TestFileCode_IsExpired(t *testing.T) {
 	// 当前时间，用于测试
 	now := time.Now()
-	
+
 	// 过去的时间（已过期）
 	pastTime := now.Add(-24 * time.Hour)
-	
+
 	// 未来的时间（未过期）
 	futureTime := now.Add(24 * time.Hour)
-	
+
 	tests := []struct {
 		name        string
 		fileCode    FileCode
@@ -101,7 +101,7 @@ func TestFileCode_IsExpired(t *testing.T) {
 			wantExpired: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.fileCode.IsExpired(); got != tt.wantExpired {

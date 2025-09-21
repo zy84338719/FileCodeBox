@@ -1,3 +1,63 @@
+# FileCodeBox (Go)
+
+轻量且高性能的文件/文本分享服务，使用 Go 实现，支持分片上传、秒传、断点续传与多种存储后端。
+
+核心目标是提供一个易部署、易扩展的文件快传系统，适合自托管与容器化部署场景。
+
+## 主要特性
+
+- 高性能：基于 Go 的并发能力构建，低延迟与内存占用
+- 文件/文本分享：支持短链接分享文本和文件
+- 分片上传：大文件分片、断点续传、上传校验与秒传支持
+- 管理后台：内置管理控制台，可管理文件、配置与用户
+- 多存储后端：支持本地、S3、WebDAV、OneDrive（可扩展）
+- 容器友好：提供 Docker 与 docker-compose 支持
+- 主题系统：前端主题可替换与定制
+
+## 环境要求
+
+开发推荐使用 Go 1.25+。项目默认使用 SQLite 作为开发环境的轻量数据库。生产环境请按需选择存储与资源配置。
+
+## 部署建议（简要）
+
+- 推荐使用 Docker + 反向代理（Nginx）启用 HTTPS
+- 将 `data/` 目录做定期备份
+- 将服务放入进程管理（systemd / 容器重启策略）
+
+## 开发与扩展
+
+- 新增存储：实现 `storage.StorageInterface` 并在 `storage.NewStorageManager` 注册
+- 新增接口：在 `internal/services` 实现业务逻辑，并在 `internal/handlers` 与 `internal/routes` 添加路由
+
+运行测试与示例脚本请查看 `tests/` 目录。
+
+---
+
+## 常见问题与排查（示例）
+
+- 检查端口占用：
+
+```bash
+lsof -ti:12345
+```
+
+- 如果数据库被锁或服务异常，尝试重启服务或检查 `data/` 下的 sqlite 文件权限。
+
+---
+
+## 许可证
+
+MIT
+
+---
+
+如需我继续：
+
+- 将 README 翻译为英文
+- 自动生成或更新 Swagger 文档
+- 补全详细部署示例（Kubernetes / systemd）
+
+请告诉我接下来要做哪个扩展。
 <div align="center">
   <img src="assets/images/logos/logo.svg" alt="FileCodeBox Logo" width="200"/>
   
@@ -72,7 +132,7 @@ docker-compose up -d
 - `name`: 站点名称
 - `upload_size`: 最大上传大小
 - `file_storage`: 存储类型（local/s3/webdav/onedrive）
-- `admin_token`: 管理员访问令牌
+- 管理员认证改为使用管理员用户名/密码登录并通过 `Authorization: Bearer <token>` 使用 JWT（不再使用静态管理员令牌配置）
 
 ## 管理员后台
 
@@ -92,6 +152,20 @@ docker-compose up -d
 2. 根据需要配置存储方式（本地存储/云存储）
 3. 设置合适的上传大小限制
 4. 配置站点名称和描述信息
+
+### 管理后台静态资源的安全说明
+
+管理后台使用了一组专用静态资源（位于 `themes/<theme>/admin/`），这些文件包含管理界面的 JavaScript、CSS 与模板。
+
+为了避免未授权用户直接访问管理后台页面并读取敏感前端逻辑，服务已将管理专用静态资源改为仅在管理员认证后提供：
+
+- 管理前端入口 `GET /admin/` 需要有效的管理员 JWT（通过 `Authorization: Bearer <token>` 方式传递）。
+- 管理专用静态路径（例如 `/admin/js/*`, `/admin/css/*`, `/admin/templates/*`, `/admin/assets/*`, `/admin/components/*`）也仅在认证通过后提供。
+- 公共资源（用户前端和通用资源）仍通过 `/js/*`, `/css/*`, `/assets/*`, `/components/*` 对外公开，以支持用户页面和登录流程。
+
+部署注意：如果你的生产环境在前面放了 Nginx、CDN 或其它反向代理，请确保对 `/admin/*` 不做缓存并`不要`将 admin 静态事先缓存到代理上，否则可能绕过后端认证。建议在代理上为 `/admin/*` 添加 `Cache-Control: no-store` 或根据代理文档设置不缓存规则。
+
+如果需要把少量引导或 favicon 等资产在未认证时可用，请将这些文件放入主题的 `assets/` 目录（由 `/assets/*` 提供），不要将管理专用目录下的文件放到公共路径。
 
 ## API接口
 

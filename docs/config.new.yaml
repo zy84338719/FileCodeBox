@@ -1,0 +1,76 @@
+# FileCodeBox 新版 config.yaml 示例
+# 完全分层、无平铺字段，所有配置项归属功能模块
+
+base:
+  name: 文件快递柜 - FileCodeBox
+  description: "开箱即用的文件快传系统"
+  keywords: "FileCodeBox, 文件快递柜, 匿名口令分享, 文件"
+  port: 12345
+  host: "0.0.0.0"
+  data_path: "./data"
+  production: false
+
+transfer:
+  upload:
+    open_upload: 1
+    upload_size: 10485760
+    enable_chunk: 1
+    chunk_size: 2097152
+    max_save_seconds: 0
+  download:
+    enable_concurrent_download: 1
+    max_concurrent_downloads: 10
+    download_timeout: 300
+
+user:
+  allow_user_registration: 1
+  require_email_verify: 0
+  user_upload_size: 10485760
+  user_storage_quota: 1073741824
+  session_expiry_hours: 72
+  max_sessions_per_user: 5
+  jwt_secret: "your_jwt_secret"
+
+ui:
+  notify_title: "欢迎使用 FileCodeBox"
+  notify_content: "安全、便捷的文件快传系统"
+  themes_select: "themes/2025"
+  opacity: 0.95
+  background: ""
+  page_explain: "本系统支持大文件快传、断点续传、匿名分享等功能。"
+  robots_text: "User-agent: *\nDisallow: /admin/"
+  show_admin_addr: 1
+
+mcp:
+  enable_mcp_server: 1
+  mcp_port: "12346"
+  mcp_host: "127.0.0.1"
+
+storage:
+  type: "local"
+  local:
+    path: "./uploads"
+  s3:
+    endpoint: ""
+    access_key: ""
+    secret_key: ""
+    bucket: ""
+    region: ""
+  webdav:
+    url: ""
+    username: ""
+    password: ""
+  onedrive:
+    client_id: ""
+    client_secret: ""
+    refresh_token: ""
+    drive_id: ""
+
+database:
+  type: "sqlite"
+  sqlite:
+    path: "./data/filecodebox.db"
+  mysql:
+    dsn: ""
+  postgres:
+    dsn: ""

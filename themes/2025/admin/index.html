@@ -23,31 +23,7 @@
     <!-- 图标库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- 强制桌面端布局 -->
-    <style>
-        /* 强制桌面端布局 */
-        @media screen {
-            .container {
-                max-width: none !important;
-                width: 95vw !important;
-                margin: 0 auto !important;
-            }
-            
-            .stats-grid {
-                display: grid !important;
-                grid-template-columns: repeat(4, 1fr) !important;
-                gap: 20px !important;
-            }
-            
-            .mobile-menu-toggle {
-                display: none !important;
-            }
-            
-            body {
-                min-width: 1200px !important;
-            }
-        }
-    </style>
+    <!-- 管理后台专用桌面样式已移动到 `css/users.css`，请编辑该文件进行样式调整 -->
 </head>
 <body>
     <!-- 移动端菜单按钮 -->
@@ -129,7 +105,7 @@
                                     <div class="stat-label">总文件数</div>
                                     <div class="stat-trend">
                                         <i class="fas fa-arrow-up"></i>
-                                        <span id="files-trend">+12%</span>
+                                        <span id="files-trend">—</span>
                                     </div>
                                 </div>
                             </div>
@@ -142,7 +118,7 @@
                                     <div class="stat-label">今日上传</div>
                                     <div class="stat-trend">
                                         <i class="fas fa-arrow-up"></i>
-                                        <span id="uploads-trend">+8%</span>
+                                        <span id="uploads-trend">—</span>
                                     </div>
                                 </div>
                             </div>
@@ -155,7 +131,7 @@
                                     <div class="stat-label">活跃用户</div>
                                     <div class="stat-trend">
                                         <i class="fas fa-arrow-up"></i>
-                                        <span id="users-trend">+5%</span>
+                                        <span id="users-trend">—</span>
                                     </div>
                                 </div>
                             </div>
@@ -168,7 +144,7 @@
                                     <div class="stat-label">总存储大小</div>
                                     <div class="stat-trend">
                                         <i class="fas fa-arrow-up"></i>
-                                        <span id="storage-trend">+15%</span>
+                                        <span id="storage-trend">—</span>
                                     </div>
                                 </div>
                             </div>
@@ -723,12 +699,12 @@
                                 </div>
                                 
                                 <!-- 本地存储配置 -->
-                                <div id="local-config-panel" class="storage-config-panel" style="display: none;">
+                                <div id="local-config-panel" class="storage-config-panel" style="display: block;">
                                     <div class="config-form">
                                         <h4><i class="fas fa-folder"></i> 本地存储配置</h4>
                                         <div class="form-group">
                                             <label>存储路径</label>
-                                            <input type="text" id="local-storage-path" class="form-control" placeholder="/data/uploads">
+                                            <input type="text" id="local-storage-path" class="form-control" placeholder="./data">
                                             <small class="form-text">文件存储的本地目录路径（可选，默认为程序数据目录）</small>
                                         </div>
                                         <div class="form-actions">
@@ -1017,8 +993,8 @@
                                     
                                     <div class="form-group">
                                         <label>管理员密码</label>
-                                        <input type="password" name="admin_token" id="admin_token" class="form-control" placeholder="••••••••••••">
-                                        <small class="form-text">用于登录管理后台的密码</small>
+                                        <input type="password" name="password" id="password" class="form-control" placeholder="••••••••••••">
+                                        <small class="form-text">用于登录管理后台的密码（请使用管理员用户名 + 密码 登录）</small>
                                     </div>
                                     
                                     <div class="form-group">

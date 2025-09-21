@@ -1,0 +1,71 @@
+base:
+    name: FileCodeBox
+    description: 开箱即用的文件快传系统
+    keywords: ""
+    port: 12346
+    host: 0.0.0.0
+    datapath: /Users/zhangyi/zy/FileCodeBox/data
+    production: false
+database:
+    type: sqlite
+    host: ""
+    port: 0
+    name: ./data/filecodebox.db
+    user: ""
+    pass: ""
+    ssl: disable
+transfer:
+    upload:
+        openupload: 1
+        uploadsize: 10485760
+        enablechunk: 0
+        chunksize: 2097152
+        maxsaveseconds: 0
+    download:
+        enableconcurrentdownload: 1
+        maxconcurrentdownloads: 10
+        downloadtimeout: 300
+storage:
+    type: ""
+    storagepath: ""
+    s3: null
+    webdav: null
+    onedrive: null
+    nfs: null
+user:
+    allowuserregistration: 1
+    requireemailverify: 0
+    useruploadsize: 52428800
+    userstoragequota: 1073741824
+    sessionexpiryhours: 168
+    maxsessionsperuser: 5
+    jwtsecret: FileCodeBox2025JWT
+mcp:
+    enablemcpserver: 0
+    mcpport: ""
+    mcphost: ""
+notifytitle: ""
+notifycontent: ""
+ui:
+    themes_select: themes/2025
+    background: ""
+    page_explain: 请勿上传或分享违法内容。根据《中华人民共和国网络安全法》、《中华人民共和国刑法》、《中华人民共和国治安管理处罚法》等相关规定。 传播或存储违法、违规内容，会受到相关处罚，严重者将承担刑事责任。本站坚决配合相关部门，确保网络内容的安全，和谐，打造绿色网络环境。
+    robots_text: |-
+        User-agent: *
+        Disallow: /
+    show_admin_addr: 0
+    opacity: 0
+themes_select: themes/2025
+robots_text: |-
+    User-agent: *
+    Disallow: /
+page_explain: 请勿上传或分享违法内容。根据《中华人民共和国网络安全法》、《中华人民共和国刑法》、《中华人民共和国治安管理处罚法》等相关规定。 传播或存储违法、违规内容，会受到相关处罚，严重者将承担刑事责任。本站坚决配合相关部门，确保网络内容的安全，和谐，打造绿色网络环境。
+show_admin_addr: 0
+opacity: 0
+background: ""
+sys_start: ""
+upload_minute: 0
+upload_count: 0
+error_minute: 0
+error_count: 0
+expire_style: []

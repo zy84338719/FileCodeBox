@@ -4,7 +4,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -121,72 +120,6 @@ func (dc *DatabaseConfig) GetDefaultPort() int {
 	default:
 		return 0
 	}
-}
-
-// ToMap 转换为map格式
-func (dc *DatabaseConfig) ToMap() map[string]string {
-	return map[string]string{
-		"database_type": dc.Type,
-		"database_host": dc.Host,
-		"database_port": fmt.Sprintf("%d", dc.Port),
-		"database_name": dc.Name,
-		"database_user": dc.User,
-		"database_ssl":  dc.SSL,
-		// 注意：密码出于安全考虑不包含在map中
-	}
-}
-
-// FromMap 从map加载配置
-func (dc *DatabaseConfig) FromMap(data map[string]string) error {
-	if val, ok := data["database_type"]; ok {
-		dc.Type = val
-	}
-	if val, ok := data["database_host"]; ok {
-		dc.Host = val
-	}
-	if val, ok := data["database_port"]; ok {
-		if port, err := strconv.Atoi(val); err == nil {
-			dc.Port = port
-		}
-	}
-	if val, ok := data["database_name"]; ok {
-		dc.Name = val
-	}
-	if val, ok := data["database_user"]; ok {
-		dc.User = val
-	}
-	if val, ok := data["database_ssl"]; ok {
-		dc.SSL = val
-	}
-
-	return dc.Validate()
-}
-
-// Update 更新配置
-func (dc *DatabaseConfig) Update(updates map[string]interface{}) error {
-	if dbType, ok := updates["type"].(string); ok {
-		dc.Type = dbType
-	}
-	if host, ok := updates["host"].(string); ok {
-		dc.Host = host
-	}
-	if port, ok := updates["port"].(int); ok {
-		dc.Port = port
-	}
-	if name, ok := updates["name"].(string); ok {
-		dc.Name = name
-	}
-	if user, ok := updates["user"].(string); ok {
-		dc.User = user
-	}
-	if pass, ok := updates["pass"].(string); ok {
-		dc.Pass = pass
-	}
-	if ssl, ok := updates["ssl"].(string); ok {
-		dc.SSL = ssl
-	}
-
-	return dc.Validate()
 }
 
 // Clone 克隆配置

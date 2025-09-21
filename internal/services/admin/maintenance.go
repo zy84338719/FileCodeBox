@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/zy84338719/filecodebox/internal/models"
+	"github.com/zy84338719/filecodebox/internal/models/service"
+	"github.com/zy84338719/filecodebox/internal/utils"
 )
 
 // CleanupExpiredFiles 清理过期文件
@@ -151,14 +153,29 @@ func (s *Service) GetStorageStatus() (*models.StorageStatus, error) {
 		return nil, err
 	}
 
+	// 获取当前存储类型
+	storageType := s.manager.Storage.Type
+
+	details := service.AdminStorageDetail{
+		UsedSpace: totalSize,
+		Type:      storageType,
+	}
+
+	// 根据当前配置尝试附加使用率信息
+	switch storageType {
+	case "local":
+		if s.manager.Storage.StoragePath != "" {
+			if usage, err := utils.GetUsagePercent(s.manager.Storage.StoragePath); err == nil {
+				details.UsagePercent = usage
+			}
+		}
+	}
+
 	return &models.StorageStatus{
-		Type:      s.manager.Storage.Type,
+		Type:      storageType,
 		Status:    "active",
 		Available: true,
-		Details: map[string]string{
-			"storage_path": s.manager.Storage.StoragePath,
-			"used_storage": fmt.Sprintf("%d", totalSize),
-		},
+		Details:   details,
 	}, nil
 }
 
@@ -233,6 +250,8 @@ func (s *Service) GetSystemInfo() (*models.SystemInfo, error) {
 		Uptime:       "1h0m0s",
 	}, nil
 }
+
+// ...existing code...
 
 // CleanInvalidRecords 清理无效记录 (兼容性方法)
 func (s *Service) CleanInvalidRecords() (int, error) {

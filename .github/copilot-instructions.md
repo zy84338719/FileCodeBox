@@ -20,17 +20,17 @@ FileCodeBox 是一个高性能的文件快传系统的 Go 实现，基于现代�
 ```go
 // 通过 ConfigManager 统一管理所有配置
 manager := config.InitManager()
-manager.InitWithDB(db) // 数据库驱动的动态配置
+manager.SetDB(db) // 注入数据库连接（配置读取现在以 config.yaml 和 环境变量为准）
 ```
 
 配置分为多个模块：`BaseConfig`, `DatabaseConfig`, `StorageConfig`, `UserSystemConfig`, `MCPConfig`
 
 支持环境变量优先级覆盖、数据库持久化存储、热重载机制：
-- **环境变量优先级**：PORT、ADMIN_TOKEN 等关键配置始终优先使用环境变量
+- **环境变量优先级**：PORT、DATA_PATH 等关键配置始终优先使用环境变量
 - **数据库持久化**：配置自动保存到 key_value 表，支持动态更新
 - **热重载机制**：通过 ReloadConfig() 方法实现运行时配置更新
 - **配置验证**：每个配置模块都有独立的验证方法
-- **分层映射**：ToMap() 和 FromMap() 方法支持配置的序列化和反序列化
+- **类型安全配置**：使用结构体 Clone() 方法和直接字段访问，避免 map 转换开销
 
 ### Route Architecture
 完全模块化的路由系统 (`internal/routes/`):

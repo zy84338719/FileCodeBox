@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员API测试</title>
+</head>
+<body>
+    <h1>管理员API测试</h1>
+    
+    <div>
+        <h2>1. 登录测试</h2>
+        <button onclick="testLogin()">测试登录</button>
+        <div id="login-result"></div>
+    </div>
+    
+    <div>
+        <h2>2. 仪表板API测试</h2>
+        <button onclick="testDashboard()">测试仪表板</button>
+        <div id="dashboard-result"></div>
+    </div>
+    
+    <div>
+        <h2>3. 用户列表API测试</h2>
+        <button onclick="testUsers()">测试用户列表</button>
+        <div id="users-result"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+        
+        async function testLogin() {
+            try {
+                const response = await fetch('/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'testadmin',
+                        password: 'admin123'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    authToken = result.data.token;
+                    localStorage.setItem('user_token', authToken);
+                    document.getElementById('login-result').innerHTML = 
+                        '<span style="color: green;">登录成功！Token: ' + authToken.substring(0, 50) + '...</span>';
+                } else {
+                    document.getElementById('login-result').innerHTML = 
+                        '<span style="color: red;">登录失败: ' + result.message + '</span>';
+                }
+            } catch (error) {
+                document.getElementById('login-result').innerHTML = 
+                    '<span style="color: red;">请求失败: ' + error.message + '</span>';
+            }
+        }
+        
+        async function testDashboard() {
+            if (!authToken) {
+                authToken = localStorage.getItem('user_token');
+            }
+            
+            if (!authToken) {
+                document.getElementById('dashboard-result').innerHTML = 
+                    '<span style="color: red;">请先登录</span>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/admin/dashboard', {
+                    headers: {
+                        'Authorization': 'Bearer ' + authToken
+                    }
+                });
+                
+                const result = await response.json();
+                
+                document.getElementById('dashboard-result').innerHTML = 
+                    '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('dashboard-result').innerHTML = 
+                    '<span style="color: red;">请求失败: ' + error.message + '</span>';
+            }
+        }
+        
+        async function testUsers() {
+            if (!authToken) {
+                authToken = localStorage.getItem('user_token');
+            }
+            
+            if (!authToken) {
+                document.getElementById('users-result').innerHTML = 
+                    '<span style="color: red;">请先登录</span>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/admin/users', {
+                    headers: {
+                        'Authorization': 'Bearer ' + authToken
+                    }
+                });
+                
+                const result = await response.json();
+                
+                document.getElementById('users-result').innerHTML = 
+                    '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('users-result').innerHTML = 
+                    '<span style="color: red;">请求失败: ' + error.message + '</span>';
+            }
+        }
+    </script>
+</body>
+</html>

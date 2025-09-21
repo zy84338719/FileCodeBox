@@ -64,40 +64,9 @@ func (s *Service) CreateUser(username, email, password, nickname, role, status s
 }
 
 // UpdateUser 更新用户 - 使用结构化更新
-func (s *Service) UpdateUser(id uint, email, password, nickname, role, status string) error {
-	// 准备更新字段
-	updateFields := &models.UserUpdateFields{}
+func (s *Service) UpdateUser(user models.User) error {
 
-	if email != "" {
-		// 检查邮箱是否已被其他用户使用
-		existingUser, err := s.repositoryManager.User.CheckEmailExists(email, id)
-		if err == nil && existingUser != nil {
-			return errors.New("该邮箱已被其他用户使用")
-		} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("检查邮箱唯一性失败: %w", err)
-		}
-		updateFields.Email = &email
-	}
-
-	if password != "" {
-		hashedPassword, err := s.authService.HashPassword(password)
-		if err != nil {
-			return err
-		}
-		updateFields.PasswordHash = &hashedPassword
-	}
-
-	if nickname != "" {
-		updateFields.Nickname = &nickname
-	}
-	if role != "" {
-		updateFields.Role = &role
-	}
-	if status != "" {
-		updateFields.Status = &status
-	}
-
-	return s.repositoryManager.User.UpdateUserFields(id, updateFields)
+	return s.repositoryManager.User.UpdateUserFields(user.ID, user)
 }
 
 // DeleteUser 删除用户
@@ -138,14 +107,55 @@ func (s *Service) ToggleUserStatus(id uint) error {
 		newStatus = "active"
 	}
 
-	updateFields := &models.UserUpdateFields{
-		Status: &newStatus,
-	}
-
-	return s.repositoryManager.User.UpdateUserFields(id, updateFields)
+	return s.repositoryManager.User.UpdateUserFields(id, models.User{
+		Status: newStatus,
+	})
 }
 
 // GetUserByID 根据ID获取用户 (兼容性方法)
 func (s *Service) GetUserByID(id uint) (*models.User, error) {
 	return s.GetUser(id)
+}
+
+// BatchUpdateUserStatus 批量更新用户状态：enable=true 表示启用(active)，false 表示禁用(inactive)
+func (s *Service) BatchUpdateUserStatus(userIDs []uint, enable bool) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	status := "inactive"
+	if enable {
+		status = "active"
+	}
+
+	tx := s.repositoryManager.BeginTransaction()
+	if tx == nil {
+		return errors.New("无法开始数据库事务")
+	}
+
+	if err := tx.Model(&models.User{}).Where("id IN ?", userIDs).Update("status", status).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
+// BatchDeleteUsers 批量删除用户
+func (s *Service) BatchDeleteUsers(userIDs []uint) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	tx := s.repositoryManager.BeginTransaction()
+	if tx == nil {
+		return errors.New("无法开始数据库事务")
+	}
+
+	if err := tx.Where("id IN ?", userIDs).Delete(&models.User{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
