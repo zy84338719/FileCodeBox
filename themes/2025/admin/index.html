@@ -19,74 +19,107 @@
     <link rel="stylesheet" href="css/mcp.css">
     <link rel="stylesheet" href="css/files.css">
     <link rel="stylesheet" href="css/pagination.css">
+    <link rel="stylesheet" href="css/admin-modern.css">
     
     <!-- 图标库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- 管理后台专用桌面样式已移动到 `css/users.css`，请编辑该文件进行样式调整 -->
 </head>
-<body>
-    <!-- 移动端菜单按钮 -->
-    <button class="mobile-menu-toggle" id="mobileMenuToggle" style="display: none;">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <!-- 侧边栏遮罩层 -->
+<body class="admin-modern-body admin-theme-light">
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- 管理页面 (移除了独立的管理员登录界面) -->
-    <div id="admin-page">
-        <div class="container">
-            <!-- 头部 -->
-            <div class="header">
-                <!-- 移动端菜单按钮 -->
-                <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" style="display: none;">
-                    <i class="fas fa-bars"></i>
-                </button>
-                
-                <div class="logo">
-                    <img class="logo-icon" src="/assets/images/logo-small.svg" alt="FileCodeBox Logo"/>
-                    <span>FileCodeBox 管理后台</span>
-                </div>
-                <div class="header-buttons">
-                    <button class="user-btn" onclick="goToUser()">
-                        <i class="fas fa-user"></i> 用户页面
-                    </button>
-                    <button class="logout-btn" onclick="logout()">
-                        <i class="fas fa-sign-out-alt"></i> 退出登录
-                    </button>
+    <div id="admin-page" class="admin-shell">
+        <aside class="admin-sidebar">
+            <div class="sidebar-brand">
+                <img class="logo-icon" src="/assets/images/logo-small.svg" alt="FileCodeBox Logo"/>
+                <div class="brand-text">
+                    <span class="brand-title">FileCodeBox</span>
+                    <span class="brand-subtitle">Admin Center</span>
                 </div>
             </div>
 
-            <!-- 主要内容区域 -->
-            <div class="tabs">
-                <!-- 横向标签导航 -->
-                <div class="tab-header">
-                    <button class="tab-btn active" onclick="switchTab('dashboard')">
-                        <i class="fas fa-tachometer-alt"></i> 仪表板
+            <div class="sidebar-section">
+                <p class="sidebar-label">导航</p>
+                <button class="tab-btn nav-link active" data-tab="dashboard" data-title="控制面板" data-subtitle="实时掌握文件投递、存储与用户动态，保持系统顺畅运行。" onclick="switchTab('dashboard', this)">
+                    <i class="fas fa-gauge-high"></i>
+                    <span>仪表板</span>
+                </button>
+                <button class="tab-btn nav-link" data-tab="files" data-title="文件管理" data-subtitle="查询、筛选并管理所有分享文件，确保内容安全可控。" onclick="switchTab('files', this)">
+                    <i class="fas fa-file"></i>
+                    <span>文件管理</span>
+                </button>
+                <button class="tab-btn nav-link" data-tab="users" data-title="用户管理" data-subtitle="查看注册信息、控制权限并维护活跃用户。" onclick="switchTab('users', this)">
+                    <i class="fas fa-users"></i>
+                    <span>用户管理</span>
+                </button>
+                <button class="tab-btn nav-link" data-tab="storage" data-title="存储管理" data-subtitle="配置底层存储后端并监控容量、健康状态。" onclick="switchTab('storage', this)">
+                    <i class="fas fa-database"></i>
+                    <span>存储管理</span>
+                </button>
+                <button class="tab-btn nav-link" data-tab="mcp" data-title="MCP 服务器" data-subtitle="管理消息通道服务，保障多端协同稳定可用。" onclick="switchTab('mcp', this)">
+                    <i class="fas fa-server"></i>
+                    <span>MCP 服务器</span>
+                </button>
+                <button class="tab-btn nav-link" data-tab="config" data-title="系统配置" data-subtitle="调整平台基础信息、展示样式与策略选项。" onclick="switchTab('config', this)">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>系统配置</span>
+                </button>
+                <button class="tab-btn nav-link" data-tab="maintenance" data-title="维护工具" data-subtitle="执行清理、日志与优化操作，让系统持续高效。" onclick="switchTab('maintenance', this)">
+                    <i class="fas fa-toolbox"></i>
+                    <span>维护工具</span>
+                </button>
+            </div>
+
+            <div class="sidebar-footer">
+                <p class="sidebar-label">快速操作</p>
+                <button class="sidebar-action" onclick="goToUser()">
+                    <i class="fas fa-external-link-alt"></i>
+                    用户页面
+                </button>
+                <button class="sidebar-action logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    安全退出
+                </button>
+            </div>
+        </aside>
+
+        <div class="admin-content">
+            <header class="admin-header">
+                <button class="header-toggle" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="headline">
+                    <h1>控制面板</h1>
+                    <p>实时掌握文件投递、存储与用户动态，保持系统顺畅运行。</p>
+                </div>
+                <div class="header-metrics">
+                    <div class="metric-chip">
+                        <span class="chip-label">今日上传</span>
+                        <span class="chip-value" id="chip-today-uploads">-</span>
+                    </div>
+                    <div class="metric-chip">
+                        <span class="chip-label">总文件</span>
+                        <span class="chip-value" id="chip-total-files">-</span>
+                    </div>
+                    <div class="metric-chip">
+                        <span class="chip-label">存储占用</span>
+                        <span class="chip-value" id="chip-total-storage">-</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="header-btn header-btn-ghost" onclick="toggleTheme()" id="theme-toggle-btn">
+                        <i class="fas fa-sun"></i>
+                        <span>浅色</span>
                     </button>
-                    <button class="tab-btn" onclick="switchTab('files')">
-                        <i class="fas fa-file"></i> 文件管理
-                    </button>
-                    <button class="tab-btn" onclick="switchTab('users')">
-                        <i class="fas fa-users"></i> 用户管理
-                    </button>
-                    <button class="tab-btn" onclick="switchTab('storage')">
-                        <i class="fas fa-hdd"></i> 存储管理
-                    </button>
-                    <button class="tab-btn" onclick="switchTab('mcp')">
-                        <i class="fas fa-server"></i> MCP服务器
-                    </button>
-                    <button class="tab-btn" onclick="switchTab('config')">
-                        <i class="fas fa-cog"></i> 系统配置
-                    </button>
-                    <button class="tab-btn" onclick="switchTab('maintenance')">
-                        <i class="fas fa-tools"></i> 维护工具
+                    <button class="header-btn" onclick="loadConfig()">
+                        <i class="fas fa-rotate"></i> 刷新数据
                     </button>
                 </div>
+            </header>
 
-                <!-- 标签页内容容器 -->
-                <div id="tab-content-container">
+            <main class="admin-main">
+                <div id="tab-content-container" class="tab-panels">
                     <!-- 仪表板标签页 -->
                     <div id="dashboard-tab" class="tab-content active">
                         <div class="dashboard-header">
@@ -224,36 +257,36 @@
                     <!-- 文件管理标签页 -->
                     <div id="files-tab" class="tab-content">
                         <!-- 文件统计 -->
-                        <div class="files-stats">
-                            <div class="files-stat-card">
-                                <div class="files-stat-value" id="total-files">-</div>
-                                <div class="files-stat-label">总文件数</div>
+                        <div class="tab-metrics">
+                            <div class="metric-card">
+                                <div class="metric-label">总文件数</div>
+                                <div class="metric-value" id="total-files">-</div>
                             </div>
-                            <div class="files-stat-card">
-                                <div class="files-stat-value" id="total-size">-</div>
-                                <div class="files-stat-label">总存储大小</div>
+                            <div class="metric-card">
+                                <div class="metric-label">总存储大小</div>
+                                <div class="metric-value" id="total-size">-</div>
                             </div>
-                            <div class="files-stat-card">
-                                <div class="files-stat-value" id="today-uploads">-</div>
-                                <div class="files-stat-label">今日上传</div>
+                            <div class="metric-card">
+                                <div class="metric-label">今日上传</div>
+                                <div class="metric-value" id="today-uploads">-</div>
                             </div>
-                            <div class="files-stat-card">
-                                <div class="files-stat-value" id="public-files">-</div>
-                                <div class="files-stat-label">公开文件</div>
+                            <div class="metric-card">
+                                <div class="metric-label">公开文件</div>
+                                <div class="metric-value" id="public-files">-</div>
                             </div>
                         </div>
 
                         <!-- 工具栏 -->
-                        <div class="files-toolbar">
-                            <div class="files-search-section">
-                                <div class="files-search-box">
-                                    <input type="text" placeholder="搜索文件名或代码..." id="files-search-input" class="files-search-input">
+                        <div class="toolbar-shell">
+                            <div class="toolbar-left">
+                                <div class="search-box">
+                                    <input type="text" placeholder="搜索文件名或代码..." id="files-search-input" class="search-input">
                                     <button class="btn btn-primary" onclick="searchFiles()">
                                         <i class="fas fa-search"></i>
                                     </button>
                                 </div>
                             </div>
-                            <div class="files-actions">
+                            <div class="toolbar-right">
                                 <div class="view-toggle">
                                     <button class="view-toggle-btn active" id="list-view-btn" onclick="switchView('list')">
                                         <i class="fas fa-list"></i> 列表
@@ -272,7 +305,7 @@
                         </div>
 
                         <!-- 文件过滤器 -->
-                        <div class="files-filters">
+                        <div class="filter-row">
                             <span class="filter-label">文件类型:</span>
                             <div class="filter-tag active" data-type="all">全部</div>
                             <div class="filter-tag" data-type="image">图片</div>
@@ -352,51 +385,31 @@
                     <!-- 用户管理标签页 -->
                     <div id="users-tab" class="tab-content">
                         <!-- 用户统计卡片 -->
-                        <div class="stats-row">
-                            <div class="stat-card">
-                                <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-number" id="total-users">-</div>
-                                    <div class="stat-label">总用户数</div>
-                                </div>
+                        <div class="tab-metrics">
+                            <div class="metric-card">
+                                <div class="metric-label">总用户数</div>
+                                <div class="metric-value" id="total-users">-</div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
-                                    <i class="fas fa-user-check"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-number" id="active-users">-</div>
-                                    <div class="stat-label">活跃用户</div>
-                                </div>
+                            <div class="metric-card">
+                                <div class="metric-label">活跃用户</div>
+                                <div class="metric-value" id="active-users">-</div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-icon" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
-                                    <i class="fas fa-user-plus"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-number" id="new-users-today">-</div>
-                                    <div class="stat-label">今日新增</div>
-                                </div>
+                            <div class="metric-card">
+                                <div class="metric-label">今日新增</div>
+                                <div class="metric-value" id="new-users-today">-</div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-icon" style="background: linear-gradient(135deg, #17a2b8, #138496);">
-                                    <i class="fas fa-sign-in-alt"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-number" id="online-users">-</div>
-                                    <div class="stat-label">在线用户</div>
-                                </div>
+                            <div class="metric-card">
+                                <div class="metric-label">在线用户</div>
+                                <div class="metric-value" id="online-users">-</div>
                             </div>
                         </div>
                         
                         <!-- 用户管理工具栏 -->
-                        <div class="user-toolbar">
-                            <div class="search-section">
+                        <div class="user-toolbar toolbar-shell">
+                            <div class="toolbar-left">
                                 <div class="search-box">
                                     <input type="text" placeholder="搜索用户名、邮箱或ID..." id="user-search-input" class="search-input">
-                                    <button class="btn" onclick="searchUsers()">
+                                    <button class="btn btn-primary" onclick="searchUsers()">
                                         <i class="fas fa-search"></i> 搜索
                                     </button>
                                     <button class="btn btn-secondary" onclick="clearUserSearch()">
@@ -405,7 +418,7 @@
                                 </div>
                             </div>
                             
-                            <div class="action-section">
+                            <div class="toolbar-right">
                                 <button class="btn btn-success" onclick="showAddUserModal()">
                                     <i class="fas fa-plus"></i> 添加用户
                                 </button>
@@ -429,7 +442,7 @@
                         </div>
                         
                         <!-- 用户过滤器 -->
-                        <div class="user-filters">
+                        <div class="user-filters filter-row">
                             <div class="filter-group">
                                 <label>状态过滤:</label>
                                 <select id="status-filter" onchange="filterUsers()">
@@ -461,7 +474,7 @@
                         </div>
                         
                         <!-- 用户列表 -->
-                        <div class="users-table-container">
+                        <div class="table-shell">
                             <table class="users-table">
                                 <thead>
                                     <tr>
@@ -584,16 +597,16 @@
                             <!-- 当前存储状态 -->
                             <div class="config-section">
                                 <div class="section-header">
-                                    <div class="section-icon" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                                <div class="section-icon">
                                         <i class="fas fa-hdd"></i>
                                     </div>
                                     <h3>当前存储状态</h3>
                                     <small>查看当前使用的存储类型和运行状态</small>
                                 </div>
                                 
-                                <div id="current-storage-display" style="background: #f8f9fa; border-radius: 8px; padding: 20px;">
-                                    <div style="text-align: center; padding: 40px; color: #6c757d;">
-                                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+                                <div id="current-storage-display">
+                                    <div class="placeholder-block">
+                                        <i class="fas fa-spinner fa-spin"></i>
                                         <p>正在加载存储信息...</p>
                                     </div>
                                 </div>
@@ -602,7 +615,7 @@
                             <!-- 存储类型选择 -->
                             <div class="config-section">
                                 <div class="section-header">
-                                    <div class="section-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c); color: white;">
+                                <div class="section-icon">
                                         <i class="fas fa-layer-group"></i>
                                     </div>
                                     <h3>存储类型管理</h3>
@@ -680,8 +693,8 @@
                                 </div>
                                 
                                 <!-- 操作按钮区域 -->
-                                <div id="storage-actions" class="storage-actions" style="margin-top: 20px; text-align: center;">
-                                    <p style="color: #6c757d; margin: 0;">
+                                <div id="storage-actions" class="storage-actions">
+                                    <p class="muted-text">
                                         <i class="fas fa-info-circle"></i>
                                         请先选择一个存储类型进行配置
                                     </p>
@@ -691,7 +704,7 @@
                             <!-- 存储配置面板 -->
                             <div class="config-section">
                                 <div class="section-header">
-                                    <div class="section-icon" style="background: linear-gradient(135deg, #11998e, #38ef7d); color: white;">
+                                <div class="section-icon">
                                         <i class="fas fa-cog"></i>
                                     </div>
                                     <h3>存储配置</h3>
@@ -719,7 +732,7 @@
                                 <div id="webdav-config-panel" class="storage-config-panel" style="display: none;">
                                     <div class="config-form">
                                         <h4><i class="fas fa-cloud"></i> WebDAV存储配置</h4>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                        <div class="form-grid two-cols">
                                             <div class="form-group">
                                                 <label>服务器地址</label>
                                                 <input type="text" id="webdav-hostname" class="form-control" placeholder="https://example.com/webdav">
@@ -753,7 +766,7 @@
                                 <div id="nfs-config-panel" class="storage-config-panel" style="display: none;">
                                     <div class="config-form">
                                         <h4><i class="fas fa-network-wired"></i> NFS网络存储配置</h4>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                        <div class="form-grid two-cols">
                                             <div class="form-group">
                                                 <label>NFS服务器</label>
                                                 <input type="text" id="nfs-server" class="form-control" placeholder="192.168.1.100">
@@ -778,7 +791,7 @@
                                                 </select>
                                                 <small class="form-text">选择NFS协议版本</small>
                                             </div>
-                                            <div class="form-group" style="grid-column: span 2;">
+                                            <div class="form-group span-2">
                                                 <label>挂载选项</label>
                                                 <input type="text" id="nfs-options" class="form-control" placeholder="rw,sync,hard,intr">
                                                 <small class="form-text">NFS挂载的额外选项（可选）</small>
@@ -796,7 +809,7 @@
                                 <div id="s3-config-panel" class="storage-config-panel" style="display: none;">
                                     <div class="config-form">
                                         <h4><i class="fas fa-archive"></i> S3对象存储配置</h4>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                        <div class="form-grid two-cols">
                                             <div class="form-group">
                                                 <label>访问密钥ID</label>
                                                 <input type="text" id="s3-access-key-id" class="form-control" placeholder="AKIAIOSFODNN7EXAMPLE">
@@ -840,7 +853,7 @@
                             <!-- MCP 配置区域 -->
                             <div class="config-section">
                                 <div class="section-header">
-                                    <div class="section-icon" style="background: linear-gradient(135deg, #11998e, #38ef7d); color: white;">
+                                <div class="section-icon">
                                         <i class="fas fa-server"></i>
                                     </div>
                                     <h3>MCP 服务器配置</h3>
@@ -850,19 +863,19 @@
                                 <form id="mcp-config-form">
                                     <!-- 基础配置 -->
                                     <div class="form-group">
-                                        <label style="display: flex; align-items: center; font-weight: bold; margin-bottom: 15px;">
-                                            <input type="checkbox" id="enable_mcp_server" style="margin-right: 10px; transform: scale(1.2);">
-                                            <span style="color: #333;">启用 MCP 服务器</span>
+                                        <label class="checkbox-label" style="display: flex; align-items: center; font-weight: bold; margin-bottom: 15px; gap: 10px;">
+                                            <input type="checkbox" id="enable_mcp_server" style="transform: scale(1.2);">
+                                            <span>启用 MCP 服务器</span>
                                         </label>
                                         <small class="form-text">
-                                            <i class="fas fa-info-circle" style="color: #17a2b8;"></i>
+                                        <i class="fas fa-info-circle"></i>
                                             启用后，AI 工具可以通过 MCP 协议与 FileCodeBox 进行交互
                                         </small>
                                     </div>
                                     
                                     <!-- 详细配置选项 -->
-                                    <div id="mcp-config-options" style="display: none; margin-top: 25px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #11998e;">
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                    <div id="mcp-config-options" style="display: none;">
+                                        <div class="guide-grid">
                                             <div class="form-group">
                                                 <label>服务器端口</label>
                                                 <input type="text" id="mcp_port" class="form-control" placeholder="8081" style="border: 2px solid #e9ecef; border-radius: 6px; padding: 10px;">
@@ -877,7 +890,7 @@
                                         
                                         <!-- 连接测试 -->
                                         <div class="form-group" style="margin-top: 20px;">
-                                            <button type="button" onclick="testMCPConnection()" class="btn btn-info" style="background: linear-gradient(45deg, #17a2b8, #138496); border: none; color: white; padding: 8px 16px; border-radius: 4px; font-size: 13px;">
+                                            <button type="button" onclick="testMCPConnection()" class="btn btn-info">
                                                 <i class="fas fa-network-wired"></i> 测试连接
                                             </button>
                                             <small class="form-text">测试当前配置的连通性</small>
@@ -886,7 +899,7 @@
                                     
                                     <!-- 保存按钮 -->
                                     <div class="form-group" style="margin-top: 25px; text-align: right;">
-                                        <button type="submit" class="btn-primary" style="background: linear-gradient(45deg, #11998e, #38ef7d); border: none; color: white; padding: 12px 24px; border-radius: 6px; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(17,153,142,0.3); transition: all 0.3s ease;">
+                                        <button type="submit" class="btn btn-primary">
                                             <i class="fas fa-save"></i> 保存配置
                                         </button>
                                     </div>
@@ -896,16 +909,16 @@
                             <!-- MCP 状态区域 -->
                             <div class="config-section">
                                 <div class="section-header">
-                                    <div class="section-icon" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                                <div class="section-icon">
                                         <i class="fas fa-chart-line"></i>
                                     </div>
                                     <h3>服务器状态</h3>
                                     <small>实时监控 MCP 服务器运行状态</small>
                                 </div>
                                 
-                                <div id="mcp-status-display" style="background: #f8f9fa; border-radius: 8px; padding: 20px;">
-                                    <div style="text-align: center; padding: 40px; color: #6c757d;">
-                                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+                                <div id="mcp-status-display">
+                                    <div class="placeholder-block">
+                                        <i class="fas fa-spinner fa-spin"></i>
                                         <p>正在加载状态信息...</p>
                                     </div>
                                 </div>
@@ -914,45 +927,45 @@
                             <!-- MCP 使用指南 -->
                             <div class="config-section">
                                 <div class="section-header">
-                                    <div class="section-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c); color: white;">
+                                <div class="section-icon">
                                         <i class="fas fa-book"></i>
                                     </div>
                                     <h3>使用指南</h3>
                                     <small>如何连接和使用 MCP 服务器</small>
                                 </div>
                                 
-                                <div style="background: #f8f9fa; border-radius: 8px; padding: 20px;">
-                                    <h4 style="color: #495057; margin-bottom: 15px;">
-                                        <i class="fas fa-plug" style="color: #11998e;"></i> 连接方式
+                                <div class="guide-panel">
+                                    <h4>
+                                        <i class="fas fa-plug"></i> 连接方式
                                     </h4>
-                                    <div style="background: #ffffff; border-radius: 6px; padding: 15px; margin-bottom: 20px; border-left: 4px solid #11998e;">
-                                        <p style="margin: 0; color: #6c757d;">
+                                    <div class="guide-callout">
+                                        <p>
                                             <strong>TCP 连接：</strong> <code>localhost:<span id="display-port">8081</span></code>
                                         </p>
-                                        <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 13px;">
+                                        <p class="muted-text">
                                             在支持 MCP 的 AI 工具中使用上述地址连接到 FileCodeBox
                                         </p>
                                     </div>
                                     
-                                    <h4 style="color: #495057; margin-bottom: 15px;">
-                                        <i class="fas fa-tools" style="color: #667eea;"></i> 可用功能
+                                    <h4>
+                                        <i class="fas fa-tools"></i> 可用功能
                                     </h4>
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-                                        <div style="background: #ffffff; border-radius: 6px; padding: 15px; border-left: 4px solid #38ef7d;">
-                                            <strong style="color: #495057;">文件管理</strong>
-                                            <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 13px;">上传、下载、删除文件</p>
+                                    <div class="guide-grid">
+                                        <div class="guide-card">
+                                            <strong>文件管理</strong>
+                                            <p class="muted-text">上传、下载、删除文件</p>
                                         </div>
-                                        <div style="background: #ffffff; border-radius: 6px; padding: 15px; border-left: 4px solid #f093fb;">
-                                            <strong style="color: #495057;">系统配置</strong>
-                                            <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 13px;">查看和修改系统设置</p>
+                                        <div class="guide-card">
+                                            <strong>系统配置</strong>
+                                            <p class="muted-text">查看和修改系统设置</p>
                                         </div>
-                                        <div style="background: #ffffff; border-radius: 6px; padding: 15px; border-left: 4px solid #667eea;">
-                                            <strong style="color: #495057;">用户管理</strong>
-                                            <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 13px;">管理用户和权限</p>
+                                        <div class="guide-card">
+                                            <strong>用户管理</strong>
+                                            <p class="muted-text">管理用户和权限</p>
                                         </div>
-                                        <div style="background: #ffffff; border-radius: 6px; padding: 15px; border-left: 4px solid #f5576c;">
-                                            <strong style="color: #495057;">系统维护</strong>
-                                            <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 13px;">清理、备份、监控</p>
+                                        <div class="guide-card">
+                                            <strong>系统维护</strong>
+                                            <p class="muted-text">清理、备份、监控</p>
                                         </div>
                                     </div>
                                 </div>
@@ -967,7 +980,7 @@
                                 <!-- 基础设置 -->
                                 <div class="config-section">
                                     <div class="section-header">
-                                        <div class="section-icon" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                                        <div class="section-icon">
                                             <i class="fas fa-cog"></i>
                                         </div>
                                         <h3>基础设置</h3>
@@ -1019,7 +1032,7 @@
                                 <!-- 上传限制设置 -->
                                 <div class="config-section">
                                     <div class="section-header">
-                                        <div class="section-icon" style="background: linear-gradient(135deg, #ffa726, #ff7043); color: white;">
+                                        <div class="section-icon">
                                             <i class="fas fa-upload"></i>
                                         </div>
                                         <h3>上传限制设置</h3>
@@ -1045,8 +1058,8 @@
                                     <div class="row">
                                         <div class="col-6">
                                             <div class="form-group">
-                                                <label style="display: flex; align-items: center; gap: 10px;">
-                                                    <input type="checkbox" name="transfer.upload.open_upload" id="open_upload" style="transform: scale(1.2);">
+                                                <label class="checkbox-label">
+                                                    <input type="checkbox" name="transfer.upload.open_upload" id="open_upload">
                                                     启用文件上传
                                                 </label>
                                                 <small class="form-text">是否允许用户上传文件</small>
@@ -1054,8 +1067,8 @@
                                         </div>
                                         <div class="col-6">
                                             <div class="form-group">
-                                                <label style="display: flex; align-items: center; gap: 10px;">
-                                                    <input type="checkbox" name="transfer.upload.enable_chunk" id="enable_chunk" style="transform: scale(1.2);">
+                                                <label class="checkbox-label">
+                                                    <input type="checkbox" name="transfer.upload.enable_chunk" id="enable_chunk">
                                                     启用分片上传
                                                 </label>
                                                 <small class="form-text">大文件分片上传，提高上传成功率</small>
@@ -1073,15 +1086,15 @@
                                 <!-- 性能设置 -->
                                 <div class="config-section">
                                     <div class="section-header">
-                                        <div class="section-icon" style="background: linear-gradient(135deg, #26c6da, #00acc1); color: white;">
+                                        <div class="section-icon">
                                             <i class="fas fa-tachometer-alt"></i>
                                         </div>
                                         <h3>性能设置</h3>
                                     </div>
                                     
                                     <div class="form-group">
-                                        <label style="display: flex; align-items: center; gap: 10px;">
-                                            <input type="checkbox" name="transfer.download.enable_concurrent_download" id="enable_concurrent_download" style="transform: scale(1.2);">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" name="transfer.download.enable_concurrent_download" id="enable_concurrent_download">
                                             启用并发下载
                                         </label>
                                         <small class="form-text">允许同时进行多个文件下载任务</small>
@@ -1127,7 +1140,7 @@
                                 <!-- 用户系统设置 -->
                                 <div class="config-section">
                                     <div class="section-header">
-                                        <div class="section-icon" style="background: linear-gradient(135deg, #ab47bc, #8e24aa); color: white;">
+                                        <div class="section-icon">
                                             <i class="fas fa-users"></i>
                                         </div>
                                         <h3>用户系统设置</h3>
@@ -1137,16 +1150,16 @@
                                     
                                     <div id="user-system-options" style="display: block;">
                                         <div class="form-group">
-                                            <label style="display: flex; align-items: center; gap: 10px;">
-                                                <input type="checkbox" name="user.allow_user_registration" id="allow_user_registration" style="transform: scale(1.2);">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" name="user.allow_user_registration" id="allow_user_registration">
                                                 允许用户注册
                                             </label>
                                             <small class="form-text">允许新用户自主注册账号</small>
                                         </div>
                                         
                                         <div class="form-group">
-                                            <label style="display: flex; align-items: center; gap: 10px;">
-                                                <input type="checkbox" name="user.require_email_verify" id="require_email_verify" style="transform: scale(1.2);">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" name="user.require_email_verify" id="require_email_verify">
                                                 需要邮箱验证
                                             </label>
                                             <small class="form-text">新用户注册后需要验证邮箱才能使用</small>
@@ -1188,14 +1201,14 @@
                                     </div>
                                 </div>
 
-                                <div style="text-align: center; margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-                                    <button type="submit" class="btn" style="padding: 12px 30px; font-size: 16px; margin-right: 15px; background: linear-gradient(135deg, #28a745, #20c997); border: none;">
+                                <div class="config-action-bar">
+                                    <button type="submit" class="btn">
                                         <i class="fas fa-save"></i> 保存所有配置
                                     </button>
-                                    <button type="button" onclick="resetConfig()" class="btn" style="padding: 12px 30px; font-size: 16px; margin-right: 15px; background: linear-gradient(135deg, #ffc107, #fd7e14); border: none;">
+                                    <button type="button" onclick="resetConfig()" class="btn btn-secondary">
                                         <i class="fas fa-undo"></i> 重置配置
                                     </button>
-                                    <button type="button" onclick="loadConfig()" class="btn" style="padding: 12px 30px; font-size: 16px; background: linear-gradient(135deg, #17a2b8, #6f42c1); border: none;">
+                                    <button type="button" onclick="loadConfig()" class="btn btn-secondary">
                                         <i class="fas fa-sync"></i> 重新加载
                                     </button>
                                 </div>
@@ -1216,13 +1229,13 @@
                                 <!-- 清理管理 -->
                                 <div class="maintenance-card">
                                     <div class="section-header">
-                                        <div class="section-icon" style="background: #ff6b6b; color: white;">
+                                        <div class="section-icon">
                                             <i class="fas fa-broom"></i>
                                         </div>
                                         <h3>清理管理</h3>
                                     </div>
                                     <p>清理过期和无效数据</p>
-                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <div >
                                         <button class="btn" onclick="cleanExpiredFiles()">
                                             <i class="fas fa-trash"></i> 清理过期文件
                                         </button>
@@ -1238,13 +1251,13 @@
                                 <!-- 数据库维护 -->
                                 <div class="maintenance-card">
                                     <div class="section-header">
-                                        <div class="section-icon" style="background: #4ecdc4; color: white;">
+                                        <div class="section-icon">
                                             <i class="fas fa-database"></i>
                                         </div>
                                         <h3>数据库维护</h3>
                                     </div>
                                     <p>优化数据库性能</p>
-                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <div >
                                         <button class="btn" onclick="optimizeDatabase()">
                                             <i class="fas fa-tools"></i> 优化数据库
                                         </button>
@@ -1260,13 +1273,13 @@
                                 <!-- 缓存管理 -->
                                 <div class="maintenance-card">
                                     <div class="section-header">
-                                        <div class="section-icon" style="background: #a55eea; color: white;">
+                                        <div class="section-icon">
                                             <i class="fas fa-bolt"></i>
                                         </div>
                                         <h3>缓存管理</h3>
                                     </div>
                                     <p>管理系统缓存</p>
-                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <div >
                                         <button class="btn" onclick="clearCache()">
                                             <i class="fas fa-eraser"></i> 清空缓存
                                         </button>
@@ -1282,13 +1295,13 @@
                                 <!-- 系统监控 -->
                                 <div class="maintenance-card">
                                     <div class="section-header">
-                                        <div class="section-icon" style="background: #26de81; color: white;">
+                                        <div class="section-icon">
                                             <i class="fas fa-chart-line"></i>
                                         </div>
                                         <h3>系统监控</h3>
                                     </div>
                                     <p>监控系统运行状态</p>
-                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <div >
                                         <button class="btn" onclick="showSystemStatus()">
                                             <i class="fas fa-server"></i> 系统状态
                                         </button>
@@ -1304,13 +1317,13 @@
                                 <!-- 安全管理 -->
                                 <div class="maintenance-card">
                                     <div class="section-header">
-                                        <div class="section-icon" style="background: #fd9644; color: white;">
+                                        <div class="section-icon">
                                             <i class="fas fa-shield-alt"></i>
                                         </div>
                                         <h3>安全管理</h3>
                                     </div>
                                     <p>系统安全与访问管理</p>
-                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <div >
                                         <button class="btn" onclick="securityScan()">
                                             <i class="fas fa-search"></i> 安全扫描
                                         </button>
@@ -1326,13 +1339,13 @@
                                 <!-- 日志管理 -->
                                 <div class="maintenance-card">
                                     <div class="section-header">
-                                        <div class="section-icon" style="background: #667eea; color: white;">
+                                        <div class="section-icon">
                                             <i class="fas fa-file-text"></i>
                                         </div>
                                         <h3>日志管理</h3>
                                     </div>
                                     <p>查看和管理系统日志</p>
-                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <div >
                                         <button class="btn" onclick="downloadLogs()">
                                             <i class="fas fa-download"></i> 下载日志
                                         </button>
@@ -1348,15 +1361,23 @@
 
                             <!-- 快速操作 -->
                             <div class="quick-actions">
-                                <h3><i class="fas fa-rocket"></i> 快速操作</h3>
-                                <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
-                                    <button class="btn btn-danger" onclick="quickCleanAll()" style="padding: 12px 24px;">
+                                <div class="section-header" style="justify-content: center; margin-bottom: 20px;">
+                                    <div class="section-icon">
+                                        <i class="fas fa-rocket"></i>
+                                    </div>
+                                    <div>
+                                        <h3>快速操作</h3>
+                                        <p>处理紧急维护和一键优化任务</p>
+                                    </div>
+                                </div>
+                                <div class="quick-action-buttons">
+                                    <button class="btn btn-danger" onclick="quickCleanAll()">
                                         <i class="fas fa-magic"></i> 一键全面清理
                                     </button>
-                                    <button class="btn btn-success" onclick="quickOptimize()" style="padding: 12px 24px;">
+                                    <button class="btn btn-success" onclick="quickOptimize()">
                                         <i class="fas fa-rocket"></i> 一键优化系统
                                     </button>
-                                    <button class="btn" onclick="systemHealthCheck()" style="padding: 12px 24px;">
+                                    <button class="btn btn-secondary" onclick="systemHealthCheck()">
                                         <i class="fas fa-heartbeat"></i> 系统健康检查
                                     </button>
                                 </div>
@@ -1369,7 +1390,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 

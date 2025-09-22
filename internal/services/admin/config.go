@@ -2,6 +2,7 @@ package admin
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/models/web"
@@ -22,6 +23,12 @@ func (s *Service) UpdateConfig(configData map[string]interface{}) error {
 // UpdateConfigFromRequest 从结构化请求更新配置
 func (s *Service) UpdateConfigFromRequest(configRequest *web.AdminConfigRequest) error {
 	// 直接更新配置管理器的各个模块，不使用 map 转换
+	ensureUI := func() *config.UIConfig {
+		if s.manager.UI == nil {
+			s.manager.UI = &config.UIConfig{}
+		}
+		return s.manager.UI
+	}
 
 	// 处理基础配置
 	if configRequest.Base != nil {
@@ -152,24 +159,20 @@ func (s *Service) UpdateConfigFromRequest(configRequest *web.AdminConfigRequest)
 	// 处理 UI 配置
 	if configRequest.UI != nil {
 		uiConfig := configRequest.UI
-		if uiConfig.ThemesSelect != "" {
-			s.manager.UI.ThemesSelect = uiConfig.ThemesSelect
+		ui := ensureUI()
+		if strings.TrimSpace(uiConfig.ThemesSelect) != "" {
+			ui.ThemesSelect = uiConfig.ThemesSelect
 		}
-		if uiConfig.Background != "" {
-			s.manager.UI.Background = uiConfig.Background
-		}
-		if uiConfig.PageExplain != "" {
-			s.manager.UI.PageExplain = uiConfig.PageExplain
-		}
-		if uiConfig.RobotsText != "" {
-			s.manager.UI.RobotsText = uiConfig.RobotsText
-		}
-		if uiConfig.ShowAdminAddr != 0 {
-			s.manager.UI.ShowAdminAddr = uiConfig.ShowAdminAddr
-		}
-		if uiConfig.Opacity != 0 {
-			s.manager.UI.Opacity = uiConfig.Opacity
-		}
+		ui.PageExplain = uiConfig.PageExplain
+		ui.Opacity = uiConfig.Opacity
+	}
+
+	// 顶层通知字段
+	if configRequest.NotifyTitle != nil {
+		s.manager.NotifyTitle = *configRequest.NotifyTitle
+	}
+	if configRequest.NotifyContent != nil {
+		s.manager.NotifyContent = *configRequest.NotifyContent
 	}
 
 	// 处理系统运行时字段
@@ -177,8 +180,10 @@ func (s *Service) UpdateConfigFromRequest(configRequest *web.AdminConfigRequest)
 		s.manager.SysStart = *configRequest.SysStart
 	}
 
-	// 保存配置到数据库和文件
-	return s.manager.Save()
+	if err := s.manager.PersistYAML(); err != nil {
+		return fmt.Errorf("persist config: %w", err)
+	}
+	return nil
 }
 
 // GetFullConfig 获取完整配置 - 返回配置管理器结构体

@@ -160,6 +160,10 @@ type AdminConfigRequest struct {
 
 	// 系统运行时特有字段（不属于配置模块的字段）
 	SysStart *string `json:"sys_start,omitempty"`
+
+	// 顶层通知字段保留与历史配置结构兼容
+	NotifyTitle   *string `json:"notify_title,omitempty"`
+	NotifyContent *string `json:"notify_content,omitempty"`
 }
 
 // CountResponse 通用计数响应

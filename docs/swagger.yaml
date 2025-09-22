@@ -12,7 +12,7 @@ definitions:
         example: 2h30m15s
         type: string
       version:
-        example: 1.7.1
+  example: 1.8.2
         type: string
     type: object
   handlers.SystemConfig:
@@ -57,7 +57,7 @@ info:
     url: https://github.com/zy84338719/filecodebox/blob/main/LICENSE
   termsOfService: http://swagger.io/terms/
   title: FileCodeBox API
-  version: "1.7.1"
+  version: "1.8.2"
 paths:
   /api/config:
     get:

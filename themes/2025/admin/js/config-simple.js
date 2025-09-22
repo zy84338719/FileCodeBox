@@ -23,9 +23,9 @@ async function loadConfig() {
     
     try {
         const result = await apiRequest('/admin/config');
-        
+
         if (result.code === 200) {
-            const config = result.data;
+            const config = normalizeConfigResponse(result.data);
             fillConfigForm(config);
             safeShowAlert('配置加载成功', 'success');
         } else {
@@ -38,6 +38,50 @@ async function loadConfig() {
             safeShowAlert('加载配置失败: ' + error.message, 'error');
         }
     }
+}
+
+function normalizeConfigResponse(config) {
+    if (!config || typeof config !== 'object') {
+        return config;
+    }
+
+    const clone = typeof structuredClone === 'function'
+        ? structuredClone(config)
+        : JSON.parse(JSON.stringify(config));
+
+    if (clone.database) {
+        const db = clone.database;
+        clone.database = {
+            ...db,
+            type: db.type ?? db.database_type ?? '',
+            host: db.host ?? db.database_host ?? '',
+            port: db.port ?? db.database_port ?? 0,
+            name: db.name ?? db.database_name ?? '',
+            user: db.user ?? db.database_user ?? '',
+            pass: db.pass ?? db.database_pass ?? '',
+            ssl: db.ssl ?? db.database_ssl ?? ''
+        };
+    }
+
+    if (clone.storage) {
+        const storage = clone.storage;
+        clone.storage = {
+            ...storage,
+            type: storage.type ?? storage.storage_type ?? storage.file_storage ?? '',
+            storage_path: storage.storage_path ?? storage.path ?? '',
+            path: storage.path ?? storage.storage_path ?? ''
+        };
+    }
+
+    if (clone.ui) {
+        const opacity = clone.ui.opacity;
+        if (opacity !== undefined && opacity !== null) {
+            const parsed = typeof opacity === 'string' ? parseFloat(opacity) : opacity;
+            clone.ui.opacity = Number.isNaN(parsed) ? 0 : parsed;
+        }
+    }
+
+    return clone;
 }
 
 /**
@@ -73,7 +117,13 @@ function fillConfigForm(config) {
     // 管理员令牌字段已移除，不回显任何敏感字段
         setFieldValue('notify_title', config.notify_title);
         setFieldValue('notify_content', config.notify_content);
-        setFieldValue('page_explain', config.page_explain);
+
+        const uiConfig = config.ui || {};
+        const resolvedPageExplain = uiConfig.page_explain ?? '';
+        const resolvedOpacity = uiConfig.opacity;
+        const resolvedTheme = uiConfig.themes_select ?? 'themes/2025';
+
+        setFieldValue('page_explain', resolvedPageExplain);
         
         // 上传限制设置
         setFieldValue('upload_size_mb', bytesToMB(config.transfer?.upload?.upload_size || 0));
@@ -86,8 +136,12 @@ function fillConfigForm(config) {
         setCheckboxValue('enable_concurrent_download', config.transfer?.download?.enable_concurrent_download);
         setFieldValue('max_concurrent_downloads', config.transfer?.download?.max_concurrent_downloads);
         setFieldValue('download_timeout', config.transfer?.download?.download_timeout);
-        setFieldValue('opacity', config.opacity);
-        setFieldValue('themes_select', config.themes_select);
+        if (resolvedOpacity !== undefined && resolvedOpacity !== null) {
+            setFieldValue('opacity', resolvedOpacity);
+        } else {
+            setFieldValue('opacity', '');
+        }
+        setFieldValue('themes_select', resolvedTheme);
         
         // 用户系统设置 (始终启用)
     // config.user.allow_user_registration 可能为 0/1，setCheckboxValue 接受布尔化
@@ -152,6 +206,13 @@ async function handleConfigSubmit(e) {
     try {
         safeShowAlert('正在保存配置...', 'info');
         
+        const opacityValue = getFieldValue('opacity', 'float');
+        const uiConfig = {
+            page_explain: getFieldValue('page_explain'),
+            themes_select: getFieldValue('themes_select'),
+            opacity: opacityValue ?? 0
+        };
+
         // 构建配置对象
         const config = {
             base: {
@@ -183,9 +244,7 @@ async function handleConfigSubmit(e) {
             },
             notify_title: getFieldValue('notify_title'),
             notify_content: getFieldValue('notify_content'),
-            page_explain: getFieldValue('page_explain'),
-            opacity: getFieldValue('opacity', 'number'),
-            themes_select: getFieldValue('themes_select')
+            ui: uiConfig
         };
         
         // 管理员令牌字段已移除，不会写入到配置中。
@@ -214,12 +273,17 @@ async function handleConfigSubmit(e) {
  */
 function getFieldValue(fieldId, type = 'string') {
     const field = document.getElementById(fieldId);
-    if (!field) return type === 'number' ? 0 : '';
-    
+    if (!field) return type === 'number' ? 0 : type === 'float' ? null : '';
+
     const value = field.value.trim();
     if (type === 'number') {
-        const num = parseInt(value) || 0;
-        return num;
+        const num = parseInt(value, 10);
+        return Number.isNaN(num) ? 0 : num;
+    }
+    if (type === 'float') {
+        if (value === '') return null;
+        const num = parseFloat(value);
+        return Number.isNaN(num) ? null : num;
     }
     return value;
 }
