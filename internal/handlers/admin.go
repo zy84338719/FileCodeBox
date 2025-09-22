@@ -137,6 +137,9 @@ func (h *AdminHandler) GetConfig(c *gin.Context) {
 			SysStart: &cfg.SysStart,
 		},
 	}
+
+	resp.NotifyTitle = &cfg.NotifyTitle
+	resp.NotifyContent = &cfg.NotifyContent
 	common.SuccessResponse(c, resp)
 }
 
