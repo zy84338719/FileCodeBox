@@ -1186,6 +1186,67 @@ body.admin-modern-body {
     width: 100%;
 }
 
+.transfer-log-panel {
+    display: none;
+}
+
+.transfer-log-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.transfer-log-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.transfer-log-controls .form-control {
+    min-width: 180px;
+}
+
+.transfer-log-control-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.transfer-log-table-wrapper {
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.transfer-log-table thead {
+    background: var(--admin-interactive-bg);
+}
+
+.transfer-log-table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.transfer-log-table .empty-cell {
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--admin-muted);
+}
+
+.transfer-log-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.transfer-log-pagination-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 .admin-modern-body .quick-action-buttons {
     display: flex;
     justify-content: center;

@@ -408,6 +408,8 @@ func (s *Service) ShareFileWithAuth(req models.ShareFileRequest) (*models.ShareF
 		return nil, fmt.Errorf("failed to create file share: %w", err)
 	}
 
+	s.RecordUploadLog(fileCode, req.UserID, req.ClientIP)
+
 	return &models.ShareFileResult{
 		Code:      fileCode.Code,
 		ShareURL:  fmt.Sprintf("/s/%s", fileCode.Code),

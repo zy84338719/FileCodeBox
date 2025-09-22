@@ -14,6 +14,8 @@ type (
 	UploadChunk = db.UploadChunk
 	User        = db.User
 	UserSession = db.UserSession
+	TransferLog = db.TransferLog
+	TransferLogQuery = db.TransferLogQuery
 
 	// 服务模型别名
 	BuildInfo = service.BuildInfo

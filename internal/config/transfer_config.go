@@ -13,6 +13,7 @@ type UploadConfig struct {
 	EnableChunk    int   `json:"enable_chunk"`     // 是否启用分片上传 0-禁用 1-启用
 	ChunkSize      int64 `json:"chunk_size"`       // 分片大小（字节）
 	MaxSaveSeconds int   `json:"max_save_seconds"` // 最大保存时间（秒）
+	RequireLogin   int   `json:"require_login"`    // 上传是否强制登录 0-否 1-是
 }
 
 // DownloadConfig 下载配置
@@ -20,6 +21,7 @@ type DownloadConfig struct {
 	EnableConcurrentDownload int `json:"enable_concurrent_download"` // 是否启用并发下载
 	MaxConcurrentDownloads   int `json:"max_concurrent_downloads"`   // 最大并发下载数
 	DownloadTimeout          int `json:"download_timeout"`           // 下载超时时间(秒)
+	RequireLogin             int `json:"require_login"`              // 下载是否强制登录 0-否 1-是
 }
 
 // TransferConfig 文件传输配置（包含上传和下载）
@@ -36,6 +38,7 @@ func NewUploadConfig() *UploadConfig {
 		EnableChunk:    0,
 		ChunkSize:      2 * 1024 * 1024, // 2MB
 		MaxSaveSeconds: 0,               // 0表示不限制
+		RequireLogin:   0,
 	}
 }
 
@@ -45,6 +48,7 @@ func NewDownloadConfig() *DownloadConfig {
 		EnableConcurrentDownload: 1,   // 默认启用
 		MaxConcurrentDownloads:   10,  // 最大10个并发
 		DownloadTimeout:          300, // 5分钟超时
+		RequireLogin:             0,
 	}
 }
 
@@ -86,6 +90,10 @@ func (uc *UploadConfig) Validate() error {
 		errors = append(errors, "最大保存时间不能为负数")
 	}
 
+	if uc.RequireLogin != 0 && uc.RequireLogin != 1 {
+		errors = append(errors, "上传登录开关只能是0或1")
+	}
+
 	if len(errors) > 0 {
 		return fmt.Errorf("上传配置验证失败: %s", strings.Join(errors, "; "))
 	}
@@ -113,6 +121,10 @@ func (dc *DownloadConfig) Validate() error {
 		errors = append(errors, "下载超时时间不能超过1小时")
 	}
 
+	if dc.RequireLogin != 0 && dc.RequireLogin != 1 {
+		errors = append(errors, "下载登录开关只能是0或1")
+	}
+
 	if len(errors) > 0 {
 		return fmt.Errorf("下载配置验证失败: %s", strings.Join(errors, "; "))
 	}
@@ -138,6 +150,11 @@ func (uc *UploadConfig) IsChunkEnabled() bool {
 	return uc.EnableChunk == 1
 }
 
+// IsLoginRequired 判断是否需要登录才能上传
+func (uc *UploadConfig) IsLoginRequired() bool {
+	return uc.RequireLogin == 1
+}
+
 // GetUploadSizeMB 获取上传大小限制（MB）
 func (uc *UploadConfig) GetUploadSizeMB() float64 {
 	return float64(uc.UploadSize) / (1024 * 1024)
@@ -161,6 +178,11 @@ func (dc *DownloadConfig) IsDownloadConcurrentEnabled() bool {
 	return dc.EnableConcurrentDownload == 1
 }
 
+// IsLoginRequired 判断是否需要登录才能下载
+func (dc *DownloadConfig) IsLoginRequired() bool {
+	return dc.RequireLogin == 1
+}
+
 // GetDownloadTimeoutMinutes 获取下载超时时间（分钟）
 func (dc *DownloadConfig) GetDownloadTimeoutMinutes() float64 {
 	return float64(dc.DownloadTimeout) / 60
@@ -174,6 +196,7 @@ func (uc *UploadConfig) Clone() *UploadConfig {
 		EnableChunk:    uc.EnableChunk,
 		ChunkSize:      uc.ChunkSize,
 		MaxSaveSeconds: uc.MaxSaveSeconds,
+		RequireLogin:   uc.RequireLogin,
 	}
 }
 
@@ -183,6 +206,7 @@ func (dc *DownloadConfig) Clone() *DownloadConfig {
 		EnableConcurrentDownload: dc.EnableConcurrentDownload,
 		MaxConcurrentDownloads:   dc.MaxConcurrentDownloads,
 		DownloadTimeout:          dc.DownloadTimeout,
+		RequireLogin:             dc.RequireLogin,
 	}
 }
 

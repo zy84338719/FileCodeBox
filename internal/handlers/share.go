@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"time"
+
 	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/models/web"
@@ -107,14 +109,17 @@ func (h *ShareHandler) ShareFile(c *gin.Context) {
 		return
 	}
 
+	userID := utils.GetUserIDFromContext(c)
+	if h.service.IsUploadLoginRequired() && userID == nil {
+		common.UnauthorizedResponse(c, "当前配置要求登录后才能上传文件")
+		return
+	}
+
 	// 解析文件
 	file, success := utils.ParseFileFromForm(c, "file")
 	if !success {
 		return
 	}
-
-	// 检查是否为认证用户上传
-	userID := utils.GetUserIDFromContext(c)
 
 	// 构建服务层请求（这里需要适配服务层的接口）
 	serviceReq := models.ShareFileRequest{
@@ -255,6 +260,7 @@ func (h *ShareHandler) DownloadFile(c *gin.Context) {
 
 	if fileCode.Text != "" {
 		common.SuccessResponse(c, fileCode.Text)
+		h.service.RecordDownloadLog(fileCode, userID, c.ClientIP(), 0)
 		return
 	}
 
@@ -266,10 +272,13 @@ func (h *ShareHandler) DownloadFile(c *gin.Context) {
 		return
 	}
 
+	start := time.Now()
 	if err := storageService.GetFileResponse(c, fileCode); err != nil {
 		common.NotFoundResponse(c, "文件下载失败: "+err.Error())
 		return
 	}
+
+	h.service.RecordDownloadLog(fileCode, userID, c.ClientIP(), time.Since(start))
 }
 
 // getDisplayFileName 获取用于显示的文件名

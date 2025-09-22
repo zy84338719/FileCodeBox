@@ -49,12 +49,16 @@ func (sh *StorageHandler) GetStorageInfo(c *gin.Context) {
 		// 尝试附加路径与使用率信息
 		switch storageType {
 		case "local":
-			// 本地存储使用配置中的 StoragePath
-			detail.StoragePath = sh.storageConfig.StoragePath
+			// 本地存储使用配置中的 StoragePath，如果未配置则回退到数据目录
+			path := sh.storageConfig.StoragePath
+			if path == "" {
+				path = sh.configManager.Base.DataPath
+			}
+			detail.StoragePath = path
 
 			// 尝试读取磁盘使用率（若可用）
-			if sh.storageConfig.StoragePath != "" {
-				if usagePercent, err := utils.GetUsagePercent(sh.storageConfig.StoragePath); err == nil {
+			if path != "" {
+				if usagePercent, err := utils.GetUsagePercent(path); err == nil {
 					val := int(usagePercent)
 					detail.UsagePercent = &val
 				}

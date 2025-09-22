@@ -1,5 +1,5 @@
 base:
-    name: FileCodeBox
+    name: 站点
     description: 开箱即用的文件快传系统
     keywords: FileCodeBox, 文件快递柜, 口令传送箱, 匿名口令分享文本, 文件
     port: 12345
@@ -18,13 +18,15 @@ transfer:
     upload:
         openupload: 1
         uploadsize: 10485760
-        enablechunk: 0
+        enablechunk: 1
         chunksize: 2097152
         maxsaveseconds: 0
+        requirelogin: 1
     download:
         enableconcurrentdownload: 1
         maxconcurrentdownloads: 10
         downloadtimeout: 300
+        requirelogin: 0
 storage:
     type: ""
     storagepath: ""

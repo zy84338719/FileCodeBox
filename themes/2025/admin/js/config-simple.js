@@ -131,11 +131,13 @@ function fillConfigForm(config) {
         setFieldValue('max_save_seconds', config.transfer?.upload?.max_save_seconds);
         setCheckboxValue('open_upload', config.transfer?.upload?.open_upload);
         setCheckboxValue('enable_chunk', config.transfer?.upload?.enable_chunk);
+        setCheckboxValue('require_login_upload', config.transfer?.upload?.require_login);
         
         // 性能设置
         setCheckboxValue('enable_concurrent_download', config.transfer?.download?.enable_concurrent_download);
         setFieldValue('max_concurrent_downloads', config.transfer?.download?.max_concurrent_downloads);
         setFieldValue('download_timeout', config.transfer?.download?.download_timeout);
+        setCheckboxValue('require_login_download', config.transfer?.download?.require_login);
         if (resolvedOpacity !== undefined && resolvedOpacity !== null) {
             setFieldValue('opacity', resolvedOpacity);
         } else {
@@ -226,12 +228,14 @@ async function handleConfigSubmit(e) {
                     upload_size: mbToBytes(getFieldValue('upload_size_mb', 'number')),
                     enable_chunk: getCheckboxValue('enable_chunk') ? 1 : 0,
                     chunk_size: mbToBytes(getFieldValue('chunk_size_mb', 'number')),
-                    max_save_seconds: getFieldValue('max_save_seconds', 'number')
+                    max_save_seconds: getFieldValue('max_save_seconds', 'number'),
+                    require_login: getCheckboxValue('require_login_upload') ? 1 : 0
                 },
                 download: {
                     enable_concurrent_download: getCheckboxValue('enable_concurrent_download') ? 1 : 0,
                     max_concurrent_downloads: getFieldValue('max_concurrent_downloads', 'number'),
-                    download_timeout: getFieldValue('download_timeout', 'number')
+                    download_timeout: getFieldValue('download_timeout', 'number'),
+                    require_login: getCheckboxValue('require_login_download') ? 1 : 0
                 }
             },
             user: {

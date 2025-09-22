@@ -118,6 +118,9 @@ func SetupAdminRoutes(
 		// 系统维护
 		setupMaintenanceRoutes(authGroup, adminHandler)
 
+		// 传输日志
+		authGroup.GET("/logs/transfer", adminHandler.GetTransferLogs)
+
 		// 用户管理
 		setupUserRoutes(authGroup, adminHandler)
 

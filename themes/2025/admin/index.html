@@ -57,6 +57,10 @@
                     <i class="fas fa-database"></i>
                     <span>存储管理</span>
                 </button>
+                <button class="tab-btn nav-link" data-tab="transferlogs" data-title="传输日志" data-subtitle="审计上传与下载行为，追踪登录操作记录。" onclick="switchTab('transferlogs', this)">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>传输日志</span>
+                </button>
                 <button class="tab-btn nav-link" data-tab="mcp" data-title="MCP 服务器" data-subtitle="管理消息通道服务，保障多端协同稳定可用。" onclick="switchTab('mcp', this)">
                     <i class="fas fa-server"></i>
                     <span>MCP 服务器</span>
@@ -595,14 +599,7 @@
                     <div id="storage-tab" class="tab-content">
                         <div class="storage-container">
                             <!-- 当前存储状态 -->
-                            <div class="config-section">
-                                <div class="section-header">
-                                <div class="section-icon">
-                                        <i class="fas fa-hdd"></i>
-                                    </div>
-                                    <h3>当前存储状态</h3>
-                                    <small>查看当前使用的存储类型和运行状态</small>
-                                </div>
+                          
                                 
                                 <div id="current-storage-display">
                                     <div class="placeholder-block">
@@ -610,7 +607,7 @@
                                         <p>正在加载存储信息...</p>
                                     </div>
                                 </div>
-                            </div>
+                            
                             
                             <!-- 存储类型选择 -->
                             <div class="config-section">
@@ -847,6 +844,62 @@
                         </div>
                     </div>
 
+                    <!-- 传输日志标签页 -->
+                    <div id="transferlogs-tab" class="tab-content">
+                        <div class="transfer-log-container">
+                            <div class="config-section">
+                                <div class="section-header">
+                                    <div class="section-icon">
+                                        <i class="fas fa-clipboard-list"></i>
+                                    </div>
+                                    <h3>传输日志</h3>
+                                    <small>审计上传与下载行为，追踪登录操作记录。</small>
+                                </div>
+
+                                <div class="transfer-log-controls">
+                                    <select id="transfer-log-operation" class="form-control">
+                                        <option value="">全部操作</option>
+                                        <option value="upload">仅上传</option>
+                                        <option value="download">仅下载</option>
+                                    </select>
+                                    <input type="text" id="transfer-log-search" class="form-control" placeholder="搜索文件、用户或IP">
+                                    <div class="transfer-log-control-actions">
+                                        <button class="btn btn-secondary" onclick="applyTransferLogFilters()">
+                                            <i class="fas fa-filter"></i> 筛选
+                                        </button>
+                                        <button class="btn btn-secondary" onclick="refreshTransferLogs()">
+                                            <i class="fas fa-sync"></i> 刷新
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="transfer-log-table-wrapper">
+                                    <table class="users-table transfer-log-table">
+                                        <thead>
+                                            <tr>
+                                                <th>操作</th>
+                                                <th>文件代码</th>
+                                                <th>文件名</th>
+                                                <th>大小</th>
+                                                <th>用户</th>
+                                                <th>IP</th>
+                                                <th>耗时</th>
+                                                <th>时间</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="transfer-log-table-body">
+                                            <tr>
+                                                <td colspan="8" class="empty-cell">加载数据中...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="pagination-container transfer-log-pagination" id="transfer-log-pagination" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- MCP 服务器标签页 -->
                     <div id="mcp-tab" class="tab-content">
                         <div class="mcp-container">
@@ -1075,6 +1128,18 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-group">
+                                                <label class="checkbox-label">
+                                                    <input type="checkbox" name="transfer.upload.require_login" id="require_login_upload">
+                                                    上传需登录
+                                                </label>
+                                                <small class="form-text">开启后必须登录才能上传，并记录上传行为</small>
+                                            </div>
+                                        </div>
+                                    </div>
                                     
                                     <div class="form-group">
                                         <label>文件保存时间 (秒，0为永久)</label>
@@ -1113,6 +1178,18 @@
                                                 <label>下载超时时间 (秒)</label>
                                                 <input type="number" name="transfer.download.download_timeout" id="download_timeout" class="form-control" min="30" max="3600">
                                                 <small class="form-text">单个下载请求的超时时间</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-group">
+                                                <label class="checkbox-label">
+                                                    <input type="checkbox" name="transfer.download.require_login" id="require_login_download">
+                                                    下载需登录
+                                                </label>
+                                                <small class="form-text">开启后只能登录用户下载，并记录下载行为</small>
                                             </div>
                                         </div>
                                     </div>
@@ -1336,6 +1413,22 @@
                                     </div>
                                 </div>
 
+                                <!-- 传输审计 -->
+                                <div class="maintenance-card">
+                                    <div class="section-header">
+                                        <div class="section-icon">
+                                            <i class="fas fa-clipboard-list"></i>
+                                        </div>
+                                        <h3>传输审计</h3>
+                                    </div>
+                                    <p>审查上传与下载行为，追踪登录记录</p>
+                                    <div>
+                                        <button class="btn" onclick="openTransferLogsPanel()">
+                                            <i class="fas fa-eye"></i> 查看传输日志
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <!-- 日志管理 -->
                                 <div class="maintenance-card">
                                     <div class="section-header">
@@ -1452,6 +1545,7 @@
     <script src="js/files.js"></script>
     <script src="js/users.js"></script>
     <script src="js/storage-simple.js"></script>
+    <script src="js/transfer-logs.js"></script>
     <script src="js/mcp-simple.js"></script>
     <script src="js/config-simple.js"></script>
     <script src="js/maintenance-simple.js"></script>

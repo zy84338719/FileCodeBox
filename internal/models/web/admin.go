@@ -251,6 +251,26 @@ type AdminFileDetail struct {
 	UploadType   string `json:"upload_type"`
 }
 
+// TransferLogItem 审计日志单条记录
+type TransferLogItem struct {
+	ID         uint    `json:"id"`
+	Operation  string  `json:"operation"`
+	FileCode   string  `json:"file_code"`
+	FileName   string  `json:"file_name"`
+	FileSize   int64   `json:"file_size"`
+	UserID     *uint   `json:"user_id,omitempty"`
+	Username   string  `json:"username"`
+	IP         string  `json:"ip"`
+	DurationMs int64   `json:"duration_ms"`
+	CreatedAt  string  `json:"created_at"`
+}
+
+// TransferLogListResponse 审计日志列表响应
+type TransferLogListResponse struct {
+	Logs       []TransferLogItem `json:"logs"`
+	Pagination PaginationResponse `json:"pagination"`
+}
+
 // MCPStatusResponse MCP状态响应
 type MCPStatusResponse struct {
 	Status string            `json:"status"`

@@ -89,6 +89,7 @@ func (s *Service) UpdateConfigFromRequest(configRequest *web.AdminConfigRequest)
 			s.manager.Transfer.Upload.EnableChunk = uploadConfig.EnableChunk
 			s.manager.Transfer.Upload.ChunkSize = uploadConfig.ChunkSize
 			s.manager.Transfer.Upload.MaxSaveSeconds = uploadConfig.MaxSaveSeconds
+			s.manager.Transfer.Upload.RequireLogin = uploadConfig.RequireLogin
 		}
 
 		if configRequest.Transfer.Download != nil {
@@ -96,6 +97,7 @@ func (s *Service) UpdateConfigFromRequest(configRequest *web.AdminConfigRequest)
 			s.manager.Transfer.Download.EnableConcurrentDownload = downloadConfig.EnableConcurrentDownload
 			s.manager.Transfer.Download.MaxConcurrentDownloads = downloadConfig.MaxConcurrentDownloads
 			s.manager.Transfer.Download.DownloadTimeout = downloadConfig.DownloadTimeout
+			s.manager.Transfer.Download.RequireLogin = downloadConfig.RequireLogin
 		}
 	}
 
