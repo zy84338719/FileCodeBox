@@ -217,7 +217,7 @@ func (m *MCPManager) testMCPConnection(port string) bool {
 	defer func() {
 		if err := conn.Close(); err != nil {
 			// 在这种测试场景下，关闭连接的错误不是关键问题，只记录一下
-			fmt.Printf("Warning: failed to close connection: %v\n", err)
+			logrus.WithError(err).Warn("failed to close MCP test connection")
 		}
 	}()
 

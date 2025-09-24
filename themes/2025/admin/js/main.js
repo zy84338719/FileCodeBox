@@ -556,14 +556,28 @@ async function apiRequest(url, options = {}) {
     
     const response = await fetch(url, finalOptions);
     console.log('📡 API响应状态:', response.status, response.statusText);
-    
+
     if (response.status === 401) {
         console.log('🚫 收到401未授权响应，执行自动登出');
         logout();
         throw new Error('认证失败');
     }
-    
-    return response.json();
+
+    const contentType = response.headers.get('content-type') || '';
+    const rawText = await response.text();
+
+    if (contentType.includes('application/json')) {
+        try {
+            return JSON.parse(rawText || '{}');
+        } catch (error) {
+            console.error('JSON解析失败，原始响应:', rawText);
+            throw new Error('解析服务器响应失败: ' + error.message);
+        }
+    }
+
+    // 非JSON响应，抛出更直观的错误
+    const message = rawText || `HTTP ${response.status}`;
+    throw new Error(message);
 }
 
 // ========== 统计数据 ==========
@@ -705,6 +719,11 @@ function loadTabData(tabName) {
             // 由 storage-simple.js 处理
             if (typeof loadStorageInfo === 'function') {
                 loadStorageInfo();
+            }
+            break;
+        case 'transferlogs':
+            if (typeof initTransferLogsTab === 'function') {
+                initTransferLogsTab();
             }
             break;
         case 'mcp':

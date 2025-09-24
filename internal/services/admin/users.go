@@ -3,10 +3,20 @@ package admin
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/zy84338719/filecodebox/internal/models"
 	"gorm.io/gorm"
 )
+
+// UserUpdateParams 管理端用户更新参数
+type UserUpdateParams struct {
+	Email    *string
+	Password *string
+	Nickname *string
+	IsAdmin  *bool
+	IsActive *bool
+}
 
 // GetUsers 获取用户列表
 func (s *Service) GetUsers(page, pageSize int, search string) ([]models.User, int64, error) {
@@ -65,8 +75,104 @@ func (s *Service) CreateUser(username, email, password, nickname, role, status s
 
 // UpdateUser 更新用户 - 使用结构化更新
 func (s *Service) UpdateUser(user models.User) error {
+	if user.ID == 0 {
+		return errors.New("用户ID不能为空")
+	}
 
-	return s.repositoryManager.User.UpdateUserFields(user.ID, user)
+	params := UserUpdateParams{}
+	if user.Email != "" {
+		params.Email = &user.Email
+	}
+	if user.PasswordHash != "" {
+		params.Password = &user.PasswordHash
+	}
+	if user.Nickname != "" {
+		params.Nickname = &user.Nickname
+	}
+	if user.Role != "" {
+		isAdmin := user.Role == "admin"
+		params.IsAdmin = &isAdmin
+	}
+	if user.Status != "" {
+		isActive := user.Status == "active"
+		params.IsActive = &isActive
+	}
+
+	return s.UpdateUserWithParams(user.ID, params)
+}
+
+// UpdateUserWithParams 使用结构化参数更新用户
+func (s *Service) UpdateUserWithParams(userID uint, params UserUpdateParams) error {
+	if userID == 0 {
+		return errors.New("用户ID不能为空")
+	}
+
+	existingUser, err := s.repositoryManager.User.GetByID(userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("用户不存在")
+		}
+		return fmt.Errorf("获取用户失败: %w", err)
+	}
+
+	updates := make(map[string]interface{})
+
+	if params.Email != nil {
+		email := strings.TrimSpace(*params.Email)
+		if email == "" {
+			return errors.New("邮箱不能为空")
+		}
+		if !strings.EqualFold(email, existingUser.Email) {
+			if _, err := s.repositoryManager.User.CheckEmailExists(email, userID); err == nil {
+				return errors.New("该邮箱已被使用")
+			} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("检查邮箱唯一性失败: %w", err)
+			}
+		}
+		updates["email"] = email
+	}
+
+	if params.Nickname != nil {
+		updates["nickname"] = strings.TrimSpace(*params.Nickname)
+	}
+
+	if params.IsAdmin != nil {
+		role := "user"
+		if *params.IsAdmin {
+			role = "admin"
+		}
+		updates["role"] = role
+	}
+
+	if params.IsActive != nil {
+		status := "inactive"
+		if *params.IsActive {
+			status = "active"
+		}
+		updates["status"] = status
+	}
+
+	if params.Password != nil {
+		password := strings.TrimSpace(*params.Password)
+		if len(password) < 6 {
+			return errors.New("密码长度至少6个字符")
+		}
+		hashedPassword, err := s.authService.HashPassword(password)
+		if err != nil {
+			return fmt.Errorf("哈希密码失败: %w", err)
+		}
+		updates["password_hash"] = hashedPassword
+	}
+
+	if len(updates) == 0 {
+		return nil
+	}
+
+	if err := s.repositoryManager.User.UpdateColumns(userID, updates); err != nil {
+		return fmt.Errorf("更新用户失败: %w", err)
+	}
+
+	return nil
 }
 
 // DeleteUser 删除用户

@@ -118,6 +118,9 @@ func SetupAdminRoutes(
 		// 系统维护
 		setupMaintenanceRoutes(authGroup, adminHandler)
 
+		// 传输日志
+		authGroup.GET("/logs/transfer", adminHandler.GetTransferLogs)
+
 		// 用户管理
 		setupUserRoutes(authGroup, adminHandler)
 
@@ -165,6 +168,7 @@ func setupMaintenanceRoutes(authGroup *gin.RouterGroup, adminHandler *handlers.A
 	authGroup.GET("/maintenance/logs/export", adminHandler.ExportLogs)
 	authGroup.GET("/maintenance/logs/stats", adminHandler.GetLogStats)
 	authGroup.GET("/maintenance/logs", adminHandler.GetSystemLogs)
+	authGroup.GET("/maintenance/audit", adminHandler.GetOperationLogs)
 
 	// 任务管理
 	authGroup.GET("/maintenance/tasks", adminHandler.GetRunningTasks)

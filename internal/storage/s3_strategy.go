@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 // S3StorageStrategy S3 存储策略实现
@@ -116,7 +116,7 @@ func (ss *S3StorageStrategy) ReadFile(path string) ([]byte, error) {
 	}
 	defer func() {
 		if cerr := result.Body.Close(); cerr != nil {
-			log.Printf("Error closing response body: %v", cerr)
+			logrus.WithError(cerr).Warn("S3: failed to close response body")
 		}
 	}()
 
@@ -192,7 +192,7 @@ func (ss *S3StorageStrategy) SaveUploadFile(file *multipart.FileHeader, savePath
 	}
 	defer func() {
 		if cerr := src.Close(); cerr != nil {
-			log.Printf("Error closing source file: %v", cerr)
+			logrus.WithError(cerr).Warn("S3: failed to close uploaded source file")
 		}
 	}()
 

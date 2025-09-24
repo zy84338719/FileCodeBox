@@ -3,7 +3,6 @@ package storage
 import (
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"os"
 	"os/exec"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 // NFSStorageStrategy NFS存储策略实现
@@ -107,7 +107,7 @@ func (nfs *NFSStorageStrategy) checkMountStatus() {
 	cmd := exec.Command("mount")
 	output, err := cmd.Output()
 	if err != nil {
-		log.Printf("检查挂载状态失败: %v", err)
+		logrus.WithError(err).Warn("NFS: 检查挂载状态失败")
 		nfs.isMounted = false
 		return
 	}
@@ -143,11 +143,16 @@ func (nfs *NFSStorageStrategy) mount() error {
 		cmd := exec.Command("mount", args...)
 		if err = cmd.Run(); err == nil {
 			nfs.isMounted = true
-			log.Printf("NFS挂载成功: %s -> %s", nfsTarget, nfs.mountPoint)
+			logrus.WithFields(logrus.Fields{
+				"target":      nfsTarget,
+				"mount_point": nfs.mountPoint,
+			}).Info("NFS挂载成功")
 			return nil
 		}
 
-		log.Printf("NFS挂载尝试 %d/%d 失败: %v", i+1, nfs.retryCount, err)
+		logrus.WithError(err).
+			WithFields(logrus.Fields{"attempt": i + 1, "max_attempts": nfs.retryCount}).
+			Warn("NFS挂载失败")
 		if i < nfs.retryCount-1 {
 			time.Sleep(time.Duration(2*(i+1)) * time.Second) // 递增等待时间
 		}
@@ -172,7 +177,7 @@ func (nfs *NFSStorageStrategy) unmount() error {
 	}
 
 	nfs.isMounted = false
-	log.Printf("NFS卸载成功: %s", nfs.mountPoint)
+	logrus.WithField("mount_point", nfs.mountPoint).Info("NFS卸载成功")
 	return nil
 }
 
@@ -230,7 +235,7 @@ func (nfs *NFSStorageStrategy) DeleteFile(path string) error {
 // FileExists 检查文件是否存在
 func (nfs *NFSStorageStrategy) FileExists(path string) bool {
 	if err := nfs.ensureMounted(); err != nil {
-		log.Printf("检查文件存在性时NFS挂载失败: %v", err)
+		logrus.WithError(err).Warn("NFS: 检查文件存在性时挂载失败")
 		return false
 	}
 
@@ -257,7 +262,7 @@ func (nfs *NFSStorageStrategy) SaveUploadFile(file *multipart.FileHeader, savePa
 	}
 	defer func() {
 		if cerr := src.Close(); cerr != nil {
-			log.Printf("Error closing source file: %v", cerr)
+			logrus.WithError(cerr).Warn("NFS: failed to close source file")
 		}
 	}()
 
@@ -268,7 +273,7 @@ func (nfs *NFSStorageStrategy) SaveUploadFile(file *multipart.FileHeader, savePa
 	}
 	defer func() {
 		if cerr := dst.Close(); cerr != nil {
-			log.Printf("Error closing destination file: %v", cerr)
+			logrus.WithError(cerr).Warn("NFS: failed to close destination file")
 		}
 	}()
 
@@ -356,7 +361,7 @@ func (nfs *NFSStorageStrategy) GetMountInfo() map[string]interface{} {
 func (nfs *NFSStorageStrategy) Remount() error {
 	// 先卸载
 	if err := nfs.unmount(); err != nil {
-		log.Printf("卸载NFS时出错(继续挂载): %v", err)
+		logrus.WithError(err).Warn("NFS: 卸载失败，将继续执行重新挂载")
 	}
 
 	// 等待一段时间

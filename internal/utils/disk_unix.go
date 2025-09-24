@@ -25,3 +25,16 @@ func GetUsagePercent(path string) (float64, error) {
 	usage := (used / total) * 100.0
 	return usage, nil
 }
+
+// GetDiskUsageStats returns total, free, and available bytes for the filesystem containing path.
+func GetDiskUsageStats(path string) (total uint64, free uint64, available uint64, err error) {
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs(path, &stat); err != nil {
+		return 0, 0, 0, err
+	}
+
+	total = uint64(stat.Blocks) * uint64(stat.Bsize)
+	free = uint64(stat.Bfree) * uint64(stat.Bsize)
+	available = uint64(stat.Bavail) * uint64(stat.Bsize)
+	return total, free, available, nil
+}

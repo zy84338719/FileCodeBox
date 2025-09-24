@@ -1,3 +1,55 @@
+# Copilot / AI Agent Instructions for FileCodeBox
+
+Short, actionable guidance so an AI agent can be productive immediately in this repo.
+
+1) Big picture
+- Layered architecture: `routes -> handlers -> services -> repository -> database/storage`.
+- Key directories: `internal/routes/`, `internal/handlers/`, `internal/services/`, `internal/repository/`, `internal/storage/`, `internal/config/`, `internal/mcp/`, `docs/`.
+- Main entry: `main.go` initializes `ConfigManager`, `StorageManager`, and starts the HTTP server via `routes.CreateAndStartServer()`; DB initialization is deferred and can be triggered via `/setup/initialize`.
+
+2) Typical data & control flow
+- HTTP requests handled by `routes` -> call `handlers` -> call `services` -> use `repository` -> talk to DB/storage.
+- Storage is abstracted by `storage.NewStorageManager(manager)` and concrete implementations under `internal/storage/` (local, s3, webdav, onedrive).
+- MCP subsystem lives under `internal/mcp/` and is conditionally started when `manager.MCP.EnableMCPServer == 1`.
+
+3) Configuration & runtime
+- Config is centralized in `internal/config/manager.go` (use `config.InitManager()` to obtain `ConfigManager`).
+- Environment variables override config; `manager.SetDB(db)` is used to inject DB connection after initialization.
+- Common env vars: `PORT`, `DATA_PATH`, `ENABLE_MCP_SERVER`.
+
+4) Versioning & release patterns
+- Project version stored in the top-level `VERSION` file and echoed in `internal/models/service/system.go` (`Version` variable) and swagger docs under `docs/`.
+- Releases are created by updating those files and tagging the commit (e.g., `v1.8.2`). Avoid editing `go.sum` manually.
+
+5) Build, test, and release commands
+- Build: `make build` or `go build ./...`.
+- Tests: `make test` or `go test ./...` (many packages have no tests; run targeted packages if needed).
+- Docker: `./scripts/build-docker.sh` and `docker-compose.yml` present.
+
+6) Project-specific conventions
+- Handler constructors follow: `NewXxxHandler(service *services.XxxService, config *config.ConfigManager) *XxxHandler`.
+- Services are created with dependency injection in `routes` during server start: e.g., `services.NewUserService(daoManager, manager)`.
+- Repositories live under `internal/repository/` and expose `RepositoryManager` for DAOs (use `dmgr *repository.RepositoryManager`).
+- Error responses use helper functions in `internal/common/` (`common.SuccessResponse`, `common.ErrorResponse`, `common.BadRequestResponse`).
+
+7) Integration points to inspect when editing code
+- `internal/config/manager.go` — config lifecycle, hot reload hooks.
+- `internal/routes/setup.go` — server and route wiring, DI order.
+- `internal/mcp/manager.go` — MCP lifecycle and tools registration.
+- `internal/storage/*` — adding new storage backends: implement `storage.StorageInterface` and register in `storage.NewStorageManager`.
+
+8) Useful file examples to copy patterns from
+- `internal/services/*` shows DI, error wrapping and transaction handling (e.g., `internal/services/admin/*`).
+- `internal/routes/*` shows route grouping and middleware usage, look at `internal/routes/admin.go` for admin auth patterns.
+
+9) CSS / Frontend notes
+- Frontend themes under `themes/2025/`. Admin UI assets are served via protected routes — modifying admin CSS may require rebuilding or restarting server to pick static changes when not using hot reload.
+
+10) Safety & version control
+- Do not alter `go.sum` manually.
+- When creating tags, prefer not to overwrite remote tags; create a new semver or `-local.<sha>` tag if necessary.
+
+If any section is unclear or you want examples added (e.g., sample PR description, changelog generation command), tell me which part to expand. After your feedback I'll iterate.
 # FileCodeBox AI Coding Agent Instructions
 
 ## Project Overview

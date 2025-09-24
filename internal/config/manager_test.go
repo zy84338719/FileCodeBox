@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -79,5 +80,68 @@ func TestApplySourcesAggregatesErrors(t *testing.T) {
 
 	if err := cm.ApplySources(src); err == nil {
 		t.Fatalf("expected aggregated error when environment value invalid")
+	}
+}
+
+func TestUpdateTransactionPersistsAndReloads(t *testing.T) {
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "config.yaml")
+	if err := os.Setenv("CONFIG_PATH", configPath); err != nil {
+		t.Fatalf("setenv failed: %v", err)
+	}
+	defer os.Unsetenv("CONFIG_PATH")
+
+	cm := NewConfigManager()
+	if err := cm.UpdateTransaction(func(draft *ConfigManager) error {
+		draft.Base.Name = "Transactional"
+		draft.NotifyTitle = "updated"
+		return nil
+	}); err != nil {
+		t.Fatalf("UpdateTransaction returned error: %v", err)
+	}
+
+	if cm.Base.Name != "Transactional" {
+		t.Fatalf("expected in-memory base name updated, got %s", cm.Base.Name)
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("failed to read persisted config: %v", err)
+	}
+
+	var persisted ConfigManager
+	if err := yaml.Unmarshal(data, &persisted); err != nil {
+		t.Fatalf("failed to unmarshal persisted config: %v", err)
+	}
+	if persisted.Base == nil || persisted.Base.Name != "Transactional" {
+		t.Fatalf("expected persisted base name, got %#v", persisted.Base)
+	}
+}
+
+func TestUpdateTransactionRollbackOnPersistFailure(t *testing.T) {
+	tempDir := t.TempDir()
+	badPath := filepath.Join(tempDir, "missing", "config.yaml")
+	if err := os.Setenv("CONFIG_PATH", badPath); err != nil {
+		t.Fatalf("setenv failed: %v", err)
+	}
+	defer os.Unsetenv("CONFIG_PATH")
+
+	cm := NewConfigManager()
+	originalName := cm.Base.Name
+
+	err := cm.UpdateTransaction(func(draft *ConfigManager) error {
+		draft.Base.Name = "ShouldRollback"
+		return nil
+	})
+	if err == nil {
+		t.Fatalf("expected error when persisting to missing directory")
+	}
+
+	if cm.Base.Name != originalName {
+		t.Fatalf("expected rollback to restore base name, got %s", cm.Base.Name)
+	}
+
+	if _, err := os.Stat(badPath); !os.IsNotExist(err) {
+		t.Fatalf("expected no config file created, stat err=%v", err)
 	}
 }

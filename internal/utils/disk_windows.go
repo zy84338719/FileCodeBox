@@ -12,28 +12,27 @@ import (
 
 // GetUsagePercent returns disk usage percentage for the drive containing the given path on Windows.
 func GetUsagePercent(path string) (float64, error) {
-	volume, err := resolveVolume(path)
+	volume, totalBytes, _, freeBytes, err := getDiskFreeSpace(path)
 	if err != nil {
 		return 0, err
 	}
 
-	var (
-		freeBytesAvailable uint64
-		totalNumberOfBytes uint64
-		totalNumberOfFree  uint64
-	)
-
-	if err := windows.GetDiskFreeSpaceEx(windows.StringToUTF16Ptr(volume), &freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFree); err != nil {
-		return 0, err
-	}
-
-	if totalNumberOfBytes == 0 {
+	if totalBytes == 0 {
 		return 0, fmt.Errorf("unable to compute total disk size for %s", volume)
 	}
 
-	used := totalNumberOfBytes - totalNumberOfFree
-	usage := (float64(used) / float64(totalNumberOfBytes)) * 100.0
+	used := totalBytes - freeBytes
+	usage := (float64(used) / float64(totalBytes)) * 100.0
 	return usage, nil
+}
+
+// GetDiskUsageStats returns total, free, and available bytes for the volume containing path.
+func GetDiskUsageStats(path string) (total uint64, free uint64, available uint64, err error) {
+	_, totalBytes, availableBytes, freeBytes, err := getDiskFreeSpace(path)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	return totalBytes, freeBytes, availableBytes, nil
 }
 
 func resolveVolume(path string) (string, error) {
@@ -53,4 +52,23 @@ func resolveVolume(path string) (string, error) {
 	}
 
 	return volume, nil
+}
+
+func getDiskFreeSpace(path string) (volume string, total uint64, available uint64, free uint64, err error) {
+	volume, err = resolveVolume(path)
+	if err != nil {
+		return "", 0, 0, 0, err
+	}
+
+	var (
+		freeBytesAvailable uint64
+		totalNumberOfBytes uint64
+		totalNumberOfFree  uint64
+	)
+
+	if err = windows.GetDiskFreeSpaceEx(windows.StringToUTF16Ptr(volume), &freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFree); err != nil {
+		return "", 0, 0, 0, err
+	}
+
+	return volume, totalNumberOfBytes, freeBytesAvailable, totalNumberOfFree, nil
 }

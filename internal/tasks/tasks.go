@@ -16,9 +16,15 @@ type TaskManager struct {
 	storage     *storage.StorageManager
 	cron        *cron.Cron
 	pathManager *storage.PathManager
+	maintenance MaintenanceExecutor
 }
 
-func NewTaskManager(daoManager *repository.RepositoryManager, storageManager *storage.StorageManager, dataPath string) *TaskManager {
+type MaintenanceExecutor interface {
+	CleanupExpiredFiles() (int, error)
+	CleanTempFiles() (int, error)
+}
+
+func NewTaskManager(daoManager *repository.RepositoryManager, storageManager *storage.StorageManager, maintenance MaintenanceExecutor, dataPath string) *TaskManager {
 	// 创建路径管理器
 	pathManager := storage.NewPathManager(dataPath)
 
@@ -27,6 +33,7 @@ func NewTaskManager(daoManager *repository.RepositoryManager, storageManager *st
 		storage:     storageManager,
 		cron:        cron.New(),
 		pathManager: pathManager,
+		maintenance: maintenance,
 	}
 }
 
@@ -55,6 +62,16 @@ func (tm *TaskManager) Stop() {
 // cleanExpiredFiles 清理过期文件
 func (tm *TaskManager) cleanExpiredFiles() {
 	logrus.Info("开始清理过期文件")
+
+	if tm.maintenance != nil {
+		count, err := tm.maintenance.CleanupExpiredFiles()
+		if err != nil {
+			logrus.WithError(err).Error("手动清理过期文件失败")
+			return
+		}
+		logrus.Infof("清理过期文件完成，共清理 %d 个文件", count)
+		return
+	}
 
 	// 使用 DAO 获取过期文件
 	expiredFiles, err := tm.daoManager.FileCode.GetExpiredFiles()
@@ -90,6 +107,16 @@ func (tm *TaskManager) cleanExpiredFiles() {
 // cleanTempFiles 清理临时文件
 func (tm *TaskManager) cleanTempFiles() {
 	logrus.Info("开始清理临时文件")
+
+	if tm.maintenance != nil {
+		count, err := tm.maintenance.CleanTempFiles()
+		if err != nil {
+			logrus.WithError(err).Error("手动清理临时文件失败")
+			return
+		}
+		logrus.Infof("清理临时文件完成，共清理 %d 个上传会话", count)
+		return
+	}
 
 	// 清理超过24小时的未完成上传
 	cutoff := time.Now().Add(-24 * time.Hour)

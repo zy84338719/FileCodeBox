@@ -17,10 +17,12 @@ transfer:
     enable_chunk: 1
     chunk_size: 2097152
     max_save_seconds: 0
+    require_login: 0
   download:
     enable_concurrent_download: 1
     max_concurrent_downloads: 10
     download_timeout: 300
+    require_login: 0
 
 user:
   allow_user_registration: 1

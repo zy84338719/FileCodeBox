@@ -1,7 +1,7 @@
 package user
 
 import (
-	"fmt"
+	"github.com/sirupsen/logrus"
 )
 
 // RecalculateUserStats 重新计算用户统计数据
@@ -44,7 +44,9 @@ func (s *Service) RecalculateAllUsersStats() error {
 	for _, user := range users {
 		err := s.RecalculateUserStats(user.ID)
 		if err != nil {
-			fmt.Printf("Warning: Failed to recalculate stats for user %d: %v\n", user.ID, err)
+			logrus.WithError(err).
+				WithField("user_id", user.ID).
+				Warn("failed to recalculate user stats")
 		}
 	}
 

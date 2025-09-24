@@ -1,7 +1,7 @@
 package main
 
 // @title FileCodeBox API
-// @version 1.8.2
+// @version 1.9.1
 // @description FileCodeBox 是一个用于文件分享和代码片段管理的 Web 应用程序
 // @termsOfService http://swagger.io/terms/
 
@@ -97,7 +97,7 @@ func main() {
 		adminService := services.NewAdminService(dmgr, manager, storageService)
 
 		// 启动任务管理器
-		taskManager := tasks.NewTaskManager(dmgr, storageManager, manager.Base.DataPath)
+		taskManager := tasks.NewTaskManager(dmgr, storageManager, adminService, manager.Base.DataPath)
 		taskManager.Start()
 		// 注意：taskManager 的停止将在主结束时处理（可以扩展保存引用以便停止）
 

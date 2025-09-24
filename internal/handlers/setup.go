@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -17,6 +16,8 @@ import (
 	"github.com/zy84338719/filecodebox/internal/services/auth"
 	"github.com/zy84338719/filecodebox/internal/utils"
 	"gorm.io/gorm"
+
+	"github.com/sirupsen/logrus"
 )
 
 type SetupHandler struct {
@@ -61,32 +62,33 @@ type AdminConfig struct {
 
 // updateDatabaseConfig 更新数据库配置
 func (h *SetupHandler) updateDatabaseConfig(db DatabaseConfig) error {
-	// 更新配置管理器中的数据库配置
-	h.manager.Database.Type = db.Type
+	return h.manager.UpdateTransaction(func(draft *config.ConfigManager) error {
+		// 更新配置管理器中的数据库配置
+		draft.Database.Type = db.Type
 
-	switch db.Type {
-	case "sqlite":
-		h.manager.Database.Host = ""
-		h.manager.Database.Port = 0
-		h.manager.Database.User = ""
-		h.manager.Database.Pass = ""
-		h.manager.Database.Name = db.File
-	case "mysql":
-		h.manager.Database.Host = db.Host
-		h.manager.Database.Port = db.Port
-		h.manager.Database.User = db.User
-		h.manager.Database.Pass = db.Password
-		h.manager.Database.Name = db.Database
-	case "postgres":
-		h.manager.Database.Host = db.Host
-		h.manager.Database.Port = db.Port
-		h.manager.Database.User = db.User
-		h.manager.Database.Pass = db.Password
-		h.manager.Database.Name = db.Database
-	}
+		switch db.Type {
+		case "sqlite":
+			draft.Database.Host = ""
+			draft.Database.Port = 0
+			draft.Database.User = ""
+			draft.Database.Pass = ""
+			draft.Database.Name = db.File
+		case "mysql":
+			draft.Database.Host = db.Host
+			draft.Database.Port = db.Port
+			draft.Database.User = db.User
+			draft.Database.Pass = db.Password
+			draft.Database.Name = db.Database
+		case "postgres":
+			draft.Database.Host = db.Host
+			draft.Database.Port = db.Port
+			draft.Database.User = db.User
+			draft.Database.Pass = db.Password
+			draft.Database.Name = db.Database
+		}
 
-	// 保存配置到文件
-	return h.manager.Save()
+		return nil
+	})
 }
 
 // createAdminUser 创建管理员用户
@@ -98,7 +100,8 @@ func (h *SetupHandler) createAdminUser(admin AdminConfig) error {
 
 	// 检查用户名
 	if _, err := h.daoManager.User.GetByUsername(admin.Username); err == nil {
-		log.Printf("[createAdminUser] 管理员已存在（用户名）：%s，跳过创建", admin.Username)
+		logrus.WithField("username", admin.Username).
+			Info("[createAdminUser] 管理员已存在，跳过创建")
 		return nil
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return fmt.Errorf("查询用户失败: %w", err)
@@ -106,7 +109,8 @@ func (h *SetupHandler) createAdminUser(admin AdminConfig) error {
 
 	// 检查邮箱
 	if _, err := h.daoManager.User.GetByEmail(admin.Email); err == nil {
-		log.Printf("[createAdminUser] 管理员已存在（邮箱）：%s，跳过创建", admin.Email)
+		logrus.WithField("email", admin.Email).
+			Info("[createAdminUser] 管理员已存在，跳过创建")
 		return nil
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return fmt.Errorf("查询用户失败: %w", err)
@@ -142,7 +146,7 @@ func (h *SetupHandler) createAdminUser(admin AdminConfig) error {
 	if err != nil {
 		// 如果是唯一约束冲突（用户已存在），视为成功（幂等行为）
 		if contains(err.Error(), "UNIQUE constraint failed") || contains(err.Error(), "duplicate key value") {
-			log.Printf("[createAdminUser] 用户已存在，忽略错误: %v", err)
+			logrus.WithError(err).Warn("[createAdminUser] 用户已存在，忽略错误")
 			return nil
 		}
 		return err
@@ -152,17 +156,14 @@ func (h *SetupHandler) createAdminUser(admin AdminConfig) error {
 
 // enableUserSystem 启用用户系统
 func (h *SetupHandler) enableUserSystem(adminConfig AdminConfig) error {
-	// 用户系统始终启用，无需设置
-
-	// 根据管理员选择设置用户注册权限
-	if adminConfig.AllowUserRegistration {
-		h.manager.User.AllowUserRegistration = 1
-	} else {
-		h.manager.User.AllowUserRegistration = 0
-	}
-
-	// 保存配置
-	return h.manager.Save()
+	return h.manager.UpdateTransaction(func(draft *config.ConfigManager) error {
+		if adminConfig.AllowUserRegistration {
+			draft.User.AllowUserRegistration = 1
+		} else {
+			draft.User.AllowUserRegistration = 0
+		}
+		return nil
+	})
 }
 
 // contains 检查字符串是否包含子字符串
@@ -231,7 +232,7 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 				return
 			} else {
 				if err := f.Close(); err != nil {
-					log.Printf("warning: failed to close perm check file: %v", err)
+					logrus.WithError(err).Warn("failed to close permission check file")
 				}
 				_ = os.Remove(testFile)
 			}
@@ -291,8 +292,7 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 			manager.Database.Pass = req.Database.Password
 			manager.Database.Name = req.Database.Database
 		}
-		// 注意：此处不能在数据库未初始化前调用 manager.Save()，因为 Save 仅保存到数据库。
-		// 后续将在数据库初始化并注入 manager 后再次保存配置。
+		// 配置将在数据库初始化并注入 manager 后持久化到 YAML。
 
 		// 初始化数据库连接并执行自动迁移
 		// Ensure Base config exists
@@ -334,10 +334,13 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 			}
 		}
 
-		log.Printf("[InitializeNoDB] 开始调用 database.InitWithManager, dbType=%s, dataPath=%s", manager.Database.Type, manager.Base.DataPath)
+		logrus.WithFields(logrus.Fields{
+			"db_type":   manager.Database.Type,
+			"data_path": manager.Base.DataPath,
+		}).Info("[InitializeNoDB] 开始调用 database.InitWithManager")
 		db, err := database.InitWithManager(manager)
 		if err != nil {
-			log.Printf("[InitializeNoDB] InitWithManager 失败: %v", err)
+			logrus.WithError(err).Error("[InitializeNoDB] InitWithManager 失败")
 			common.InternalServerErrorResponse(c, "初始化数据库失败: "+err.Error())
 			return
 		}
@@ -348,7 +351,7 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 
 		// 诊断检查：确认 manager 内部已设置 db
 		if manager.GetDB() == nil {
-			log.Printf("[InitializeNoDB] 警告: manager.GetDB() 返回 nil（注入失败）")
+			logrus.Warn("[InitializeNoDB] 警告: manager.GetDB() 返回 nil（注入失败）")
 			common.InternalServerErrorResponse(c, "初始化失败：配置管理器未能获取数据库连接")
 			return
 		}
@@ -358,9 +361,11 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 
 		// 如果之前捕获了 desiredStoragePath，则此时 manager 已注入 DB，可以持久化 storage_path
 		if desiredStoragePath != "" {
-			manager.Storage.StoragePath = desiredStoragePath
-			if err := manager.Save(); err != nil {
-				log.Printf("[InitializeNoDB] 保存 storage_path 失败: %v", err)
+			if err := manager.UpdateTransaction(func(draft *config.ConfigManager) error {
+				draft.Storage.StoragePath = desiredStoragePath
+				return nil
+			}); err != nil {
+				logrus.WithError(err).Warn("[InitializeNoDB] 持久化 storage_path 失败")
 				// 记录但不阻塞初始化流程
 				if manager.Base != nil && manager.Base.DataPath != "" {
 					_ = os.WriteFile(manager.Base.DataPath+"/init_save_storage_err.log", []byte(err.Error()), 0644)
@@ -373,21 +378,15 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 		// 创建管理员用户（使用 SetupHandler.createAdminUser，包含幂等性处理）
 		setupHandler := NewSetupHandler(daoManager, manager)
 		if err := setupHandler.createAdminUser(req.Admin); err != nil {
-			log.Printf("[InitializeNoDB] 创建管理员用户失败: %v", err)
+			logrus.WithError(err).Error("[InitializeNoDB] 创建管理员用户失败")
 			common.InternalServerErrorResponse(c, "创建管理员用户失败: "+err.Error())
 			return
 		}
 
 		// 启用用户系统配置
-		if req.Admin.AllowUserRegistration {
-			manager.User.AllowUserRegistration = 1
-		} else {
-			manager.User.AllowUserRegistration = 0
-		}
-		if err := manager.Save(); err != nil {
+		if err := setupHandler.enableUserSystem(req.Admin); err != nil {
 			// 不阻塞初始化成功路径，但记录错误
-			log.Printf("[InitializeNoDB] manager.Save() 返回错误（但不阻塞初始化）: %v", err)
-			// 将错误写入数据目录下的日志文件以便排查
+			logrus.WithError(err).Warn("[InitializeNoDB] enableUserSystem 返回错误（但不阻塞初始化）")
 			if manager.Base != nil && manager.Base.DataPath != "" {
 				_ = os.WriteFile(manager.Base.DataPath+"/init_save_err.log", []byte(err.Error()), 0644)
 			} else {
@@ -401,7 +400,7 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 			if atomic.CompareAndSwapInt32(&onDBInitCalled, 0, 1) {
 				OnDatabaseInitialized(daoManager)
 			} else {
-				log.Printf("[InitializeNoDB] OnDatabaseInitialized 已调用，跳过重复挂载")
+				logrus.Warn("[InitializeNoDB] OnDatabaseInitialized 已调用，跳过重复挂载")
 			}
 		}
 
@@ -455,7 +454,7 @@ func (h *SetupHandler) Initialize(c *gin.Context) {
 		return
 	}
 
-	// 更新数据库配置并保存（manager.Save 会将配置写入数据库，因为 manager 已注入 DB）
+	// 更新数据库配置并保存到 YAML（manager 已注入 DB，但配置以 YAML 为主存储）
 	if err := h.updateDatabaseConfig(req.Database); err != nil {
 		common.InternalServerErrorResponse(c, "保存数据库配置失败: "+err.Error())
 		return
@@ -470,7 +469,7 @@ func (h *SetupHandler) Initialize(c *gin.Context) {
 	// 启用用户系统设置
 	if err := h.enableUserSystem(req.Admin); err != nil {
 		// 记录但不阻塞主要流程
-		log.Printf("enableUserSystem 返回错误: %v", err)
+		logrus.WithError(err).Warn("enableUserSystem 返回错误")
 	}
 
 	common.SuccessWithMessage(c, "系统初始化成功", map[string]interface{}{

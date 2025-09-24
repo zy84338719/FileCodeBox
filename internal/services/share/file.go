@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/models/service"
+
+	"github.com/sirupsen/logrus"
 )
 
 // GetFileByCode 通过代码获取文件
@@ -108,7 +110,9 @@ func (s *Service) CreateFileShare(
 			err = s.userService.UpdateUserStats(*userID, "upload", fileSize)
 			if err != nil {
 				// 记录警告但不中断流程
-				fmt.Printf("Warning: Failed to update user stats: %v\n", err)
+				logrus.WithError(err).
+					WithField("user_id", *userID).
+					Warn("failed to update user stats after upload")
 			}
 		}
 	}
@@ -154,7 +158,9 @@ func (s *Service) DeleteFileShare(code string) error {
 	// 删除实际文件
 	result := s.storageService.DeleteFileWithResult(fileCode)
 	if !result.Success {
-		fmt.Printf("Warning: Failed to delete physical file: %v\n", result.Error)
+		logrus.WithError(result.Error).
+			WithField("code", fileCode.Code).
+			Warn("failed to delete physical file during share removal")
 	}
 
 	// 如果是已认证用户的文件，更新用户统计信息
@@ -163,7 +169,9 @@ func (s *Service) DeleteFileShare(code string) error {
 		err = s.userService.UpdateUserStats(*fileCode.UserID, "delete", -fileCode.Size)
 		if err != nil {
 			// 记录警告但不中断流程
-			fmt.Printf("Warning: Failed to update user stats for deletion: %v\n", err)
+			logrus.WithError(err).
+				WithField("user_id", *fileCode.UserID).
+				Warn("failed to update user stats after deletion")
 		}
 	}
 
@@ -331,7 +339,7 @@ func (s *Service) ShareFileWithAuth(req models.ShareFileRequest) (*models.ShareF
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
-			fmt.Printf("关闭文件失败: %v\n", err)
+			logrus.WithError(err).Warn("关闭文件失败")
 		}
 	}()
 
@@ -407,6 +415,8 @@ func (s *Service) ShareFileWithAuth(req models.ShareFileRequest) (*models.ShareF
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file share: %w", err)
 	}
+
+	s.RecordUploadLog(fileCode, req.UserID, req.ClientIP)
 
 	return &models.ShareFileResult{
 		Code:      fileCode.Code,

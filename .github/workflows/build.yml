@@ -2,11 +2,11 @@ name: Build and Release
 
 on:
   push:
+    # Only trigger the heavy multi-platform build on version tag pushes (e.g. v1.9.1)
     tags:
       - 'v*'
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  # Allow manual dispatch for ad-hoc builds from the UI
+  workflow_dispatch:
 
 permissions:
   contents: read
