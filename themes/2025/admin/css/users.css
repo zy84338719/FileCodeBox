@@ -2,12 +2,14 @@
 
 /* 用户模态框美化 */
 #user-modal .modal-content {
-    max-width: 700px;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    max-width: 720px;
+    background: var(--admin-panel-bg);
+    border-radius: var(--admin-radius-lg);
+    border: 1px solid var(--admin-panel-border);
+    box-shadow: var(--admin-panel-shadow);
     overflow: hidden;
     animation: modalSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    backdrop-filter: blur(24px);
 }
 
 @keyframes modalSlideIn {
@@ -22,7 +24,7 @@
 }
 
 #user-modal .modal-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--admin-nav-active-start) 0%, var(--admin-nav-active-end) 100%);
     padding: 24px 32px;
     border-bottom: none;
     position: relative;
@@ -74,7 +76,7 @@
     transition: all 0.3s ease;
     position: relative;
     z-index: 2;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.16);
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -91,7 +93,7 @@
 
 #user-modal .modal-body {
     padding: 32px;
-    background: #fafbfc;
+    background: rgba(255, 255, 255, 0.9);
 }
 
 #user-modal .form-row {
@@ -108,7 +110,7 @@
 
 #user-modal .form-group label {
     font-weight: 600;
-    color: #374151;
+    color: var(--admin-muted);
     margin-bottom: 8px;
     display: flex;
     align-items: center;
@@ -120,35 +122,35 @@
     content: '';
     width: 3px;
     height: 16px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    border-radius: 2px;
+    background: linear-gradient(135deg, var(--admin-nav-active-start), var(--admin-nav-active-end));
+    border-radius: 999px;
 }
 
 #user-modal .form-control {
     width: 100%;
     padding: 12px 16px;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
+    border: 1px solid var(--admin-input-border);
+    border-radius: var(--admin-radius-sm);
     font-size: 14px;
     transition: all 0.3s ease;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    background: var(--admin-input-bg);
+    box-shadow: none;
 }
 
 #user-modal .form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--admin-accent-strong);
+    box-shadow: 0 0 0 3px var(--admin-input-focus);
     outline: none;
-    background: white;
+    background: rgba(255, 255, 255, 0.98);
 }
 
 #user-modal .form-control:hover {
-    border-color: #d1d5db;
+    border-color: rgba(99, 102, 241, 0.2);
 }
 
 #user-modal .form-text {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--admin-subtle);
     margin-top: 6px;
     display: flex;
     align-items: center;
@@ -157,7 +159,7 @@
 
 #user-modal .form-text::before {
     content: 'ℹ';
-    color: #9ca3af;
+    color: var(--admin-subtle);
     font-style: normal;
     font-weight: bold;
 }
@@ -167,31 +169,31 @@
     align-items: center;
     gap: 12px;
     padding: 16px;
-    background: white;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius-md);
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 500;
-    color: #374151;
+    color: var(--admin-text);
 }
 
 #user-modal .checkbox-label:hover {
-    border-color: #667eea;
-    background: #f8faff;
+    border-color: rgba(99, 102, 241, 0.28);
+    background: rgba(99, 102, 241, 0.08);
 }
 
 #user-modal .checkbox-label input[type="checkbox"] {
     width: 20px;
     height: 20px;
-    accent-color: #667eea;
+    accent-color: var(--admin-accent-strong);
     cursor: pointer;
 }
 
 #user-modal .modal-footer {
     padding: 24px 32px;
-    background: white;
-    border-top: 1px solid #e5e7eb;
+    background: rgba(249, 250, 255, 0.92);
+    border-top: 1px solid rgba(148, 163, 184, 0.18);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -199,7 +201,7 @@
 
 #user-modal .modal-footer .btn {
     padding: 12px 24px;
-    border-radius: 8px;
+    border-radius: var(--admin-radius-sm);
     font-weight: 600;
     font-size: 14px;
     border: none;
@@ -213,26 +215,25 @@
 }
 
 #user-modal .modal-footer .btn-secondary {
-    background: #f3f4f6;
-    color: #374151;
-    border: 2px solid #e5e7eb;
+    background: var(--admin-ghost-bg);
+    color: var(--admin-accent);
+    border: 1px solid transparent;
 }
 
 #user-modal .modal-footer .btn-secondary:hover {
-    background: #e5e7eb;
-    border-color: #d1d5db;
+    background: var(--admin-ghost-bg-hover);
 }
 
 #user-modal .modal-footer .btn-primary {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    border: 2px solid transparent;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, var(--admin-primary-btn-start), var(--admin-primary-btn-end));
+    color: #fff;
+    border: 1px solid transparent;
+    box-shadow: var(--admin-primary-btn-shadow);
 }
 
 #user-modal .modal-footer .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    box-shadow: 0 16px 28px rgba(99, 102, 241, 0.32);
 }
 
 #user-modal .modal-footer .btn-primary:active {
@@ -241,13 +242,13 @@
 
 /* 表单错误样式增强 */
 #user-modal .form-control.error {
-    border-color: #ef4444 !important;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
-    background: #fef2f2;
+    border-color: rgba(239, 68, 68, 0.52) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+    background: rgba(254, 242, 242, 0.92);
 }
 
 #user-modal .form-error {
-    color: #ef4444;
+    color: var(--admin-danger);
     font-size: 12px;
     margin-top: 6px;
     display: flex;
@@ -258,13 +259,13 @@
 
 #user-modal .form-error::before {
     content: '⚠';
-    color: #ef4444;
+    color: currentColor;
 }
 
 #user-modal .form-control.success {
-    border-color: #10b981;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    background: #f0fdf4;
+    border-color: rgba(34, 197, 94, 0.55);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+    background: rgba(240, 253, 244, 0.94);
 }
 
 /* 特殊字段样式 */
@@ -278,7 +279,7 @@
 }
 
 #user-modal input[type="number"].form-control {
-    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" fill="%239ca3af" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>');
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" fill="%236366f1" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>');
     background-repeat: no-repeat;
     background-position: right 12px center;
     background-size: 16px;
@@ -314,14 +315,26 @@
     }
 }
 
-/* 表单错误样式 */
+/* 表单状态增强 */
+.form-control:focus {
+    border-color: var(--admin-accent-strong);
+    box-shadow: 0 0 0 3px var(--admin-input-focus);
+    outline: none;
+}
+
 .form-control.error {
-    border-color: #dc3545 !important;
-    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    border-color: rgba(239, 68, 68, 0.52) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+    background: rgba(254, 242, 242, 0.94);
+}
+
+.form-control.success {
+    border-color: rgba(34, 197, 94, 0.55);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
 }
 
 .form-error {
-    color: #dc3545;
+    color: var(--admin-danger);
     font-size: 12px;
     margin-top: 4px;
     display: block;
@@ -330,17 +343,6 @@
 .form-group {
     position: relative;
     margin-bottom: 1rem;
-}
-
-.form-control:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    outline: 0;
-}
-
-.form-control.success {
-    border-color: #28a745;
-    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
 }
 
 /* 用户统计卡片 */
@@ -352,12 +354,12 @@
 }
 
 .stat-card {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background: var(--admin-panel-bg);
+    border-radius: var(--admin-radius-lg);
+    padding: 22px;
+    box-shadow: var(--admin-panel-shadow);
     text-align: center;
-    transition: all 0.3s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     min-height: 120px;
     display: flex;
     flex-direction: column;
@@ -365,6 +367,7 @@
     justify-content: center;
     position: relative;
     overflow: hidden;
+    border: 1px solid var(--admin-panel-border);
 }
 
 .stat-card::before {
@@ -373,13 +376,14 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 3px;
-    background: linear-gradient(135deg, #007bff, #0056b3);
+    height: 4px;
+    background: linear-gradient(135deg, var(--admin-nav-active-start), var(--admin-nav-active-end));
 }
 
 .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-4px);
+    box-shadow: var(--admin-shadow-soft);
+    border-color: rgba(79, 70, 229, 0.22);
 }
 
 .stat-icon {
@@ -392,50 +396,52 @@
     margin-bottom: 12px;
     font-size: 24px;
     color: white;
+    box-shadow: 0 12px 24px rgba(79, 70, 229, 0.24);
 }
 
 .stat-icon.users {
-    background: linear-gradient(135deg, #007bff, #0056b3);
+    background: linear-gradient(135deg, var(--admin-nav-active-start), var(--admin-nav-active-end));
 }
 
 .stat-icon.admins {
-    background: linear-gradient(135deg, #28a745, #1e7e34);
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.8), rgba(5, 150, 105, 0.95));
 }
 
 .stat-icon.active {
-    background: linear-gradient(135deg, #17a2b8, #138496);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(29, 78, 216, 0.95));
 }
 
 .stat-icon.uploads {
-    background: linear-gradient(135deg, #ffc107, #e0a800);
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.9), rgba(217, 119, 6, 0.95));
 }
 
 .stat-value {
     font-size: 28px;
     font-weight: 700;
-    color: #333;
+    color: var(--admin-heading);
     margin-bottom: 4px;
     line-height: 1;
 }
 
 .stat-label {
     font-size: 14px;
-    color: #6c757d;
+    color: var(--admin-muted);
     font-weight: 500;
     margin: 0;
 }
 
 /* 工具栏样式 */
 .user-toolbar {
-    background: white;
-    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.86);
+    border-radius: var(--admin-radius-lg);
     padding: 24px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 24px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: var(--admin-shadow-card);
+    border: 1px solid var(--admin-border);
     flex-wrap: wrap;
 }
 
@@ -453,17 +459,19 @@
 
 .search-input {
     flex: 1;
-    padding: 10px 16px;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
+    padding: 12px 16px;
+    border: 1px solid var(--admin-input-border);
+    border-radius: var(--admin-radius-sm);
     font-size: 14px;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background: var(--admin-input-bg);
 }
 
 .search-input:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    border-color: var(--admin-accent-strong);
+    box-shadow: 0 0 0 3px var(--admin-input-focus);
+    background: rgba(255, 255, 255, 0.98);
 }
 
 .action-section {
@@ -475,52 +483,54 @@
 
 /* 用户表格样式 */
 .users-table-container {
-    background: white;
-    border-radius: 12px;
+    background: transparent;
+    border-radius: var(--admin-radius-lg);
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     margin-bottom: 20px;
-    border: 1px solid #e5e7eb;
 }
 
 .users-table {
     width: 100%;
     border-collapse: collapse;
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-family: inherit;
+    background: var(--admin-panel-bg);
+    border: 1px solid var(--admin-panel-border);
+    border-radius: var(--admin-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--admin-shadow-card);
 }
 
 .users-table th {
-    background: linear-gradient(135deg, #f8faff 0%, #f1f5f9 100%);
+    background: var(--admin-table-header-bg);
     padding: 18px 24px;
     text-align: left;
     font-weight: 600;
-    color: #1e293b;
-    border-bottom: 2px solid #e2e8f0;
+    color: var(--admin-heading);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.22);
     position: sticky;
     top: 0;
     z-index: 10;
-    font-size: 14px;
     white-space: nowrap;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.08em;
     font-size: 12px;
 }
 
 .users-table th:first-child {
-    border-top-left-radius: 12px;
+    border-top-left-radius: var(--admin-radius-lg);
 }
 
 .users-table th:last-child {
-    border-top-right-radius: 12px;
+    border-top-right-radius: var(--admin-radius-lg);
 }
 
 .users-table td {
-    padding: 16px 24px;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 18px 24px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
     vertical-align: middle;
     font-size: 14px;
-    color: #374151;
+    color: var(--admin-text);
     transition: background-color 0.2s ease;
 }
 
@@ -530,13 +540,13 @@
 }
 
 .users-table tbody tr:hover {
-    background: linear-gradient(135deg, #f8faff 0%, #f0f9ff 100%);
+    background: var(--admin-table-row-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.12);
 }
 
 .users-table tbody tr:hover td {
-    border-color: #e0e7ff;
+    border-color: rgba(99, 102, 241, 0.2);
 }
 
 .users-table tbody tr:last-child td {
@@ -546,7 +556,7 @@
 .loading-cell {
     text-align: center;
     padding: 60px 20px;
-    background: linear-gradient(135deg, #f8faff 0%, #f0f9ff 100%);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(129, 140, 248, 0.12));
 }
 
 .loading-spinner {
@@ -554,12 +564,12 @@
     flex-direction: column;
     align-items: center;
     gap: 16px;
-    color: #6b7280;
+    color: var(--admin-muted);
 }
 
 .loading-spinner i {
     font-size: 32px;
-    color: #667eea;
+    color: var(--admin-accent-strong);
     animation: spin 1s linear infinite;
 }
 
@@ -578,7 +588,7 @@
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, var(--admin-nav-active-start), var(--admin-nav-active-end));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -586,7 +596,7 @@
     font-weight: 700;
     font-size: 16px;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 12px 24px rgba(79, 70, 229, 0.24);
     position: relative;
 }
 
@@ -597,8 +607,8 @@
     right: -2px;
     width: 12px;
     height: 12px;
-    background: #10b981;
-    border: 2px solid white;
+    background: var(--admin-status-dot-online);
+    border: 2px solid var(--admin-panel-bg);
     border-radius: 50%;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -617,16 +627,16 @@
 
 .user-name {
     font-weight: 600;
-    color: #1e293b;
+    color: var(--admin-heading);
     font-size: 15px;
     line-height: 1.2;
 }
 
 .user-id {
     font-size: 12px;
-    color: #64748b;
+    color: var(--admin-subtle);
     font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-    background: #f1f5f9;
+    background: rgba(148, 163, 184, 0.18);
     padding: 2px 6px;
     border-radius: 4px;
     display: inline-block;
@@ -639,7 +649,7 @@
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    border-radius: 20px;
+    border-radius: 999px;
     font-size: 12px;
     font-weight: 600;
     min-width: 80px;
@@ -649,6 +659,9 @@
     letter-spacing: 0.5px;
     position: relative;
     overflow: hidden;
+    background: var(--admin-chip-bg);
+    color: var(--admin-chip-text);
+    border: 1px solid transparent;
 }
 
 .status-badge::before {
@@ -667,9 +680,9 @@
 }
 
 .status-active {
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: white;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.88), rgba(5, 150, 105, 0.96));
+    color: #ecfdf5;
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.28);
 }
 
 .status-active::after {
@@ -679,9 +692,9 @@
 }
 
 .status-inactive {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    color: white;
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.96));
+    color: #fee2e2;
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.28);
 }
 
 .status-inactive::after {
@@ -706,7 +719,7 @@
     padding: 8px 10px;
     font-size: 12px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--admin-radius-sm);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
@@ -753,28 +766,28 @@
 
 /* 编辑按钮 */
 .btn-small:nth-child(1) {
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
-    color: white;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    background: linear-gradient(135deg, var(--admin-nav-active-start), var(--admin-nav-active-end));
+    color: #fff;
+    box-shadow: 0 8px 16px rgba(99, 102, 241, 0.28);
 }
 
 /* 删除按钮 */
 .btn-small:nth-child(2) {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    color: white;
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.96));
+    color: #fee2e2;
+    box-shadow: 0 8px 16px rgba(239, 68, 68, 0.28);
 }
 
 /* 激活/禁用按钮 */
 .btn-small:nth-child(3) {
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: white;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(5, 150, 105, 0.96));
+    color: #ecfdf5;
+    box-shadow: 0 8px 16px rgba(16, 185, 129, 0.28);
 }
 
 .btn-small:nth-child(3).inactive {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.88), rgba(217, 119, 6, 0.94));
+    box-shadow: 0 8px 16px rgba(217, 119, 6, 0.26);
 }
 
 /* 分页样式 */
@@ -783,16 +796,17 @@
     justify-content: space-between;
     align-items: center;
     padding: 20px 24px;
-    background: white;
-    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.82);
+    border-radius: var(--admin-radius-lg);
     margin-top: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: var(--admin-shadow-card);
+    border: 1px solid var(--admin-border);
     flex-wrap: wrap;
     gap: 16px;
 }
 
 .pagination-info {
-    color: #6c757d;
+    color: var(--admin-muted);
     font-size: 14px;
     font-weight: 500;
 }
@@ -806,10 +820,10 @@
 .btn-page {
     padding: 8px 12px;
     margin: 0 2px;
-    border: 1px solid #dee2e6;
-    background: white;
-    color: #495057;
-    border-radius: 6px;
+    border: 1px solid var(--admin-border);
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    border-radius: var(--admin-radius-sm);
     cursor: pointer;
     transition: all 0.2s ease;
     font-size: 14px;
@@ -822,22 +836,22 @@
 }
 
 .btn-page:hover {
-    background: #e9ecef;
-    border-color: #adb5bd;
+    background: var(--admin-interactive-bg-hover);
+    border-color: rgba(99, 102, 241, 0.24);
     transform: translateY(-1px);
 }
 
 .btn-page.active {
-    background: #007bff;
-    color: white;
-    border-color: #007bff;
-    box-shadow: 0 2px 4px rgba(0,123,255,0.25);
+    background: linear-gradient(135deg, var(--admin-primary-btn-start), var(--admin-primary-btn-end));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.32);
 }
 
 .btn-page:disabled {
-    background: #f8f9fa;
-    color: #6c757d;
-    border-color: #e9ecef;
+    background: rgba(148, 163, 184, 0.16);
+    color: rgba(71, 85, 105, 0.65);
+    border-color: transparent;
     cursor: not-allowed;
     transform: none;
 }
@@ -847,14 +861,14 @@
     width: 18px;
     height: 18px;
     cursor: pointer;
-    accent-color: #007bff;
+    accent-color: var(--admin-accent-strong);
 }
 
 .select-all-checkbox {
     width: 18px;
     height: 18px;
     cursor: pointer;
-    accent-color: #007bff;
+    accent-color: var(--admin-accent-strong);
 }
 
 /* 用户详情模态框 */
@@ -868,14 +882,14 @@
     gap: 16px;
     margin-bottom: 20px;
     padding-bottom: 16px;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--admin-border);
 }
 
 .user-detail-avatar {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #007bff, #0056b3);
+    background: linear-gradient(135deg, var(--admin-nav-active-start), var(--admin-nav-active-end));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -886,12 +900,12 @@
 
 .user-detail-info h3 {
     margin: 0 0 4px 0;
-    color: #333;
+    color: var(--admin-heading);
 }
 
 .user-detail-info p {
     margin: 0;
-    color: #6c757d;
+    color: var(--admin-muted);
     font-size: 14px;
 }
 
@@ -901,7 +915,7 @@
 
 .user-detail-section h4 {
     margin: 0 0 12px 0;
-    color: #495057;
+    color: var(--admin-heading);
     font-size: 16px;
     font-weight: 600;
 }
@@ -916,18 +930,18 @@
     display: flex;
     justify-content: space-between;
     padding: 8px 12px;
-    background: #f8f9fa;
-    border-radius: 4px;
+    background: rgba(148, 163, 184, 0.12);
+    border-radius: var(--admin-radius-sm);
     font-size: 14px;
 }
 
 .user-detail-label {
     font-weight: 500;
-    color: #495057;
+    color: var(--admin-heading);
 }
 
 .user-detail-value {
-    color: #6c757d;
+    color: var(--admin-muted);
     font-family: monospace;
 }
 
@@ -1053,7 +1067,7 @@
     }
     .user-filters label {
         font-weight: 500;
-        color: #495057;
+        color: var(--admin-muted);
         margin-right: 6px;
     }
 
@@ -1075,11 +1089,12 @@
         align-items: center;
     }
     .search-input {
-        padding: 8px 12px;
-        border: 1px solid #e9ecef;
-        border-radius: 6px;
+        padding: 12px 16px;
+        border: 1px solid var(--admin-input-border);
+        border-radius: var(--admin-radius-sm);
         min-width: 280px;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
+        box-shadow: none;
+        background: var(--admin-input-bg);
     }
 
     .action-section {
@@ -1088,18 +1103,18 @@
         align-items: center;
     }
     .btn {
-        padding: 8px 12px;
-        border-radius: 6px;
+        padding: 10px 16px;
+        border-radius: var(--admin-radius-sm);
         cursor: pointer;
         border: none;
-        background: #f5f7fa;
-        color: #333;
+        background: var(--admin-ghost-bg);
+        color: var(--admin-accent);
         font-weight: 500;
     }
     .btn:hover { opacity: 0.95; }
     .btn-secondary {
-        background: #ffffff;
-        border: 1px solid #e9ecef;
+        background: var(--admin-surface);
+        border: 1px solid var(--admin-border);
     }
 
     /* 简单的下拉菜单样式（批量操作） */
@@ -1108,17 +1123,17 @@
         position: absolute;
         right: 0;
         top: 100%;
-        background: #ffffff;
-        border: 1px solid #e9ecef;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+        background: var(--admin-surface);
+        border: 1px solid var(--admin-border);
+        box-shadow: 0 18px 32px rgba(15, 23, 42, 0.12);
         display: none;
         min-width: 180px;
-        border-radius: 6px;
+        border-radius: var(--admin-radius-sm);
         z-index: 1000;
         overflow: hidden;
     }
-    .dropdown-menu a { display: block; padding: 8px 12px; color: #333; text-decoration: none; }
-    .dropdown-menu a:hover { background: #f8f9fa; }
+    .dropdown-menu a { display: block; padding: 10px 14px; color: var(--admin-text); text-decoration: none; }
+    .dropdown-menu a:hover { background: var(--admin-interactive-bg-hover); }
     .dropdown.open .dropdown-menu { display: block; }
 }
 /* End: 强制桌面端布局 */
