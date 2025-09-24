@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"os"
-	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -56,15 +55,17 @@ func NewConfigManager() *ConfigManager {
 func InitManager() *ConfigManager {
 	cm := NewConfigManager()
 
-	// 尝试加载 YAML 配置文件
+	var sources []ConfigSource
+
 	if configPath := os.Getenv("CONFIG_PATH"); configPath != "" {
-		_ = cm.LoadFromYAML(configPath)
+		sources = append(sources, YAMLFileSource{Path: configPath})
 	} else if _, err := os.Stat("./config.yaml"); err == nil {
-		_ = cm.LoadFromYAML("./config.yaml")
+		sources = append(sources, YAMLFileSource{Path: "./config.yaml"})
 	}
 
-	// 应用环境变量覆盖
-	cm.applyEnvironmentOverrides()
+	sources = append(sources, NewDefaultEnvSource())
+
+	_ = cm.ApplySources(sources...)
 	return cm
 }
 
@@ -135,24 +136,24 @@ func (cm *ConfigManager) mergeSimpleFields(fileCfg *ConfigManager) {
 	}
 }
 
+// ApplySources processes a group of configuration sources and collects errors.
+func (cm *ConfigManager) ApplySources(sources ...ConfigSource) error {
+	var errs []error
+	for _, source := range sources {
+		if source == nil {
+			continue
+		}
+		if err := source.Apply(cm); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
 // LoadFromYAML 从 YAML 文件加载配置
 func (cm *ConfigManager) LoadFromYAML(path string) error {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	var fileCfg ConfigManager
-	if err := yaml.Unmarshal(b, &fileCfg); err != nil {
-		return err
-	}
-
-	// 按模块合并配置
-	cm.mergeConfigModules(&fileCfg)
-	cm.mergeUserConfig(fileCfg.User)
-	cm.mergeSimpleFields(&fileCfg)
-
-	return nil
+	return cm.ApplySources(YAMLFileSource{Path: path})
 }
 
 // ReloadConfig 重新加载配置（仅支持环境变量，保持端口不变）
@@ -190,30 +191,8 @@ func (cm *ConfigManager) PersistYAML() error {
 
 // applyEnvironmentOverrides 应用环境变量覆盖配置
 func (cm *ConfigManager) applyEnvironmentOverrides() {
-	// 基础配置环境变量
-	if port := os.Getenv("PORT"); port != "" {
-		if n, err := strconv.Atoi(port); err == nil {
-			cm.Base.Port = n
-		}
-	}
-	if dataPath := os.Getenv("DATA_PATH"); dataPath != "" {
-		cm.Base.DataPath = dataPath
-	}
-
-	// MCP 配置环境变量
-	if enableMCP := os.Getenv("ENABLE_MCP_SERVER"); enableMCP != "" {
-		if enableMCP == "true" || enableMCP == "1" {
-			cm.MCP.EnableMCPServer = 1
-		} else {
-			cm.MCP.EnableMCPServer = 0
-		}
-	}
-	if mcpPort := os.Getenv("MCP_PORT"); mcpPort != "" {
-		cm.MCP.MCPPort = mcpPort
-	}
-	if mcpHost := os.Getenv("MCP_HOST"); mcpHost != "" {
-		cm.MCP.MCPHost = mcpHost
-	}
+	// 收集错误以便在调用者中统一处理，保持现有签名
+	_ = NewDefaultEnvSource().Apply(cm)
 }
 
 // Save 保存配置（已废弃，请使用 config.yaml 和环境变量）

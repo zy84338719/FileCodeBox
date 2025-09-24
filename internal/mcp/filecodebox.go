@@ -34,7 +34,7 @@ func NewFileCodeBoxMCPServer(
 	adminService *services.AdminService,
 	userService *services.UserService,
 ) *FileCodeBoxMCPServer {
-	server := NewServer("FileCodeBox MCP Server", "1.0.0")
+	server := NewServer("FileCodeBox MCP Server", models.Version)
 
 	mcpServer := &FileCodeBoxMCPServer{
 		Server:            server,

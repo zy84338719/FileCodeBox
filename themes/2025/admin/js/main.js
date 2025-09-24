@@ -6,7 +6,7 @@
  * 切换标签页 - 立即可用版本
  * @param {string} tabName - 标签页名称
  */
-function switchTab(tabName) {
+function switchTab(tabName, trigger) {
     try {
         // 如果未认证，显示登录提示
         const authToken = localStorage.getItem('user_token');
@@ -21,11 +21,19 @@ function switchTab(tabName) {
         });
         
         // 找到被点击的按钮并激活
-        const clickedBtn = event ? event.target : document.querySelector(`.tab-btn[onclick*="${tabName}"]`);
+        const fallbackBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+        const clickedBtn = trigger
+            || (typeof event !== 'undefined' && event
+                ? (event.currentTarget || (event.target && event.target.closest('.tab-btn')))
+                : null)
+            || fallbackBtn;
         if (clickedBtn) {
             clickedBtn.classList.add('active');
+            updateHeadlineFromNav(clickedBtn);
+        } else {
+            updateHeadlineFromNav(fallbackBtn);
         }
-        
+
         // 隐藏登录提示
         const loginPrompt = document.getElementById('login-prompt');
         if (loginPrompt) {
@@ -41,12 +49,18 @@ function switchTab(tabName) {
         if (targetTab) {
             targetTab.classList.add('active');
         }
-        
+
+        AppState.currentTab = tabName;
+
         // 根据标签页加载相应数据
         if (typeof loadTabData === 'function') {
             loadTabData(tabName);
         }
-        
+
+        if (window.innerWidth <= 1024) {
+            closeMobileMenu();
+        }
+
         console.log(`Switched to tab: ${tabName}`);
     } catch (error) {
         console.error('Failed to switch tab:', error);
@@ -77,6 +91,31 @@ function showLoginPrompt() {
     }
 }
 
+function updateHeadlineFromNav(btn) {
+    if (!btn) {
+        return;
+    }
+
+    const title = btn.dataset.title || btn.textContent.trim();
+    const subtitle = btn.dataset.subtitle || '';
+    const headline = document.querySelector('.admin-header .headline h1');
+    const sub = document.querySelector('.admin-header .headline p');
+
+    if (headline && title) {
+        headline.textContent = title;
+    }
+
+    if (sub) {
+        if (subtitle) {
+            sub.textContent = subtitle;
+            sub.style.display = '';
+        } else {
+            sub.textContent = '';
+            sub.style.display = 'none';
+        }
+    }
+}
+
 // ========== 应用状态管理 ==========
 
 // 全局状态管理
@@ -94,6 +133,114 @@ let currentSearch = '';
 let authToken = localStorage.getItem('user_token'); // 使用统一的user_token
 let currentStorageType = 'local';
 let storageData = {};
+
+const ADMIN_THEME_KEY = 'filecodebox_admin_theme';
+const THEMES = {
+    LIGHT: 'light',
+    DARK: 'dark'
+};
+
+function applyTheme(theme) {
+    const body = document.body;
+    if (!body || !body.classList || !body.classList.contains('admin-modern-body')) {
+        return;
+    }
+
+    const nextTheme = theme === THEMES.DARK ? THEMES.DARK : THEMES.LIGHT;
+    body.classList.remove('admin-theme-dark', 'admin-theme-light');
+    body.classList.add(nextTheme === THEMES.DARK ? 'admin-theme-dark' : 'admin-theme-light');
+    updateThemeToggleButton(nextTheme);
+}
+
+function updateThemeToggleButton(theme) {
+    const btn = document.getElementById('theme-toggle-btn');
+    if (!btn) {
+        return;
+    }
+    const icon = btn.querySelector('i');
+    const label = btn.querySelector('span');
+    if (theme === THEMES.DARK) {
+        btn.setAttribute('aria-label', '切换到浅色主题');
+        btn.setAttribute('title', '切换到浅色主题');
+        if (icon) {
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+        if (label) {
+            label.textContent = '浅色';
+        }
+    } else {
+        btn.setAttribute('aria-label', '切换到深色主题');
+        btn.setAttribute('title', '切换到深色主题');
+        if (icon) {
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        }
+        if (label) {
+            label.textContent = '深色';
+        }
+    }
+}
+
+function getStoredTheme() {
+    try {
+        return localStorage.getItem(ADMIN_THEME_KEY);
+    } catch (error) {
+        console.warn('无法读取主题偏好:', error);
+        return null;
+    }
+}
+
+function storeTheme(theme) {
+    try {
+        localStorage.setItem(ADMIN_THEME_KEY, theme);
+    } catch (error) {
+        console.warn('无法保存主题偏好:', error);
+    }
+}
+
+function initTheme() {
+    const stored = getStoredTheme();
+    if (stored === THEMES.DARK || stored === THEMES.LIGHT) {
+        applyTheme(stored);
+        return stored;
+    }
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initial = prefersDark ? THEMES.DARK : THEMES.LIGHT;
+    applyTheme(initial);
+    return initial;
+}
+
+function handleSystemThemeChange(event) {
+    if (getStoredTheme()) {
+        return;
+    }
+    applyTheme(event.matches ? THEMES.DARK : THEMES.LIGHT);
+}
+
+function setupSystemThemeSync() {
+    if (!window.matchMedia) {
+        return;
+    }
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = handleSystemThemeChange;
+    if (typeof mediaQuery.addEventListener === 'function') {
+        mediaQuery.addEventListener('change', handler);
+    } else if (typeof mediaQuery.addListener === 'function') {
+        mediaQuery.addListener(handler);
+    }
+}
+
+function toggleTheme() {
+    const body = document.body;
+    if (!body) {
+        return;
+    }
+    const isDark = body.classList.contains('admin-theme-dark');
+    const next = isDark ? THEMES.LIGHT : THEMES.DARK;
+    applyTheme(next);
+    storeTheme(next);
+}
 
 /**
  * 应用程序初始化
@@ -332,7 +479,8 @@ async function showAdminPage() {
     console.log('Showing admin page...');
     
     // 默认显示dashboard标签
-    switchTab('dashboard');
+    const defaultNav = document.querySelector('.tab-btn[data-tab="dashboard"]');
+    switchTab('dashboard', defaultNav);
     
     // 异步加载仪表板数据（不阻塞页面显示）
     try {
@@ -452,11 +600,25 @@ async function loadStats() {
             const dashboardTodayUploadsEl = document.getElementById('dashboard-today-uploads');
             const dashboardActiveUsersEl = document.getElementById('dashboard-active-users');
             const dashboardTotalStorageEl = document.getElementById('dashboard-total-storage');
-            
+
             if (dashboardTotalFilesEl) dashboardTotalFilesEl.textContent = stats.total_files || 0;
             if (dashboardTodayUploadsEl) dashboardTodayUploadsEl.textContent = stats.today_uploads || 0;
             if (dashboardActiveUsersEl) dashboardActiveUsersEl.textContent = stats.active_files || 0; // 临时使用active_files作为活跃用户数
             if (dashboardTotalStorageEl) dashboardTotalStorageEl.textContent = formatFileSize(stats.total_size || 0);
+
+            const chipTodayUploadsEl = document.getElementById('chip-today-uploads');
+            const chipTotalFilesEl = document.getElementById('chip-total-files');
+            const chipTotalStorageEl = document.getElementById('chip-total-storage');
+
+            if (chipTodayUploadsEl) {
+                chipTodayUploadsEl.textContent = stats.today_uploads !== undefined ? stats.today_uploads : '-';
+            }
+            if (chipTotalFilesEl) {
+                chipTotalFilesEl.textContent = stats.total_files !== undefined ? stats.total_files : '-';
+            }
+            if (chipTotalStorageEl) {
+                chipTotalStorageEl.textContent = formatFileSize(stats.total_size || 0);
+            }
             
             // 更新趋势百分比（如果后端提供）
             const filesTrendEl = document.getElementById('files-trend');
@@ -713,51 +875,57 @@ function formatDateTimeLocal(dateString) {
 
 // 移动端菜单切换
 function toggleMobileMenu() {
-    const tabHeader = document.querySelector('.tab-header');
-    const overlay = document.querySelector('.mobile-menu-overlay');
-    
-    if (tabHeader) {
-        tabHeader.classList.toggle('mobile-active');
-        
-        // 如果没有遮罩层，创建一个
-        if (!overlay && tabHeader.classList.contains('mobile-active')) {
-            const newOverlay = document.createElement('div');
-            newOverlay.className = 'mobile-menu-overlay';
-            newOverlay.onclick = closeMobileMenu;
-            document.body.appendChild(newOverlay);
-        } else if (overlay && !tabHeader.classList.contains('mobile-active')) {
-            overlay.remove();
-        }
+    const sidebar = document.querySelector('.admin-sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    if (!sidebar) {
+        return;
+    }
+
+    const isOpening = !sidebar.classList.contains('sidebar-open');
+    sidebar.classList.toggle('sidebar-open', isOpening);
+
+    if (overlay) {
+        overlay.classList.toggle('active', isOpening);
+        overlay.onclick = isOpening ? closeMobileMenu : null;
     }
 }
 
 // 关闭移动端菜单
 function closeMobileMenu() {
-    const tabHeader = document.querySelector('.tab-header');
-    const overlay = document.querySelector('.mobile-menu-overlay');
-    
-    if (tabHeader) {
-        tabHeader.classList.remove('mobile-active');
+    const sidebar = document.querySelector('.admin-sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    if (sidebar) {
+        sidebar.classList.remove('sidebar-open');
     }
-    
+
     if (overlay) {
-        overlay.remove();
+        overlay.classList.remove('active');
+        overlay.onclick = null;
     }
 }
 
 // DOM 加载完成后初始化应用程序
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing app...');
+    initTheme();
+    setupSystemThemeSync();
     initApp();
-    
+
     // 点击标签页项目时自动关闭移动端菜单
-    document.querySelectorAll('.tab-item').forEach(item => {
+    document.querySelectorAll('.admin-sidebar .tab-btn').forEach(item => {
         item.addEventListener('click', () => {
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 1024) {
                 closeMobileMenu();
             }
         });
     });
+
+    const activeBtn = document.querySelector('.admin-sidebar .tab-btn.active');
+    if (activeBtn) {
+        updateHeadlineFromNav(activeBtn);
+    }
 });
 
 // 将关键函数和变量暴露到全局作用域
@@ -771,4 +939,5 @@ window.toggleMobileMenu = toggleMobileMenu;
 window.closeMobileMenu = closeMobileMenu;
 window.redirectToUserLogin = redirectToUserLogin;
 window.showLoginPrompt = showLoginPrompt;
+window.toggleTheme = toggleTheme;
 window.authToken = authToken;

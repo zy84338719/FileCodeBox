@@ -170,7 +170,22 @@ build_project() {
     
     # Go项目构建
     if [[ -f "go.mod" ]]; then
-        if ! go build -ldflags="-w -s" -o filecodebox .; then
+        local version_value="${VERSION#v}"
+        local git_commit="unknown"
+        if git rev-parse --short HEAD >/dev/null 2>&1; then
+            git_commit=$(git rev-parse --short HEAD)
+            if ! git diff-index --quiet HEAD --; then
+                git_commit="${git_commit}-dirty"
+            fi
+        fi
+        local build_time=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+        local ldflags="-w -s"
+        ldflags="$ldflags -X 'github.com/zy84338719/filecodebox/internal/models/service.Version=$version_value'"
+        ldflags="$ldflags -X 'github.com/zy84338719/filecodebox/internal/models/service.GitCommit=$git_commit'"
+        ldflags="$ldflags -X 'github.com/zy84338719/filecodebox/internal/models/service.BuildTime=$build_time'"
+
+        if ! go build -ldflags="$ldflags" -o filecodebox .; then
             log_error "构建失败"
             exit 1
         fi

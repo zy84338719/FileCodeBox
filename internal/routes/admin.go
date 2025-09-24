@@ -1,9 +1,6 @@
 package routes
 
 import (
-	"os"
-	"path/filepath"
-
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/middleware"
@@ -56,116 +53,36 @@ func SetupAdminRoutes(
 
 	// 将管理后台静态资源与前端入口注册为公开路由，允许未认证用户加载登录页面和相关静态资源
 	// 注意：API 路由仍然放在受保护的 authGroup 中
-	themeDir := "./" + cfg.UI.ThemesSelect
+	serveFile := func(parts ...string) func(*gin.Context) {
+		return func(c *gin.Context) {
+			rel := c.Param("filepath")
+			joined := append(parts, rel)
+			path, err := static.ResolveThemeFile(cfg, joined...)
+			if err != nil {
+				c.Status(404)
+				return
+			}
+			c.File(path)
+		}
+	}
 
 	// css
-	adminGroup.GET("/css/*filepath", func(c *gin.Context) {
-		fp := c.Param("filepath")
-		p := filepath.Join(themeDir, "admin", "css", fp)
-		if _, err := os.Stat(p); err != nil {
-			c.Status(404)
-			return
-		}
-		c.File(p)
-	})
-
-	// HEAD for css
-	adminGroup.HEAD("/css/*filepath", func(c *gin.Context) {
-		fp := c.Param("filepath")
-		p := filepath.Join(themeDir, "admin", "css", fp)
-		if _, err := os.Stat(p); err != nil {
-			c.Status(404)
-			return
-		}
-		c.File(p)
-	})
+	adminGroup.GET("/css/*filepath", serveFile("admin", "css"))
+	adminGroup.HEAD("/css/*filepath", serveFile("admin", "css"))
 
 	// js
-	adminGroup.GET("/js/*filepath", func(c *gin.Context) {
-		fp := c.Param("filepath")
-		p := filepath.Join(themeDir, "admin", "js", fp)
-		if _, err := os.Stat(p); err != nil {
-			c.Status(404)
-			return
-		}
-		c.File(p)
-	})
-
-	// HEAD for js
-	adminGroup.HEAD("/js/*filepath", func(c *gin.Context) {
-		fp := c.Param("filepath")
-		p := filepath.Join(themeDir, "admin", "js", fp)
-		if _, err := os.Stat(p); err != nil {
-			c.Status(404)
-			return
-		}
-		c.File(p)
-	})
+	adminGroup.GET("/js/*filepath", serveFile("admin", "js"))
+	adminGroup.HEAD("/js/*filepath", serveFile("admin", "js"))
 
 	// templates
-	adminGroup.GET("/templates/*filepath", func(c *gin.Context) {
-		fp := c.Param("filepath")
-		p := filepath.Join(themeDir, "admin", "templates", fp)
-		if _, err := os.Stat(p); err != nil {
-			c.Status(404)
-			return
-		}
-		c.File(p)
-	})
-
-	// HEAD for templates
-	adminGroup.HEAD("/templates/*filepath", func(c *gin.Context) {
-		fp := c.Param("filepath")
-		p := filepath.Join(themeDir, "admin", "templates", fp)
-		if _, err := os.Stat(p); err != nil {
-			c.Status(404)
-			return
-		}
-		c.File(p)
-	})
+	adminGroup.GET("/templates/*filepath", serveFile("admin", "templates"))
+	adminGroup.HEAD("/templates/*filepath", serveFile("admin", "templates"))
 
 	// assets and components
-	adminGroup.GET("/assets/*filepath", func(c *gin.Context) {
-		fp := c.Param("filepath")
-		p := filepath.Join(themeDir, "assets", fp)
-		if _, err := os.Stat(p); err != nil {
-			c.Status(404)
-			return
-		}
-		c.File(p)
-	})
-
-	// HEAD for assets
-	adminGroup.HEAD("/assets/*filepath", func(c *gin.Context) {
-		fp := c.Param("filepath")
-		p := filepath.Join(themeDir, "assets", fp)
-		if _, err := os.Stat(p); err != nil {
-			c.Status(404)
-			return
-		}
-		c.File(p)
-	})
-
-	adminGroup.GET("/components/*filepath", func(c *gin.Context) {
-		fp := c.Param("filepath")
-		p := filepath.Join(themeDir, "components", fp)
-		if _, err := os.Stat(p); err != nil {
-			c.Status(404)
-			return
-		}
-		c.File(p)
-	})
-
-	// HEAD for components
-	adminGroup.HEAD("/components/*filepath", func(c *gin.Context) {
-		fp := c.Param("filepath")
-		p := filepath.Join(themeDir, "components", fp)
-		if _, err := os.Stat(p); err != nil {
-			c.Status(404)
-			return
-		}
-		c.File(p)
-	})
+	adminGroup.GET("/assets/*filepath", serveFile("assets"))
+	adminGroup.HEAD("/assets/*filepath", serveFile("assets"))
+	adminGroup.GET("/components/*filepath", serveFile("components"))
+	adminGroup.HEAD("/components/*filepath", serveFile("components"))
 
 	// 管理前端入口公开：允许未认证用户加载登录页面
 	adminGroup.GET("/", func(c *gin.Context) {

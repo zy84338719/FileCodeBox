@@ -10,6 +10,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/zy84338719/filecodebox/internal/config"
+	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/repository"
 	"github.com/zy84338719/filecodebox/internal/services"
 	"github.com/zy84338719/filecodebox/internal/storage"
@@ -180,7 +181,7 @@ func (m *MCPManager) GetStatus() MCPStatus {
 	if m.running && m.server != nil {
 		status.ServerInfo = ServerInfo{
 			Name:    "FileCodeBox MCP Server",
-			Version: "1.0.0",
+			Version: models.Version,
 		}
 	}
 

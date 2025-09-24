@@ -66,3 +66,18 @@ func TestEnvOverride(t *testing.T) {
 		t.Fatalf("expected PORT env to override to 9090, got %d", cm.Base.Port)
 	}
 }
+
+func TestApplySourcesAggregatesErrors(t *testing.T) {
+	cm := NewConfigManager()
+	src := NewDefaultEnvSource()
+	src.lookup = func(key string) string {
+		if key == "ENABLE_MCP_SERVER" {
+			return "definitely-not-bool"
+		}
+		return ""
+	}
+
+	if err := cm.ApplySources(src); err == nil {
+		t.Fatalf("expected aggregated error when environment value invalid")
+	}
+}
