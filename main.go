@@ -1,7 +1,7 @@
 package main
 
 // @title FileCodeBox API
-// @version 1.8.2
+// @version 1.9.1
 // @description FileCodeBox 是一个用于文件分享和代码片段管理的 Web 应用程序
 // @termsOfService http://swagger.io/terms/
 

@@ -29,7 +29,7 @@ func NewAPIHandler(manager *config.ConfigManager) *APIHandler {
 type HealthResponse struct {
 	Status    string `json:"status" example:"ok"`
 	Timestamp string `json:"timestamp" example:"2025-09-11T10:00:00Z"`
-	Version   string `json:"version" example:"1.8.2"`
+	Version   string `json:"version" example:"1.9.1"`
 	Uptime    string `json:"uptime" example:"2h30m15s"`
 }
 

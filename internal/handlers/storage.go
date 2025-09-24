@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+
 	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/models/web"
@@ -107,12 +109,15 @@ func (sh *StorageHandler) SwitchStorage(c *gin.Context) {
 		return
 	}
 
-    // 更新配置
-    sh.storageConfig.Type = req.Type
-    if err := sh.configManager.PersistYAML(); err != nil {
-        common.InternalServerErrorResponse(c, "保存配置失败: "+err.Error())
-        return
-    }
+	// 更新配置
+	if err := sh.configManager.UpdateTransaction(func(draft *config.ConfigManager) error {
+		draft.Storage.Type = req.Type
+		return nil
+	}); err != nil {
+		common.InternalServerErrorResponse(c, "保存配置失败: "+err.Error())
+		return
+	}
+	sh.storageConfig = sh.configManager.Storage
 
 	common.SuccessResponse(c, web.StorageSwitchResponse{
 		Success:     true,
@@ -148,130 +153,136 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 		return
 	}
 
-	// 根据存储类型更新配置
-	switch req.Type {
-	case "local":
-		if req.Config != nil && req.Config.StoragePath != "" {
-			sh.storageConfig.StoragePath = req.Config.StoragePath
+	var reconfigure func() error
+
+	if err := sh.configManager.UpdateTransaction(func(draft *config.ConfigManager) error {
+		switch req.Type {
+		case "local":
+			if req.Config != nil && req.Config.StoragePath != "" {
+				draft.Storage.StoragePath = req.Config.StoragePath
+			}
+		case "webdav":
+			if req.Config != nil && req.Config.WebDAV != nil {
+				if draft.Storage.WebDAV == nil {
+					draft.Storage.WebDAV = &config.WebDAVConfig{}
+				}
+				if req.Config.WebDAV.Hostname != "" {
+					draft.Storage.WebDAV.Hostname = req.Config.WebDAV.Hostname
+				}
+				if req.Config.WebDAV.Username != "" {
+					draft.Storage.WebDAV.Username = req.Config.WebDAV.Username
+				}
+				if req.Config.WebDAV.Password != "" {
+					draft.Storage.WebDAV.Password = req.Config.WebDAV.Password
+				}
+				if req.Config.WebDAV.RootPath != "" {
+					draft.Storage.WebDAV.RootPath = req.Config.WebDAV.RootPath
+				}
+				if req.Config.WebDAV.URL != "" {
+					draft.Storage.WebDAV.URL = req.Config.WebDAV.URL
+				}
+			}
+		case "s3":
+			if req.Config != nil && req.Config.S3 != nil {
+				if draft.Storage.S3 == nil {
+					draft.Storage.S3 = &config.S3Config{}
+				}
+				if req.Config.S3.AccessKeyID != "" {
+					draft.Storage.S3.AccessKeyID = req.Config.S3.AccessKeyID
+				}
+				if req.Config.S3.SecretAccessKey != "" {
+					draft.Storage.S3.SecretAccessKey = req.Config.S3.SecretAccessKey
+				}
+				if req.Config.S3.BucketName != "" {
+					draft.Storage.S3.BucketName = req.Config.S3.BucketName
+				}
+				if req.Config.S3.EndpointURL != "" {
+					draft.Storage.S3.EndpointURL = req.Config.S3.EndpointURL
+				}
+				if req.Config.S3.RegionName != "" {
+					draft.Storage.S3.RegionName = req.Config.S3.RegionName
+				}
+				if req.Config.S3.Hostname != "" {
+					draft.Storage.S3.Hostname = req.Config.S3.Hostname
+				}
+				draft.Storage.S3.Proxy = req.Config.S3.Proxy
+			}
+		case "nfs":
+			if req.Config != nil && req.Config.NFS != nil {
+				if draft.Storage.NFS == nil {
+					draft.Storage.NFS = &config.NFSConfig{}
+				}
+				if req.Config.NFS.Server != "" {
+					draft.Storage.NFS.Server = req.Config.NFS.Server
+				}
+				if req.Config.NFS.Path != "" {
+					draft.Storage.NFS.Path = req.Config.NFS.Path
+				}
+				if req.Config.NFS.MountPoint != "" {
+					draft.Storage.NFS.MountPoint = req.Config.NFS.MountPoint
+				}
+				if req.Config.NFS.Version != "" {
+					draft.Storage.NFS.Version = req.Config.NFS.Version
+				}
+				if req.Config.NFS.Options != "" {
+					draft.Storage.NFS.Options = req.Config.NFS.Options
+				}
+				if req.Config.NFS.Timeout > 0 {
+					draft.Storage.NFS.Timeout = req.Config.NFS.Timeout
+				}
+				if req.Config.NFS.SubPath != "" {
+					draft.Storage.NFS.SubPath = req.Config.NFS.SubPath
+				}
+				draft.Storage.NFS.AutoMount = req.Config.NFS.AutoMount
+				draft.Storage.NFS.RetryCount = req.Config.NFS.RetryCount
+			}
+		default:
+			return fmt.Errorf("不支持的存储类型: %s", req.Type)
 		}
-
-	case "webdav":
-		if req.Config != nil && req.Config.WebDAV != nil {
-			if sh.storageConfig.WebDAV == nil {
-				sh.storageConfig.WebDAV = &config.WebDAVConfig{}
-			}
-			if req.Config.WebDAV.Hostname != "" {
-				sh.storageConfig.WebDAV.Hostname = req.Config.WebDAV.Hostname
-			}
-			if req.Config.WebDAV.Username != "" {
-				sh.storageConfig.WebDAV.Username = req.Config.WebDAV.Username
-			}
-			if req.Config.WebDAV.Password != "" {
-				sh.storageConfig.WebDAV.Password = req.Config.WebDAV.Password
-			}
-			if req.Config.WebDAV.RootPath != "" {
-				sh.storageConfig.WebDAV.RootPath = req.Config.WebDAV.RootPath
-			}
-			if req.Config.WebDAV.URL != "" {
-				sh.storageConfig.WebDAV.URL = req.Config.WebDAV.URL
-			}
-
-			// 重新创建 WebDAV 存储以应用新配置
-			if err := sh.storageManager.ReconfigureWebDAV(
-				sh.storageConfig.WebDAV.Hostname,
-				sh.storageConfig.WebDAV.Username,
-				sh.storageConfig.WebDAV.Password,
-				sh.storageConfig.WebDAV.RootPath,
-			); err != nil {
-				common.InternalServerErrorResponse(c, "重新配置WebDAV存储失败: "+err.Error())
-				return
-			}
-		}
-
-	case "s3":
-		if req.Config != nil && req.Config.S3 != nil {
-			if sh.storageConfig.S3 == nil {
-				sh.storageConfig.S3 = &config.S3Config{}
-			}
-			if req.Config.S3.AccessKeyID != "" {
-				sh.storageConfig.S3.AccessKeyID = req.Config.S3.AccessKeyID
-			}
-			if req.Config.S3.SecretAccessKey != "" {
-				sh.storageConfig.S3.SecretAccessKey = req.Config.S3.SecretAccessKey
-			}
-			if req.Config.S3.BucketName != "" {
-				sh.storageConfig.S3.BucketName = req.Config.S3.BucketName
-			}
-			if req.Config.S3.EndpointURL != "" {
-				sh.storageConfig.S3.EndpointURL = req.Config.S3.EndpointURL
-			}
-			if req.Config.S3.RegionName != "" {
-				sh.storageConfig.S3.RegionName = req.Config.S3.RegionName
-			}
-			if req.Config.S3.Hostname != "" {
-				sh.storageConfig.S3.Hostname = req.Config.S3.Hostname
-			}
-			// Proxy 字段直接赋值
-			sh.storageConfig.S3.Proxy = req.Config.S3.Proxy
-		}
-
-	case "nfs":
-		if req.Config != nil && req.Config.NFS != nil {
-			if sh.storageConfig.NFS == nil {
-				sh.storageConfig.NFS = &config.NFSConfig{}
-			}
-			if req.Config.NFS.Server != "" {
-				sh.storageConfig.NFS.Server = req.Config.NFS.Server
-			}
-			if req.Config.NFS.Path != "" {
-				sh.storageConfig.NFS.Path = req.Config.NFS.Path
-			}
-			if req.Config.NFS.MountPoint != "" {
-				sh.storageConfig.NFS.MountPoint = req.Config.NFS.MountPoint
-			}
-			if req.Config.NFS.Version != "" {
-				sh.storageConfig.NFS.Version = req.Config.NFS.Version
-			}
-			if req.Config.NFS.Options != "" {
-				sh.storageConfig.NFS.Options = req.Config.NFS.Options
-			}
-			if req.Config.NFS.Timeout > 0 {
-				sh.storageConfig.NFS.Timeout = req.Config.NFS.Timeout
-			}
-			if req.Config.NFS.SubPath != "" {
-				sh.storageConfig.NFS.SubPath = req.Config.NFS.SubPath
-			}
-			// 直接赋值的字段
-			sh.storageConfig.NFS.AutoMount = req.Config.NFS.AutoMount
-			sh.storageConfig.NFS.RetryCount = req.Config.NFS.RetryCount
-
-			// 重新创建 NFS 存储以应用新配置
-			if err := sh.storageManager.ReconfigureNFS(
-				sh.storageConfig.NFS.Server,
-				sh.storageConfig.NFS.Path,
-				sh.storageConfig.NFS.MountPoint,
-				sh.storageConfig.NFS.Version,
-				sh.storageConfig.NFS.Options,
-				sh.storageConfig.NFS.Timeout,
-				sh.storageConfig.NFS.AutoMount == 1,
-				sh.storageConfig.NFS.RetryCount,
-				sh.storageConfig.NFS.SubPath,
-			); err != nil {
-				common.InternalServerErrorResponse(c, "重新配置NFS存储失败: "+err.Error())
-				return
-			}
-		}
-
-	default:
-		common.BadRequestResponse(c, "不支持的存储类型: "+req.Type)
+		return nil
+	}); err != nil {
+		common.InternalServerErrorResponse(c, "保存配置失败: "+err.Error())
 		return
 	}
 
-    // 持久化最新配置
-    if err := sh.configManager.PersistYAML(); err != nil {
-        common.InternalServerErrorResponse(c, "保存配置失败: "+err.Error())
-        return
-    }
+	sh.storageConfig = sh.configManager.Storage
+
+	switch req.Type {
+	case "webdav":
+		if req.Config != nil && req.Config.WebDAV != nil {
+			reconfigure = func() error {
+				return sh.storageManager.ReconfigureWebDAV(
+					sh.storageConfig.WebDAV.Hostname,
+					sh.storageConfig.WebDAV.Username,
+					sh.storageConfig.WebDAV.Password,
+					sh.storageConfig.WebDAV.RootPath,
+				)
+			}
+		}
+	case "nfs":
+		if req.Config != nil && req.Config.NFS != nil {
+			reconfigure = func() error {
+				return sh.storageManager.ReconfigureNFS(
+					sh.storageConfig.NFS.Server,
+					sh.storageConfig.NFS.Path,
+					sh.storageConfig.NFS.MountPoint,
+					sh.storageConfig.NFS.Version,
+					sh.storageConfig.NFS.Options,
+					sh.storageConfig.NFS.Timeout,
+					sh.storageConfig.NFS.AutoMount == 1,
+					sh.storageConfig.NFS.RetryCount,
+					sh.storageConfig.NFS.SubPath,
+				)
+			}
+		}
+	}
+
+	if reconfigure != nil {
+		if err := reconfigure(); err != nil {
+			common.InternalServerErrorResponse(c, "重新配置存储失败: "+err.Error())
+			return
+		}
+	}
 
 	common.SuccessWithMessage(c, "存储配置更新成功", nil)
 }

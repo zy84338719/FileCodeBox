@@ -22,170 +22,159 @@ func (s *Service) UpdateConfig(configData map[string]interface{}) error {
 
 // UpdateConfigFromRequest 从结构化请求更新配置
 func (s *Service) UpdateConfigFromRequest(configRequest *web.AdminConfigRequest) error {
-	// 直接更新配置管理器的各个模块，不使用 map 转换
-	ensureUI := func() *config.UIConfig {
-		if s.manager.UI == nil {
-			s.manager.UI = &config.UIConfig{}
-		}
-		return s.manager.UI
-	}
-
-	// 处理基础配置
-	if configRequest.Base != nil {
-		baseConfig := configRequest.Base
-		if baseConfig.Name != "" {
-			s.manager.Base.Name = baseConfig.Name
-		}
-		if baseConfig.Description != "" {
-			s.manager.Base.Description = baseConfig.Description
-		}
-		if baseConfig.Keywords != "" {
-			s.manager.Base.Keywords = baseConfig.Keywords
-		}
-		if baseConfig.Port != 0 {
-			s.manager.Base.Port = baseConfig.Port
-		}
-		if baseConfig.Host != "" {
-			s.manager.Base.Host = baseConfig.Host
-		}
-		if baseConfig.DataPath != "" {
-			s.manager.Base.DataPath = baseConfig.DataPath
-		}
-		s.manager.Base.Production = baseConfig.Production
-	}
-
-	// 处理数据库配置
-	if configRequest.Database != nil {
-		dbConfig := configRequest.Database
-		if dbConfig.Type != "" {
-			s.manager.Database.Type = dbConfig.Type
-		}
-		if dbConfig.Host != "" {
-			s.manager.Database.Host = dbConfig.Host
-		}
-		if dbConfig.Port != 0 {
-			s.manager.Database.Port = dbConfig.Port
-		}
-		if dbConfig.Name != "" {
-			s.manager.Database.Name = dbConfig.Name
-		}
-		if dbConfig.User != "" {
-			s.manager.Database.User = dbConfig.User
-		}
-		if dbConfig.Pass != "" {
-			s.manager.Database.Pass = dbConfig.Pass
-		}
-		if dbConfig.SSL != "" {
-			s.manager.Database.SSL = dbConfig.SSL
-		}
-	}
-
-	// 处理传输配置
-	if configRequest.Transfer != nil {
-		if configRequest.Transfer.Upload != nil {
-			uploadConfig := configRequest.Transfer.Upload
-			s.manager.Transfer.Upload.OpenUpload = uploadConfig.OpenUpload
-			s.manager.Transfer.Upload.UploadSize = uploadConfig.UploadSize
-			s.manager.Transfer.Upload.EnableChunk = uploadConfig.EnableChunk
-			s.manager.Transfer.Upload.ChunkSize = uploadConfig.ChunkSize
-			s.manager.Transfer.Upload.MaxSaveSeconds = uploadConfig.MaxSaveSeconds
-			s.manager.Transfer.Upload.RequireLogin = uploadConfig.RequireLogin
+	return s.manager.UpdateTransaction(func(draft *config.ConfigManager) error {
+		ensureUI := func(cfg *config.ConfigManager) *config.UIConfig {
+			if cfg.UI == nil {
+				cfg.UI = &config.UIConfig{}
+			}
+			return cfg.UI
 		}
 
-		if configRequest.Transfer.Download != nil {
-			downloadConfig := configRequest.Transfer.Download
-			s.manager.Transfer.Download.EnableConcurrentDownload = downloadConfig.EnableConcurrentDownload
-			s.manager.Transfer.Download.MaxConcurrentDownloads = downloadConfig.MaxConcurrentDownloads
-			s.manager.Transfer.Download.DownloadTimeout = downloadConfig.DownloadTimeout
-			s.manager.Transfer.Download.RequireLogin = downloadConfig.RequireLogin
+		if configRequest.Base != nil {
+			baseConfig := configRequest.Base
+			if baseConfig.Name != "" {
+				draft.Base.Name = baseConfig.Name
+			}
+			if baseConfig.Description != "" {
+				draft.Base.Description = baseConfig.Description
+			}
+			if baseConfig.Keywords != "" {
+				draft.Base.Keywords = baseConfig.Keywords
+			}
+			if baseConfig.Port != 0 {
+				draft.Base.Port = baseConfig.Port
+			}
+			if baseConfig.Host != "" {
+				draft.Base.Host = baseConfig.Host
+			}
+			if baseConfig.DataPath != "" {
+				draft.Base.DataPath = baseConfig.DataPath
+			}
+			draft.Base.Production = baseConfig.Production
 		}
-	}
 
-	// 处理存储配置
-	if configRequest.Storage != nil {
-		storageConfig := configRequest.Storage
-		if storageConfig.Type != "" {
-			s.manager.Storage.Type = storageConfig.Type
+		if configRequest.Database != nil {
+			dbConfig := configRequest.Database
+			if dbConfig.Type != "" {
+				draft.Database.Type = dbConfig.Type
+			}
+			if dbConfig.Host != "" {
+				draft.Database.Host = dbConfig.Host
+			}
+			if dbConfig.Port != 0 {
+				draft.Database.Port = dbConfig.Port
+			}
+			if dbConfig.Name != "" {
+				draft.Database.Name = dbConfig.Name
+			}
+			if dbConfig.User != "" {
+				draft.Database.User = dbConfig.User
+			}
+			if dbConfig.Pass != "" {
+				draft.Database.Pass = dbConfig.Pass
+			}
+			if dbConfig.SSL != "" {
+				draft.Database.SSL = dbConfig.SSL
+			}
 		}
-		if storageConfig.StoragePath != "" {
-			s.manager.Storage.StoragePath = storageConfig.StoragePath
-		}
-		if storageConfig.S3 != nil {
-			s.manager.Storage.S3 = storageConfig.S3
-		}
-		if storageConfig.WebDAV != nil {
-			s.manager.Storage.WebDAV = storageConfig.WebDAV
-		}
-		if storageConfig.OneDrive != nil {
-			s.manager.Storage.OneDrive = storageConfig.OneDrive
-		}
-		if storageConfig.NFS != nil {
-			s.manager.Storage.NFS = storageConfig.NFS
-		}
-	}
 
-	// 处理用户系统配置
-	if configRequest.User != nil {
-		userConfig := configRequest.User
-		s.manager.User.AllowUserRegistration = userConfig.AllowUserRegistration
-		s.manager.User.RequireEmailVerify = userConfig.RequireEmailVerify
-		if userConfig.UserStorageQuota != 0 {
-			s.manager.User.UserStorageQuota = userConfig.UserStorageQuota
-		}
-		if userConfig.UserUploadSize != 0 {
-			s.manager.User.UserUploadSize = userConfig.UserUploadSize
-		}
-		if userConfig.SessionExpiryHours != 0 {
-			s.manager.User.SessionExpiryHours = userConfig.SessionExpiryHours
-		}
-		if userConfig.MaxSessionsPerUser != 0 {
-			s.manager.User.MaxSessionsPerUser = userConfig.MaxSessionsPerUser
-		}
-		if userConfig.JWTSecret != "" {
-			s.manager.User.JWTSecret = userConfig.JWTSecret
-		}
-	}
+		if configRequest.Transfer != nil {
+			if configRequest.Transfer.Upload != nil {
+				uploadConfig := configRequest.Transfer.Upload
+				draft.Transfer.Upload.OpenUpload = uploadConfig.OpenUpload
+				draft.Transfer.Upload.UploadSize = uploadConfig.UploadSize
+				draft.Transfer.Upload.EnableChunk = uploadConfig.EnableChunk
+				draft.Transfer.Upload.ChunkSize = uploadConfig.ChunkSize
+				draft.Transfer.Upload.MaxSaveSeconds = uploadConfig.MaxSaveSeconds
+				draft.Transfer.Upload.RequireLogin = uploadConfig.RequireLogin
+			}
 
-	// 处理 MCP 配置
-	if configRequest.MCP != nil {
-		mcpConfig := configRequest.MCP
-		s.manager.MCP.EnableMCPServer = mcpConfig.EnableMCPServer
-		if mcpConfig.MCPPort != "" {
-			s.manager.MCP.MCPPort = mcpConfig.MCPPort
+			if configRequest.Transfer.Download != nil {
+				downloadConfig := configRequest.Transfer.Download
+				draft.Transfer.Download.EnableConcurrentDownload = downloadConfig.EnableConcurrentDownload
+				draft.Transfer.Download.MaxConcurrentDownloads = downloadConfig.MaxConcurrentDownloads
+				draft.Transfer.Download.DownloadTimeout = downloadConfig.DownloadTimeout
+				draft.Transfer.Download.RequireLogin = downloadConfig.RequireLogin
+			}
 		}
-		if mcpConfig.MCPHost != "" {
-			s.manager.MCP.MCPHost = mcpConfig.MCPHost
+
+		if configRequest.Storage != nil {
+			storageConfig := configRequest.Storage
+			if storageConfig.Type != "" {
+				draft.Storage.Type = storageConfig.Type
+			}
+			if storageConfig.StoragePath != "" {
+				draft.Storage.StoragePath = storageConfig.StoragePath
+			}
+			if storageConfig.S3 != nil {
+				draft.Storage.S3 = storageConfig.S3
+			}
+			if storageConfig.WebDAV != nil {
+				draft.Storage.WebDAV = storageConfig.WebDAV
+			}
+			if storageConfig.OneDrive != nil {
+				draft.Storage.OneDrive = storageConfig.OneDrive
+			}
+			if storageConfig.NFS != nil {
+				draft.Storage.NFS = storageConfig.NFS
+			}
 		}
-	}
 
-	// 处理 UI 配置
-	if configRequest.UI != nil {
-		uiConfig := configRequest.UI
-		ui := ensureUI()
-		if strings.TrimSpace(uiConfig.ThemesSelect) != "" {
-			ui.ThemesSelect = uiConfig.ThemesSelect
+		if configRequest.User != nil {
+			userConfig := configRequest.User
+			draft.User.AllowUserRegistration = userConfig.AllowUserRegistration
+			draft.User.RequireEmailVerify = userConfig.RequireEmailVerify
+			if userConfig.UserStorageQuota != 0 {
+				draft.User.UserStorageQuota = userConfig.UserStorageQuota
+			}
+			if userConfig.UserUploadSize != 0 {
+				draft.User.UserUploadSize = userConfig.UserUploadSize
+			}
+			if userConfig.SessionExpiryHours != 0 {
+				draft.User.SessionExpiryHours = userConfig.SessionExpiryHours
+			}
+			if userConfig.MaxSessionsPerUser != 0 {
+				draft.User.MaxSessionsPerUser = userConfig.MaxSessionsPerUser
+			}
+			if userConfig.JWTSecret != "" {
+				draft.User.JWTSecret = userConfig.JWTSecret
+			}
 		}
-		ui.PageExplain = uiConfig.PageExplain
-		ui.Opacity = uiConfig.Opacity
-	}
 
-	// 顶层通知字段
-	if configRequest.NotifyTitle != nil {
-		s.manager.NotifyTitle = *configRequest.NotifyTitle
-	}
-	if configRequest.NotifyContent != nil {
-		s.manager.NotifyContent = *configRequest.NotifyContent
-	}
+		if configRequest.MCP != nil {
+			mcpConfig := configRequest.MCP
+			draft.MCP.EnableMCPServer = mcpConfig.EnableMCPServer
+			if mcpConfig.MCPPort != "" {
+				draft.MCP.MCPPort = mcpConfig.MCPPort
+			}
+			if mcpConfig.MCPHost != "" {
+				draft.MCP.MCPHost = mcpConfig.MCPHost
+			}
+		}
 
-	// 处理系统运行时字段
-	if configRequest.SysStart != nil {
-		s.manager.SysStart = *configRequest.SysStart
-	}
+		if configRequest.UI != nil {
+			uiConfig := configRequest.UI
+			ui := ensureUI(draft)
+			if strings.TrimSpace(uiConfig.ThemesSelect) != "" {
+				ui.ThemesSelect = uiConfig.ThemesSelect
+			}
+			ui.PageExplain = uiConfig.PageExplain
+			ui.Opacity = uiConfig.Opacity
+		}
 
-	if err := s.manager.PersistYAML(); err != nil {
-		return fmt.Errorf("persist config: %w", err)
-	}
-	return nil
+		if configRequest.NotifyTitle != nil {
+			draft.NotifyTitle = *configRequest.NotifyTitle
+		}
+		if configRequest.NotifyContent != nil {
+			draft.NotifyContent = *configRequest.NotifyContent
+		}
+
+		if configRequest.SysStart != nil {
+			draft.SysStart = *configRequest.SysStart
+		}
+
+		return nil
+	})
 }
 
 // GetFullConfig 获取完整配置 - 返回配置管理器结构体

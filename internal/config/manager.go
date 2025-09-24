@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 
@@ -171,22 +172,7 @@ func (cm *ConfigManager) ReloadConfig() error {
 
 // PersistYAML 将当前配置保存到 YAML 文件
 func (cm *ConfigManager) PersistYAML() error {
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		configPath = "./config.yaml"
-	}
-
-	// 确保 UI 配置存在
-	if cm.UI == nil {
-		cm.UI = &UIConfig{}
-	}
-
-	data, err := yaml.Marshal(cm)
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(configPath, data, 0644)
+	return writeConfigToPath(cm.configFilePath(), cm)
 }
 
 // applyEnvironmentOverrides 应用环境变量覆盖配置
@@ -198,6 +184,54 @@ func (cm *ConfigManager) applyEnvironmentOverrides() {
 // Save 保存配置（已废弃，请使用 config.yaml 和环境变量）
 func (cm *ConfigManager) Save() error {
 	return errors.New("数据库配置保存已不支持，请使用 config.yaml 和环境变量")
+}
+
+// UpdateTransaction 在配置上执行事务式更新：先克隆、应用变更、落盘、重载；若任一步失败则回滚到原状态并恢复文件
+func (cm *ConfigManager) UpdateTransaction(apply func(draft *ConfigManager) error) error {
+	if apply == nil {
+		return errors.New("更新操作不能为空")
+	}
+
+	original := cm.Clone()
+	draft := cm.Clone()
+
+	if err := apply(draft); err != nil {
+		return err
+	}
+
+	if err := draft.Validate(); err != nil {
+		return err
+	}
+
+	cm.applyFrom(draft)
+	path := cm.configFilePath()
+
+	if err := writeConfigToPath(path, cm); err != nil {
+		cm.applyFrom(original)
+		_ = writeConfigToPath(path, original)
+		return err
+	}
+
+	reloaded := NewConfigManager()
+	if err := reloaded.LoadFromYAML(path); err != nil {
+		cm.applyFrom(original)
+		_ = writeConfigToPath(path, original)
+		return err
+	}
+	reloaded.applyEnvironmentOverrides()
+	reloaded.db = cm.db
+
+	cm.applyFrom(reloaded)
+
+	if err := cm.ReloadConfig(); err != nil {
+		cm.applyFrom(original)
+		if rollbackErr := writeConfigToPath(path, original); rollbackErr != nil {
+			return errors.Join(err, fmt.Errorf("rollback failed: %w", rollbackErr))
+		}
+		return err
+	}
+
+	return nil
 }
 
 // === 配置访问助手方法 ===
@@ -223,6 +257,13 @@ func (cm *ConfigManager) Clone() *ConfigManager {
 	newManager.NotifyTitle = cm.NotifyTitle
 	newManager.NotifyContent = cm.NotifyContent
 	newManager.SysStart = cm.SysStart
+	newManager.UploadMinute = cm.UploadMinute
+	newManager.UploadCount = cm.UploadCount
+	newManager.ErrorMinute = cm.ErrorMinute
+	newManager.ErrorCount = cm.ErrorCount
+	if len(cm.ExpireStyle) > 0 {
+		newManager.ExpireStyle = append([]string(nil), cm.ExpireStyle...)
+	}
 
 	// 克隆 UI 配置
 	if cm.UI != nil {
@@ -231,6 +272,94 @@ func (cm *ConfigManager) Clone() *ConfigManager {
 	}
 
 	return newManager
+}
+
+// applyFrom 用于将另外一个配置实例的内容拷贝到当前实例，保留数据库连接句柄
+func (cm *ConfigManager) applyFrom(src *ConfigManager) {
+	if src == nil {
+		return
+	}
+
+	db := cm.db
+
+	if src.Base != nil {
+		cm.Base = src.Base.Clone()
+	} else {
+		cm.Base = nil
+	}
+
+	if src.Database != nil {
+		cm.Database = src.Database.Clone()
+	} else {
+		cm.Database = nil
+	}
+
+	if src.Transfer != nil {
+		cm.Transfer = src.Transfer.Clone()
+	} else {
+		cm.Transfer = nil
+	}
+
+	if src.Storage != nil {
+		cm.Storage = src.Storage.Clone()
+	} else {
+		cm.Storage = nil
+	}
+
+	if src.User != nil {
+		cm.User = src.User.Clone()
+	} else {
+		cm.User = nil
+	}
+
+	if src.MCP != nil {
+		cm.MCP = src.MCP.Clone()
+	} else {
+		cm.MCP = nil
+	}
+
+	if src.UI != nil {
+		ui := *src.UI
+		cm.UI = &ui
+	} else {
+		cm.UI = nil
+	}
+
+	cm.NotifyTitle = src.NotifyTitle
+	cm.NotifyContent = src.NotifyContent
+	cm.SysStart = src.SysStart
+	cm.UploadMinute = src.UploadMinute
+	cm.UploadCount = src.UploadCount
+	cm.ErrorMinute = src.ErrorMinute
+	cm.ErrorCount = src.ErrorCount
+	cm.ExpireStyle = append([]string(nil), src.ExpireStyle...)
+
+	cm.db = db
+}
+
+func (cm *ConfigManager) configFilePath() string {
+	if path := os.Getenv("CONFIG_PATH"); path != "" {
+		return path
+	}
+	return "./config.yaml"
+}
+
+func writeConfigToPath(path string, cfg *ConfigManager) error {
+	if cfg == nil {
+		return errors.New("配置不能为空")
+	}
+
+	clone := cfg.Clone()
+	if clone.UI == nil {
+		clone.UI = &UIConfig{}
+	}
+
+	data, err := yaml.Marshal(clone)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, data, 0644)
 }
 
 // Validate 验证所有配置模块

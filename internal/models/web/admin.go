@@ -253,21 +253,21 @@ type AdminFileDetail struct {
 
 // TransferLogItem 审计日志单条记录
 type TransferLogItem struct {
-	ID         uint    `json:"id"`
-	Operation  string  `json:"operation"`
-	FileCode   string  `json:"file_code"`
-	FileName   string  `json:"file_name"`
-	FileSize   int64   `json:"file_size"`
-	UserID     *uint   `json:"user_id,omitempty"`
-	Username   string  `json:"username"`
-	IP         string  `json:"ip"`
-	DurationMs int64   `json:"duration_ms"`
-	CreatedAt  string  `json:"created_at"`
+	ID         uint   `json:"id"`
+	Operation  string `json:"operation"`
+	FileCode   string `json:"file_code"`
+	FileName   string `json:"file_name"`
+	FileSize   int64  `json:"file_size"`
+	UserID     *uint  `json:"user_id,omitempty"`
+	Username   string `json:"username"`
+	IP         string `json:"ip"`
+	DurationMs int64  `json:"duration_ms"`
+	CreatedAt  string `json:"created_at"`
 }
 
 // TransferLogListResponse 审计日志列表响应
 type TransferLogListResponse struct {
-	Logs       []TransferLogItem `json:"logs"`
+	Logs       []TransferLogItem  `json:"logs"`
 	Pagination PaginationResponse `json:"pagination"`
 }
 
@@ -292,4 +292,24 @@ type LogsResponse struct {
 type TasksResponse struct {
 	Tasks interface{} `json:"tasks"` // 使用 interface{} 以兼容现有类型
 	Total int         `json:"total"`
+}
+
+// AdminOperationLogItem 管理员操作审计记录项
+type AdminOperationLogItem struct {
+	ID        uint   `json:"id"`
+	Action    string `json:"action"`
+	Target    string `json:"target"`
+	Success   bool   `json:"success"`
+	Message   string `json:"message"`
+	ActorID   *uint  `json:"actor_id,omitempty"`
+	ActorName string `json:"actor_name"`
+	IP        string `json:"ip"`
+	LatencyMs int64  `json:"latency_ms"`
+	CreatedAt string `json:"created_at"`
+}
+
+// AdminOperationLogListResponse 管理员操作审计列表响应
+type AdminOperationLogListResponse struct {
+	Logs       []AdminOperationLogItem `json:"logs"`
+	Pagination PaginationResponse      `json:"pagination"`
 }

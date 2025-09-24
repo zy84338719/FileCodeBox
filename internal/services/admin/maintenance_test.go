@@ -105,3 +105,39 @@ func TestCleanTempFilesRemovesOldChunks(t *testing.T) {
 		t.Fatalf("expected chunk directory to be removed, stat err=%v", err)
 	}
 }
+
+func TestRecordOperationLogAndList(t *testing.T) {
+	svc, repo, _ := setupAdminTestService(t)
+
+	logEntry := &models.AdminOperationLog{
+		Action:    "maintenance.test",
+		Target:    "unit",
+		Success:   true,
+		Message:   "ok",
+		ActorName: "tester",
+		IP:        "127.0.0.1",
+		LatencyMs: 123,
+	}
+
+	if err := svc.RecordOperationLog(logEntry); err != nil {
+		t.Fatalf("RecordOperationLog failed: %v", err)
+	}
+
+	logs, total, err := svc.GetOperationLogs(1, 10, "maintenance.test", "tester", nil)
+	if err != nil {
+		t.Fatalf("GetOperationLogs returned error: %v", err)
+	}
+	if total != 1 || len(logs) != 1 {
+		t.Fatalf("expected one log, got total=%d len=%d", total, len(logs))
+	}
+
+	stored := logs[0]
+	if stored.Message != "ok" || stored.ActorName != "tester" || stored.IP != "127.0.0.1" {
+		t.Fatalf("unexpected log entry: %#v", stored)
+	}
+
+	// ensure DAO was wired correctly
+	if repo.AdminOpLog == nil {
+		t.Fatalf("expected AdminOpLog DAO to be initialized")
+	}
+}

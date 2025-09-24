@@ -62,32 +62,33 @@ type AdminConfig struct {
 
 // updateDatabaseConfig 更新数据库配置
 func (h *SetupHandler) updateDatabaseConfig(db DatabaseConfig) error {
-	// 更新配置管理器中的数据库配置
-	h.manager.Database.Type = db.Type
+	return h.manager.UpdateTransaction(func(draft *config.ConfigManager) error {
+		// 更新配置管理器中的数据库配置
+		draft.Database.Type = db.Type
 
-	switch db.Type {
-	case "sqlite":
-		h.manager.Database.Host = ""
-		h.manager.Database.Port = 0
-		h.manager.Database.User = ""
-		h.manager.Database.Pass = ""
-		h.manager.Database.Name = db.File
-	case "mysql":
-		h.manager.Database.Host = db.Host
-		h.manager.Database.Port = db.Port
-		h.manager.Database.User = db.User
-		h.manager.Database.Pass = db.Password
-		h.manager.Database.Name = db.Database
-	case "postgres":
-		h.manager.Database.Host = db.Host
-		h.manager.Database.Port = db.Port
-		h.manager.Database.User = db.User
-		h.manager.Database.Pass = db.Password
-		h.manager.Database.Name = db.Database
-	}
+		switch db.Type {
+		case "sqlite":
+			draft.Database.Host = ""
+			draft.Database.Port = 0
+			draft.Database.User = ""
+			draft.Database.Pass = ""
+			draft.Database.Name = db.File
+		case "mysql":
+			draft.Database.Host = db.Host
+			draft.Database.Port = db.Port
+			draft.Database.User = db.User
+			draft.Database.Pass = db.Password
+			draft.Database.Name = db.Database
+		case "postgres":
+			draft.Database.Host = db.Host
+			draft.Database.Port = db.Port
+			draft.Database.User = db.User
+			draft.Database.Pass = db.Password
+			draft.Database.Name = db.Database
+		}
 
-	// 持久化配置到 YAML
-	return h.manager.PersistYAML()
+		return nil
+	})
 }
 
 // createAdminUser 创建管理员用户
@@ -155,17 +156,14 @@ func (h *SetupHandler) createAdminUser(admin AdminConfig) error {
 
 // enableUserSystem 启用用户系统
 func (h *SetupHandler) enableUserSystem(adminConfig AdminConfig) error {
-	// 用户系统始终启用，无需设置
-
-	// 根据管理员选择设置用户注册权限
-	if adminConfig.AllowUserRegistration {
-		h.manager.User.AllowUserRegistration = 1
-	} else {
-		h.manager.User.AllowUserRegistration = 0
-	}
-
-	// 保存配置到 YAML
-	return h.manager.PersistYAML()
+	return h.manager.UpdateTransaction(func(draft *config.ConfigManager) error {
+		if adminConfig.AllowUserRegistration {
+			draft.User.AllowUserRegistration = 1
+		} else {
+			draft.User.AllowUserRegistration = 0
+		}
+		return nil
+	})
 }
 
 // contains 检查字符串是否包含子字符串
@@ -363,8 +361,10 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 
 		// 如果之前捕获了 desiredStoragePath，则此时 manager 已注入 DB，可以持久化 storage_path
 		if desiredStoragePath != "" {
-			manager.Storage.StoragePath = desiredStoragePath
-			if err := manager.PersistYAML(); err != nil {
+			if err := manager.UpdateTransaction(func(draft *config.ConfigManager) error {
+				draft.Storage.StoragePath = desiredStoragePath
+				return nil
+			}); err != nil {
 				logrus.WithError(err).Warn("[InitializeNoDB] 持久化 storage_path 失败")
 				// 记录但不阻塞初始化流程
 				if manager.Base != nil && manager.Base.DataPath != "" {
@@ -384,15 +384,9 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 		}
 
 		// 启用用户系统配置
-		if req.Admin.AllowUserRegistration {
-			manager.User.AllowUserRegistration = 1
-		} else {
-			manager.User.AllowUserRegistration = 0
-		}
-		if err := manager.PersistYAML(); err != nil {
+		if err := setupHandler.enableUserSystem(req.Admin); err != nil {
 			// 不阻塞初始化成功路径，但记录错误
-			logrus.WithError(err).Warn("[InitializeNoDB] manager.PersistYAML() 返回错误（但不阻塞初始化）")
-			// 将错误写入数据目录下的日志文件以便排查
+			logrus.WithError(err).Warn("[InitializeNoDB] enableUserSystem 返回错误（但不阻塞初始化）")
 			if manager.Base != nil && manager.Base.DataPath != "" {
 				_ = os.WriteFile(manager.Base.DataPath+"/init_save_err.log", []byte(err.Error()), 0644)
 			} else {

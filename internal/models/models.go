@@ -10,12 +10,14 @@ import (
 // 类型别名，用于向后兼容
 type (
 	// 数据库模型别名
-	FileCode    = db.FileCode
-	UploadChunk = db.UploadChunk
-	User        = db.User
-	UserSession = db.UserSession
-	TransferLog = db.TransferLog
-	TransferLogQuery = db.TransferLogQuery
+	FileCode               = db.FileCode
+	UploadChunk            = db.UploadChunk
+	User                   = db.User
+	UserSession            = db.UserSession
+	TransferLog            = db.TransferLog
+	TransferLogQuery       = db.TransferLogQuery
+	AdminOperationLog      = db.AdminOperationLog
+	AdminOperationLogQuery = db.AdminOperationLogQuery
 
 	// 服务模型别名
 	BuildInfo = service.BuildInfo

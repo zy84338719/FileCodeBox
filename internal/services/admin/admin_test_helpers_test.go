@@ -24,7 +24,7 @@ func setupAdminTestService(t *testing.T) (*admin.Service, *repository.Repository
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := db.AutoMigrate(&models.User{}, &models.FileCode{}, &models.UploadChunk{}, &models.TransferLog{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.FileCode{}, &models.UploadChunk{}, &models.TransferLog{}, &models.AdminOperationLog{}); err != nil {
 		t.Fatalf("failed to auto-migrate test database: %v", err)
 	}
 

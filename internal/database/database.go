@@ -46,6 +46,7 @@ func InitWithManager(manager *config.ConfigManager) (*gorm.DB, error) {
 		&models.User{},
 		&models.UserSession{},
 		&models.TransferLog{},
+		&models.AdminOperationLog{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("数据库自动迁移失败: %w", err)
