@@ -2,15 +2,16 @@
 
 /* 文件管理工具栏 */
 .files-toolbar {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.86);
+    border-radius: var(--admin-radius-lg);
+    padding: 22px;
+    margin-bottom: 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: var(--admin-shadow-card);
+    border: 1px solid var(--admin-border);
     flex-wrap: wrap;
 }
 
@@ -28,17 +29,19 @@
 
 .files-search-input {
     flex: 1;
-    padding: 10px 16px;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
+    padding: 12px 16px;
+    border: 1px solid var(--admin-input-border);
+    border-radius: var(--admin-radius-sm);
     font-size: 14px;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background: var(--admin-input-bg);
 }
 
 .files-search-input:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    border-color: var(--admin-accent-strong);
+    box-shadow: 0 0 0 3px var(--admin-input-focus);
+    background: rgba(255, 255, 255, 0.98);
 }
 
 .files-actions {
@@ -57,40 +60,41 @@
 }
 
 .files-stat-card {
-    background: white;
-    border-radius: 8px;
-    padding: 16px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background: var(--admin-panel-bg);
+    border-radius: var(--admin-radius-lg);
+    padding: 20px;
+    box-shadow: var(--admin-panel-shadow);
     text-align: center;
-    border-left: 4px solid #007bff;
+    border-left: 4px solid var(--admin-accent-strong);
+    border: 1px solid var(--admin-panel-border);
 }
 
 .files-stat-value {
     font-size: 24px;
     font-weight: 700;
-    color: #333;
+    color: var(--admin-heading);
     margin-bottom: 4px;
 }
 
 .files-stat-label {
     font-size: 13px;
-    color: #6c757d;
+    color: var(--admin-muted);
     font-weight: 500;
 }
 
 /* 文件视图切换 */
 .view-toggle {
     display: flex;
-    border: 1px solid #e9ecef;
-    border-radius: 6px;
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius-sm);
     overflow: hidden;
 }
 
 .view-toggle-btn {
     padding: 8px 12px;
     border: none;
-    background: white;
-    color: #6c757d;
+    background: var(--admin-surface);
+    color: var(--admin-muted);
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
@@ -99,48 +103,53 @@
 }
 
 .view-toggle-btn.active {
-    background: #007bff;
-    color: white;
+    background: linear-gradient(135deg, var(--admin-primary-btn-start), var(--admin-primary-btn-end));
+    color: #fff;
 }
 
 .view-toggle-btn:hover:not(.active) {
-    background: #f8f9fa;
+    background: var(--admin-interactive-bg-hover);
 }
 
 /* 文件列表视图 */
 .files-list-container {
-    background: white;
-    border-radius: 8px;
+    background: transparent;
+    border-radius: var(--admin-radius-lg);
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: none;
     margin-bottom: 20px;
 }
 
 .files-table {
     width: 100%;
     border-collapse: collapse;
+    background: var(--admin-panel-bg);
+    border: 1px solid var(--admin-panel-border);
+    border-radius: var(--admin-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--admin-shadow-card);
 }
 
 .files-table th {
-    background: #f8f9fa;
-    padding: 12px 16px;
+    background: var(--admin-table-header-bg);
+    padding: 16px 20px;
     text-align: left;
     font-weight: 600;
-    color: #333;
-    border-bottom: 2px solid #e9ecef;
-    font-size: 14px;
+    color: var(--admin-heading);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+    font-size: 13px;
     white-space: nowrap;
 }
 
 .files-table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid #e9ecef;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
     vertical-align: middle;
     font-size: 14px;
 }
 
 .files-table tbody tr:hover {
-    background: #f8f9fa;
+    background: var(--admin-table-row-hover);
 }
 
 .files-table tbody tr:last-child td {
@@ -182,7 +191,7 @@
 
 .file-name {
     font-weight: 600;
-    color: #333;
+    color: var(--admin-heading);
     display: block;
     margin-bottom: 2px;
     word-break: break-all;
@@ -193,49 +202,50 @@
     gap: 12px;
     align-items: center;
     flex-wrap: wrap;
+    color: var(--admin-muted);
 }
 
 .file-code {
     font-family: monospace;
     font-size: 12px;
-    color: #6c757d;
-    background: #f8f9fa;
+    color: var(--admin-subtle);
+    background: rgba(148, 163, 184, 0.16);
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: var(--admin-radius-sm);
 }
 
 .file-size {
     font-size: 12px;
-    color: #6c757d;
+    color: var(--admin-muted);
 }
 
 .file-date {
     font-size: 12px;
-    color: #6c757d;
+    color: var(--admin-muted);
 }
 
 /* 文件状态标签 */
 .file-status {
     padding: 2px 8px;
-    border-radius: 12px;
+    border-radius: 999px;
     font-size: 11px;
     font-weight: 500;
     text-transform: uppercase;
 }
 
 .file-status.public {
-    background: #d4edda;
-    color: #155724;
+    background: rgba(34, 197, 94, 0.18);
+    color: #047857;
 }
 
 .file-status.private {
-    background: #f8d7da;
-    color: #721c24;
+    background: rgba(239, 68, 68, 0.18);
+    color: #b91c1c;
 }
 
 .file-status.expired {
-    background: #fff3cd;
-    color: #856404;
+    background: rgba(245, 158, 11, 0.18);
+    color: #b45309;
 }
 
 /* 文件操作按钮 */
@@ -248,7 +258,7 @@
 .file-action-btn {
     padding: 4px 8px;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--admin-radius-sm);
     cursor: pointer;
     transition: all 0.2s ease;
     font-size: 12px;
@@ -261,32 +271,32 @@
 
 .file-action-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    box-shadow: 0 6px 12px rgba(79, 70, 229, 0.16);
 }
 
 .btn-view {
-    background: #17a2b8;
-    color: white;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(29, 78, 216, 0.95));
+    color: #eff6ff;
 }
 
 .btn-download {
-    background: #28a745;
-    color: white;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(5, 150, 105, 0.96));
+    color: #ecfdf5;
 }
 
 .btn-copy {
-    background: #6c757d;
-    color: white;
+    background: linear-gradient(135deg, rgba(148, 163, 184, 0.95), rgba(100, 116, 139, 0.92));
+    color: #f8fafc;
 }
 
 .btn-edit {
-    background: #ffc107;
-    color: #212529;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.92), rgba(217, 119, 6, 0.92));
+    color: #fff7ed;
 }
 
 .btn-delete {
-    background: #dc3545;
-    color: white;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.96));
+    color: #fee2e2;
 }
 
 /* 文件网格视图 */
@@ -298,22 +308,23 @@
 }
 
 .file-card {
-    background: white;
-    border-radius: 8px;
+    background: var(--admin-panel-bg);
+    border-radius: var(--admin-radius-lg);
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: var(--admin-panel-shadow);
     transition: all 0.2s ease;
     cursor: pointer;
+    border: 1px solid var(--admin-panel-border);
 }
 
 .file-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: var(--admin-shadow-soft);
 }
 
 .file-card-preview {
     height: 120px;
-    background: #f8f9fa;
+    background: rgba(148, 163, 184, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -344,7 +355,7 @@
 
 .file-card-name {
     font-weight: 600;
-    color: #333;
+    color: var(--admin-heading);
     margin-bottom: 4px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -359,7 +370,7 @@
     justify-content: space-between;
     align-items: center;
     font-size: 11px;
-    color: #6c757d;
+    color: var(--admin-muted);
     margin-bottom: 8px;
 }
 
@@ -371,9 +382,9 @@
 
 /* 批量操作 */
 .bulk-actions {
-    background: #e9ecef;
+    background: rgba(99, 102, 241, 0.08);
     padding: 12px 16px;
-    border-radius: 6px;
+    border-radius: var(--admin-radius-lg);
     margin-bottom: 15px;
     display: none;
     align-items: center;
@@ -387,7 +398,7 @@
 .bulk-info {
     flex: 1;
     font-size: 14px;
-    color: #495057;
+    color: var(--admin-text);
 }
 
 .bulk-buttons {
@@ -397,25 +408,25 @@
 
 /* 文件上传区域 */
 .upload-area {
-    border: 2px dashed #ced4da;
-    border-radius: 8px;
+    border: 2px dashed rgba(99, 102, 241, 0.25);
+    border-radius: var(--admin-radius-lg);
     padding: 40px 20px;
     text-align: center;
-    background: #f8f9fa;
+    background: rgba(99, 102, 241, 0.06);
     transition: all 0.2s ease;
     margin-bottom: 20px;
 }
 
 .upload-area.dragover {
-    border-color: #007bff;
-    background: #e6f3ff;
+    border-color: var(--admin-accent-strong);
+    background: rgba(99, 102, 241, 0.12);
 }
 
 .upload-icon {
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: #007bff;
+    background: linear-gradient(135deg, var(--admin-primary-btn-start), var(--admin-primary-btn-end));
     color: white;
     display: flex;
     align-items: center;
@@ -426,13 +437,13 @@
 
 .upload-text {
     font-size: 16px;
-    color: #495057;
+    color: var(--admin-heading);
     margin-bottom: 8px;
 }
 
 .upload-hint {
     font-size: 14px;
-    color: #6c757d;
+    color: var(--admin-muted);
 }
 
 /* 文件过滤器 */
@@ -446,36 +457,36 @@
 
 .filter-label {
     font-size: 14px;
-    color: #495057;
+    color: var(--admin-text);
     font-weight: 500;
 }
 
 .filter-select {
-    padding: 6px 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
+    padding: 8px 12px;
+    border: 1px solid var(--admin-input-border);
+    border-radius: var(--admin-radius-sm);
     font-size: 13px;
-    background: white;
+    background: var(--admin-input-bg);
 }
 
 .filter-tag {
     padding: 4px 8px;
-    background: #e9ecef;
-    border-radius: 12px;
+    background: var(--admin-chip-bg);
+    border-radius: 999px;
     font-size: 12px;
-    color: #495057;
+    color: var(--admin-chip-text);
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .filter-tag.active {
-    background: #007bff;
-    color: white;
+    background: linear-gradient(135deg, var(--admin-primary-btn-start), var(--admin-primary-btn-end));
+    color: #fff;
 }
 
 .filter-tag:hover {
-    background: #007bff;
-    color: white;
+    background: linear-gradient(135deg, var(--admin-nav-active-start), var(--admin-nav-active-end));
+    color: #fff;
 }
 
 /* 响应式设计 */

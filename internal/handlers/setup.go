@@ -166,6 +166,41 @@ func (h *SetupHandler) enableUserSystem(adminConfig AdminConfig) error {
 	})
 }
 
+func (h *SetupHandler) isSystemInitialized() (bool, error) {
+	return isSystemInitialized(h.manager, h.daoManager)
+}
+
+func isSystemInitialized(manager *config.ConfigManager, daoManager *repository.RepositoryManager) (bool, error) {
+	if daoManager != nil && daoManager.User != nil {
+		count, err := daoManager.User.CountAdminUsers()
+		if err != nil {
+			return false, err
+		}
+		return count > 0, nil
+	}
+
+	if manager == nil {
+		return false, nil
+	}
+
+	db := manager.GetDB()
+	if db == nil {
+		return false, nil
+	}
+
+	repo := repository.NewRepositoryManager(db)
+	if repo.User == nil {
+		return false, nil
+	}
+
+	count, err := repo.User.CountAdminUsers()
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
 // contains 检查字符串是否包含子字符串
 func contains(s, substr string) bool {
 	for i := 0; i <= len(s)-len(substr); i++ {
@@ -197,6 +232,17 @@ func InitializeNoDB(manager *config.ConfigManager) gin.HandlerFunc {
 			return
 		}
 		defer atomic.StoreInt32(&initInProgress, 0)
+
+		initialized, err := isSystemInitialized(manager, nil)
+		if err != nil {
+			logrus.WithError(err).Error("[InitializeNoDB] 检查系统初始化状态失败")
+			common.InternalServerErrorResponse(c, "检查系统初始化状态失败")
+			return
+		}
+		if initialized {
+			common.ForbiddenResponse(c, "系统已初始化，禁止重复初始化")
+			return
+		}
 		// 解析 JSON（仅接受嵌套结构），不再兼容 legacy 扁平字段
 		var req SetupRequest
 		if !utils.BindJSONWithValidation(c, &req) {
@@ -428,6 +474,17 @@ func (h *SetupHandler) Initialize(c *gin.Context) {
 	}
 	if h.daoManager == nil {
 		common.InternalServerErrorResponse(c, "数据库管理器未初始化")
+		return
+	}
+
+	initialized, err := h.isSystemInitialized()
+	if err != nil {
+		logrus.WithError(err).Error("[SetupHandler.Initialize] 检查系统初始化状态失败")
+		common.InternalServerErrorResponse(c, "检查系统初始化状态失败")
+		return
+	}
+	if initialized {
+		common.ForbiddenResponse(c, "系统已初始化，禁止重复初始化")
 		return
 	}
 

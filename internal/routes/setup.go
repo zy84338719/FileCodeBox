@@ -90,6 +90,71 @@ func CreateAndSetupRouter(
 	router.Use(middleware.CORS())
 	router.Use(middleware.RateLimit(manager))
 
+	var cachedInitialized atomic.Bool
+	var cachedRepo atomic.Pointer[repository.RepositoryManager]
+
+	guardConfig := middleware.SetupGuardConfig{
+		SetupPath:    "/setup",
+		RedirectPath: "/",
+		AllowPaths: []string{
+			"/setup/initialize",
+			"/check-init",
+			"/user/system-info",
+			"/health",
+		},
+		AllowPrefixes: []string{
+			"/assets/",
+			"/css/",
+			"/js/",
+			"/components/",
+		},
+	}
+
+	guardConfig.IsInitialized = func() (bool, error) {
+		if cachedInitialized.Load() {
+			return true, nil
+		}
+
+		if daoManager != nil && daoManager.User != nil {
+			count, err := daoManager.User.CountAdminUsers()
+			if err != nil {
+				return false, err
+			}
+			if count > 0 {
+				cachedInitialized.Store(true)
+				return true, nil
+			}
+			return false, nil
+		}
+
+		db := manager.GetDB()
+		if db == nil {
+			return false, nil
+		}
+
+		repo := cachedRepo.Load()
+		if repo == nil || repo.DB() != db {
+			repo = repository.NewRepositoryManager(db)
+			cachedRepo.Store(repo)
+		}
+		if repo.User == nil {
+			return false, nil
+		}
+
+		count, err := repo.User.CountAdminUsers()
+		if err != nil {
+			return false, err
+		}
+
+		if count > 0 {
+			cachedInitialized.Store(true)
+			return true, nil
+		}
+		return false, nil
+	}
+
+	router.Use(middleware.SetupGuard(guardConfig))
+
 	// 如果 daoManager 为 nil，表示尚未初始化数据库，只注册基础和初始化相关的路由
 	if daoManager == nil {
 		// 基础路由（不传 userHandler）

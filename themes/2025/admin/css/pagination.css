@@ -7,10 +7,11 @@
     gap: 8px;
     flex-wrap: wrap;
     margin: 20px 0;
-    padding: 16px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.82);
+    border-radius: var(--admin-radius-lg);
+    border: 1px solid var(--admin-border);
+    box-shadow: var(--admin-shadow-card);
 }
 
 .pagination-numbers {
@@ -30,10 +31,10 @@
     margin: 0 2px;
     font-size: 14px;
     font-weight: 500;
-    color: #495057;
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
+    color: var(--admin-text);
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius-sm);
     cursor: pointer;
     transition: all 0.2s ease;
     text-decoration: none;
@@ -41,11 +42,11 @@
 }
 
 .btn-page:hover {
-    color: #007bff;
-    background: #e7f3ff;
-    border-color: #007bff;
+    color: var(--admin-accent);
+    background: var(--admin-interactive-bg-hover);
+    border-color: rgba(99, 102, 241, 0.24);
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+    box-shadow: 0 6px 12px rgba(99, 102, 241, 0.16);
 }
 
 .btn-page:active {
@@ -55,15 +56,14 @@
 
 .btn-page.active {
     color: #fff;
-    background: #007bff;
-    border-color: #007bff;
+    background: linear-gradient(135deg, var(--admin-primary-btn-start), var(--admin-primary-btn-end));
+    border-color: transparent;
     font-weight: 600;
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 8px 18px rgba(99, 102, 241, 0.32);
 }
 
 .btn-page.active:hover {
-    background: #0056b3;
-    border-color: #0056b3;
+    background: linear-gradient(135deg, var(--admin-nav-active-start), var(--admin-nav-active-end));
 }
 
 /* 特殊按钮样式 */
@@ -91,7 +91,7 @@
     justify-content: center;
     min-width: 36px;
     height: 36px;
-    color: #6c757d;
+    color: var(--admin-muted);
     font-weight: bold;
     user-select: none;
 }
@@ -103,11 +103,11 @@
     gap: 8px;
     margin-left: 16px;
     padding-left: 16px;
-    border-left: 1px solid #dee2e6;
+    border-left: 1px solid var(--admin-border);
 }
 
 .pagination-jump span {
-    color: #495057;
+    color: var(--admin-muted);
     font-size: 14px;
     white-space: nowrap;
 }
@@ -116,8 +116,8 @@
     width: 60px;
     height: 32px;
     padding: 4px 8px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
+    border: 1px solid var(--admin-input-border);
+    border-radius: var(--admin-radius-sm);
     text-align: center;
     font-size: 14px;
     outline: none;
@@ -125,15 +125,15 @@
 }
 
 .pagination-jump input:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    border-color: var(--admin-accent-strong);
+    box-shadow: 0 0 0 3px var(--admin-input-focus);
 }
 
 .pagination-jump .btn {
     height: 32px;
     padding: 4px 12px;
     font-size: 13px;
-    border-radius: 4px;
+    border-radius: var(--admin-radius-sm);
 }
 
 /* 页面大小选择器样式 */
@@ -143,11 +143,11 @@
     gap: 8px;
     margin-left: 16px;
     padding-left: 16px;
-    border-left: 1px solid #dee2e6;
+    border-left: 1px solid var(--admin-border);
 }
 
 .pagination-size span {
-    color: #495057;
+    color: var(--admin-muted);
     font-size: 14px;
     white-space: nowrap;
 }
@@ -155,18 +155,18 @@
 .pagination-size select {
     height: 32px;
     padding: 4px 8px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
+    border: 1px solid var(--admin-input-border);
+    border-radius: var(--admin-radius-sm);
     font-size: 14px;
-    background: #fff;
+    background: var(--admin-input-bg);
     outline: none;
     cursor: pointer;
     transition: border-color 0.2s ease;
 }
 
 .pagination-size select:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    border-color: var(--admin-accent-strong);
+    box-shadow: 0 0 0 3px var(--admin-input-focus);
 }
 
 /* 分页信息样式 */
@@ -175,15 +175,15 @@
     align-items: center;
     margin-bottom: 12px;
     padding: 8px 16px;
-    background: #e9ecef;
-    border-radius: 6px;
-    color: #495057;
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: var(--admin-radius-sm);
+    color: var(--admin-text);
     font-size: 14px;
     font-weight: 500;
 }
 
 .pagination-info span {
-    color: #007bff;
+    color: var(--admin-accent-strong);
     font-weight: 600;
 }
 
@@ -191,9 +191,10 @@
 .pagination-container {
     margin-top: 24px;
     padding: 20px;
-    background: #fff;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
+    background: rgba(255, 255, 255, 0.86);
+    border-radius: var(--admin-radius-lg);
+    border: 1px solid var(--admin-border);
+    box-shadow: var(--admin-shadow-card);
 }
 
 /* 响应式设计 */
@@ -214,7 +215,7 @@
         margin-left: 0;
         padding-left: 0;
         border-left: none;
-        border-top: 1px solid #dee2e6;
+        border-top: 1px solid var(--admin-border);
         padding-top: 12px;
     }
     
@@ -257,17 +258,17 @@
 
 /* 禁用状态 */
 .btn-page:disabled {
-    color: #6c757d;
-    background: #f8f9fa;
-    border-color: #dee2e6;
+    color: rgba(71, 85, 105, 0.65);
+    background: rgba(148, 163, 184, 0.16);
+    border-color: transparent;
     cursor: not-allowed;
     opacity: 0.6;
 }
 
 .btn-page:disabled:hover {
-    color: #6c757d;
-    background: #f8f9fa;
-    border-color: #dee2e6;
+    color: rgba(71, 85, 105, 0.65);
+    background: rgba(148, 163, 184, 0.16);
+    border-color: transparent;
     transform: none;
     box-shadow: none;
 }
@@ -310,49 +311,4 @@
     }
 }
 
-/* 暗色主题支持 */
-@media (prefers-color-scheme: dark) {
-    .pagination-wrapper {
-        background: #343a40;
-        border-color: #495057;
-    }
-    
-    .btn-page {
-        color: #e9ecef;
-        background: #495057;
-        border-color: #6c757d;
-    }
-    
-    .btn-page:hover {
-        color: #007bff;
-        background: #343a40;
-        border-color: #007bff;
-    }
-    
-    .btn-page.active {
-        color: #fff;
-        background: #007bff;
-        border-color: #007bff;
-    }
-    
-    .pagination-info {
-        background: #495057;
-        color: #e9ecef;
-    }
-    
-    .pagination-jump input,
-    .pagination-size select {
-        background: #495057;
-        border-color: #6c757d;
-        color: #e9ecef;
-    }
-    
-    .pagination-ellipsis {
-        color: #adb5bd;
-    }
-    
-    .pagination-container {
-        background: #343a40;
-        border-color: #495057;
-    }
-}
+/* 暗色主题支持通过 admin-theme-dark 变量自动生效 */
