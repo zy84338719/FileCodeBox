@@ -20,6 +20,8 @@ type ChunkService = chunk.Service
 type ShareService = share.Service
 type UserService = user.Service
 
+type AdminUserUpdateParams = admin.UserUpdateParams
+
 // 导出auth包中的类型
 type AuthClaims = auth.AuthClaims
 

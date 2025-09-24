@@ -107,12 +107,12 @@ func (sh *StorageHandler) SwitchStorage(c *gin.Context) {
 		return
 	}
 
-	// 更新配置
-	sh.storageConfig.Type = req.Type
-	if err := sh.configManager.Save(); err != nil {
-		common.InternalServerErrorResponse(c, "保存配置失败: "+err.Error())
-		return
-	}
+    // 更新配置
+    sh.storageConfig.Type = req.Type
+    if err := sh.configManager.PersistYAML(); err != nil {
+        common.InternalServerErrorResponse(c, "保存配置失败: "+err.Error())
+        return
+    }
 
 	common.SuccessResponse(c, web.StorageSwitchResponse{
 		Success:     true,
@@ -267,11 +267,11 @@ func (sh *StorageHandler) UpdateStorageConfig(c *gin.Context) {
 		return
 	}
 
-	// 保存配置（会同时保存到文件和数据库）
-	if err := sh.configManager.Save(); err != nil {
-		common.InternalServerErrorResponse(c, "保存配置失败: "+err.Error())
-		return
-	}
+    // 持久化最新配置
+    if err := sh.configManager.PersistYAML(); err != nil {
+        common.InternalServerErrorResponse(c, "保存配置失败: "+err.Error())
+        return
+    }
 
 	common.SuccessWithMessage(c, "存储配置更新成功", nil)
 }

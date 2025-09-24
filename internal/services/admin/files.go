@@ -1,11 +1,12 @@
 package admin
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zy84338719/filecodebox/internal/models"
+
+	"github.com/sirupsen/logrus"
 )
 
 // GetFiles 获取文件列表
@@ -34,7 +35,9 @@ func (s *Service) DeleteFile(id uint) error {
 	result := s.storageService.DeleteFileWithResult(fileCode)
 	if !result.Success {
 		// 记录错误，但不阻止数据库删除
-		fmt.Printf("Warning: Failed to delete physical file: %v\n", result.Error)
+		logrus.WithError(result.Error).
+			WithField("code", fileCode.Code).
+			Warn("failed to delete physical file while removing file record")
 	}
 
 	return s.repositoryManager.FileCode.DeleteByFileCode(fileCode)
@@ -51,7 +54,9 @@ func (s *Service) DeleteFileByCode(code string) error {
 	result := s.storageService.DeleteFileWithResult(fileCode)
 	if !result.Success {
 		// 记录错误，但不阻止数据库删除
-		fmt.Printf("Warning: Failed to delete physical file: %v\n", result.Error)
+		logrus.WithError(result.Error).
+			WithField("code", fileCode.Code).
+			Warn("failed to delete physical file while removing file record")
 	}
 
 	return s.repositoryManager.FileCode.DeleteByFileCode(fileCode)

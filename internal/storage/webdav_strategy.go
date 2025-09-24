@@ -3,13 +3,13 @@ package storage
 import (
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/studio-b12/gowebdav"
 )
 
@@ -180,7 +180,7 @@ func (ws *WebDAVStorageStrategy) SaveUploadFile(file *multipart.FileHeader, save
 	}
 	defer func() {
 		if cerr := src.Close(); cerr != nil {
-			log.Printf("Error closing source file: %v", cerr)
+			logrus.WithError(cerr).Warn("WebDAV: failed to close source file")
 		}
 	}()
 
@@ -271,7 +271,9 @@ func (ws *WebDAVStorageStrategy) TestConnection() error {
 	// 清理测试文件
 	if err := client.Remove(testPath); err != nil {
 		// 删除失败不是致命错误，只记录警告
-		log.Printf("Warning: 无法删除测试文件 %s: %v", testPath, err)
+		logrus.WithError(err).
+			WithField("path", testPath).
+			Warn("WebDAV: 无法删除测试文件")
 	}
 
 	return nil

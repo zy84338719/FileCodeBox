@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"path/filepath"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/zy84338719/filecodebox/internal/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 // StorageInterface 存储接口
@@ -253,7 +253,7 @@ func CalculateFileHash(file *multipart.FileHeader) (string, error) {
 	}
 	defer func() {
 		if cerr := src.Close(); cerr != nil {
-			log.Printf("Error closing source file: %v", cerr)
+			logrus.WithError(cerr).Warn("storage: failed to close source file during hash calculation")
 		}
 	}()
 

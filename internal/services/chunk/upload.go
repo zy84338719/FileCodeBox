@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/zy84338719/filecodebox/internal/models"
+
+	"github.com/sirupsen/logrus"
 )
 
 // InitiateUpload 初始化分片上传
@@ -160,7 +162,9 @@ func (s *Service) CleanupExpiredUploads() (int, error) {
 	for _, upload := range expiredUploads {
 		err := s.repositoryManager.Chunk.DeleteByUploadID(upload.UploadID)
 		if err != nil {
-			fmt.Printf("Warning: Failed to delete expired upload %s: %v\n", upload.UploadID, err)
+			logrus.WithError(err).
+				WithField("upload_id", upload.UploadID).
+				Warn("failed to delete expired upload metadata")
 		} else {
 			deletedCount++
 		}

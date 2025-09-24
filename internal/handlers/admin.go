@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -10,12 +9,12 @@ import (
 
 	"github.com/zy84338719/filecodebox/internal/common"
 	"github.com/zy84338719/filecodebox/internal/config"
-	"github.com/zy84338719/filecodebox/internal/models"
 	"github.com/zy84338719/filecodebox/internal/models/web"
 	"github.com/zy84338719/filecodebox/internal/services"
 	"github.com/zy84338719/filecodebox/internal/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 // AdminHandler 管理处理器
@@ -649,43 +648,26 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 
 	var userData struct {
-		Email    string `json:"email" binding:"omitempty,email"`
-		Password string `json:"password"`
-		Nickname string `json:"nickname"`
-		IsAdmin  bool   `json:"is_admin"`
-		IsActive bool   `json:"is_active"`
+		Email    *string `json:"email" binding:"omitempty,email"`
+		Password *string `json:"password"`
+		Nickname *string `json:"nickname"`
+		IsAdmin  *bool   `json:"is_admin"`
+		IsActive *bool   `json:"is_active"`
 	}
 
 	if !utils.BindJSONWithValidation(c, &userData) {
 		return
 	}
 
-	// 准备参数
-	role := "user"
-	if userData.IsAdmin {
-		role = "admin"
+	params := services.AdminUserUpdateParams{
+		Email:    userData.Email,
+		Password: userData.Password,
+		Nickname: userData.Nickname,
+		IsAdmin:  userData.IsAdmin,
+		IsActive: userData.IsActive,
 	}
 
-	status := "active"
-	if !userData.IsActive {
-		status = "inactive"
-	}
-
-	// 更新用户：构建 models.User 并调用服务方法
-	// 构建更新用的 models.User：只填充仓库 UpdateUserFields 所需字段
-	user := models.User{}
-	// ID will be used by UpdateUserFields via repository; ensure repository method uses provided ID
-	// NOTE: models.User uses gorm.Model embed; set via zero-value and pass id to repository
-	user.Email = userData.Email
-	if userData.Password != "" {
-		// Hashing handled inside service layer; here we pass raw password in a convention used elsewhere
-		user.PasswordHash = userData.Password
-	}
-	user.Nickname = userData.Nickname
-	user.Role = role
-	user.Status = status
-
-	err := h.service.UpdateUser(user)
+	err := h.service.UpdateUserWithParams(userID, params)
 	if err != nil {
 		common.InternalServerErrorResponse(c, "更新用户失败: "+err.Error())
 		return
@@ -965,7 +947,7 @@ func (h *AdminHandler) UpdateMCPConfig(c *gin.Context) {
 	}
 
 	// 保存配置
-	err := h.config.Save()
+	err := h.config.PersistYAML()
 	if err != nil {
 		common.InternalServerErrorResponse(c, "保存MCP配置失败: "+err.Error())
 		return
@@ -1159,7 +1141,7 @@ func tcpProbe(address string, timeout time.Duration) error {
 	}
 	defer func() {
 		if err := conn.Close(); err != nil {
-			log.Printf("关闭连接失败: %v", err)
+			logrus.WithError(err).Warn("关闭 TCP 连接失败")
 		}
 	}()
 	return nil

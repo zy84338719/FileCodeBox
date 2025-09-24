@@ -97,7 +97,7 @@ func main() {
 		adminService := services.NewAdminService(dmgr, manager, storageService)
 
 		// 启动任务管理器
-		taskManager := tasks.NewTaskManager(dmgr, storageManager, manager.Base.DataPath)
+		taskManager := tasks.NewTaskManager(dmgr, storageManager, adminService, manager.Base.DataPath)
 		taskManager.Start()
 		// 注意：taskManager 的停止将在主结束时处理（可以扩展保存引用以便停止）
 

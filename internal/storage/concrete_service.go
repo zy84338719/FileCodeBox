@@ -185,6 +185,28 @@ func (css *ConcreteStorageService) DeleteFileWithResult(fileCode *models.FileCod
 	return result
 }
 
+// FileExists 检查文件是否存在
+func (css *ConcreteStorageService) FileExists(fileCode *models.FileCode) bool {
+	if fileCode == nil {
+		return false
+	}
+	if fileCode.Text != "" {
+		return true
+	}
+
+	filePath := fileCode.GetFilePath()
+	if filePath == "" {
+		return false
+	}
+
+	strategy := css.getCurrentStrategy()
+	fullPath := css.pathManager.GetFullPath(filePath)
+	if strategy.FileExists(fullPath) {
+		return true
+	}
+	return strategy.FileExists(filePath)
+}
+
 // GetFileDownloadInfo 获取文件下载信息
 func (css *ConcreteStorageService) GetFileDownloadInfo(fileCode *models.FileCode) (*FileDownloadInfo, error) {
 	strategy := css.getCurrentStrategy()

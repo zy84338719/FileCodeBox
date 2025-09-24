@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
 	"strings"
@@ -429,7 +428,7 @@ func (s *Server) LogMessage(level LogLevel, data interface{}, logger string) {
 
 	for _, conn := range s.connections {
 		if err := s.sendNotification(conn, "notifications/message", notification); err != nil {
-			log.Printf("Failed to send log notification: %v", err)
+			logrus.WithError(err).Warn("failed to send MCP log notification")
 		}
 	}
 }

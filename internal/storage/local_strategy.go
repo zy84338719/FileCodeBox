@@ -3,12 +3,12 @@ package storage
 import (
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -80,7 +80,7 @@ func (ls *LocalStorageStrategy) SaveUploadFile(file *multipart.FileHeader, saveP
 	}
 	defer func() {
 		if cerr := src.Close(); cerr != nil {
-			log.Printf("Error closing source file: %v", cerr)
+			logrus.WithError(cerr).Warn("local storage: failed to close source file")
 		}
 	}()
 
@@ -91,7 +91,7 @@ func (ls *LocalStorageStrategy) SaveUploadFile(file *multipart.FileHeader, saveP
 	}
 	defer func() {
 		if cerr := dst.Close(); cerr != nil {
-			log.Printf("Error closing destination file: %v", cerr)
+			logrus.WithError(cerr).Warn("local storage: failed to close destination file")
 		}
 	}()
 
