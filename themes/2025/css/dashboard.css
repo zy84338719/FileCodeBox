@@ -30,7 +30,12 @@ body {
     margin-bottom: var(--spacing-lg);
     display: flex;
     justify-content: space-between;
-    align-items: center;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--spacing-md);
+        flex-wrap: wrap;
 }
 
 .logo {
@@ -54,6 +59,19 @@ body {
     align-items: center;
     gap: var(--spacing-md);
 }
+    .section-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .section-desc {
+        margin-top: -10px;
+        margin-bottom: var(--spacing-lg);
+        color: #6b7280;
+        font-size: 14px;
+        line-height: 1.6;
+    }
 
 .header .user-avatar {
     width: 40px;
@@ -169,6 +187,7 @@ body {
     color: #333;
     padding-bottom: 10px;
     border-bottom: 2px solid #667eea;
+    flex: 1 1 auto;
 }
 
 .section-content {
@@ -700,6 +719,177 @@ body {
     box-shadow: var(--shadow-xl);
 }
 
+/* API 密钥管理 */
+.api-key-form {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-xl);
+}
+
+.api-key-form .form-group small {
+    display: block;
+    margin-top: var(--spacing-xs);
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+.api-key-form-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+.api-key-form-actions .btn {
+    flex: 0 0 auto;
+}
+
+.api-key-limit {
+    color: #6b7280;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    transition: color 0.3s ease, background 0.3s ease;
+}
+
+.api-key-limit.warning {
+    color: #b45309;
+    background: #fef3c7;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+}
+
+.api-key-result {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-sm);
+}
+
+.api-key-result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.api-key-result-title {
+    font-weight: 600;
+    color: #111827;
+    font-size: 16px;
+}
+
+.api-key-result-text {
+    color: #4b5563;
+    margin-bottom: var(--spacing-sm);
+    line-height: 1.6;
+}
+
+.api-key-secret {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background: rgba(17, 24, 39, 0.04);
+    border-radius: var(--radius-sm);
+    border: 1px dashed #94a3b8;
+    flex-wrap: wrap;
+}
+
+.api-key-secret code {
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+    font-size: 15px;
+    color: #1f2937;
+    flex: 1 1 240px;
+    word-break: break-all;
+}
+
+.api-key-secret .btn-sm {
+    white-space: nowrap;
+}
+
+.api-key-result-meta {
+    margin-top: var(--spacing-sm);
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+.api-keys-list {
+    margin-top: var(--spacing-xl);
+    overflow-x: auto;
+}
+
+.api-keys-table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+    background: white;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+}
+
+.api-keys-table thead {
+    background: #f9fafb;
+}
+
+.api-keys-table th,
+.api-keys-table td {
+    padding: var(--spacing-md);
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 14px;
+    color: #374151;
+}
+
+.api-keys-table th {
+    font-weight: 600;
+    text-transform: none;
+    color: #1f2937;
+    font-size: 13px;
+}
+
+.api-keys-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.api-keys-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.api-keys-table .btn-sm {
+    min-width: 80px;
+}
+
+.api-key-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.api-key-status.active {
+    background: rgba(34, 197, 94, 0.15);
+    color: #15803d;
+}
+
+.api-key-status.revoked {
+    background: rgba(248, 113, 113, 0.18);
+    color: #b91c1c;
+}
+
 /* 管理员按钮控制 */
 #admin-btn {
     display: none;
@@ -749,6 +939,34 @@ body {
     .user-actions {
         flex-direction: column;
         gap: var(--spacing-sm);
+    }
+
+    .api-key-form {
+        padding: var(--spacing-lg);
+    }
+
+    .api-key-form-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-sm);
+    }
+
+    .api-key-form-actions .btn {
+        width: 100%;
+    }
+
+    .api-key-limit {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .api-key-secret {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .api-key-secret code {
+        flex: 1 1 auto;
     }
 }
 

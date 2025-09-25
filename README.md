@@ -1,344 +1,223 @@
-# FileCodeBox (Go)
+# FileCodeBox · Go Edition
 
-轻量且高性能的文件/文本分享服务，使用 Go 实现，支持分片上传、秒传、断点续传与多种存储后端。
-
-核心目标是提供一个易部署、易扩展的文件快传系统，适合自托管与容器化部署场景。
-
-## 主要特性
-
-- 高性能：基于 Go 的并发能力构建，低延迟与内存占用
-- 文件/文本分享：支持短链接分享文本和文件
-- 分片上传：大文件分片、断点续传、上传校验与秒传支持
-- 管理后台：内置管理控制台，可管理文件、配置与用户
-- 多存储后端：支持本地、S3、WebDAV、OneDrive（可扩展）
-- 容器友好：提供 Docker 与 docker-compose 支持
-- 主题系统：前端主题可替换与定制
-
-## 环境要求
-
-开发推荐使用 Go 1.25+。项目默认使用 SQLite 作为开发环境的轻量数据库。生产环境请按需选择存储与资源配置。
-
-## 部署建议（简要）
-
-- 推荐使用 Docker + 反向代理（Nginx）启用 HTTPS
-- 将 `data/` 目录做定期备份
-- 将服务放入进程管理（systemd / 容器重启策略）
-
-## 开发与扩展
-
-- 新增存储：实现 `storage.StorageInterface` 并在 `storage.NewStorageManager` 注册
-- 新增接口：在 `internal/services` 实现业务逻辑，并在 `internal/handlers` 与 `internal/routes` 添加路由
-
-运行测试与示例脚本请查看 `tests/` 目录。
+> 一个专为自托管场景打造的高性能文件 / 文本分享平台，提供安全、可扩展、可插拔的“随手分享”体验。
 
 ---
 
-## 常见问题与排查（示例）
+## 📌 项目概览
 
-- 检查端口占用：
+FileCodeBox 是一个使用 Go 实现的轻量级分享服务，核心目标是“部署简单、使用顺手、运营安心”。无论你想在团队内搭建一个文件投递站，还是希望为个人项目提供临时分享通道，都可以通过它快速上线并稳定运行。
 
-```bash
-lsof -ti:12345
+### 你可以用它做什么？
+
+- 📁 **拖拽上传**，生成短链接后分享文件或文本片段
+- 🔐 **后台管理**，集中查看、搜索、统计、审核、删除分享内容
+- 🪶 **多存储后端**，根据需求切换本地/对象存储/WebDAV/OneDrive 等方案
+- ⚙️ **自定义配置**，调整限速、过期策略、主题皮肤，让系统和业务完美贴合
+
+---
+
+## 🌟 关键特性
+
+| 分类 | 能力速览 |
+| --- | --- |
+| 性能 | Go 原生并发、分片上传、断点续传、秒传校验 |
+| 分享体验 | 文本 / 文件双通道、链接有效期控制、密码和访问次数限制 |
+| 管理后台 | 仪表板、文件列表、用户管理、存储面板、系统配置、维护工具 |
+| 安全 | 初始化向导、动态路由热载、JWT 管理登录、限流中间件、可选用户体系 |
+| 存储 | 本地磁盘、S3 兼容对象存储、WebDAV、OneDrive（均可扩展） |
+| 部署 | Docker / Docker Compose、systemd、Nginx 反代、跨平台二进制 |
+| 前端 | 主题系统（`themes/2025`）、自适应布局、可自定义静态资源 |
+
+---
+
+## 🧩 架构速写
+
+```
+┌───────────────────────────────────────────────────────────┐
+│                           Client                           │
+│  Web UI (themes) · 管理后台 · RESTful API · CLI · WebDAV   │
+└───────────────▲───────────────────────────────▲───────────┘
+                │                               │
+        Admin Console                     Public Sharing
+                │                               │
+┌──────────────┴───────────────────────────────┴─────────────┐
+│                       FileCodeBox Server                    │
+│                                                             │
+│  Routes  ─ internal/routes           Middleware             │
+│  Handlers ─ internal/handlers        RateLimit · Auth       │
+│  Services ─ internal/services        Chunk · Share · User   │
+│  Repos    ─ internal/repository      GORM Data Access       │
+│  Config   ─ internal/config          动态配置管理           │
+└──────────────┬───────────────────────────────┬─────────────┘
+               │                               │
+       Storage Manager                 Database (SQLite/MySQL/PG)
+          └─ local / S3 / WebDAV / OneDrive · 可插拔
 ```
 
-- 如果数据库被锁或服务异常，尝试重启服务或检查 `data/` 下的 sqlite 文件权限。
+初始化流程已经内置了“未初始化只允许访问 `/setup`”的安全护栏：
+
+1. 首次运行 → 自动跳转至 Setup 向导创建数据库 + 管理员
+2. 一旦初始化成功 → 所有用户请求 `/setup` 会被重定向至首页，同时拒绝重复初始化
 
 ---
 
-## 许可证
+## 🚀 快速起步
 
-MIT
+### 1. 环境要求
 
----
+- **Go** 1.21 及以上（开发环境推荐 1.24+）
+- **SQLite / MySQL / PostgreSQL**（三选一，默认 SQLite）
+- 可选：Docker 20+、docker-compose v2、Make、Git
 
-如需我继续：
-
-- 将 README 翻译为英文
-- 自动生成或更新 Swagger 文档
-- 补全详细部署示例（Kubernetes / systemd）
-
-请告诉我接下来要做哪个扩展。
-<div align="center">
-  <img src="assets/images/logos/logo.svg" alt="FileCodeBox Logo" width="200"/>
-  
-  # FileCodeBox Go版本
-  
-  🚀 FileCodeBox的高性能Golang实现 - 开箱即用的文件快传系统
-</div>
-
-## ✨ 特性
-
-- 🔥 **高性能** - Golang实现，并发处理能力强
-- 📁 **文件分享** - 支持各种格式文件的快速分享
-- 📝 **文本分享** - 支持文本内容的快速分享
-- 🔧 **分片上传** - 支持大文件分片上传，断点续传
-- ⚡ **断点续传** - 网络中断后可恢复上传，支持秒传
-- ⏰ **灵活过期** - 支持时间和次数两种过期方式
-- 🛡️ **安全可靠** - JWT认证、限流保护、权限控制
-- 📊 **管理后台** - 完整的文件管理和系统配置
-- 🗄️ **多存储** - 支持本地、WebDAV、S3存储
-- 🐳 **容器化** - 开箱即用的Docker部署
-- 🎨 **主题系统** - 支持多主题切换
-
-## 快速开始
-
-### 直接运行
+### 2. 本地开发
 
 ```bash
-# 安装依赖
+# 拉取依赖
 go mod tidy
 
-# 编译并运行
-go build -o filecodebox
-./filecodebox
+# 运行服务
+go run ./...
+# 或编译后运行
+make build && ./bin/filecodebox
 ```
 
-服务启动后访问 `http://localhost:12345` 即可使用。
+服务默认监听 `http://127.0.0.1:12345`。首次访问会被引导到 `/setup` 完成初始化。
 
-### Docker运行
+### 3. Docker / Compose
 
 ```bash
-# 构建镜像
-docker build -t filecodebox-go .
-
-# 运行容器
-docker run -d -p 12345:12345 -v ./data:/root/data filecodebox-go
-```
-
-### Docker Compose
-
-```bash
-docker-compose up -d
-```
-
-### 多架构 Docker 构建
-
-支持 ARM64 和 AMD64 架构的 Docker 镜像构建：
-
-```bash
-# 构建多架构镜像
-./build-docker.sh
-
-# 构建指定架构
-./build-docker.sh --single linux/arm64
-./build-docker.sh --single linux/amd64
-```
-
-## 配置
-
-配置文件会自动生成在 `data/config.json`，主要配置项：
-
-- `port`: 服务端口（默认12345）
-- `name`: 站点名称
-- `upload_size`: 最大上传大小
-- `file_storage`: 存储类型（local/s3/webdav/onedrive）
-- 管理员认证改为使用管理员用户名/密码登录并通过 `Authorization: Bearer <token>` 使用 JWT（不再使用静态管理员令牌配置）
-
-## 管理员后台
-
-### 访问方式
-- 管理员页面：`http://localhost:12345/admin/`
-- **默认密码**：`FileCodeBox2025`
-
-### 主要功能
-- 📊 **系统统计** - 查看文件数量、存储使用情况
-- 📁 **文件管理** - 管理所有分享的文件
-- ⚙️ **系统配置** - 配置站点信息、上传限制等
-- 👥 **用户管理** - 启用用户系统、管理用户权限
-- 💾 **存储配置** - 配置本地、S3、WebDAV等存储方式
-
-### 初始配置建议
-1. 首次启动后，立即访问管理员页面修改默认密码
-2. 根据需要配置存储方式（本地存储/云存储）
-3. 设置合适的上传大小限制
-4. 配置站点名称和描述信息
-
-### 管理后台静态资源的安全说明
-
-管理后台使用了一组专用静态资源（位于 `themes/<theme>/admin/`），这些文件包含管理界面的 JavaScript、CSS 与模板。
-
-为了避免未授权用户直接访问管理后台页面并读取敏感前端逻辑，服务已将管理专用静态资源改为仅在管理员认证后提供：
-
-- 管理前端入口 `GET /admin/` 需要有效的管理员 JWT（通过 `Authorization: Bearer <token>` 方式传递）。
-- 管理专用静态路径（例如 `/admin/js/*`, `/admin/css/*`, `/admin/templates/*`, `/admin/assets/*`, `/admin/components/*`）也仅在认证通过后提供。
-- 公共资源（用户前端和通用资源）仍通过 `/js/*`, `/css/*`, `/assets/*`, `/components/*` 对外公开，以支持用户页面和登录流程。
-
-部署注意：如果你的生产环境在前面放了 Nginx、CDN 或其它反向代理，请确保对 `/admin/*` 不做缓存并`不要`将 admin 静态事先缓存到代理上，否则可能绕过后端认证。建议在代理上为 `/admin/*` 添加 `Cache-Control: no-store` 或根据代理文档设置不缓存规则。
-
-如果需要把少量引导或 favicon 等资产在未认证时可用，请将这些文件放入主题的 `assets/` 目录（由 `/assets/*` 提供），不要将管理专用目录下的文件放到公共路径。
-
-## API接口
-
-### 分享文本
-```
-POST /share/text/
-```
-
-### 分享文件
-```
-POST /share/file/
-```
-
-### 获取分享内容
-```
-GET /share/select/?code=xxx
-POST /share/select/
-```
-
-### 分片上传和断点续传
-```
-POST /chunk/upload/init/          # 初始化分片上传
-POST /chunk/upload/chunk/:upload_id/:chunk_index # 上传分片
-POST /chunk/upload/complete/:upload_id            # 完成上传
-GET  /chunk/upload/status/:upload_id              # 获取上传状态
-POST /chunk/upload/verify/:upload_id/:chunk_index # 验证分片
-DELETE /chunk/upload/cancel/:upload_id            # 取消上传
-```
-
-### 管理接口
-```
-GET /admin/stats         # 统计信息
-GET /admin/files         # 文件列表
-DELETE /admin/files/:id  # 删除文件
-GET /admin/config        # 获取配置
-PUT /admin/config        # 更新配置
-```
-
-## 项目结构
-
-```
-├── assets/                 # 项目资源文件
-│   └── images/logos/       # Logo 和图标文件
-├── docs/                   # 文档目录
-│   ├── changelogs/         # 改动记录和版本日志
-│   ├── design/             # 设计相关文档
-│   └── *.md               # 其他文档
-├── scripts/               # 脚本文件
-│   ├── build-docker.sh    # Docker 构建
-│   ├── deploy.sh          # 部署脚本
-│   └── *.sh              # 其他脚本
-├── main.go                # 主程序入口
-├── internal/              # Go 源代码
-│   ├── config/            # 配置管理
-│   ├── database/          # 数据库初始化
-│   ├── models/            # 数据模型
-│   ├── services/          # 业务逻辑
-│   ├── handlers/          # HTTP处理器
-│   ├── middleware/        # 中间件
-│   ├── storage/           # 存储接口
-│   ├── routes/            # 路由设置
-│   └── tasks/             # 后台任务
-├── themes/                # 主题文件
-│   └── 2024/              # 2024年主题
-├── data/                  # 数据目录
-├── tests/                 # 测试文件
-└── docker-compose.yml     # Docker编排
-```
-
-## 与Python版本的差异
-
-1. **性能提升**: Go版本具有更好的并发性能和更低的内存占用
-2. **依赖更少**: 不需要Python运行时环境
-3. **部署简单**: 编译后为单一可执行文件
-4. **类型安全**: 静态类型系统减少运行时错误
-5. **容器优化**: 支持多架构Docker镜像，更小的镜像体积
-
-## 环境要求
-
-### 开发环境
-- Go 1.25+ 
-- SQLite3（用于数据存储）
-- Git（用于代码管理）
-
-### 生产环境
-- Linux/macOS/Windows
-- 至少 512MB 内存
-- 推荐使用 Docker 部署
-
-## 部署建议
-
-### Docker 部署（推荐）
-```bash
-# 使用 docker-compose（最简单）
-docker-compose up -d
-
-# 或手动运行 Docker
+# Docker
+docker build -t filecodebox .
 docker run -d \
   --name filecodebox \
   -p 12345:12345 \
-  -v ./data:/root/data \
-  --restart unless-stopped \
-  filecodebox-go
+  -v $(pwd)/data:/data \
+  filecodebox
+
+# docker-compose
+cp docker-compose.yml docker-compose.override.yml   # 如需自定义
+docker-compose up -d
 ```
 
-### 直接部署
+**生产环境建议**：
+
+- 使用 `docker-compose.prod.yml` + `.env` 管理数据库凭证
+- 通过 Nginx/Traefik 等反向代理启用 HTTPS 与缓存策略
+- 将 `data/`、数据库与对象存储做持久化与定期备份
+
+### 4. CLI 管理
+
 ```bash
-# 编译
-go build -ldflags="-w -s" -o filecodebox
-
-# 创建系统服务（可选）
-sudo cp filecodebox /usr/local/bin/
-sudo systemctl enable filecodebox
-sudo systemctl start filecodebox
+./filecodebox admin user list
+./filecodebox admin stats
 ```
 
-## 开发
+所有 CLI 子命令定义在 `internal/cli`，适合在自动化运维或脚本中使用。
 
-### 添加新的存储后端
+---
 
-1. 实现 `storage.StorageInterface` 接口
-2. 在 `storage.NewStorageManager` 中注册新存储
-3. 在配置中添加相关配置项
+## 🛠️ 配置指南
 
-### 添加新功能
+所有配置均由 `config.yml` + 数据库动态配置组合而成：
 
-1. 在 `models/` 中定义数据模型
-2. 在 `services/` 中实现业务逻辑
-3. 在 `handlers/` 中添加HTTP处理器
-4. 在 `routes/` 中注册路由
+| 配置域 | 说明 |
+| --- | --- |
+| `base` | 服务端口、站点名称、DataPath |
+| `storage` | 存储类型、凭证、路径 |
+| `transfer` | 上传限额、断点续传、分片策略 |
+| `user` | 用户系统开关、配额、注册策略 |
+| `mcp` | 消息通道 / WebSocket 服务配置 |
+| `ui` | 主题、背景、页面说明文案 |
 
-## 安全建议
+初始化完成后，配置会同步写入数据库并可在后台在线修改。每次操作都走事务保证一致性。
 
-- 🔐 **修改默认密码**: 首次部署后立即修改管理员默认密码
-- 🛡️ **使用HTTPS**: 生产环境建议配置SSL证书
-- 🔥 **防火墙配置**: 只开放必要的端口（如12345）
-- 📊 **定期备份**: 定期备份 `data` 目录
-- 🚫 **访问控制**: 根据需要启用用户系统和权限控制
+> **提示**：未初始化时，仅开放 `/setup`、部分静态资源与 `GET /user/system-info`，避免系统在部署初期被误用。
 
-## 故障排除
+---
 
-### 常见问题
+## 🧑‍💻 管理后台一览
 
-1. **端口被占用**
-   ```bash
-   # 检查端口占用
-   lsof -ti:12345
-   # 杀掉占用进程
-   lsof -ti:12345 | xargs kill -9
-   ```
+- **仪表盘**：吞吐趋势、存储占用、系统告警
+- **文件管理**：模糊搜索、批量操作、访问日志
+- **用户管理**：启用用户系统、分配配额、状态冻结
+- **存储配置**：即时切换存储后端，并对接健康检查
+- **系统配置**：修改站点基础信息、主题、分享策略
+- **维护工具**：清理过期数据、生成导出、查看审计日志
 
-2. **数据库锁定**
-   ```bash
-   # 重启服务即可解决
-   pkill -f filecodebox
-   ./filecodebox
-   ```
+访问入口：`/admin/`，登录采用 JWT + Bearer Token。自 2025 版起，所有 `admin` 静态资源均由后台鉴权动态下发，避免公共缓存泄露。
 
-3. **文件权限问题**
-   ```bash
-   # 确保data目录有正确权限
-   chmod -R 755 data/
-   ```
+---
 
-### 日志查看
-```bash
-# 查看应用日志
-./filecodebox 2>&1 | tee app.log
+## 📦 存储与上传
 
-# Docker 容器日志
-docker logs filecodebox
-```
+| 类型 | 说明 |
+| --- | --- |
+| `local` | 默认方案，数据持久化在 `data/uploads` |
+| `s3` | 兼容 S3 的对象存储（如 MinIO、阿里云 OSS） |
+| `webdav` | 适合挂载 NAS / Nextcloud |
+| `onedrive` | 利用 Microsoft Graph 的云端存储 |
 
-## 许可证
+上传采用“分片 + 秒传 + 断点续传”的三段式策略：
 
-MIT License
+1. `POST /chunk/upload/init/` 初始化会返回 upload_id
+2. 并行调用 `POST /chunk/upload/chunk/:id/:idx`
+3. 最后 `POST /chunk/upload/complete/:id` 合并并校验
+
+上传状态可通过 `GET /chunk/upload/status/:id` 观察，也可主动 `DELETE /chunk/upload/cancel/:id` 终止。
+
+---
+
+## 📚 API 与 SDK
+
+虽然 FileCodeBox 主要针对 Web 场景，但服务本身围绕 REST API 架构，便于集成：
+
+| 模块 | 典型接口 |
+| --- | --- |
+| 分享 | `POST /share/text/` · `POST /share/file/` · `GET /share/select/?code=...` |
+| 分片 | `POST /chunk/upload/init/` · `POST /chunk/upload/complete/:id` |
+| 用户 | `POST /user/login` · `POST /user/register`（启用用户系统时） |
+| 管理 | `GET /admin/stats` · `POST /admin/files/delete` 等 |
+| 健康检查 | `GET /health` |
+
+API 文档位于 `docs/swagger-enhanced.yaml`，可通过 `go install github.com/swaggo/swag/cmd/swag@latest` 生成最新文档。
+
+---
+
+## 🧑‍🔬 本地开发与贡献
+
+1. Fork & clone 仓库
+2. `make dev`（或参考 `Makefile`）
+3. 运行测试：`go test ./...`
+4. 提交前确保通过 `golangci-lint`/`go fmt`（在 CI 中亦会执行）
+
+项目保持模块化、接口清晰，欢迎贡献以下方向：
+
+- 新的存储适配器 / 用户登录方式
+- 管理后台的交互优化与国际化支持
+- 自动化部署脚本（Helm / Terraform）
+- 更丰富的 API 客户端（Python/Node/Swift）
+
+提交 PR 时请附上：变更说明、测试方式、潜在影响。如涉及迁移，请编写相应文档放在 `docs/`。
+
+---
+
+## 🗺️ 路线图（节选）
+
+- [ ] Webhook / EventHook（上传完成、分享到期、超额告警）
+- [ ] 更细颗粒度的访问控制（到期提醒、下载密码、白名单）
+- [ ] 多节点部署指南（对象存储 + Redis + MySQL）
+- [ ] 管理后台模块化主题系统 & 深色主题
+- [ ] CLI 支持导入/导出配置模板
+
+欢迎在 Issues 区讨论新需求或报告缺陷。
+
+---
+
+## 📄 许可证
+
+MIT License  © FileCodeBox Contributors
+
+---
+
+> 💬 有任何问题、部署疑问或定制需求，欢迎通过 Issue / Discussions / 邮件联系。我们乐于协助每一个想把 FileCodeBox 搭建成“团队内部效率神器”的你。

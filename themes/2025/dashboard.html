@@ -37,6 +37,7 @@
                 <button class="tab active" onclick="Dashboard.switchTab('dashboard', event)">仪表板</button>
                 <button class="tab" onclick="Dashboard.switchTab('upload', event)">上传文件</button>
                 <button class="tab" onclick="Dashboard.switchTab('files', event)">我的文件</button>
+                <button class="tab" onclick="Dashboard.switchTab('api-keys', event)">API 密钥</button>
                 <button class="tab" onclick="Dashboard.switchTab('profile', event)">个人资料</button>
             </div>
             
@@ -128,6 +129,81 @@
                 </div>
             </div>
             
+            <!-- API 密钥 -->
+            <div id="api-keys-content" class="tab-content">
+                <div class="content-section">
+                    <div class="section-header">
+                        <div class="section-title">🔑 API 密钥管理</div>
+                        <div class="section-actions">
+                            <button type="button" id="api-key-refresh-btn" class="btn btn-secondary">刷新列表</button>
+                        </div>
+                    </div>
+                    <p class="section-desc">
+                        使用 API 密钥可在命令行或第三方工具中上传 / 下载文件。密钥一旦生成仅在创建时显示明文，请妥善保存。
+                    </p>
+
+                    <form id="api-key-form" class="api-key-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="api-key-name">备注名称</label>
+                                <input type="text" id="api-key-name" name="name" placeholder="例如：iOS 客户端">
+                                <small>可选项，建议填写方便识别的备注。</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="api-key-expire-type">有效期</label>
+                                <select id="api-key-expire-type" name="expire_type">
+                                    <option value="30">30 天</option>
+                                    <option value="90">90 天</option>
+                                    <option value="180">180 天</option>
+                                    <option value="365">365 天</option>
+                                    <option value="custom">自定义日期</option>
+                                    <option value="forever">长期有效</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row" id="api-key-custom-fields" style="display: none;">
+                            <div class="form-group">
+                                <label for="api-key-expire-days">自定义天数</label>
+                                <input type="number" id="api-key-expire-days" name="expire_days" min="1" max="1095" placeholder="例如：60">
+                                <small>1-1095 天，填写后优先于日期。</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="api-key-expire-at">自定义到期时间</label>
+                                <input type="datetime-local" id="api-key-expire-at" name="expire_at">
+                                <small>留空则使用上方自定义天数。</small>
+                            </div>
+                        </div>
+                        <div class="api-key-form-actions">
+                            <button type="submit" class="btn">生成新的 API 密钥</button>
+                            <span class="api-key-limit" id="api-key-limit-note">每个账户最多可保留 5 个有效密钥。</span>
+                        </div>
+                    </form>
+
+                    <div id="api-key-result" class="api-key-result" style="display: none;">
+                        <div class="api-key-result-header">
+                            <span class="api-key-result-title">🎉 新的 API 密钥已生成</span>
+                            <button type="button" class="btn-sm btn-secondary" id="api-key-result-close">隐藏</button>
+                        </div>
+                        <p class="api-key-result-text">这是唯一一次查看完整密钥的机会，请立即复制并妥善保存：</p>
+                        <div class="api-key-secret">
+                            <code id="api-key-result-value"></code>
+                            <button type="button" class="btn-sm btn-info" id="api-key-result-copy">复制密钥</button>
+                        </div>
+                        <div class="api-key-result-meta" id="api-key-result-meta"></div>
+                    </div>
+
+                    <div id="api-keys-list" class="api-keys-list">
+                        <div class="loading-state" id="api-key-loading" style="display: none;">正在加载密钥...</div>
+                        <div class="empty-state" id="api-key-empty" style="display: none;">
+                            <div class="empty-state-icon">🔐</div>
+                            <p>你还没有生成任何 API 密钥</p>
+                            <p style="color: #9ca3af; font-size: 14px;">点击上方按钮生成密钥，方便在 CLI 或自动化脚本中使用。</p>
+                        </div>
+                        <div id="api-key-table-wrapper"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 个人资料 -->
             <div id="profile-content" class="tab-content">
                 <div class="content-section">

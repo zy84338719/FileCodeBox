@@ -81,7 +81,17 @@ API 支持多种认证方式：
 3. **JWT Token**: Bearer token 认证
 4. **可选认证**: 部分接口支持匿名访问
 
-### 📊 响应格式
+### � 用户 API Key 管理
+
+登录后的用户可以在 `/user/api-keys` 接口管理个人 API Key，用于从命令行或第三方应用直接上传/下载：
+
+- `GET /user/api-keys`：列出当前用户的全部 API Key（需要 Bearer Token）
+- `POST /user/api-keys`：创建新的 API Key，可选字段 `name`、`expires_in_days` 或 `expires_at`
+- `DELETE /user/api-keys/{id}`：撤销指定的 API Key
+
+创建成功后，响应会包含一次性返回的明文 API Key。后续请求需在 `Authorization: ApiKey <key>` 或 `X-API-Key` 头中携带，系统会自动识别并注入用户身份，可用于 `/share/*` 和 `/chunk/*` 等上传/下载接口。
+
+### �📊 响应格式
 
 所有 API 响应都遵循统一格式：
 

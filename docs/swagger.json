@@ -13,7 +13,7 @@
             "name": "MIT",
             "url": "https://github.com/zy84338719/filecodebox/blob/main/LICENSE"
         },
-    "version": "1.9.1"
+    "version": "1.9.8"
     },
     "host": "localhost:12345",
     "basePath": "/",
@@ -553,7 +553,7 @@
                 },
                 "version": {
                     "type": "string",
-                    "example": "1.9.1"
+                    "example": "1.9.8"
                 }
             }
         },

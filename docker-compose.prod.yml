@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   filecodebox-go:
-    image: filecodebox-go:latest
+    image: ghcr.io/zy84338719/filecodebox:latest
     container_name: filecodebox-prod
     ports:
       - "12345:12345"

@@ -4,6 +4,7 @@ import (
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/middleware"
+	"github.com/zy84338719/filecodebox/internal/services"
 	"github.com/zy84338719/filecodebox/internal/static"
 
 	"github.com/gin-gonic/gin"
@@ -14,9 +15,7 @@ func SetupUserRoutes(
 	router *gin.Engine,
 	userHandler *handlers.UserHandler,
 	cfg *config.ConfigManager,
-	userService interface {
-		ValidateToken(string) (interface{}, error)
-	},
+	userService *services.UserService,
 ) {
 	// 注册完整的用户路由（API + 页面）
 	SetupUserAPIRoutes(router, userHandler, cfg, userService)
@@ -44,9 +43,7 @@ func SetupUserAPIRoutes(
 	router *gin.Engine,
 	userHandler *handlers.UserHandler,
 	cfg *config.ConfigManager,
-	userService interface {
-		ValidateToken(string) (interface{}, error)
-	},
+	userService *services.UserService,
 ) {
 	// 用户系统路由
 	userGroup := router.Group("/user")
@@ -70,6 +67,9 @@ func SetupUserAPIRoutes(
 			authGroup.GET("/stats", userHandler.GetUserStats)
 			authGroup.GET("/check-auth", userHandler.CheckAuth)
 			authGroup.DELETE("/files/:code", userHandler.DeleteFile)
+			authGroup.GET("/api-keys", userHandler.ListAPIKeys)
+			authGroup.POST("/api-keys", userHandler.CreateAPIKey)
+			authGroup.DELETE("/api-keys/:id", userHandler.DeleteAPIKey)
 		}
 	}
 }

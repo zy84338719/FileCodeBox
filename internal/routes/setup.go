@@ -288,7 +288,7 @@ func RegisterDynamicRoutes(
 	SetupShareRoutes(router, shareHandler, manager, userService)
 	// Use API-only user routes here to avoid duplicate page route registration
 	SetupUserAPIRoutes(router, userHandler, manager, userService)
-	SetupChunkRoutes(router, chunkHandler, manager)
+	SetupChunkRoutes(router, chunkHandler, manager, userService)
 	SetupAdminRoutes(router, adminHandler, storageHandler, manager, userService)
 	// System init routes are no longer needed after DB init
 }
@@ -318,9 +318,7 @@ func SetupAllRoutes(
 	userHandler *handlers.UserHandler,
 	setupHandler *handlers.SetupHandler,
 	manager *config.ConfigManager,
-	userService interface {
-		ValidateToken(string) (interface{}, error)
-	},
+	userService *services.UserService,
 ) {
 
 	// 设置基础路由
@@ -336,7 +334,7 @@ func SetupAllRoutes(
 	SetupUserRoutes(router, userHandler, manager, userService)
 
 	// 设置分片上传路由
-	SetupChunkRoutes(router, chunkHandler, manager)
+	SetupChunkRoutes(router, chunkHandler, manager, userService)
 
 	// 设置管理员路由
 	SetupAdminRoutes(router, adminHandler, storageHandler, manager, userService)
@@ -363,9 +361,7 @@ func SetupRoutes(
 	storageHandler *handlers.StorageHandler,
 	userHandler *handlers.UserHandler,
 	cfg *config.ConfigManager,
-	userService interface {
-		ValidateToken(string) (interface{}, error)
-	},
+	userService *services.UserService,
 ) {
 	// 为兼容性创建一个空的setupHandler
 	setupHandler := &handlers.SetupHandler{}

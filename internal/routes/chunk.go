@@ -4,6 +4,7 @@ import (
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/middleware"
+	"github.com/zy84338719/filecodebox/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,10 +14,12 @@ func SetupChunkRoutes(
 	router *gin.Engine,
 	chunkHandler *handlers.ChunkHandler,
 	cfg *config.ConfigManager,
+	userService *services.UserService,
 ) {
 	// 分片上传相关路由
 	chunkGroup := router.Group("/chunk")
 	chunkGroup.Use(middleware.ShareAuth(cfg))
+	chunkGroup.Use(middleware.OptionalUserAuth(cfg, userService))
 	{
 		chunkGroup.POST("/upload/init/", chunkHandler.InitChunkUpload)
 		chunkGroup.POST("/upload/chunk/:upload_id/:chunk_index", chunkHandler.UploadChunk)

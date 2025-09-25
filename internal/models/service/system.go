@@ -19,7 +19,7 @@ var (
 	GitBranch = "unknown"
 
 	// Version 应用版本号
-	Version = "1.9.1"
+	Version = "1.9.8"
 )
 
 // BuildInfo 构建信息结构体

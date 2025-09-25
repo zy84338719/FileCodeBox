@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/zy84338719/filecodebox/internal/common"
@@ -11,6 +13,7 @@ import (
 	"github.com/zy84338719/filecodebox/internal/utils"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // UserHandler 用户处理器
@@ -205,6 +208,100 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 	}
 
 	common.SuccessWithMessage(c, "密码修改成功", nil)
+}
+
+// ListAPIKeys 获取当前用户的全部 API Key 列表
+func (h *UserHandler) ListAPIKeys(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		common.UnauthorizedResponse(c, "用户未登录")
+		return
+	}
+
+	keys, err := h.userService.ListUserAPIKeys(userID.(uint))
+	if err != nil {
+		common.InternalServerErrorResponse(c, "获取 API Key 失败: "+err.Error())
+		return
+	}
+
+	resp := make([]web.UserAPIKeyResponse, 0, len(keys))
+	for _, key := range keys {
+		resp = append(resp, web.MakeUserAPIKeyResponse(key))
+	}
+
+	common.SuccessResponse(c, web.UserAPIKeyListResponse{Keys: resp})
+}
+
+// CreateAPIKey 为当前用户生成新的 API Key
+func (h *UserHandler) CreateAPIKey(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		common.UnauthorizedResponse(c, "用户未登录")
+		return
+	}
+
+	var req web.UserAPIKeyCreateRequest
+	if !utils.BindJSONWithValidation(c, &req) {
+		return
+	}
+
+	var expiresAt *time.Time
+	if req.ExpiresAt != nil && strings.TrimSpace(*req.ExpiresAt) != "" {
+		parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(*req.ExpiresAt))
+		if err != nil {
+			common.BadRequestResponse(c, "expires_at 必须为 RFC3339 格式")
+			return
+		}
+		t := parsed.UTC()
+		expiresAt = &t
+	} else if req.ExpiresInDays != nil {
+		if *req.ExpiresInDays <= 0 {
+			common.BadRequestResponse(c, "expires_in_days 必须大于 0")
+			return
+		}
+		t := time.Now().Add(time.Duration(*req.ExpiresInDays) * 24 * time.Hour)
+		expiresAt = &t
+	}
+
+	plainKey, record, err := h.userService.GenerateUserAPIKey(userID.(uint), req.Name, expiresAt)
+	if err != nil {
+		common.BadRequestResponse(c, err.Error())
+		return
+	}
+
+	response := web.UserAPIKeyCreateResponse{
+		Key:    plainKey,
+		APIKey: web.MakeUserAPIKeyResponse(*record),
+	}
+
+	common.SuccessWithMessage(c, "API Key 生成成功", response)
+}
+
+// DeleteAPIKey 撤销指定的 API Key
+func (h *UserHandler) DeleteAPIKey(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		common.UnauthorizedResponse(c, "用户未登录")
+		return
+	}
+
+	idStr := c.Param("id")
+	keyID, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		common.BadRequestResponse(c, "密钥ID格式错误")
+		return
+	}
+
+	if err := h.userService.RevokeUserAPIKey(userID.(uint), uint(keyID)); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			common.NotFoundResponse(c, "API Key 不存在或已撤销")
+			return
+		}
+		common.InternalServerErrorResponse(c, "撤销 API Key 失败: "+err.Error())
+		return
+	}
+
+	common.SuccessWithMessage(c, "API Key 已撤销", nil)
 }
 
 // GetUserFiles 获取用户文件列表

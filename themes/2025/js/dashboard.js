@@ -7,6 +7,12 @@ const Dashboard = {
     // 分页配置
     currentPage: 1,
     pageSize: 20,
+    apiKeyLimit: 5,
+    apiKeyFormInitialized: false,
+    apiKeysLoaded: false,
+    apiKeysLoading: false,
+    apiKeyCache: [],
+    apiKeyTableClickHandler: null,
 
     // Helper: 安全解析 JSON
     async parseJsonSafe(response) {
@@ -78,8 +84,8 @@ const Dashboard = {
         }
         
         // 加载仪表板数据
-        this.loadDashboard();
-        
+        await this.loadDashboard();
+
         // 设置功能模块
         this.setupFileUpload();
         this.setupForms();
@@ -265,6 +271,10 @@ const Dashboard = {
                 break;
             case 'files':
                 this.loadMyFiles();
+                break;
+            case 'api-keys':
+                this.setupAPIKeyForm();
+                this.loadAPIKeys(true);
                 break;
             case 'profile':
                 this.loadProfile();
@@ -644,6 +654,364 @@ const Dashboard = {
             showNotification('删除失败: ' + error.message, 'error');
         }
     },
+
+    /**
+     * 初始化 API Key 表单与相关事件
+     */
+    setupAPIKeyForm() {
+        if (this.apiKeyFormInitialized) return;
+
+        const form = document.getElementById('api-key-form');
+        if (!form) return;
+
+        const expireTypeSelect = document.getElementById('api-key-expire-type');
+        const customFields = document.getElementById('api-key-custom-fields');
+        const refreshBtn = document.getElementById('api-key-refresh-btn');
+        const closeResultBtn = document.getElementById('api-key-result-close');
+        const copyResultBtn = document.getElementById('api-key-result-copy');
+
+        if (expireTypeSelect) {
+            expireTypeSelect.addEventListener('change', () => {
+                this.toggleAPIKeyCustomFields(expireTypeSelect.value === 'custom', customFields);
+            });
+            this.toggleAPIKeyCustomFields(expireTypeSelect.value === 'custom', customFields);
+        }
+
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                this.loadAPIKeys(true);
+            });
+        }
+
+        if (closeResultBtn) {
+            closeResultBtn.addEventListener('click', () => {
+                this.hideAPIKeyResult();
+            });
+        }
+
+        if (copyResultBtn) {
+            copyResultBtn.addEventListener('click', () => {
+                const value = document.getElementById('api-key-result-value')?.textContent || '';
+                if (value) {
+                    copyToClipboard(value, copyResultBtn);
+                }
+            });
+        }
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            await this.createAPIKey(form);
+        });
+
+        this.apiKeyFormInitialized = true;
+        this.bindAPIKeyTableEvents();
+    },
+
+    /**
+     * 显示/隐藏自定义时间字段
+     */
+    toggleAPIKeyCustomFields(visible, container) {
+        if (!container) return;
+        container.style.display = visible ? 'flex' : 'none';
+        if (!visible) {
+            const daysInput = document.getElementById('api-key-expire-days');
+            const atInput = document.getElementById('api-key-expire-at');
+            if (daysInput) daysInput.value = '';
+            if (atInput) atInput.value = '';
+        }
+    },
+
+    /**
+     * 创建新的 API Key
+     */
+    async createAPIKey(form) {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = '生成中...';
+        }
+
+        const nameInput = document.getElementById('api-key-name');
+        const expireType = document.getElementById('api-key-expire-type');
+        const customDays = document.getElementById('api-key-expire-days');
+        const customDate = document.getElementById('api-key-expire-at');
+
+        const payload = {};
+        const name = nameInput ? nameInput.value.trim() : '';
+        if (name) {
+            payload.name = name;
+        }
+
+        const expireValue = expireType ? expireType.value : 'forever';
+        try {
+            if (expireValue === 'forever') {
+                // 不设置任何过期字段
+            } else if (expireValue === 'custom') {
+                const daysValue = customDays ? parseInt(customDays.value, 10) : NaN;
+                const dateValue = customDate ? customDate.value.trim() : '';
+
+                if (!dateValue && (isNaN(daysValue) || daysValue <= 0)) {
+                    showNotification('请设置自定义有效期天数或日期', 'error');
+                    return;
+                }
+
+                if (!isNaN(daysValue) && daysValue > 0) {
+                    payload.expires_in_days = daysValue;
+                }
+
+                if (dateValue) {
+                    const parsed = new Date(dateValue);
+                    if (Number.isNaN(parsed.getTime())) {
+                        showNotification('自定义到期时间格式有误', 'error');
+                        return;
+                    }
+                    payload.expires_at = parsed.toISOString();
+                }
+            } else {
+                const presetDays = parseInt(expireValue, 10);
+                if (!Number.isNaN(presetDays) && presetDays > 0) {
+                    payload.expires_in_days = presetDays;
+                }
+            }
+
+            const response = await fetch('/user/api-keys', {
+                method: 'POST',
+                headers: UserAuth.getAuthHeaders(),
+                body: JSON.stringify(payload)
+            });
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return;
+
+            if (result && result.code === 200 && result.data) {
+                showNotification(result.message || 'API Key 创建成功', 'success');
+                this.showAPIKeyResult(result.data);
+                form.reset();
+                const expireTypeSelect = document.getElementById('api-key-expire-type');
+                if (expireTypeSelect) {
+                    expireTypeSelect.value = '30';
+                    this.toggleAPIKeyCustomFields(false, document.getElementById('api-key-custom-fields'));
+                }
+                this.apiKeysLoaded = false;
+                await this.loadAPIKeys(true);
+            } else {
+                const message = result && result.message ? result.message : 'API Key 创建失败';
+                showNotification(message, 'error');
+            }
+        } catch (error) {
+            console.error('创建 API Key 失败:', error);
+            showNotification('创建失败: ' + error.message, 'error');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '生成新的 API 密钥';
+            }
+        }
+    },
+
+    /**
+     * 加载 API Key 列表
+     */
+    async loadAPIKeys(force = false) {
+        if (this.apiKeysLoading) return;
+        if (!force && this.apiKeysLoaded) return;
+
+        const loadingEl = document.getElementById('api-key-loading');
+        const emptyEl = document.getElementById('api-key-empty');
+        const wrapper = document.getElementById('api-key-table-wrapper');
+
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (emptyEl) emptyEl.style.display = 'none';
+        if (wrapper) wrapper.innerHTML = '';
+
+        this.apiKeysLoading = true;
+
+        try {
+            const response = await fetch('/user/api-keys', {
+                headers: UserAuth.getAuthHeaders()
+            });
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return;
+
+            if (result && result.code === 200 && result.data) {
+                const keys = result.data.keys || [];
+                this.apiKeyCache = keys;
+                this.apiKeysLoaded = true;
+                this.renderAPIKeys(keys);
+            } else {
+                const message = result && result.message ? result.message : '获取 API Key 列表失败';
+                showNotification(message, 'error');
+            }
+        } catch (error) {
+            console.error('加载 API Key 列表失败:', error);
+            showNotification('加载失败: ' + error.message, 'error');
+        } finally {
+            this.apiKeysLoading = false;
+            if (loadingEl) loadingEl.style.display = 'none';
+        }
+    },
+
+    /**
+     * 渲染 API Key 列表
+     */
+    renderAPIKeys(keys) {
+        const emptyEl = document.getElementById('api-key-empty');
+        const wrapper = document.getElementById('api-key-table-wrapper');
+        const limitNote = document.getElementById('api-key-limit-note');
+        const activeCount = Array.isArray(keys) ? keys.filter(item => !item.revoked).length : 0;
+
+        if (limitNote) {
+            limitNote.textContent = `已使用 ${activeCount}/${this.apiKeyLimit} 个有效密钥。`;
+            limitNote.classList.toggle('warning', activeCount >= this.apiKeyLimit);
+        }
+
+        if (!wrapper) return;
+
+        if (!keys || keys.length === 0) {
+            if (emptyEl) emptyEl.style.display = 'block';
+            wrapper.innerHTML = '';
+            return;
+        }
+
+        if (emptyEl) emptyEl.style.display = 'none';
+
+        const rowsHTML = keys.map(key => this.renderAPIKeyRow(key)).join('');
+        wrapper.innerHTML = `
+            <table class="api-keys-table">
+                <thead>
+                    <tr>
+                        <th>备注名称</th>
+                        <th>密钥前缀</th>
+                        <th>状态</th>
+                        <th>最后使用</th>
+                        <th>到期时间</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHTML}
+                </tbody>
+            </table>
+        `;
+
+        this.bindAPIKeyTableEvents();
+    },
+
+    /**
+     * 生成单行 API Key HTML
+     */
+    renderAPIKeyRow(key) {
+        const status = key.revoked
+            ? '<span class="api-key-status revoked">已撤销</span>'
+            : '<span class="api-key-status active">生效中</span>';
+        const lastUsed = key.last_used_at ? formatDateTime(key.last_used_at) : '从未使用';
+        const expiresAt = key.expires_at ? formatDateTime(key.expires_at) : '长期有效';
+        const createdAt = key.created_at ? formatDateTime(key.created_at) : '-';
+        const name = key.name ? escapeHtml(key.name) : '未命名密钥';
+        const prefix = key.prefix ? escapeHtml(key.prefix) + '…' : '***';
+
+        const actionBtn = key.revoked
+            ? '<button class="btn-sm" disabled>已失效</button>'
+            : `<button class="btn-sm btn-danger" data-action="revoke" data-id="${key.id}">撤销</button>`;
+
+        return `
+            <tr>
+                <td>${name}</td>
+                <td><code>${prefix}</code></td>
+                <td>${status}</td>
+                <td>${lastUsed}</td>
+                <td>${expiresAt}</td>
+                <td>${createdAt}</td>
+                <td>${actionBtn}</td>
+            </tr>
+        `;
+    },
+
+    /**
+     * 绑定 API Key 列表操作事件
+     */
+    bindAPIKeyTableEvents() {
+        const wrapper = document.getElementById('api-key-table-wrapper');
+        if (!wrapper) return;
+
+        wrapper.removeEventListener('click', this.apiKeyTableClickHandler);
+
+        this.apiKeyTableClickHandler = async (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+
+            const action = target.dataset.action;
+            const id = target.dataset.id;
+            if (action === 'revoke' && id) {
+                await this.revokeAPIKey(parseInt(id, 10));
+            }
+        };
+
+        wrapper.addEventListener('click', this.apiKeyTableClickHandler);
+    },
+
+    /**
+     * 撤销 API Key
+     */
+    async revokeAPIKey(id) {
+        if (!Number.isInteger(id)) return;
+        if (!confirm('确定要撤销该 API 密钥吗？撤销后将无法恢复。')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/user/api-keys/${id}`, {
+                method: 'DELETE',
+                headers: UserAuth.getAuthHeaders()
+            });
+            const result = await this.parseJsonSafe(response);
+            if (this.handleAuthError(result)) return;
+
+            if (result && result.code === 200) {
+                showNotification('API 密钥已撤销', 'success');
+                this.apiKeysLoaded = false;
+                await this.loadAPIKeys(true);
+            } else {
+                const message = result && result.message ? result.message : '撤销失败';
+                showNotification(message, 'error');
+            }
+        } catch (error) {
+            console.error('撤销 API Key 失败:', error);
+            showNotification('撤销失败: ' + error.message, 'error');
+        }
+    },
+
+    /**
+     * 显示新生成的 API Key
+     */
+    showAPIKeyResult(data) {
+        const container = document.getElementById('api-key-result');
+        const valueEl = document.getElementById('api-key-result-value');
+        const metaEl = document.getElementById('api-key-result-meta');
+        if (!container || !valueEl || !metaEl) return;
+
+        const key = data.key || '';
+        const info = data.api_key || {};
+
+        valueEl.textContent = key;
+
+        const expireText = info.expires_at ? `到期时间：${formatDateTime(info.expires_at)}` : '长期有效';
+        const createdText = info.created_at ? `创建时间：${formatDateTime(info.created_at)}` : '';
+        const nameText = info.name ? `备注：${escapeHtml(info.name)}` : '';
+
+        metaEl.innerHTML = [nameText, expireText, createdText].filter(Boolean).map(item => `<div>${item}</div>`).join('');
+
+        container.style.display = 'block';
+    },
+
+    /**
+     * 隐藏 API Key 结果面板
+     */
+    hideAPIKeyResult() {
+        const container = document.getElementById('api-key-result');
+        if (!container) return;
+        container.style.display = 'none';
+    },
     
     /**
      * 设置文件上传
@@ -777,6 +1145,7 @@ const Dashboard = {
         this.setupUploadForm();
         this.setupProfileForm();
         this.setupPasswordForm();
+        this.setupAPIKeyForm();
     },
     
     /**
