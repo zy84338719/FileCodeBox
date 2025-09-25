@@ -2,7 +2,7 @@ swagger: "2.0"
 info:
   title: "FileCodeBox API"
   description: "FileCodeBox 是一个用于文件分享和代码片段管理的 Web 应用程序"
-  version: "1.9.1"
+  version: "1.9.8"
   termsOfService: "http://swagger.io/terms/"
   contact:
     name: "API Support"
@@ -19,14 +19,11 @@ schemes:
   - "https"
 
 securityDefinitions:
-  ApiKeyAuth:
-    type: "apiKey"
-    name: "X-API-Key"
-    in: "header"
   BearerAuth:
     type: "apiKey"
     name: "Authorization"
     in: "header"
+    description: "在请求头中携带 Bearer Token，例如：Authorization: Bearer <token>"
   BasicAuth:
     type: "basic"
 
@@ -45,6 +42,8 @@ tags:
     description: "存储管理接口"
   - name: "MCP"
     description: "Model Context Protocol 接口"
+  - name: "初始化"
+    description: "系统初始化与安装向导接口"
 
 paths:
   # 系统接口
@@ -69,7 +68,7 @@ paths:
                 example: "2025-09-11T10:00:00Z"
               version:
                 type: "string"
-                example: "1.9.1"
+                example: "1.9.8"
               uptime:
                 type: "string"
                 example: "2h30m15s"
@@ -86,6 +85,91 @@ paths:
           description: "系统配置信息"
           schema:
             $ref: "#/definitions/SystemConfig"
+
+  /check-init:
+    get:
+      tags: ["初始化"]
+      summary: "检查系统初始化状态"
+      description: "返回系统是否已经完成初始化，用于引导 Setup 向导"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "初始化状态"
+          schema:
+            $ref: "#/definitions/InitializationStatusResponse"
+        500:
+          description: "服务器内部错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /setup/initialize:
+    post:
+      tags: ["初始化"]
+      summary: "执行系统初始化"
+      description: "提交数据库与管理员配置，完成系统初始化流程。未初始化时公开，初始化后需管理员权限。"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "request"
+          in: "body"
+          required: true
+          description: "初始化参数"
+          schema:
+            $ref: "#/definitions/SetupInitializeRequest"
+      responses:
+        200:
+          description: "初始化成功"
+          schema:
+            $ref: "#/definitions/SetupInitializeResponse"
+        400:
+          description: "请求参数错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: "系统已初始化"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: "服务器内部错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /setup:
+    post:
+      tags: ["初始化"]
+      summary: "执行系统初始化（兼容入口）"
+      description: "兼容旧版本 Setup 表单的初始化入口，与 /setup/initialize 行为一致"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "request"
+          in: "body"
+          required: true
+          description: "初始化参数"
+          schema:
+            $ref: "#/definitions/SetupInitializeRequest"
+      responses:
+        200:
+          description: "初始化成功"
+          schema:
+            $ref: "#/definitions/SetupInitializeResponse"
+        400:
+          description: "请求参数错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        403:
+          description: "系统已初始化"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: "服务器内部错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
 
   # 分享接口
   /share/text/:
@@ -120,8 +204,6 @@ paths:
           type: "boolean"
           default: false
           description: "是否需要认证"
-      security:
-        - BearerAuth: []
       responses:
         200:
           description: "分享成功"
@@ -171,8 +253,6 @@ paths:
           type: "boolean"
           default: false
           description: "是否需要认证"
-      security:
-        - BearerAuth: []
       responses:
         200:
           description: "分享成功"
@@ -264,8 +344,6 @@ paths:
           type: "string"
           required: true
           description: "分享代码"
-      security:
-        - BearerAuth: []
       responses:
         200:
           description: "文件下载或文本内容"
@@ -303,8 +381,6 @@ paths:
           description: "上传初始化参数"
           schema:
             $ref: "#/definitions/ChunkInitRequest"
-      security:
-        - BearerAuth: []
       responses:
         200:
           description: "初始化成功"
@@ -348,8 +424,6 @@ paths:
           type: "file"
           required: true
           description: "分片文件"
-      security:
-        - BearerAuth: []
       responses:
         200:
           description: "上传成功"
@@ -389,8 +463,6 @@ paths:
           description: "完成上传参数"
           schema:
             $ref: "#/definitions/ChunkCompleteRequest"
-      security:
-        - BearerAuth: []
       responses:
         200:
           description: "上传完成"
@@ -422,13 +494,47 @@ paths:
           type: "string"
           required: true
           description: "上传ID"
-      security:
-        - BearerAuth: []
       responses:
         200:
           description: "上传状态"
           schema:
             $ref: "#/definitions/ChunkStatusResponse"
+        404:
+          description: "上传ID不存在"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /chunk/upload/verify/{upload_id}/{chunk_index}:
+    post:
+      tags: ["分片上传"]
+      summary: "校验分片"
+      description: "用于断点续传场景，校验指定分片是否已存在"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "upload_id"
+          in: "path"
+          type: "string"
+          required: true
+          description: "上传ID"
+        - name: "chunk_index"
+          in: "path"
+          type: "integer"
+          required: true
+          description: "分片索引"
+        - name: "request"
+          in: "body"
+          required: true
+          description: "分片校验参数"
+          schema:
+            $ref: "#/definitions/ChunkVerifyRequest"
+      responses:
+        200:
+          description: "分片校验结果"
+          schema:
+            $ref: "#/definitions/ChunkVerifyResponse"
         404:
           description: "上传ID不存在"
           schema:
@@ -447,8 +553,6 @@ paths:
           type: "string"
           required: true
           description: "上传ID"
-      security:
-        - BearerAuth: []
       responses:
         200:
           description: "取消成功"
@@ -464,6 +568,40 @@ paths:
             $ref: "#/definitions/ErrorResponse"
 
   # 用户接口
+  /user/system-info:
+    get:
+      tags: ["用户"]
+      summary: "获取用户系统状态"
+      description: "返回用户系统开关、注册是否允许等信息"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "用户系统信息"
+          schema:
+            $ref: "#/definitions/UserSystemInfoResponse"
+        500:
+          description: "服务器内部错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /user/check-initialization:
+    get:
+      tags: ["用户"]
+      summary: "检查系统是否已初始化"
+      description: "与 /check-init 一致，为用户端兼容接口"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "初始化状态"
+          schema:
+            $ref: "#/definitions/InitializationStatusResponse"
+        500:
+          description: "服务器内部错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
   /user/register:
     post:
       tags: ["用户"]
@@ -639,7 +777,7 @@ paths:
       produces:
         - "application/json"
       security:
-        - ApiKeyAuth: []
+        - BearerAuth: []
       responses:
         200:
           description: "统计信息"
@@ -689,7 +827,7 @@ paths:
           default: "desc"
           description: "排序方式"
       security:
-        - ApiKeyAuth: []
+        - BearerAuth: []
       responses:
         200:
           description: "文件列表"
@@ -718,7 +856,7 @@ paths:
           required: true
           description: "文件ID"
       security:
-        - ApiKeyAuth: []
+        - BearerAuth: []
       responses:
         200:
           description: "删除成功"
@@ -745,7 +883,7 @@ paths:
       produces:
         - "application/json"
       security:
-        - ApiKeyAuth: []
+        - BearerAuth: []
       responses:
         200:
           description: "系统配置"
@@ -775,7 +913,7 @@ paths:
           schema:
             $ref: "#/definitions/AdminConfigRequest"
       security:
-        - ApiKeyAuth: []
+        - BearerAuth: []
       responses:
         200:
           description: "更新成功"
@@ -812,7 +950,7 @@ paths:
           schema:
             $ref: "#/definitions/StorageTestRequest"
       security:
-        - ApiKeyAuth: []
+        - BearerAuth: []
       responses:
         200:
           description: "测试成功"
@@ -848,7 +986,7 @@ paths:
           schema:
             $ref: "#/definitions/StorageSwitchRequest"
       security:
-        - ApiKeyAuth: []
+        - BearerAuth: []
       responses:
         200:
           description: "切换成功"
@@ -893,6 +1031,135 @@ definitions:
       error:
         type: "string"
         example: "detailed error"
+
+  InitializationStatus:
+    type: "object"
+    properties:
+      initialized:
+        type: "boolean"
+        description: "系统是否已经完成初始化"
+        example: true
+
+  InitializationStatusResponse:
+    allOf:
+      - $ref: "#/definitions/SuccessResponse"
+      - type: "object"
+        properties:
+          data:
+            $ref: "#/definitions/InitializationStatus"
+
+  SetupDatabaseConfig:
+    type: "object"
+    required: ["type"]
+    properties:
+      type:
+        type: "string"
+        enum: ["sqlite", "mysql", "postgres"]
+        description: "数据库类型"
+      file:
+        type: "string"
+        description: "SQLite 数据库文件路径"
+      host:
+        type: "string"
+        description: "数据库主机地址"
+      port:
+        type: "integer"
+        description: "数据库端口"
+        example: 3306
+      user:
+        type: "string"
+        description: "数据库用户名"
+      password:
+        type: "string"
+        description: "数据库密码"
+      database:
+        type: "string"
+        description: "数据库名称"
+
+  SetupAdminConfig:
+    type: "object"
+    required: ["username", "email", "password"]
+    properties:
+      username:
+        type: "string"
+        description: "管理员用户名"
+        example: "admin"
+      email:
+        type: "string"
+        format: "email"
+        description: "管理员邮箱"
+        example: "admin@example.com"
+      nickname:
+        type: "string"
+        description: "管理员昵称"
+      password:
+        type: "string"
+        format: "password"
+        description: "管理员密码"
+      confirm:
+        type: "string"
+        format: "password"
+        description: "确认密码"
+      allowUserRegistration:
+        type: "boolean"
+        description: "是否允许用户自助注册"
+
+  SetupInitializeRequest:
+    type: "object"
+    required: ["database", "admin"]
+    properties:
+      database:
+        $ref: "#/definitions/SetupDatabaseConfig"
+      admin:
+        $ref: "#/definitions/SetupAdminConfig"
+
+  SetupInitializeData:
+    type: "object"
+    properties:
+      message:
+        type: "string"
+        example: "系统初始化完成"
+      username:
+        type: "string"
+        example: "admin"
+      database_type:
+        type: "string"
+        example: "sqlite"
+
+  SetupInitializeResponse:
+    allOf:
+      - $ref: "#/definitions/SuccessResponse"
+      - type: "object"
+        properties:
+          data:
+            $ref: "#/definitions/SetupInitializeData"
+
+  UserSystemInfo:
+    type: "object"
+    properties:
+      user_system_enabled:
+        type: "integer"
+        enum: [0, 1]
+        description: "用户系统是否启用"
+        example: 1
+      allow_user_registration:
+        type: "integer"
+        enum: [0, 1]
+        description: "是否允许用户注册"
+        example: 1
+      require_email_verification:
+        type: "integer"
+        enum: [0, 1]
+        description: "是否需要邮箱验证"
+        example: 0
+
+  UserSystemInfoResponse:
+    allOf:
+      - $ref: "#/definitions/SuccessResponse"
+      - type: "object"
+        properties:
+          data:
+            $ref: "#/definitions/UserSystemInfo"
 
   # 系统配置
   SystemConfig:
@@ -1120,6 +1387,31 @@ definitions:
             type: "string"
             enum: ["pending", "uploading", "completed", "failed"]
             description: "上传状态"
+
+  ChunkVerifyRequest:
+    type: "object"
+    required: ["chunk_hash"]
+    properties:
+      chunk_hash:
+        type: "string"
+        description: "客户端计算的分片哈希"
+        example: "9b74c9897bac770ffc029102a200c5de"
+
+  ChunkVerifyResult:
+    type: "object"
+    properties:
+      valid:
+        type: "boolean"
+        description: "分片是否已存在"
+        example: true
+
+  ChunkVerifyResponse:
+    allOf:
+      - $ref: "#/definitions/SuccessResponse"
+      - type: "object"
+        properties:
+          data:
+            $ref: "#/definitions/ChunkVerifyResult"
 
   # 用户相关
   RegisterRequest:

@@ -18,6 +18,7 @@ type (
 	TransferLogQuery       = db.TransferLogQuery
 	AdminOperationLog      = db.AdminOperationLog
 	AdminOperationLogQuery = db.AdminOperationLogQuery
+	UserAPIKey             = db.UserAPIKey
 
 	// 服务模型别名
 	BuildInfo = service.BuildInfo

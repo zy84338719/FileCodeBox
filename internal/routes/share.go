@@ -4,6 +4,7 @@ import (
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/middleware"
+	"github.com/zy84338719/filecodebox/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,9 +14,7 @@ func SetupShareRoutes(
 	router *gin.Engine,
 	shareHandler *handlers.ShareHandler,
 	cfg *config.ConfigManager,
-	userService interface {
-		ValidateToken(string) (interface{}, error)
-	},
+	userService *services.UserService,
 ) {
 	// 幂等检查：如果 /share/text/ 已注册则跳过（防止重复注册导致 gin panic）
 	for _, r := range router.Routes() {

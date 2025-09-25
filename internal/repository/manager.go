@@ -14,6 +14,7 @@ type RepositoryManager struct {
 	Upload      *ChunkDAO
 	TransferLog *TransferLogDAO
 	AdminOpLog  *AdminOperationLogDAO
+	UserAPIKey  *UserAPIKeyDAO
 }
 
 // NewRepositoryManager 创建新的数据访问管理器
@@ -27,6 +28,7 @@ func NewRepositoryManager(db *gorm.DB) *RepositoryManager {
 		Upload:      NewChunkDAO(db), // 别名
 		TransferLog: NewTransferLogDAO(db),
 		AdminOpLog:  NewAdminOperationLogDAO(db),
+		UserAPIKey:  NewUserAPIKeyDAO(db),
 	}
 }
 
