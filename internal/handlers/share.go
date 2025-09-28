@@ -82,6 +82,26 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 	common.SuccessWithMessage(c, "分享成功", response)
 }
 
+// ShareTextAPI 面向 API Key 用户的文本分享入口
+// @Summary 分享文本（API 模式）
+// @Description 通过 API Key 分享文本内容
+// @Tags API
+// @Accept multipart/form-data
+// @Produce json
+// @Param text formData string true "文本内容"
+// @Param expire_value formData int false "过期值" default(1)
+// @Param expire_style formData string false "过期样式" default(day) Enums(minute, hour, day, week, month, year, forever)
+// @Param require_auth formData boolean false "是否需要认证" default(false)
+// @Success 200 {object} map[string]interface{} "分享成功，返回分享代码"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 401 {object} map[string]interface{} "API Key 校验失败"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /api/v1/share/text [post]
+// @Security ApiKeyAuth
+func (h *ShareHandler) ShareTextAPI(c *gin.Context) {
+	h.ShareText(c)
+}
+
 // ShareFile 分享文件
 // @Summary 分享文件
 // @Description 上传并分享文件，生成分享代码
@@ -145,6 +165,26 @@ func (h *ShareHandler) ShareFile(c *gin.Context) {
 	}
 
 	common.SuccessResponse(c, response)
+}
+
+// ShareFileAPI 面向 API Key 用户的文件分享入口
+// @Summary 分享文件（API 模式）
+// @Description 通过 API Key 上传并分享文件
+// @Tags API
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "要分享的文件"
+// @Param expire_value formData int false "过期值" default(1)
+// @Param expire_style formData string false "过期样式" default(day) Enums(minute, hour, day, week, month, year, forever)
+// @Param require_auth formData boolean false "是否需要认证" default(false)
+// @Success 200 {object} map[string]interface{} "分享成功，返回分享代码和文件信息"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 401 {object} map[string]interface{} "API Key 校验失败"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /api/v1/share/file [post]
+// @Security ApiKeyAuth
+func (h *ShareHandler) ShareFileAPI(c *gin.Context) {
+	h.ShareFile(c)
 }
 
 // GetFile 获取文件信息
@@ -219,6 +259,47 @@ func (h *ShareHandler) GetFile(c *gin.Context) {
 	common.SuccessResponse(c, response)
 }
 
+// GetFileAPI 通过 REST 模式查询分享信息（API 模式）
+// @Summary 查询分享详情（API 模式）
+// @Description 根据分享代码返回分享的文件或文本信息
+// @Tags API
+// @Produce json
+// @Param code path string true "分享代码"
+// @Success 200 {object} map[string]interface{} "分享详情"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 401 {object} map[string]interface{} "API Key 校验失败"
+// @Failure 404 {object} map[string]interface{} "分享不存在"
+// @Router /api/v1/share/{code} [get]
+// @Security ApiKeyAuth
+func (h *ShareHandler) GetFileAPI(c *gin.Context) {
+	code := c.Param("code")
+	if code == "" {
+		common.BadRequestResponse(c, "文件代码不能为空")
+		return
+	}
+
+	fileCode, _, ok := h.fetchFileForRequest(c, code)
+	if !ok {
+		return
+	}
+
+	response := web.FileInfoResponse{
+		Code:        fileCode.Code,
+		Name:        getDisplayFileName(fileCode),
+		Size:        fileCode.Size,
+		UploadType:  fileCode.UploadType,
+		RequireAuth: fileCode.RequireAuth,
+	}
+
+	if fileCode.Text != "" {
+		response.Text = fileCode.Text
+	} else {
+		response.Text = "/share/download?code=" + fileCode.Code
+	}
+
+	common.SuccessResponse(c, response)
+}
+
 // DownloadFile 下载文件
 // @Summary 下载分享文件
 // @Description 根据分享代码下载文件或获取文本内容
@@ -239,7 +320,54 @@ func (h *ShareHandler) DownloadFile(c *gin.Context) {
 		return
 	}
 
-	// 获取用户ID（如果已登录）
+	fileCode, userID, ok := h.fetchFileForRequest(c, code)
+	if !ok {
+		return
+	}
+
+	if h.tryReturnText(c, fileCode, userID) {
+		return
+	}
+
+	if !h.streamFileResponse(c, fileCode, userID) {
+		return
+	}
+}
+
+// DownloadFileAPI REST 风格下载接口（API 模式）
+// @Summary 下载分享内容（API 模式）
+// @Description 根据分享代码下载文件或获取文本内容
+// @Tags API
+// @Produce application/octet-stream
+// @Produce application/json
+// @Param code path string true "分享代码"
+// @Success 200 {file} binary "文件内容"
+// @Success 200 {object} map[string]interface{} "文本内容"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 401 {object} map[string]interface{} "API Key 校验失败"
+// @Failure 404 {object} map[string]interface{} "分享不存在"
+// @Router /api/v1/share/{code}/download [get]
+// @Security ApiKeyAuth
+func (h *ShareHandler) DownloadFileAPI(c *gin.Context) {
+	code := c.Param("code")
+	if code == "" {
+		common.BadRequestResponse(c, "文件代码不能为空")
+		return
+	}
+
+	fileCode, userID, ok := h.fetchFileForRequest(c, code)
+	if !ok {
+		return
+	}
+
+	if h.tryReturnText(c, fileCode, userID) {
+		return
+	}
+
+	_ = h.streamFileResponse(c, fileCode, userID)
+}
+
+func (h *ShareHandler) fetchFileForRequest(c *gin.Context, code string) (*models.FileCode, *uint, bool) {
 	var userID *uint
 	if uid, exists := c.Get("user_id"); exists {
 		id := uid.(uint)
@@ -249,36 +377,42 @@ func (h *ShareHandler) DownloadFile(c *gin.Context) {
 	fileCode, err := h.service.GetFileByCodeWithAuth(code, userID)
 	if err != nil {
 		common.NotFoundResponse(c, err.Error())
-		return
+		return nil, nil, false
 	}
 
-	// 更新使用次数
 	if err := h.service.UpdateFileUsage(fileCode.Code); err != nil {
-		// 记录错误但不阻止下载
 		logrus.WithError(err).Error("更新文件使用次数失败")
 	}
 
-	if fileCode.Text != "" {
-		common.SuccessResponse(c, fileCode.Text)
-		h.service.RecordDownloadLog(fileCode, userID, c.ClientIP(), 0)
-		return
+	return fileCode, userID, true
+}
+
+func (h *ShareHandler) tryReturnText(c *gin.Context, fileCode *models.FileCode, userID *uint) bool {
+	if fileCode.Text == "" {
+		return false
 	}
 
-	// 使用存储服务下载文件
+	common.SuccessResponse(c, fileCode.Text)
+	h.service.RecordDownloadLog(fileCode, userID, c.ClientIP(), 0)
+	return true
+}
+
+func (h *ShareHandler) streamFileResponse(c *gin.Context, fileCode *models.FileCode, userID *uint) bool {
 	storageServiceInterface := h.service.GetStorageService()
 	storageService, ok := storageServiceInterface.(*storage.ConcreteStorageService)
 	if !ok {
 		common.InternalServerErrorResponse(c, "存储服务类型错误")
-		return
+		return false
 	}
 
 	start := time.Now()
 	if err := storageService.GetFileResponse(c, fileCode); err != nil {
 		common.NotFoundResponse(c, "文件下载失败: "+err.Error())
-		return
+		return false
 	}
 
 	h.service.RecordDownloadLog(fileCode, userID, c.ClientIP(), time.Since(start))
+	return true
 }
 
 // getDisplayFileName 获取用于显示的文件名

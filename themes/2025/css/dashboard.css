@@ -765,6 +765,29 @@ body {
     font-weight: 600;
 }
 
+.api-key-scope-note {
+    flex-basis: 100%;
+    display: block;
+    color: #2563eb;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-top: 4px;
+}
+
+.api-key-scope-note code {
+    background: rgba(37, 99, 235, 0.08);
+    color: #1d4ed8;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.api-key-scope-note a {
+    color: #1d4ed8;
+    text-decoration: underline;
+    font-weight: 500;
+}
+
 .api-key-result {
     background: #f8fafc;
     border: 1px solid #e2e8f0;

@@ -26,6 +26,11 @@ securityDefinitions:
     description: "在请求头中携带 Bearer Token，例如：Authorization: Bearer <token>"
   BasicAuth:
     type: "basic"
+  ApiKeyAuth:
+    type: "apiKey"
+    name: "X-API-Key"
+    in: "header"
+    description: "在请求头中携带 API Key，例如：X-API-Key: <key> 或 Authorization: ApiKey <key>"
 
 tags:
   - name: "系统"
@@ -44,6 +49,8 @@ tags:
     description: "Model Context Protocol 接口"
   - name: "初始化"
     description: "系统初始化与安装向导接口"
+  - name: "API"
+    description: "API Key 模式下的轻量接口"
 
 paths:
   # 系统接口
@@ -364,6 +371,391 @@ paths:
           schema:
             $ref: "#/definitions/ErrorResponse"
 
+  # API 模式接口
+  /api/v1/share/text:
+    post:
+      tags: ["API"]
+      summary: "分享文本（API 模式）"
+      description: "通过 API Key 分享文本内容"
+      consumes:
+        - "multipart/form-data"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "text"
+          in: "formData"
+          type: "string"
+          required: true
+          description: "文本内容"
+        - name: "expire_value"
+          in: "formData"
+          type: "integer"
+          default: 1
+          description: "过期值"
+        - name: "expire_style"
+          in: "formData"
+          type: "string"
+          enum: ["minute", "hour", "day", "week", "month", "year", "forever"]
+          default: "day"
+          description: "过期样式"
+        - name: "require_auth"
+          in: "formData"
+          type: "boolean"
+          default: false
+          description: "是否需要认证"
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: "分享成功"
+          schema:
+            $ref: "#/definitions/ShareResponse"
+        400:
+          description: "请求参数错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: "API Key 无效"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: "服务器内部错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/v1/share/file:
+    post:
+      tags: ["API"]
+      summary: "分享文件（API 模式）"
+      description: "通过 API Key 上传并分享文件"
+      consumes:
+        - "multipart/form-data"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "file"
+          in: "formData"
+          type: "file"
+          required: true
+          description: "要分享的文件"
+        - name: "expire_value"
+          in: "formData"
+          type: "integer"
+          default: 1
+          description: "过期值"
+        - name: "expire_style"
+          in: "formData"
+          type: "string"
+          enum: ["minute", "hour", "day", "week", "month", "year", "forever"]
+          default: "day"
+          description: "过期样式"
+        - name: "require_auth"
+          in: "formData"
+          type: "boolean"
+          default: false
+          description: "是否需要认证"
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: "分享成功"
+          schema:
+            $ref: "#/definitions/ShareResponse"
+        400:
+          description: "请求参数错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: "API Key 无效"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: "服务器内部错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/v1/share/{code}:
+    get:
+      tags: ["API"]
+      summary: "获取分享信息（API 模式）"
+      description: "根据分享代码返回文件或文本信息"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "code"
+          in: "path"
+          type: "string"
+          required: true
+          description: "分享代码"
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: "分享信息"
+          schema:
+            $ref: "#/definitions/ShareInfo"
+        400:
+          description: "请求参数错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: "API Key 无效"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: "分享代码不存在"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/v1/share/{code}/download:
+    get:
+      tags: ["API"]
+      summary: "下载分享内容（API 模式）"
+      description: "根据分享代码下载文件或获取文本内容"
+      produces:
+        - "application/octet-stream"
+        - "application/json"
+      parameters:
+        - name: "code"
+          in: "path"
+          type: "string"
+          required: true
+          description: "分享代码"
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: "文件或文本内容"
+        400:
+          description: "请求参数错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: "API Key 无效"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: "分享代码不存在"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/v1/chunks/upload/init:
+    post:
+      tags: ["API"]
+      summary: "初始化分片上传（API 模式）"
+      description: "初始化分片上传并返回上传ID"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "request"
+          in: "body"
+          required: true
+          description: "上传初始化参数"
+          schema:
+            $ref: "#/definitions/ChunkInitRequest"
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: "初始化成功"
+          schema:
+            $ref: "#/definitions/ChunkInitResponse"
+        400:
+          description: "请求参数错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: "API Key 无效"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: "服务器内部错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/v1/chunks/upload/chunk/{upload_id}/{chunk_index}:
+    post:
+      tags: ["API"]
+      summary: "上传文件分片（API 模式）"
+      description: "上传指定索引的文件分片"
+      consumes:
+        - "multipart/form-data"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "upload_id"
+          in: "path"
+          type: "string"
+          required: true
+          description: "上传ID"
+        - name: "chunk_index"
+          in: "path"
+          type: "integer"
+          required: true
+          description: "分片索引"
+        - name: "chunk"
+          in: "formData"
+          type: "file"
+          required: true
+          description: "分片文件"
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: "上传成功"
+          schema:
+            $ref: "#/definitions/ChunkUploadResponse"
+        400:
+          description: "请求参数错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: "API Key 无效"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: "服务器内部错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/v1/chunks/upload/complete/{upload_id}:
+    post:
+      tags: ["API"]
+      summary: "完成分片上传（API 模式）"
+      description: "合并所有分片并生成分享代码"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "upload_id"
+          in: "path"
+          type: "string"
+          required: true
+          description: "上传ID"
+        - name: "request"
+          in: "body"
+          required: true
+          description: "完成上传参数"
+          schema:
+            $ref: "#/definitions/ChunkCompleteRequest"
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: "上传完成"
+          schema:
+            $ref: "#/definitions/ShareResponse"
+        400:
+          description: "请求参数错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: "API Key 无效"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: "服务器内部错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/v1/chunks/upload/status/{upload_id}:
+    get:
+      tags: ["API"]
+      summary: "获取上传状态（API 模式）"
+      description: "获取分片上传的进度和状态"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "upload_id"
+          in: "path"
+          type: "string"
+          required: true
+          description: "上传ID"
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: "上传状态"
+          schema:
+            $ref: "#/definitions/ChunkStatusResponse"
+        401:
+          description: "API Key 无效"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        404:
+          description: "上传ID不存在"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/v1/chunks/upload/verify/{upload_id}/{chunk_index}:
+    post:
+      tags: ["API"]
+      summary: "校验分片（API 模式）"
+      description: "用于断点续传场景，校验指定分片是否已存在"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "upload_id"
+          in: "path"
+          type: "string"
+          required: true
+          description: "上传ID"
+        - name: "chunk_index"
+          in: "path"
+          type: "integer"
+          required: true
+          description: "分片索引"
+        - name: "request"
+          in: "body"
+          required: true
+          description: "分片校验参数"
+          schema:
+            $ref: "#/definitions/ChunkVerifyRequest"
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: "分片校验结果"
+          schema:
+            $ref: "#/definitions/ChunkVerifyResponse"
+        400:
+          description: "请求参数错误"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        401:
+          description: "API Key 无效"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  /api/v1/chunks/upload/cancel/{upload_id}:
+    delete:
+      tags: ["API"]
+      summary: "取消分片上传（API 模式）"
+      description: "取消分片上传并清理相关文件"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "upload_id"
+          in: "path"
+          type: "string"
+          required: true
+          description: "上传ID"
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: "取消成功"
+          schema:
+            $ref: "#/definitions/SuccessResponse"
+        401:
+          description: "API Key 无效"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   # 分片上传接口
   /chunk/upload/init/:
     post:

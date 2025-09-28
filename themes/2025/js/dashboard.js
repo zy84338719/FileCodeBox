@@ -669,12 +669,17 @@ const Dashboard = {
         const refreshBtn = document.getElementById('api-key-refresh-btn');
         const closeResultBtn = document.getElementById('api-key-result-close');
         const copyResultBtn = document.getElementById('api-key-result-copy');
+        const scopeNote = document.getElementById('api-key-scope-note');
 
         if (expireTypeSelect) {
             expireTypeSelect.addEventListener('change', () => {
                 this.toggleAPIKeyCustomFields(expireTypeSelect.value === 'custom', customFields);
             });
             this.toggleAPIKeyCustomFields(expireTypeSelect.value === 'custom', customFields);
+        }
+
+        if (scopeNote) {
+            scopeNote.innerHTML = '🌐 生成的 API 密钥仅用于调用 <code>/api/v1</code> 路由（例如 <code>/api/v1/share/text</code>、<code>/api/v1/chunk/init</code>），请在请求头中携带 <code>X-API-Key</code>。更多示例见 <a href="/swagger/index.html" target="_blank" rel="noopener noreferrer">Swagger 文档</a>。';
         }
 
         if (refreshBtn) {
