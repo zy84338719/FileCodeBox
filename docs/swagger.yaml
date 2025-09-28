@@ -238,6 +238,316 @@ paths:
   /share/file/:
     post:
       consumes:
+    /api/v1/share/{code}:
+      get:
+        description: 根据分享代码返回文件或文本信息
+        parameters:
+        - description: 分享代码
+          in: path
+          name: code
+          required: true
+          type: string
+        produces:
+        - application/json
+        responses:
+          "200":
+            description: 分享信息
+            schema:
+              additionalProperties: true
+              type: object
+          "400":
+            description: 请求参数错误
+            schema:
+              additionalProperties: true
+              type: object
+          "401":
+            description: API Key 无效
+            schema:
+              additionalProperties: true
+              type: object
+          "404":
+            description: 分享代码不存在
+            schema:
+              additionalProperties: true
+              type: object
+        security:
+        - ApiKeyAuth: []
+        summary: 获取分享信息（API 模式）
+        tags:
+        - API
+    /api/v1/share/{code}/download:
+      get:
+        description: 根据分享代码下载文件或获取文本内容
+        parameters:
+        - description: 分享代码
+          in: path
+          name: code
+          required: true
+          type: string
+        produces:
+        - application/octet-stream
+        - application/json
+        responses:
+          "200":
+            description: 文件或文本内容
+          "400":
+            description: 请求参数错误
+            schema:
+              additionalProperties: true
+              type: object
+          "401":
+            description: API Key 无效
+            schema:
+              additionalProperties: true
+              type: object
+          "404":
+            description: 分享代码不存在
+            schema:
+              additionalProperties: true
+              type: object
+        security:
+        - ApiKeyAuth: []
+        summary: 下载分享内容（API 模式）
+        tags:
+        - API
+    /api/v1/chunks/upload/init:
+      post:
+        consumes:
+        - application/json
+        description: 初始化分片上传并返回上传ID
+        parameters:
+        - description: 上传初始化参数
+          in: body
+          name: request
+          required: true
+          schema:
+            type: object
+        produces:
+        - application/json
+        responses:
+          "200":
+            description: 初始化成功
+            schema:
+              additionalProperties: true
+              type: object
+          "400":
+            description: 请求参数错误
+            schema:
+              additionalProperties: true
+              type: object
+          "401":
+            description: API Key 无效
+            schema:
+              additionalProperties: true
+              type: object
+          "500":
+            description: 服务器内部错误
+            schema:
+              additionalProperties: true
+              type: object
+        security:
+        - ApiKeyAuth: []
+        summary: 初始化分片上传（API 模式）
+        tags:
+        - API
+    /api/v1/chunks/upload/chunk/{upload_id}/{chunk_index}:
+      post:
+        consumes:
+        - multipart/form-data
+        description: 上传指定索引的文件分片
+        parameters:
+        - description: 上传ID
+          in: path
+          name: upload_id
+          required: true
+          type: string
+        - description: 分片索引
+          in: path
+          name: chunk_index
+          required: true
+          type: integer
+        - description: 分片文件
+          in: formData
+          name: chunk
+          required: true
+          type: file
+        produces:
+        - application/json
+        responses:
+          "200":
+            description: 上传成功
+            schema:
+              additionalProperties: true
+              type: object
+          "400":
+            description: 请求参数错误
+            schema:
+              additionalProperties: true
+              type: object
+          "401":
+            description: API Key 无效
+            schema:
+              additionalProperties: true
+              type: object
+          "500":
+            description: 服务器内部错误
+            schema:
+              additionalProperties: true
+              type: object
+        security:
+        - ApiKeyAuth: []
+        summary: 上传文件分片（API 模式）
+        tags:
+        - API
+    /api/v1/chunks/upload/complete/{upload_id}:
+      post:
+        consumes:
+        - application/json
+        description: 完成所有分片上传并生成分享代码
+        parameters:
+        - description: 上传ID
+          in: path
+          name: upload_id
+          required: true
+          type: string
+        - description: 完成上传参数
+          in: body
+          name: request
+          required: true
+          schema:
+            type: object
+        produces:
+        - application/json
+        responses:
+          "200":
+            description: 上传完成，返回分享代码
+            schema:
+              additionalProperties: true
+              type: object
+          "400":
+            description: 请求参数错误
+            schema:
+              additionalProperties: true
+              type: object
+          "401":
+            description: API Key 无效
+            schema:
+              additionalProperties: true
+              type: object
+          "500":
+            description: 服务器内部错误
+            schema:
+              additionalProperties: true
+              type: object
+        security:
+        - ApiKeyAuth: []
+        summary: 完成分片上传（API 模式）
+        tags:
+        - API
+    /api/v1/chunks/upload/status/{upload_id}:
+      get:
+        description: 查询指定上传的进度与状态
+        parameters:
+        - description: 上传ID
+          in: path
+          name: upload_id
+          required: true
+          type: string
+        produces:
+        - application/json
+        responses:
+          "200":
+            description: 上传状态
+            schema:
+              additionalProperties: true
+              type: object
+          "401":
+            description: API Key 无效
+            schema:
+              additionalProperties: true
+              type: object
+          "404":
+            description: 上传ID不存在
+            schema:
+              additionalProperties: true
+              type: object
+        security:
+        - ApiKeyAuth: []
+        summary: 获取上传状态（API 模式）
+        tags:
+        - API
+    /api/v1/chunks/upload/verify/{upload_id}/{chunk_index}:
+      post:
+        consumes:
+        - application/json
+        description: 校验指定分片是否已存在
+        parameters:
+        - description: 上传ID
+          in: path
+          name: upload_id
+          required: true
+          type: string
+        - description: 分片索引
+          in: path
+          name: chunk_index
+          required: true
+          type: integer
+        - description: 校验参数
+          in: body
+          name: request
+          required: true
+          schema:
+            type: object
+        produces:
+        - application/json
+        responses:
+          "200":
+            description: 校验结果
+            schema:
+              additionalProperties: true
+              type: object
+          "400":
+            description: 请求参数错误
+            schema:
+              additionalProperties: true
+              type: object
+          "401":
+            description: API Key 无效
+            schema:
+              additionalProperties: true
+              type: object
+        security:
+        - ApiKeyAuth: []
+        summary: 校验分片（API 模式）
+        tags:
+        - API
+    /api/v1/chunks/upload/cancel/{upload_id}:
+      delete:
+        description: 取消进行中的分片上传并清理资源
+        parameters:
+        - description: 上传ID
+          in: path
+          name: upload_id
+          required: true
+          type: string
+        produces:
+        - application/json
+        responses:
+          "200":
+            description: 取消成功
+            schema:
+              additionalProperties: true
+              type: object
+          "401":
+            description: API Key 无效
+            schema:
+              additionalProperties: true
+              type: object
+        security:
+        - ApiKeyAuth: []
+        summary: 取消分片上传（API 模式）
+        tags:
+        - API
       - multipart/form-data
       description: 上传并分享文件，生成分享代码
       parameters:
@@ -414,6 +724,130 @@ paths:
       summary: 分享文本内容
       tags:
       - 分享
+  /api/v1/share/file:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 通过 API Key 上传并分享文件
+      parameters:
+      - description: 要分享的文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      - default: 1
+        description: 过期值
+        in: formData
+        name: expire_value
+        type: integer
+      - default: day
+        description: 过期样式
+        enum:
+        - minute
+        - hour
+        - day
+        - week
+        - month
+        - year
+        - forever
+        in: formData
+        name: expire_style
+        type: string
+      - default: false
+        description: 是否需要认证
+        in: formData
+        name: require_auth
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分享成功，返回分享代码和文件信息
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: API Key 无效
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 分享文件（API 模式）
+      tags:
+      - API
+    /api/v1/share/text:
+      post:
+        consumes:
+        - multipart/form-data
+        description: 通过 API Key 分享文本内容
+        parameters:
+        - description: 文本内容
+          in: formData
+          name: text
+          required: true
+          type: string
+        - default: 1
+          description: 过期值
+          in: formData
+          name: expire_value
+          type: integer
+        - default: day
+          description: 过期样式
+          enum:
+          - minute
+          - hour
+          - day
+          - week
+          - month
+          - year
+          - forever
+          in: formData
+          name: expire_style
+          type: string
+        - default: false
+          description: 是否需要认证
+          in: formData
+          name: require_auth
+          type: boolean
+        produces:
+        - application/json
+        responses:
+          "200":
+            description: 分享成功，返回分享代码
+            schema:
+              additionalProperties: true
+              type: object
+          "400":
+            description: 请求参数错误
+            schema:
+              additionalProperties: true
+              type: object
+          "401":
+            description: API Key 无效
+            schema:
+              additionalProperties: true
+              type: object
+          "500":
+            description: 服务器内部错误
+            schema:
+              additionalProperties: true
+              type: object
+        security:
+        - ApiKeyAuth: []
+        summary: 分享文本（API 模式）
+        tags:
+        - API
 securityDefinitions:
   ApiKeyAuth:
     in: header

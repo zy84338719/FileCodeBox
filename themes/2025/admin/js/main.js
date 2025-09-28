@@ -134,6 +134,12 @@ let authToken = localStorage.getItem('user_token'); // 使用统一的user_token
 let currentStorageType = 'local';
 let storageData = {};
 
+const SWAGGER_MAX_MONITOR_ATTEMPTS = 12;
+const swaggerMonitorState = {
+    timer: null,
+    attempts: 0,
+};
+
 const ADMIN_THEME_KEY = 'filecodebox_admin_theme';
 const THEMES = {
     LIGHT: 'light',
@@ -726,6 +732,9 @@ function loadTabData(tabName) {
                 initTransferLogsTab();
             }
             break;
+        case 'swagger':
+            initializeSwaggerEmbed();
+            break;
         case 'mcp':
             // 由 mcp-simple.js 处理
             if (typeof loadMCPConfig === 'function') {
@@ -746,6 +755,237 @@ function loadTabData(tabName) {
             break;
         default:
             console.warn(`Unknown tab: ${tabName}`);
+    }
+}
+
+function ensureSwaggerEmbedIframe() {
+    const iframe = document.getElementById('swagger-preview');
+    if (!iframe) {
+        return null;
+    }
+
+    if (!iframe.dataset.bound) {
+        iframe.addEventListener('load', () => handleSwaggerIframeLoaded(iframe));
+        iframe.dataset.bound = '1';
+    }
+
+    return iframe;
+}
+
+function setSwaggerIframeSource(iframe, forceReload = false) {
+    if (!iframe) {
+        return;
+    }
+
+    clearSwaggerMonitorTimer();
+    setSwaggerPlaceholderState('loading', null, iframe);
+
+    const baseUrl = iframe.dataset.src || '/swagger/index.html';
+    const nextUrl = forceReload
+        ? `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}ts=${Date.now()}`
+        : baseUrl;
+
+    iframe.src = nextUrl;
+    
+    // 动态调整 iframe 高度
+    adjustSwaggerIframeHeight(iframe);
+}
+
+function adjustSwaggerIframeHeight(iframe) {
+    if (!iframe) return;
+    
+    const container = iframe.closest('.swagger-embed-frame');
+    if (!container) return;
+    
+    // 根据屏幕尺寸动态设置高度
+    const screenHeight = window.innerHeight;
+    const adminHeaderHeight = 80; // 管理后台顶部导航高度
+    const adminTabsHeight = 60;   // 标签页高度
+    const adminPadding = 120;     // 额外的内边距和间距
+    
+    let optimalHeight;
+    
+    if (screenHeight <= 768) {
+        // 移动端
+        optimalHeight = Math.max(480, screenHeight - adminHeaderHeight - adminTabsHeight - adminPadding);
+    } else if (screenHeight <= 1080) {
+        // 中等屏幕
+        optimalHeight = Math.max(600, screenHeight - adminHeaderHeight - adminTabsHeight - adminPadding);
+    } else {
+        // 大屏幕
+        optimalHeight = Math.max(700, Math.min(850, screenHeight - adminHeaderHeight - adminTabsHeight - adminPadding));
+    }
+    
+    // 设置容器和 iframe 的高度
+    container.style.height = `${optimalHeight}px`;
+    iframe.style.height = `${optimalHeight}px`;
+}
+
+function initializeSwaggerEmbed() {
+    const iframe = ensureSwaggerEmbedIframe();
+    if (!iframe) {
+        return;
+    }
+
+    const currentSrc = iframe.getAttribute('src');
+    const placeholder = document.getElementById('swagger-preview-placeholder');
+    const hasError = placeholder ? placeholder.classList.contains('has-error') : false;
+    if (iframe.dataset.loaded === '1' && currentSrc && currentSrc !== 'about:blank' && !hasError) {
+        return;
+    }
+
+    setSwaggerIframeSource(iframe, false);
+}
+
+function reloadSwaggerPreview() {
+    const iframe = ensureSwaggerEmbedIframe();
+    if (!iframe) {
+        return;
+    }
+    setSwaggerIframeSource(iframe, true);
+}
+
+function openSwaggerInNewWindow() {
+    window.open('/swagger/index.html', '_blank', 'noopener,noreferrer');
+}
+
+function clearSwaggerMonitorTimer() {
+    if (swaggerMonitorState.timer) {
+        clearTimeout(swaggerMonitorState.timer);
+        swaggerMonitorState.timer = null;
+    }
+}
+
+function scheduleSwaggerContentCheck(iframe, delay = 600) {
+    clearSwaggerMonitorTimer();
+    swaggerMonitorState.timer = setTimeout(() => checkSwaggerIframeContent(iframe), delay);
+}
+
+function handleSwaggerIframeLoaded(iframe) {
+    if (!iframe) {
+        return;
+    }
+    swaggerMonitorState.attempts = 0;
+    scheduleSwaggerContentCheck(iframe, 450);
+}
+
+function checkSwaggerIframeContent(iframe) {
+    if (!iframe) {
+        return;
+    }
+
+    let doc = null;
+    try {
+        doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document) || null;
+    } catch (error) {
+        doc = null;
+    }
+
+    if (!doc) {
+        if (swaggerMonitorState.attempts >= SWAGGER_MAX_MONITOR_ATTEMPTS) {
+            setSwaggerPlaceholderState('error', '无法加载 Swagger UI 文档，请刷新或在新窗口中打开。', iframe);
+            clearSwaggerMonitorTimer();
+            return;
+        }
+        swaggerMonitorState.attempts += 1;
+        scheduleSwaggerContentCheck(iframe);
+        return;
+    }
+
+    const swaggerRoot = doc.querySelector('.swagger-ui');
+    if (!swaggerRoot) {
+        if (swaggerMonitorState.attempts >= SWAGGER_MAX_MONITOR_ATTEMPTS) {
+            setSwaggerPlaceholderState('error', 'Swagger UI 未能正确渲染，请刷新或在新窗口中打开。', iframe);
+            clearSwaggerMonitorTimer();
+            return;
+        }
+        swaggerMonitorState.attempts += 1;
+        scheduleSwaggerContentCheck(iframe);
+        return;
+    }
+
+    const errorNode = swaggerRoot.querySelector('.errors-wrapper');
+    if (errorNode && errorNode.textContent.trim()) {
+        setSwaggerPlaceholderState('error', errorNode.textContent.trim(), iframe);
+        clearSwaggerMonitorTimer();
+        return;
+    }
+
+    const hasOperations = swaggerRoot.querySelector('.opblock') || swaggerRoot.querySelector('.opblock-tag-section');
+    if (hasOperations) {
+        setSwaggerPlaceholderState('hidden', null, iframe);
+        clearSwaggerMonitorTimer();
+        return;
+    }
+
+    if (swaggerMonitorState.attempts >= SWAGGER_MAX_MONITOR_ATTEMPTS) {
+        setSwaggerPlaceholderState('error', '未能在限定时间内加载任何接口，请刷新或在新窗口中打开。', iframe);
+        clearSwaggerMonitorTimer();
+        return;
+    }
+
+    swaggerMonitorState.attempts += 1;
+    scheduleSwaggerContentCheck(iframe);
+}
+
+function setSwaggerPlaceholderState(state, message, iframe) {
+    const placeholder = document.getElementById('swagger-preview-placeholder');
+    const iconNode = placeholder ? placeholder.querySelector('.placeholder-icon i') : null;
+    const titleNode = placeholder ? placeholder.querySelector('h4') : null;
+    const descNode = placeholder ? placeholder.querySelector('p') : null;
+
+    if (state === 'loading') {
+        if (placeholder) {
+            placeholder.classList.remove('is-hidden', 'has-error');
+        }
+        if (iconNode) {
+            iconNode.className = 'fas fa-spinner fa-spin';
+        }
+        if (titleNode) {
+            titleNode.textContent = '正在加载 Swagger UI...';
+        }
+        if (descNode) {
+            descNode.textContent = '如果长时间未出现内容，请使用右上角按钮在新窗口中打开。';
+        }
+        if (iframe) {
+            iframe.dataset.loaded = 'loading';
+        }
+        return;
+    }
+
+    if (state === 'hidden') {
+        if (placeholder) {
+            placeholder.classList.add('is-hidden');
+            placeholder.classList.remove('has-error');
+        }
+        if (iconNode) {
+            iconNode.className = 'fas fa-window-restore';
+        }
+        swaggerMonitorState.attempts = 0;
+        if (iframe) {
+            iframe.dataset.loaded = '1';
+        }
+        return;
+    }
+
+    if (state === 'error') {
+        if (placeholder) {
+            placeholder.classList.remove('is-hidden');
+            placeholder.classList.add('has-error');
+        }
+        if (iconNode) {
+            iconNode.className = 'fas fa-triangle-exclamation';
+        }
+        if (titleNode) {
+            titleNode.textContent = 'Swagger UI 加载失败';
+        }
+        if (descNode) {
+            descNode.textContent = message || '请刷新预览或在新窗口中打开查看完整文档。';
+        }
+        swaggerMonitorState.attempts = 0;
+        if (iframe) {
+            iframe.dataset.loaded = '0';
+        }
     }
 }
 
@@ -945,6 +1185,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (activeBtn) {
         updateHeadlineFromNav(activeBtn);
     }
+
+    // 监听窗口尺寸变化，动态调整 Swagger iframe 高度
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            const swaggerIframe = document.getElementById('swagger-preview');
+            if (swaggerIframe && swaggerIframe.src && swaggerIframe.src !== 'about:blank') {
+                adjustSwaggerIframeHeight(swaggerIframe);
+            }
+        }, 150); // 防抖处理，避免频繁调整
+    });
 });
 
 // 将关键函数和变量暴露到全局作用域
@@ -960,3 +1212,4 @@ window.redirectToUserLogin = redirectToUserLogin;
 window.showLoginPrompt = showLoginPrompt;
 window.toggleTheme = toggleTheme;
 window.authToken = authToken;
+window.adjustSwaggerIframeHeight = adjustSwaggerIframeHeight;

@@ -251,19 +251,32 @@ const Dashboard = {
      * 切换标签页
      */
     switchTab(tabName, event) {
-        // 移除所有active类
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        
-        // 添加active类到当前标签
-        if (event && event.target) {
-            event.target.classList.add('active');
+        const tabs = document.querySelectorAll('.dashboard-tabs .tab');
+        tabs.forEach(tab => {
+            tab.classList.remove('active');
+            tab.setAttribute('aria-selected', 'false');
+            tab.setAttribute('tabindex', '-1');
+        });
+
+        const tabButton = event?.currentTarget || event?.target || document.querySelector(`.dashboard-tabs .tab[data-tab="${tabName}"]`);
+        if (tabButton) {
+            tabButton.classList.add('active');
+            tabButton.setAttribute('aria-selected', 'true');
+            tabButton.setAttribute('tabindex', '0');
         }
-        const tabContent = document.getElementById(tabName + '-content');
+
+        const panels = document.querySelectorAll('.tab-content');
+        panels.forEach(panel => {
+            panel.classList.remove('active');
+            panel.setAttribute('hidden', 'true');
+        });
+
+        const tabContent = document.getElementById(`${tabName}-content`);
         if (tabContent) {
             tabContent.classList.add('active');
+            tabContent.removeAttribute('hidden');
         }
-        
+
         // 根据标签页加载相应内容
         switch(tabName) {
             case 'dashboard':
@@ -669,12 +682,17 @@ const Dashboard = {
         const refreshBtn = document.getElementById('api-key-refresh-btn');
         const closeResultBtn = document.getElementById('api-key-result-close');
         const copyResultBtn = document.getElementById('api-key-result-copy');
+        const scopeNote = document.getElementById('api-key-scope-note');
 
         if (expireTypeSelect) {
             expireTypeSelect.addEventListener('change', () => {
                 this.toggleAPIKeyCustomFields(expireTypeSelect.value === 'custom', customFields);
             });
             this.toggleAPIKeyCustomFields(expireTypeSelect.value === 'custom', customFields);
+        }
+
+        if (scopeNote) {
+            scopeNote.innerHTML = '🌐 生成的 API 密钥仅用于调用 <code>/api/v1</code> 路由（例如 <code>/api/v1/share/text</code>、<code>/api/v1/chunk/init</code>），请在请求头中携带 <code>X-API-Key</code>。更多示例见 <a href="/swagger/index.html" target="_blank" rel="noopener noreferrer">Swagger 文档</a>。';
         }
 
         if (refreshBtn) {

@@ -51,6 +51,23 @@ func (h *ChunkHandler) InitChunkUpload(c *gin.Context) {
 	common.SuccessResponse(c, response)
 }
 
+// InitChunkUploadAPI 初始化分片上传（API 模式）
+// @Summary 初始化分片上传（API 模式）
+// @Description 使用 API Key 初始化分片上传，返回上传ID
+// @Tags API
+// @Accept json
+// @Produce json
+// @Param request body object true "上传初始化参数"
+// @Success 200 {object} map[string]interface{} "初始化成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 401 {object} map[string]interface{} "API Key 校验失败"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /api/v1/chunks/upload/init [post]
+// @Security ApiKeyAuth
+func (h *ChunkHandler) InitChunkUploadAPI(c *gin.Context) {
+	h.InitChunkUpload(c)
+}
+
 // UploadChunk 上传分片
 // @Summary 上传文件分片
 // @Description 上传指定索引的文件分片
@@ -90,6 +107,25 @@ func (h *ChunkHandler) UploadChunk(c *gin.Context) {
 	common.SuccessResponse(c, response)
 }
 
+// UploadChunkAPI 上传文件分片（API 模式）
+// @Summary 上传文件分片（API 模式）
+// @Description 上传指定索引的文件分片
+// @Tags API
+// @Accept multipart/form-data
+// @Produce json
+// @Param upload_id path string true "上传ID"
+// @Param chunk_index path int true "分片索引"
+// @Param chunk formData file true "分片文件"
+// @Success 200 {object} map[string]interface{} "上传成功"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 401 {object} map[string]interface{} "API Key 校验失败"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /api/v1/chunks/upload/chunk/{upload_id}/{chunk_index} [post]
+// @Security ApiKeyAuth
+func (h *ChunkHandler) UploadChunkAPI(c *gin.Context) {
+	h.UploadChunk(c)
+}
+
 // CompleteUpload 完成上传
 // @Summary 完成分片上传
 // @Description 完成所有分片上传，合并文件并生成分享代码
@@ -123,6 +159,24 @@ func (h *ChunkHandler) CompleteUpload(c *gin.Context) {
 	common.SuccessResponse(c, response)
 }
 
+// CompleteUploadAPI 完成分片上传（API 模式）
+// @Summary 完成分片上传（API 模式）
+// @Description 合并所有分片并生成分享代码
+// @Tags API
+// @Accept json
+// @Produce json
+// @Param upload_id path string true "上传ID"
+// @Param request body object true "完成上传参数"
+// @Success 200 {object} map[string]interface{} "上传完成，返回分享代码"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 401 {object} map[string]interface{} "API Key 校验失败"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /api/v1/chunks/upload/complete/{upload_id} [post]
+// @Security ApiKeyAuth
+func (h *ChunkHandler) CompleteUploadAPI(c *gin.Context) {
+	h.CompleteUpload(c)
+}
+
 // GetUploadStatus 获取上传状态（断点续传支持）
 func (h *ChunkHandler) GetUploadStatus(c *gin.Context) {
 	uploadID := c.Param("upload_id")
@@ -135,6 +189,21 @@ func (h *ChunkHandler) GetUploadStatus(c *gin.Context) {
 	}
 
 	common.SuccessResponse(c, status)
+}
+
+// GetUploadStatusAPI 查询上传状态（API 模式）
+// @Summary 查询上传状态（API 模式）
+// @Description 查询分片上传的进度和状态
+// @Tags API
+// @Produce json
+// @Param upload_id path string true "上传ID"
+// @Success 200 {object} map[string]interface{} "上传状态"
+// @Failure 401 {object} map[string]interface{} "API Key 校验失败"
+// @Failure 404 {object} map[string]interface{} "上传ID不存在"
+// @Router /api/v1/chunks/upload/status/{upload_id} [get]
+// @Security ApiKeyAuth
+func (h *ChunkHandler) GetUploadStatusAPI(c *gin.Context) {
+	h.GetUploadStatus(c)
 }
 
 // VerifyChunk 验证分片完整性
@@ -165,6 +234,24 @@ func (h *ChunkHandler) VerifyChunk(c *gin.Context) {
 	})
 }
 
+// VerifyChunkAPI 校验分片（API 模式）
+// @Summary 校验分片（API 模式）
+// @Description 校验指定分片是否已上传
+// @Tags API
+// @Accept json
+// @Produce json
+// @Param upload_id path string true "上传ID"
+// @Param chunk_index path int true "分片索引"
+// @Param request body object true "分片校验参数"
+// @Success 200 {object} map[string]interface{} "校验结果"
+// @Failure 400 {object} map[string]interface{} "请求参数错误"
+// @Failure 401 {object} map[string]interface{} "API Key 校验失败"
+// @Router /api/v1/chunks/upload/verify/{upload_id}/{chunk_index} [post]
+// @Security ApiKeyAuth
+func (h *ChunkHandler) VerifyChunkAPI(c *gin.Context) {
+	h.VerifyChunk(c)
+}
+
 // CancelUpload 取消上传
 func (h *ChunkHandler) CancelUpload(c *gin.Context) {
 	uploadID := c.Param("upload_id")
@@ -176,4 +263,18 @@ func (h *ChunkHandler) CancelUpload(c *gin.Context) {
 	}
 
 	common.SuccessWithMessage(c, "上传已取消", nil)
+}
+
+// CancelUploadAPI 取消分片上传（API 模式）
+// @Summary 取消分片上传（API 模式）
+// @Description 取消上传流程并清理已有分片
+// @Tags API
+// @Produce json
+// @Param upload_id path string true "上传ID"
+// @Success 200 {object} map[string]interface{} "取消成功"
+// @Failure 401 {object} map[string]interface{} "API Key 校验失败"
+// @Router /api/v1/chunks/upload/cancel/{upload_id} [delete]
+// @Security ApiKeyAuth
+func (h *ChunkHandler) CancelUploadAPI(c *gin.Context) {
+	h.CancelUpload(c)
 }

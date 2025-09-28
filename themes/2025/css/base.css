@@ -11,21 +11,40 @@
     --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     --primary-color: #667eea;
     --secondary-color: #764ba2;
-    
+
+    /* 品牌辅助色彩 */
+    --color-success: #22c55e;
+    --color-warning: #f97316;
+    --color-danger: #ef4444;
+    --color-info: #0ea5e9;
+
+    /* 中性色与文字体系 */
+    --color-bg-app: #f5f7fb;
+    --color-bg-soft: #eef2ff;
+    --color-surface: #ffffff;
+    --color-surface-subtle: rgba(255, 255, 255, 0.78);
+    --color-border: rgba(148, 163, 184, 0.28);
+    --color-divider: rgba(148, 163, 184, 0.14);
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #475569;
+    --color-text-muted: #94a3b8;
+
     /* 统一的圆角系统 - 同心圆设计 */
     --radius-xs: 6px;    /* 小元素 */
     --radius-sm: 12px;   /* 按钮、输入框 */
     --radius-md: 18px;   /* 卡片、容器 */
     --radius-lg: 24px;   /* 主要容器 */
     --radius-xl: 30px;   /* 页面容器 */
-    
+    --radius-full: 999px; /* 圆角胶囊 */
+
     /* 统一的阴影系统 */
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
-    --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.16);
-    
+    --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 6px 18px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.1);
+    --shadow-xl: 0 20px 48px rgba(15, 23, 42, 0.12);
+
     /* 统一的间距系统 */
+    --spacing-2xs: 4px;
     --spacing-xs: 8px;
     --spacing-sm: 12px;
     --spacing-md: 16px;
@@ -33,10 +52,22 @@
     --spacing-xl: 32px;
     --spacing-2xl: 40px;
     --spacing-3xl: 48px;
+
+    /* 字号体系 */
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 24px;
+
+    /* 其他通用变量 */
+    --transition-base: 0.25s ease;
+    --container-max-width: 1200px;
 }
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--color-text-primary);
     background: var(--primary-gradient);
     min-height: 100vh;
     display: flex;
@@ -45,6 +76,37 @@ body {
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
+    line-height: 1.6;
+}
+
+body.theme-dashboard {
+    background: var(--color-bg-app);
+    display: block;
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    background-size: auto;
+    background-position: top center;
+    background-attachment: scroll;
+}
+
+body.landing-page {
+    display: block;
+    padding: var(--spacing-3xl) var(--spacing-xl);
+}
+
+body.landing-page .container {
+    margin: 0 auto;
+}
+
+@media (max-width: 992px) {
+    body.landing-page {
+        padding: var(--spacing-2xl) var(--spacing-lg);
+    }
+}
+
+@media (max-width: 600px) {
+    body.landing-page {
+        padding: var(--spacing-xl) var(--spacing-md);
+    }
 }
 
 /* 动态背景样式 - 由JavaScript动态设置 */

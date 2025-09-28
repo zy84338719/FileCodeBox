@@ -289,6 +289,7 @@ func RegisterDynamicRoutes(
 	// Use API-only user routes here to avoid duplicate page route registration
 	SetupUserAPIRoutes(router, userHandler, manager, userService)
 	SetupChunkRoutes(router, chunkHandler, manager, userService)
+	SetupAPIRoutes(router, shareHandler, chunkHandler, manager, userService)
 	SetupAdminRoutes(router, adminHandler, storageHandler, manager, userService)
 	// System init routes are no longer needed after DB init
 }
@@ -335,6 +336,9 @@ func SetupAllRoutes(
 
 	// 设置分片上传路由
 	SetupChunkRoutes(router, chunkHandler, manager, userService)
+
+	// 设置 API Key 客户端路由
+	SetupAPIRoutes(router, shareHandler, chunkHandler, manager, userService)
 
 	// 设置管理员路由
 	SetupAdminRoutes(router, adminHandler, storageHandler, manager, userService)

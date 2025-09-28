@@ -39,6 +39,93 @@ http://localhost:8080/swagger/doc.json
 go install github.com/swaggo/swag/cmd/swag@latest
 
 # 生成/更新 Swagger 文档
+
+## 🧰 API 模式（/api/v1）
+
+API 模式面向 CLI 工具与自动化脚本，仅开放文件上传/下载及分片管理等核心能力。所有请求必须携带有效的 API Key，系统会拒绝使用普通用户 Token 的请求。
+
+### ✅ 支持的接口
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| `POST` | `/api/v1/share/text` | 分享文本内容 |
+| `POST` | `/api/v1/share/file` | 上传并分享文件 |
+| `GET` | `/api/v1/share/{code}` | 查询分享详情 |
+| `GET` | `/api/v1/share/{code}/download` | 下载分享内容 |
+| `POST` | `/api/v1/chunks/upload/init` | 初始化分片上传 |
+| `POST` | `/api/v1/chunks/upload/chunk/{upload_id}/{chunk_index}` | 上传单个分片 |
+| `POST` | `/api/v1/chunks/upload/complete/{upload_id}` | 合并分片并生成分享 |
+| `GET` | `/api/v1/chunks/upload/status/{upload_id}` | 查询上传进度 |
+| `POST` | `/api/v1/chunks/upload/verify/{upload_id}/{chunk_index}` | 校验分片是否存在 |
+| `DELETE` | `/api/v1/chunks/upload/cancel/{upload_id}` | 取消分片上传 |
+
+> 📌 **提示**：API Key 仅可访问 `/api/v1/...` 路由，不具备用户中心（/user/*）权限。
+
+### 🔑 请求示例
+
+所有示例均假设你已经通过 `/user/api-keys` 生成密钥，并使用 `X-API-Key` 头发送：
+
+```bash
+# 分享文本
+curl -X POST "http://localhost:8080/api/v1/share/text" \
+  -H "X-API-Key: <YOUR_API_KEY>" \
+  -F "text=Hello API Mode" \
+  -F "expire_value=1" \
+  -F "expire_style=day"
+
+# 上传文件
+curl -X POST "http://localhost:8080/api/v1/share/file" \
+  -H "X-API-Key: <YOUR_API_KEY>" \
+  -F "file=@README.md" \
+  -F "expire_value=7" \
+  -F "expire_style=day"
+
+# 根据分享码下载
+curl -L -H "X-API-Key: <YOUR_API_KEY>" \
+  "http://localhost:8080/api/v1/share/{code}/download" -o downloaded.bin
+```
+
+### 📦 分片上传脚本示例
+
+```bash
+# 1. 初始化上传
+UPLOAD_INFO=$(curl -s -X POST "http://localhost:8080/api/v1/chunks/upload/init" \
+  -H "X-API-Key: <YOUR_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "file_name": "large.zip",
+        "file_size": 10485760,
+        "chunk_size": 1048576,
+        "file_hash": "example-hash"
+      }')
+UPLOAD_ID=$(echo "$UPLOAD_INFO" | jq -r '.detail.upload_id')
+
+# 2. 上传分片（以第 0 块为例）
+curl -X POST "http://localhost:8080/api/v1/chunks/upload/chunk/$UPLOAD_ID/0" \
+  -H "X-API-Key: <YOUR_API_KEY>" \
+  -F "chunk=@part-0.bin"
+
+# 3. 合并分片
+curl -X POST "http://localhost:8080/api/v1/chunks/upload/complete/$UPLOAD_ID" \
+  -H "X-API-Key: <YOUR_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "expire_value": 7,
+        "expire_style": "day",
+        "require_auth": false
+      }'
+
+# 4. 查询进度（可选）
+curl -H "X-API-Key: <YOUR_API_KEY>" \
+  "http://localhost:8080/api/v1/chunks/upload/status/$UPLOAD_ID"
+
+# 5. 取消上传（可选）
+curl -X DELETE -H "X-API-Key: <YOUR_API_KEY>" \
+  "http://localhost:8080/api/v1/chunks/upload/cancel/$UPLOAD_ID"
+```
+
+> 🧪 **建议**：使用 `jq` 或自编脚本解析响应，提取 `detail.code`、`detail.share_url` 等字段，便于自动化处理。
+
 swag init
 ```
 

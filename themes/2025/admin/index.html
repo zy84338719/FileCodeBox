@@ -61,6 +61,10 @@
                     <i class="fas fa-clipboard-list"></i>
                     <span>传输日志</span>
                 </button>
+                <button class="tab-btn nav-link" data-tab="swagger" data-title="API 文档" data-subtitle="在后台内直接查看并调试 Swagger 接口。" onclick="switchTab('swagger', this)">
+                    <i class="fas fa-book-open"></i>
+                    <span>API 文档</span>
+                </button>
                 <button class="tab-btn nav-link" data-tab="mcp" data-title="MCP 服务器" data-subtitle="管理消息通道服务，保障多端协同稳定可用。" onclick="switchTab('mcp', this)">
                     <i class="fas fa-server"></i>
                     <span>MCP 服务器</span>
@@ -1022,6 +1026,42 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Swagger 文档标签页 -->
+                    <div id="swagger-tab" class="tab-content">
+                        <div class="swagger-embed">
+                            <div class="swagger-embed-header">
+                                <div class="swagger-embed-title">
+                                    <h3><i class="fas fa-book-open"></i> Swagger API 文档</h3>
+                                    <p>在管理后台内直接预览、调试 FileCodeBox 提供的 RESTful 接口。</p>
+                                </div>
+                                <div class="swagger-embed-actions">
+                                    <button type="button" class="btn btn-secondary" onclick="reloadSwaggerPreview()">
+                                        <i class="fas fa-rotate"></i> 刷新
+                                    </button>
+                                    <button type="button" class="btn btn-info" onclick="openSwaggerInNewWindow()">
+                                        <i class="fas fa-external-link-alt"></i> 新窗口打开
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="swagger-embed-frame">
+                                <iframe id="swagger-preview" title="Swagger API Preview" src="about:blank" data-src="/swagger/index.html" allowfullscreen></iframe>
+                                <div class="swagger-embed-placeholder" id="swagger-preview-placeholder">
+                                    <div class="placeholder-icon">
+                                        <i class="fas fa-window-restore"></i>
+                                    </div>
+                                    <h4>正在加载 Swagger UI...</h4>
+                                    <p>如果长时间未出现内容，请使用右上角按钮在新窗口中打开。</p>
+                                </div>
+                            </div>
+                            <div class="swagger-embed-footer">
+                                <p>
+                                    <i class="fas fa-lightbulb"></i>
+                                    提示：生成的 API 密钥可通过 Swagger 页面的 <strong>Authorize</strong> 按钮填写 <code>X-API-Key</code> 头部，快速验证 <code>/api/v1</code> 接口。
+                                </p>
                             </div>
                         </div>
                     </div>
