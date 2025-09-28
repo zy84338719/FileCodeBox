@@ -1972,9 +1972,152 @@ body.admin-modern-body {
     grid-column: span 2;
 }
 
+.swagger-embed {
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: 20px;
+    padding: 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    box-shadow: var(--admin-shadow-card);
+}
+
+.swagger-embed-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.swagger-embed-title h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--admin-heading);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.swagger-embed-title p {
+    margin: 8px 0 0;
+    color: var(--admin-subtle);
+}
+
+.swagger-embed-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.swagger-embed-frame {
+    position: relative;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 18px;
+    overflow: hidden;
+    height: 800px;
+    min-height: 620px;
+    background: var(--admin-placeholder-bg);
+}
+
+.swagger-embed-frame iframe {
+    width: 100%;
+    height: 800px;
+    border: none;
+    background: #fff;
+}
+
+.swagger-embed-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    text-align: center;
+    background: linear-gradient(145deg, rgba(129, 140, 248, 0.16), rgba(59, 130, 246, 0.16));
+    color: var(--admin-muted);
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.swagger-embed-placeholder .placeholder-icon {
+    font-size: 42px;
+    color: var(--admin-accent);
+}
+
+.swagger-embed-placeholder.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.swagger-embed-placeholder.has-error {
+    background: linear-gradient(145deg, rgba(248, 113, 113, 0.18), rgba(244, 63, 94, 0.18));
+    color: var(--admin-danger);
+}
+
+.swagger-embed-placeholder.has-error .placeholder-icon {
+    color: var(--admin-danger-strong, var(--admin-danger));
+}
+
+.swagger-embed-placeholder.has-error h4 {
+    color: var(--admin-danger);
+}
+
+.swagger-embed-footer {
+    font-size: 14px;
+    color: var(--admin-muted);
+    background: var(--admin-surface-subtle);
+    border: 1px dashed rgba(99, 102, 241, 0.25);
+    border-radius: 16px;
+    padding: 16px 18px;
+    line-height: 1.6;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.swagger-embed-footer i {
+    color: var(--admin-accent);
+    margin-top: 4px;
+}
+
 @media (max-width: 768px) {
     .admin-modern-body .form-grid .span-2 {
         grid-column: span 1;
+    }
+    .swagger-embed-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .swagger-embed-frame {
+        height: 600px;
+        min-height: 480px;
+    }
+    .swagger-embed-frame iframe {
+        height: 600px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1200px) {
+    .swagger-embed-frame {
+        height: 700px;
+    }
+    .swagger-embed-frame iframe {
+        height: 700px;
+    }
+}
+
+@media (min-width: 1201px) {
+    .swagger-embed-frame {
+        height: 850px;
+    }
+    .swagger-embed-frame iframe {
+        height: 850px;
     }
 }
 
