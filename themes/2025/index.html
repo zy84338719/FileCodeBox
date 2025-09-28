@@ -16,19 +16,19 @@
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/responsive.css">
 </head>
-<body>
-    <div class="container">
+<body class="landing-page">
+    <div class="container surface-card landing-container">
         <!-- 用户链接区域 -->
         <div class="user-links" id="user-links">
             <!-- 未登录状态 -->
-            <div id="guest-links" style="display: flex; gap: 10px;">
+            <div id="guest-links" class="user-links__group">
                 <a href="/user/login" class="user-link login">登录</a>
             </div>
             
             <!-- 已登录状态 -->
-            <div id="user-logged-in" style="display: none;">
+            <div id="user-logged-in" class="user-links__group">
                 <div class="dropdown">
-                    <div class="user-info" style="cursor: pointer;">
+                    <div class="user-info user-info--clickable">
                         <div class="user-avatar" id="user-avatar"></div>
                         <div class="user-name" id="user-name"></div>
                     </div>
@@ -49,97 +49,99 @@
             <div class="subtitle">{{description}}</div>
         </div>
 
-        <!-- 标签页导航 -->
-        <div class="tabs">
-            <div class="tab active" onclick="switchTab('file')">文件分享</div>
-            <div class="tab" onclick="switchTab('text')">文本分享</div>
-            <div class="tab" onclick="switchTab('get')">获取分享</div>
-        </div>
+        <div class="section-stack landing-content">
+            <!-- 标签页导航 -->
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('file')">文件分享</div>
+                <div class="tab" onclick="switchTab('text')">文本分享</div>
+                <div class="tab" onclick="switchTab('get')">获取分享</div>
+            </div>
 
-        <!-- 文件分享标签页 -->
-        <div id="file-tab" class="tab-content active">
-            <form id="file-form">
-                <div class="upload-area">
-                    <div class="upload-icon">📁</div>
-                    <div class="upload-text">点击选择文件或拖拽到此处</div>
-                    <div class="upload-options">
-                        <label class="upload-option-btn" for="file-input">选择文件</label>
-                        <label class="upload-option-btn" for="folder-input">选择文件夹</label>
+            <!-- 文件分享标签页 -->
+            <div id="file-tab" class="tab-content active">
+                <form id="file-form" class="section-stack">
+                    <div class="upload-area">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">点击选择文件或拖拽到此处</div>
+                        <div class="upload-options">
+                            <label class="upload-option-btn" for="file-input">选择文件</label>
+                            <label class="upload-option-btn" for="folder-input">选择文件夹</label>
+                        </div>
+                        <input type="file" id="file-input" hidden>
+                        <input type="file" id="folder-input" hidden webkitdirectory multiple>
                     </div>
-                    <input type="file" id="file-input" style="display: none;">
-                    <input type="file" id="folder-input" style="display: none;" webkitdirectory multiple>
-                </div>
-                
-                <div class="form-group">
-                    <label>过期时间</label>
-                    <select class="form-control" name="expire_style">
-                        <option value="day">天</option>
-                        <option value="hour">小时</option>
-                        <option value="minute">分钟</option>
-                        <option value="count">次数</option>
-                        <option value="forever">永不过期</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <input type="number" class="form-control" name="expire_value" value="1" min="1" placeholder="过期值">
-                </div>
-                
-                <!-- 进度条 -->
-                <div id="upload-progress" class="progress-container">
-                    <div class="upload-status" id="upload-status">准备上传...</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
-                        <div class="progress-text" id="progress-text">0%</div>
+                    
+                    <div class="form-group">
+                        <label>过期时间</label>
+                        <select class="form-control" name="expire_style">
+                            <option value="day">天</option>
+                            <option value="hour">小时</option>
+                            <option value="minute">分钟</option>
+                            <option value="count">次数</option>
+                            <option value="forever">永不过期</option>
+                        </select>
                     </div>
-                </div>
-                
-                <button type="submit" class="btn" id="upload-btn">上传文件</button>
-            </form>
-        </div>
+                    
+                    <div class="form-group">
+                        <input type="number" class="form-control" name="expire_value" value="1" min="1" placeholder="过期值">
+                    </div>
+                    
+                    <!-- 进度条 -->
+                    <div id="upload-progress" class="progress-container">
+                        <div class="upload-status" id="upload-status">准备上传...</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                            <div class="progress-text" id="progress-text">0%</div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="upload-btn">上传文件</button>
+                </form>
+            </div>
 
-        <!-- 文本分享标签页 -->
-        <div id="text-tab" class="tab-content">
-            <form id="text-form">
-                <div class="form-group">
-                    <label>文本内容</label>
-                    <textarea class="form-control" name="text" placeholder="输入要分享的文本内容..." required></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label>过期时间</label>
-                    <select class="form-control" name="expire_style">
-                        <option value="day">天</option>
-                        <option value="hour">小时</option>
-                        <option value="minute">分钟</option>
-                        <option value="count">次数</option>
-                        <option value="forever">永不过期</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <input type="number" class="form-control" name="expire_value" value="1" min="1" placeholder="过期值">
-                </div>
-                
-                <button type="submit" class="btn" id="text-btn">分享文本</button>
-            </form>
-        </div>
+            <!-- 文本分享标签页 -->
+            <div id="text-tab" class="tab-content">
+                <form id="text-form" class="section-stack">
+                    <div class="form-group">
+                        <label>文本内容</label>
+                        <textarea class="form-control" name="text" placeholder="输入要分享的文本内容..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>过期时间</label>
+                        <select class="form-control" name="expire_style">
+                            <option value="day">天</option>
+                            <option value="hour">小时</option>
+                            <option value="minute">分钟</option>
+                            <option value="count">次数</option>
+                            <option value="forever">永不过期</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <input type="number" class="form-control" name="expire_value" value="1" min="1" placeholder="过期值">
+                    </div>
+                    
+                    <button type="submit" class="btn" id="text-btn">分享文本</button>
+                </form>
+            </div>
 
-        <!-- 获取分享标签页 -->
-        <div id="get-tab" class="tab-content">
-            <form id="get-form">
-                <div class="form-group">
-                    <label>提取码</label>
-                    <input type="text" class="form-control" name="code" placeholder="输入提取码" required>
-                </div>
-                
-                <button type="submit" class="btn" id="get-btn">获取内容</button>
-            </form>
-        </div>
+            <!-- 获取分享标签页 -->
+            <div id="get-tab" class="tab-content">
+                <form id="get-form" class="section-stack">
+                    <div class="form-group">
+                        <label>提取码</label>
+                        <input type="text" class="form-control" name="code" placeholder="输入提取码" required>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="get-btn">获取内容</button>
+                </form>
+            </div>
 
-        <!-- 结果显示区域 -->
-        <div id="result" class="result">
-            <div id="result-content"></div>
+            <!-- 结果显示区域 -->
+            <div id="result" class="result">
+                <div id="result-content"></div>
+            </div>
         </div>
 
         <!-- 页脚 -->

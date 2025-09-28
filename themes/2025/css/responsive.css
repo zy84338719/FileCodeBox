@@ -2,11 +2,13 @@
 
 /* 移动端适配 */
 @media (max-width: 600px) {
-    .container {
-        padding: 20px;
-        margin: 20px;
+    .container,
+    .landing-container {
+        padding: var(--spacing-xl);
+        margin: var(--spacing-md);
         max-width: none;
-        width: calc(100% - 40px);
+        width: calc(100% - 2 * var(--spacing-md));
+        box-shadow: var(--shadow-lg);
     }
     
     .logo-text {
@@ -21,13 +23,13 @@
     .user-links {
         position: static;
         justify-content: center;
-        margin-bottom: 20px;
+        margin-bottom: var(--spacing-md);
         flex-wrap: wrap;
     }
     
     .tabs {
         flex-direction: column;
-        gap: 5px;
+        gap: var(--spacing-xs);
     }
     
     .tab {
@@ -35,7 +37,7 @@
     }
     
     .upload-area {
-        padding: 30px 15px;
+        padding: var(--spacing-xl) var(--spacing-md);
     }
     
     .upload-icon {
@@ -43,17 +45,17 @@
     }
     
     .upload-text {
-        font-size: 14px;
+        font-size: 0.95rem;
     }
     
     .form-group {
-        margin-bottom: 15px;
+        margin-bottom: var(--spacing-sm);
     }
     
     .btn {
         width: 100%;
-        padding: 15px;
-        font-size: 16px;
+        padding: var(--spacing-md);
+        font-size: var(--font-size-md);
     }
     
     .notification {
@@ -68,17 +70,17 @@
     }
     
     .modal-content {
-        margin: 20px;
-        padding: 20px;
-        max-width: calc(100% - 40px);
+        margin: var(--spacing-md);
+        padding: var(--spacing-lg);
+        max-width: calc(100% - 2 * var(--spacing-md));
     }
     
     .dropdown-content {
         position: fixed;
         top: auto;
-        bottom: 20px;
-        left: 20px;
-        right: 20px;
+        bottom: var(--spacing-lg);
+        left: var(--spacing-lg);
+        right: var(--spacing-lg);
         width: auto;
         min-width: auto;
     }
@@ -86,9 +88,10 @@
 
 /* 平板端适配 */
 @media (min-width: 601px) and (max-width: 768px) {
-    .container {
-        max-width: 600px;
-        padding: 35px;
+    .container,
+    .landing-container {
+        max-width: 640px;
+        padding: var(--spacing-2xl);
     }
     
     .logo-text {
@@ -102,9 +105,10 @@
 
 /* 大屏幕适配 */
 @media (min-width: 1200px) {
-    .container {
-        max-width: 550px;
-        padding: 50px;
+    .container,
+    .landing-container {
+        max-width: 720px;
+        padding: var(--spacing-3xl);
     }
     
     .logo-text {

@@ -3,11 +3,25 @@
 /* 用户链接区域 */
 .user-links {
     position: absolute;
-    top: 15px;
-    right: 20px;
+    top: var(--spacing-lg);
+    right: var(--spacing-lg);
     display: flex;
-    gap: 10px;
+    gap: var(--spacing-sm);
     align-items: center;
+}
+
+.user-links__group {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+#guest-links {
+    display: flex;
+}
+
+#user-logged-in {
+    display: none;
 }
 
 .user-link {
@@ -20,8 +34,8 @@
 }
 
 .user-link.login {
-    color: #667eea;
-    border: 1px solid #667eea;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
     background: transparent;
 }
 
@@ -31,7 +45,7 @@
 }
 
 .user-link.register {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--primary-gradient);
     color: white;
     border: none;
 }
@@ -45,14 +59,18 @@
 .user-info {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--spacing-sm);
+}
+
+.user-info--clickable {
+    cursor: pointer;
 }
 
 .user-avatar {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: var(--radius-full);
+    background: var(--primary-gradient);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -62,7 +80,7 @@
 }
 
 .user-name {
-    color: #333;
+    color: var(--color-text-primary);
     font-weight: 600;
     font-size: 0.9em;
 }
@@ -78,13 +96,14 @@
     position: absolute;
     right: 0;
     top: 100%;
-    background-color: white;
+    background-color: var(--color-surface);
     min-width: 150px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    border-radius: var(--radius-sm);
     overflow: hidden;
     z-index: 1000;
     margin-top: 5px;
+    border: 1px solid var(--color-border);
 }
 
 .dropdown-content.show {
@@ -92,7 +111,7 @@
 }
 
 .dropdown-item {
-    color: #333;
+    color: var(--color-text-primary);
     padding: 12px 16px;
     text-decoration: none;
     display: block;
@@ -101,30 +120,30 @@
 }
 
 .dropdown-item:hover {
-    background-color: #f8f9fa;
+    background-color: rgba(102, 126, 234, 0.08);
 }
 
 .dropdown-item.logout {
-    color: #dc3545;
-    border-top: 1px solid #e9ecef;
+    color: var(--color-danger);
+    border-top: 1px solid var(--color-divider);
 }
 
 .dropdown-item.logout:hover {
-    background-color: #f8d7da;
+    background-color: rgba(239, 68, 68, 0.12);
 }
 
 /* 头部区域 */
 .header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: var(--spacing-xl);
 }
 
 .logo {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 15px;
-    margin-bottom: 10px;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
 }
 
 .logo-icon {
@@ -133,52 +152,61 @@
 }
 
 .logo-text {
-    font-size: 2.5em;
+    font-size: clamp(2rem, 4vw, 2.75rem);
     font-weight: bold;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--primary-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
 .subtitle {
-    color: #666;
-    font-size: 1.1em;
-    margin-top: 5px;
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    font-weight: 500;
+    max-width: 80%;
+    margin: 0 auto;
+}
+
+.landing-intro {
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.7;
 }
 
 /* 标签页 */
 .tabs {
     display: flex;
-    margin-bottom: 30px;
-    border-radius: 25px;
-    background: #f8f9fa;
-    padding: 5px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-soft);
+    padding: 6px;
+    gap: var(--spacing-xs);
 }
 
 .tab {
     flex: 1;
-    padding: 12px 20px;
+    padding: var(--spacing-sm) var(--spacing-lg);
     text-align: center;
     cursor: pointer;
-    border-radius: 20px;
-    transition: all 0.3s ease;
+    border-radius: var(--radius-full);
+    transition: all var(--transition-base);
     font-weight: 600;
-    color: #666;
+    color: var(--color-text-secondary);
     background: transparent;
     border: none;
-    font-size: 14px;
+    font-size: var(--font-size-sm);
 }
 
 .tab.active {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--primary-gradient);
     color: white;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.28);
 }
 
 .tab:hover:not(.active) {
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
+    background: rgba(102, 126, 234, 0.12);
+    color: var(--primary-color);
 }
 
 /* 标签页内容 */
@@ -192,68 +220,73 @@
 
 /* 表单组 */
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: var(--spacing-md);
+}
+
+.section-stack .form-group {
+    margin-bottom: 0;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    color: #333;
-    font-size: 14px;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
 }
 
 /* 上传区域 */
 .upload-area {
-    border: 2px dashed #ddd;
-    border-radius: 10px;
-    padding: 40px 20px;
+    border: 2px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-2xl) var(--spacing-xl);
     text-align: center;
-    margin-bottom: 20px;
-    transition: all 0.3s ease;
-    background: rgba(255, 255, 255, 0.5);
+    margin-bottom: var(--spacing-lg);
+    transition: all var(--transition-base);
+    background: rgba(255, 255, 255, 0.6);
 }
 
 .upload-area:hover {
-    border-color: #667eea;
-    background: rgba(102, 126, 234, 0.05);
+    border-color: var(--primary-color);
+    background: rgba(102, 126, 234, 0.08);
 }
 
 .upload-area.dragover {
-    border-color: #667eea;
-    background: rgba(102, 126, 234, 0.1);
+    border-color: var(--primary-color);
+    background: rgba(102, 126, 234, 0.15);
 }
 
 .upload-icon {
-    font-size: 48px;
-    margin-bottom: 15px;
-    color: #666;
+    font-size: 3rem;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text-secondary);
 }
 
 .upload-text {
-    color: #666;
-    font-size: 16px;
-    margin-bottom: 20px;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
 }
 
 /* 上传选项按钮 */
 .upload-options {
     display: flex;
-    gap: 15px;
+    gap: var(--spacing-md);
     justify-content: center;
-    margin-top: 20px;
+    margin-top: var(--spacing-lg);
 }
 
 .upload-option-btn {
     padding: 10px 20px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--primary-gradient);
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 14px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: all var(--transition-base);
     text-decoration: none;
     display: inline-block;
 }
@@ -269,10 +302,10 @@
 
 /* 页脚 */
 .footer {
-    margin-top: 30px;
+    margin-top: var(--spacing-lg);
     text-align: center;
-    color: #888;
-    font-size: 0.9em;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
     line-height: 1.6;
 }
 
@@ -281,7 +314,7 @@
 }
 
 .footer a {
-    color: #667eea;
+    color: var(--primary-color);
     text-decoration: none;
 }
 

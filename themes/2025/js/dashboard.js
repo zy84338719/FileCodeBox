@@ -251,19 +251,32 @@ const Dashboard = {
      * 切换标签页
      */
     switchTab(tabName, event) {
-        // 移除所有active类
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        
-        // 添加active类到当前标签
-        if (event && event.target) {
-            event.target.classList.add('active');
+        const tabs = document.querySelectorAll('.dashboard-tabs .tab');
+        tabs.forEach(tab => {
+            tab.classList.remove('active');
+            tab.setAttribute('aria-selected', 'false');
+            tab.setAttribute('tabindex', '-1');
+        });
+
+        const tabButton = event?.currentTarget || event?.target || document.querySelector(`.dashboard-tabs .tab[data-tab="${tabName}"]`);
+        if (tabButton) {
+            tabButton.classList.add('active');
+            tabButton.setAttribute('aria-selected', 'true');
+            tabButton.setAttribute('tabindex', '0');
         }
-        const tabContent = document.getElementById(tabName + '-content');
+
+        const panels = document.querySelectorAll('.tab-content');
+        panels.forEach(panel => {
+            panel.classList.remove('active');
+            panel.setAttribute('hidden', 'true');
+        });
+
+        const tabContent = document.getElementById(`${tabName}-content`);
         if (tabContent) {
             tabContent.classList.add('active');
+            tabContent.removeAttribute('hidden');
         }
-        
+
         // 根据标签页加载相应内容
         switch(tabName) {
             case 'dashboard':

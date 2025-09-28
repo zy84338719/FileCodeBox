@@ -15,123 +15,122 @@
     <link rel="stylesheet" href="/css/responsive.css">
     <link rel="stylesheet" href="/css/dashboard.css">
 </head>
-<body>
-    <div class="container">
-        <!-- 头部 -->
-        <div class="header">
-            <div class="logo">
+<body class="theme-dashboard">
+    <div class="dashboard-shell page-shell section-stack">
+        <header class="surface-card dashboard-header">
+            <div class="dashboard-brand">
                 <img class="logo-icon" src="/assets/images/logo-small.svg" alt="FileCodeBox Logo"/>
-                <span>FileCodeBox - 用户中心</span>
+                <div class="dashboard-brand-text">
+                    <span class="brand-title">FileCodeBox</span>
+                    <span class="brand-subtitle">用户中心</span>
+                </div>
             </div>
-            <div class="user-info">
+            <div class="dashboard-user">
                 <div class="user-avatar" id="user-avatar"></div>
                 <div class="user-name" id="user-name">用户</div>
-                <button class="admin-btn" id="admin-btn" onclick="Dashboard.goToAdmin()" style="display: none;">管理后台</button>
-                <button class="logout-btn" onclick="UserAuth.logout()">退出登录</button>
             </div>
-        </div>
-        
-        <!-- 导航标签 -->
-        <div class="nav-tabs">
-            <div class="tabs">
-                <button class="tab active" onclick="Dashboard.switchTab('dashboard', event)">仪表板</button>
-                <button class="tab" onclick="Dashboard.switchTab('upload', event)">上传文件</button>
-                <button class="tab" onclick="Dashboard.switchTab('files', event)">我的文件</button>
-                <button class="tab" onclick="Dashboard.switchTab('api-keys', event)">API 密钥</button>
-                <button class="tab" onclick="Dashboard.switchTab('profile', event)">个人资料</button>
+            <div class="dashboard-actions">
+                <button type="button" class="btn btn-secondary admin-btn" id="admin-btn" onclick="Dashboard.goToAdmin()">管理后台</button>
+                <button type="button" class="btn btn-danger" onclick="UserAuth.logout()">退出登录</button>
             </div>
-            
+        </header>
+
+        <section class="surface-card dashboard-tabs">
+            <div class="tabs" role="tablist" aria-label="用户中心导航">
+                <button type="button" class="tab active" id="tab-dashboard" role="tab" data-tab="dashboard" aria-controls="dashboard-content" aria-selected="true" onclick="Dashboard.switchTab('dashboard', event)">仪表板</button>
+                <button type="button" class="tab" id="tab-upload" role="tab" data-tab="upload" aria-controls="upload-content" aria-selected="false" tabindex="-1" onclick="Dashboard.switchTab('upload', event)">上传文件</button>
+                <button type="button" class="tab" id="tab-files" role="tab" data-tab="files" aria-controls="files-content" aria-selected="false" tabindex="-1" onclick="Dashboard.switchTab('files', event)">我的文件</button>
+                <button type="button" class="tab" id="tab-api-keys" role="tab" data-tab="api-keys" aria-controls="api-keys-content" aria-selected="false" tabindex="-1" onclick="Dashboard.switchTab('api-keys', event)">API 密钥</button>
+                <button type="button" class="tab" id="tab-profile" role="tab" data-tab="profile" aria-controls="profile-content" aria-selected="false" tabindex="-1" onclick="Dashboard.switchTab('profile', event)">个人资料</button>
+            </div>
+        </section>
+
+        <div class="tab-panels section-stack">
             <!-- 仪表板 -->
-            <div id="dashboard-content" class="tab-content active">
+            <section id="dashboard-content" class="tab-content surface-card section-stack active" role="tabpanel" aria-labelledby="tab-dashboard" tabindex="0">
                 <div class="stats-grid" id="stats-grid">
                     <!-- 统计卡片将动态加载 -->
                 </div>
-                
-                <div class="content-section">
+
+                <section class="content-section section-stack">
                     <div class="section-header">
                         <div class="section-title">📊 使用统计</div>
                     </div>
-                    <!-- <div class="section-content"> -->
-                        <div class="form-group">
-                            <label>存储使用情况</label>
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="storage-progress" style="width: 0%"></div>
-                            </div>
-                            <small id="storage-text">正在加载...</small>
+                    <div class="form-group">
+                        <label>存储使用情况</label>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="storage-progress" style="width: 0%"></div>
                         </div>
-                    <!-- </div> -->
-                </div>
-            </div>
-            
+                        <small id="storage-text">正在加载...</small>
+                    </div>
+                </section>
+            </section>
+
             <!-- 上传文件 -->
-            <div id="upload-content" class="tab-content">
-                <div class="content-section">
+            <section id="upload-content" class="tab-content surface-card section-stack" role="tabpanel" aria-labelledby="tab-upload" tabindex="0" hidden>
+                <section class="content-section section-stack">
                     <div class="section-header">
                         <div class="section-title">📤 上传文件</div>
                     </div>
-                    <!-- <div class="section-content"> -->
-                        <form id="upload-form" enctype="multipart/form-data">
-                            <div class="upload-area" id="upload-area">
-                                <div class="upload-text" id="upload-text">点击选择文件或拖拽到此处</div>
-                                <div class="upload-hint">支持所有文件类型</div>
-                                <div class="upload-options">
-                                    <label class="upload-option-btn" for="file-input">选择文件</label>
-                                    <label class="upload-option-btn" for="folder-input">选择文件夹</label>
-                                </div>
-                                <input type="file" id="file-input" style="display: none;" />
-                                <input type="file" id="folder-input" style="display: none;" webkitdirectory multiple>
+                    <form id="upload-form" class="section-stack" enctype="multipart/form-data">
+                        <div class="upload-area" id="upload-area">
+                            <div class="upload-text" id="upload-text">点击选择文件或拖拽到此处</div>
+                            <div class="upload-hint">支持所有文件类型</div>
+                            <div class="upload-options">
+                                <label class="upload-option-btn" for="file-input">选择文件</label>
+                                <label class="upload-option-btn" for="folder-input">选择文件夹</label>
                             </div>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="expire_style">过期方式</label>
-                                    <select id="expire_style" name="expire_style">
-                                        <option value="day">按天过期</option>
-                                        <option value="hour">按小时过期</option>
-                                        <option value="count">按次数过期</option>
-                                        <option value="forever">永久有效</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="expire_value">过期值</label>
-                                    <input type="number" id="expire_value" name="expire_value" value="7" min="1" max="365">
-                                </div>
+                            <input type="file" id="file-input" style="display: none;" />
+                            <input type="file" id="folder-input" style="display: none;" webkitdirectory multiple>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="expire_style">过期方式</label>
+                                <select id="expire_style" name="expire_style">
+                                    <option value="day">按天过期</option>
+                                    <option value="hour">按小时过期</option>
+                                    <option value="count">按次数过期</option>
+                                    <option value="forever">永久有效</option>
+                                </select>
                             </div>
-                            
-                            <div class="checkbox-group">
-                                <input type="checkbox" id="require_auth" name="require_auth">
-                                <label for="require_auth">需要登录下载</label>
+                            <div class="form-group">
+                                <label for="expire_value">过期值</label>
+                                <input type="number" id="expire_value" name="expire_value" value="7" min="1" max="365">
                             </div>
-                            
-                            <button type="submit" class="btn" id="upload-btn">上传文件</button>
-                            
-                            <div class="progress" id="upload-progress">
-                                <div class="progress-fill" id="upload-progress-fill"></div>
-                            </div>
-                            
-                            <div id="upload-result"></div>
-                        </form>
-                    <!-- </div> -->
-                </div>
-            </div>
-            
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="require_auth" name="require_auth">
+                            <label for="require_auth">需要登录下载</label>
+                        </div>
+
+                        <button type="submit" class="btn" id="upload-btn">上传文件</button>
+
+                        <div class="progress" id="upload-progress">
+                            <div class="progress-fill" id="upload-progress-fill"></div>
+                        </div>
+
+                        <div id="upload-result"></div>
+                    </form>
+                </section>
+            </section>
+
             <!-- 我的文件 -->
-            <div id="files-content" class="tab-content">
-                <div class="content-section">
+            <section id="files-content" class="tab-content surface-card section-stack" role="tabpanel" aria-labelledby="tab-files" tabindex="0" hidden>
+                <section class="content-section section-stack">
                     <div class="section-header">
                         <div class="section-title">📁 我的文件</div>
                     </div>
-                    <!-- <div class="section-content"> -->
-                        <div id="files-list">
-                            <!-- 文件列表将动态加载 -->
-                        </div>
-                    <!-- </div> -->
-                </div>
-            </div>
-            
+                    <div id="files-list">
+                        <!-- 文件列表将动态加载 -->
+                    </div>
+                </section>
+            </section>
+
             <!-- API 密钥 -->
-            <div id="api-keys-content" class="tab-content">
-                <div class="content-section">
+            <section id="api-keys-content" class="tab-content surface-card section-stack" role="tabpanel" aria-labelledby="tab-api-keys" tabindex="0" hidden>
+                <section class="content-section section-stack">
                     <div class="section-header">
                         <div class="section-title">🔑 API 密钥管理</div>
                         <div class="section-actions">
@@ -142,7 +141,7 @@
                         使用 API 密钥可在命令行或第三方工具中上传 / 下载文件。密钥一旦生成仅在创建时显示明文，请妥善保存。
                     </p>
 
-                    <form id="api-key-form" class="api-key-form">
+                    <form id="api-key-form" class="api-key-form section-stack">
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="api-key-name">备注名称</label>
@@ -202,69 +201,67 @@
                         </div>
                         <div id="api-key-table-wrapper"></div>
                     </div>
-                </div>
-            </div>
+                </section>
+            </section>
 
             <!-- 个人资料 -->
-            <div id="profile-content" class="tab-content">
-                <div class="content-section">
+            <section id="profile-content" class="tab-content surface-card section-stack" role="tabpanel" aria-labelledby="tab-profile" tabindex="0" hidden>
+                <section class="content-section section-stack">
                     <div class="section-header">
                         <div class="section-title">👤 个人资料</div>
                     </div>
-                    <!-- <div class="section-content"> -->
-                        <form id="profile-form">
-                            <div class="form-group">
-                                <label for="username">用户名</label>
-                                <input type="text" id="username" name="username" readonly>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="email">邮箱</label>
-                                <input type="email" id="email" name="email" readonly>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="nickname">昵称</label>
-                                <input type="text" id="nickname" name="nickname" placeholder="请输入昵称">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="created_at">注册时间</label>
-                                <input type="text" id="created_at" name="created_at" readonly>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="last_login_at">最后登录</label>
-                                <input type="text" id="last_login_at" name="last_login_at" readonly>
-                            </div>
-                            
-                            <button type="submit" class="btn">更新资料</button>
-                        </form>
-                        
-                        <hr style="margin: 30px 0;">
-                        
-                        <h3>修改密码</h3>
-                        <form id="password-form">
-                            <div class="form-group">
-                                <label for="old_password">当前密码</label>
-                                <input type="password" id="old_password" name="old_password" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="new_password">新密码</label>
-                                <input type="password" id="new_password" name="new_password" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="confirm_password">确认新密码</label>
-                                <input type="password" id="confirm_password" name="confirm_password" required>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-secondary">修改密码</button>
-                        </form>
-                    </div>
-                <!-- </div> -->
-            </div>
+                    <form id="profile-form" class="section-stack">
+                        <div class="form-group">
+                            <label for="username">用户名</label>
+                            <input type="text" id="username" name="username" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">邮箱</label>
+                            <input type="email" id="email" name="email" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="nickname">昵称</label>
+                            <input type="text" id="nickname" name="nickname" placeholder="请输入昵称">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="created_at">注册时间</label>
+                            <input type="text" id="created_at" name="created_at" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="last_login_at">最后登录</label>
+                            <input type="text" id="last_login_at" name="last_login_at" readonly>
+                        </div>
+
+                        <button type="submit" class="btn">更新资料</button>
+                    </form>
+
+                    <hr class="section-divider">
+
+                    <h3 class="section-subtitle">修改密码</h3>
+                    <form id="password-form" class="section-stack">
+                        <div class="form-group">
+                            <label for="old_password">当前密码</label>
+                            <input type="password" id="old_password" name="old_password" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="new_password">新密码</label>
+                            <input type="password" id="new_password" name="new_password" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirm_password">确认新密码</label>
+                            <input type="password" id="confirm_password" name="confirm_password" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-secondary">修改密码</button>
+                    </form>
+                </section>
+            </section>
         </div>
     </div>
     
