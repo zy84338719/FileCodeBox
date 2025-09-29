@@ -1,0 +1,13 @@
+{
+  "name": "filecodebox",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "docs/site"
+  ],
+  "scripts": {
+    "docs:dev": "npm run docs:dev --workspace docs/site",
+    "docs:build": "npm run docs:build --workspace docs/site",
+    "docs:preview": "npm run docs:preview --workspace docs/site"
+  }
+}

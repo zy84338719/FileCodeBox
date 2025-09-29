@@ -26,6 +26,12 @@ data/
 *.temp
 *.bin
 
+# 前端依赖目录
+node_modules/
+docs/site/node_modules/
+docs/site/.vitepress/cache/
+docs/site/.vitepress/dist/
+
 # IDE和编辑器文件
 .vscode/
 .idea/
