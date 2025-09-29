@@ -8,7 +8,7 @@
 - [快速上手部署](./guide/getting-started.md)
 - [上传分片指南](./guide/upload.md)
 - [安全加固手册](./guide/security.md)
-- [API 使用指南](./api/README.md)
+- [API 使用指南](./api/)
 
 ## 使用 VitePress 本地预览
 
