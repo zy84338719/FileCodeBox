@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -100,14 +101,14 @@ func resolveThemeFilePath(cfg *config.ConfigManager, parts ...string) (string, e
 
 func loadThemeFile(cfg *config.ConfigManager, parts ...string) ([]byte, error) {
 	// First try filesystem
-	path, err := resolveThemeFilePath(cfg, parts...)
+	fsPath, err := resolveThemeFilePath(cfg, parts...)
 	if err == nil {
-		return os.ReadFile(path)
+		return os.ReadFile(fsPath)
 	}
-	// Fallback to embedded FS
+	// Fallback to embedded FS (use path.Join for forward slashes)
 	if embeddedFSSet {
-		embeddedPath := filepath.Join(parts...)
-		data, embErr := fs.ReadFile(embeddedFS, "themes/2025/"+embeddedPath)
+		embeddedPath := "themes/2025/" + path.Join(parts...)
+		data, embErr := fs.ReadFile(embeddedFS, embeddedPath)
 		if embErr == nil {
 			return data, nil
 		}
@@ -123,14 +124,14 @@ func ResolveThemeFile(cfg *config.ConfigManager, parts ...string) (string, error
 // ServeThemeFile serves a theme file, falling back to embedded FS if filesystem path not found
 func ServeThemeFile(c *gin.Context, cfg *config.ConfigManager, parts ...string) {
 	// First try filesystem
-	path, err := resolveThemeFilePath(cfg, parts...)
+	fsPath, err := resolveThemeFilePath(cfg, parts...)
 	if err == nil {
-		c.File(path)
+		c.File(fsPath)
 		return
 	}
-	// Fallback to embedded FS
+	// Fallback to embedded FS (use path.Join for forward slashes)
 	if embeddedFSSet {
-		embeddedPath := "themes/2025/" + filepath.Join(parts...)
+		embeddedPath := "themes/2025/" + path.Join(parts...)
 		data, embErr := fs.ReadFile(embeddedFS, embeddedPath)
 		if embErr == nil {
 			// Detect content type
