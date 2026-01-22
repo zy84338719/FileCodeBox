@@ -206,15 +206,9 @@ function storeTheme(theme) {
 }
 
 function initTheme() {
-    const stored = getStoredTheme();
-    if (stored === THEMES.DARK || stored === THEMES.LIGHT) {
-        applyTheme(stored);
-        return stored;
-    }
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initial = prefersDark ? THEMES.DARK : THEMES.LIGHT;
-    applyTheme(initial);
-    return initial;
+    // 暂时强制使用浅色主题
+    applyTheme(THEMES.LIGHT);
+    return THEMES.LIGHT;
 }
 
 function handleSystemThemeChange(event) {
