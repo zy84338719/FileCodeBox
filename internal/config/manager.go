@@ -57,17 +57,38 @@ func InitManager() *ConfigManager {
 	cm := NewConfigManager()
 
 	var sources []ConfigSource
+	var configPath string
 
-	if configPath := os.Getenv("CONFIG_PATH"); configPath != "" {
+	if envPath := os.Getenv("CONFIG_PATH"); envPath != "" {
+		configPath = envPath
 		sources = append(sources, YAMLFileSource{Path: configPath})
-	} else if _, err := os.Stat("./config.yaml"); err == nil {
-		sources = append(sources, YAMLFileSource{Path: "./config.yaml"})
+	} else {
+		configPath = "./config.yaml"
+		// 检查配置文件是否存在
+		if _, err := os.Stat(configPath); err == nil {
+			sources = append(sources, YAMLFileSource{Path: configPath})
+		} else {
+			// 配置文件不存在，自动生成默认配置
+			if err := generateDefaultConfigFile(configPath, cm); err != nil {
+				fmt.Fprintf(os.Stderr, "警告: 无法生成默认配置文件 %s: %v\n", configPath, err)
+			} else {
+				fmt.Printf("已生成默认配置文件: %s\n", configPath)
+				// 生成后加载配置
+				sources = append(sources, YAMLFileSource{Path: configPath})
+			}
+		}
 	}
 
 	sources = append(sources, NewDefaultEnvSource())
 
 	_ = cm.ApplySources(sources...)
 	return cm
+}
+
+// generateDefaultConfigFile 生成默认配置文件
+func generateDefaultConfigFile(path string, cm *ConfigManager) error {
+	// 使用当前 ConfigManager 的默认值生成配置
+	return writeConfigToPath(path, cm)
 }
 
 func (cm *ConfigManager) SetDB(db *gorm.DB) { cm.db = db }
