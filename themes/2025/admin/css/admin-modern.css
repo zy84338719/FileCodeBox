@@ -77,77 +77,77 @@
 }
 
 .admin-theme-dark {
-    --admin-bg-top: #0f172a;
-    --admin-bg-bottom: #111c44;
-    --admin-surface: rgba(17, 24, 39, 0.92);
-    --admin-surface-subtle: rgba(15, 23, 42, 0.72);
-    --admin-surface-muted: rgba(99, 102, 241, 0.22);
-    --admin-border: rgba(148, 163, 184, 0.2);
-    --admin-text: #e2e8f0;
-    --admin-muted: rgba(203, 213, 225, 0.88);
-    --admin-subtle: rgba(148, 163, 184, 0.68);
-    --admin-accent: #818cf8;
-    --admin-accent-strong: #6366f1;
-    --admin-accent-soft: rgba(99, 102, 241, 0.3);
+    --admin-bg-top: #0a0f1a;
+    --admin-bg-bottom: #0d1529;
+    --admin-surface: rgba(15, 23, 42, 0.95);
+    --admin-surface-subtle: rgba(20, 30, 55, 0.85);
+    --admin-surface-muted: rgba(99, 102, 241, 0.15);
+    --admin-border: rgba(129, 140, 248, 0.15);
+    --admin-text: #f1f5f9;
+    --admin-muted: rgba(226, 232, 240, 0.85);
+    --admin-subtle: rgba(148, 163, 184, 0.7);
+    --admin-accent: #a78bfa;
+    --admin-accent-strong: #8b5cf6;
+    --admin-accent-soft: rgba(139, 92, 246, 0.25);
     --admin-danger: #f87171;
-    --admin-shadow-card: 0 24px 55px rgba(15, 23, 42, 0.45);
-    --admin-shadow-soft: 0 18px 36px rgba(99, 102, 241, 0.32);
-    --admin-placeholder-bg: rgba(15, 23, 42, 0.65);
+    --admin-shadow-card: 0 25px 60px rgba(0, 0, 0, 0.5);
+    --admin-shadow-soft: 0 20px 40px rgba(139, 92, 246, 0.2);
+    --admin-placeholder-bg: rgba(15, 23, 42, 0.8);
     --admin-inverse-text: #0f172a;
     --admin-heading: #f8fafc;
-    --admin-interactive-bg: rgba(129, 140, 248, 0.18);
-    --admin-interactive-bg-hover: rgba(129, 140, 248, 0.32);
-    --admin-icon-default: rgba(226, 232, 240, 0.8);
-    --admin-overlay: rgba(15, 23, 42, 0.7);
-    --admin-toggle-bg: rgba(51, 65, 85, 0.6);
-    --admin-ghost-bg: rgba(99, 102, 241, 0.24);
-    --admin-ghost-bg-hover: rgba(129, 140, 248, 0.36);
-    --admin-danger-soft: rgba(248, 113, 113, 0.2);
-    --admin-danger-soft-hover: rgba(248, 113, 113, 0.28);
+    --admin-interactive-bg: rgba(139, 92, 246, 0.12);
+    --admin-interactive-bg-hover: rgba(139, 92, 246, 0.25);
+    --admin-icon-default: rgba(167, 139, 250, 0.9);
+    --admin-overlay: rgba(10, 15, 26, 0.85);
+    --admin-toggle-bg: rgba(51, 65, 85, 0.5);
+    --admin-ghost-bg: rgba(139, 92, 246, 0.15);
+    --admin-ghost-bg-hover: rgba(139, 92, 246, 0.28);
+    --admin-danger-soft: rgba(248, 113, 113, 0.15);
+    --admin-danger-soft-hover: rgba(248, 113, 113, 0.25);
     --admin-danger-strong: #fecaca;
-    --admin-nav-active-start: rgba(99, 102, 241, 0.92);
-    --admin-nav-active-end: rgba(129, 140, 248, 0.78);
-    --admin-nav-active-shadow: 0 18px 36px rgba(99, 102, 241, 0.38);
-    --admin-primary-btn-start: rgba(99, 102, 241, 0.94);
-    --admin-primary-btn-end: rgba(129, 140, 248, 0.82);
-    --admin-primary-btn-shadow: 0 14px 28px rgba(99, 102, 241, 0.42);
-    --admin-form-hint: rgba(148, 163, 184, 0.72);
-    --admin-stat-bg: rgba(17, 24, 39, 0.92);
-    --admin-stat-border: rgba(129, 140, 248, 0.32);
-    --admin-stat-highlight: rgba(99, 102, 241, 0.28);
-    --admin-stat-glow: 0 30px 56px rgba(2, 6, 23, 0.65);
-    --admin-stat-hover-glow: 0 36px 64px rgba(30, 41, 59, 0.72);
-    --admin-stat-icon-bg: rgba(99, 102, 241, 0.24);
-    --admin-stat-icon-color: #e0e7ff;
-    --admin-stat-trend-bg: rgba(99, 102, 241, 0.22);
-    --admin-stat-trend-text: #c7d2fe;
-    --admin-panel-bg: rgba(17, 24, 39, 0.9);
-    --admin-panel-border: rgba(99, 102, 241, 0.28);
-    --admin-panel-shadow: 0 26px 56px rgba(2, 6, 23, 0.7);
-    --admin-panel-highlight: rgba(79, 70, 229, 0.12);
-    --admin-action-bg: rgba(30, 41, 59, 0.85);
-    --admin-action-border: rgba(129, 140, 248, 0.22);
-    --admin-action-hover: rgba(99, 102, 241, 0.22);
-    --admin-action-glow: 0 24px 44px rgba(2, 6, 23, 0.6);
-    --admin-action-icon-bg: rgba(99, 102, 241, 0.24);
-    --admin-action-icon-color: #e0e7ff;
-    --admin-action-icon-shadow: 0 18px 38px rgba(2, 6, 23, 0.65);
-    --admin-status-bg: rgba(17, 24, 39, 0.88);
-    --admin-status-border: rgba(99, 102, 241, 0.28);
-    --admin-status-hover-border: rgba(129, 140, 248, 0.38);
-    --admin-status-dot-online: #34d399;
-    --admin-status-dot-warning: #facc15;
+    --admin-nav-active-start: rgba(139, 92, 246, 0.95);
+    --admin-nav-active-end: rgba(167, 139, 250, 0.8);
+    --admin-nav-active-shadow: 0 15px 35px rgba(139, 92, 246, 0.4);
+    --admin-primary-btn-start: #8b5cf6;
+    --admin-primary-btn-end: #a78bfa;
+    --admin-primary-btn-shadow: 0 12px 30px rgba(139, 92, 246, 0.45);
+    --admin-form-hint: rgba(148, 163, 184, 0.75);
+    --admin-stat-bg: rgba(15, 23, 42, 0.9);
+    --admin-stat-border: rgba(139, 92, 246, 0.25);
+    --admin-stat-highlight: rgba(139, 92, 246, 0.15);
+    --admin-stat-glow: 0 25px 50px rgba(0, 0, 0, 0.6);
+    --admin-stat-hover-glow: 0 30px 60px rgba(139, 92, 246, 0.25);
+    --admin-stat-icon-bg: rgba(139, 92, 246, 0.2);
+    --admin-stat-icon-color: #c4b5fd;
+    --admin-stat-trend-bg: rgba(139, 92, 246, 0.18);
+    --admin-stat-trend-text: #ddd6fe;
+    --admin-panel-bg: rgba(15, 23, 42, 0.92);
+    --admin-panel-border: rgba(139, 92, 246, 0.2);
+    --admin-panel-shadow: 0 25px 55px rgba(0, 0, 0, 0.55);
+    --admin-panel-highlight: rgba(139, 92, 246, 0.08);
+    --admin-action-bg: rgba(20, 30, 55, 0.9);
+    --admin-action-border: rgba(139, 92, 246, 0.18);
+    --admin-action-hover: rgba(139, 92, 246, 0.2);
+    --admin-action-glow: 0 20px 45px rgba(0, 0, 0, 0.5);
+    --admin-action-icon-bg: rgba(139, 92, 246, 0.2);
+    --admin-action-icon-color: #ddd6fe;
+    --admin-action-icon-shadow: 0 15px 35px rgba(139, 92, 246, 0.3);
+    --admin-status-bg: rgba(15, 23, 42, 0.9);
+    --admin-status-border: rgba(139, 92, 246, 0.2);
+    --admin-status-hover-border: rgba(167, 139, 250, 0.35);
+    --admin-status-dot-online: #4ade80;
+    --admin-status-dot-warning: #fbbf24;
     --admin-status-dot-offline: #f87171;
-    --admin-radius-lg: 18px;
-    --admin-radius-md: 14px;
-    --admin-radius-sm: 10px;
-    --admin-input-bg: rgba(15, 23, 42, 0.72);
-    --admin-input-border: rgba(99, 102, 241, 0.32);
-    --admin-input-focus: rgba(129, 140, 248, 0.45);
-    --admin-table-header-bg: rgba(79, 70, 229, 0.24);
-    --admin-table-row-hover: rgba(79, 70, 229, 0.14);
-    --admin-chip-bg: rgba(129, 140, 248, 0.24);
-    --admin-chip-text: #e0e7ff;
+    --admin-radius-lg: 16px;
+    --admin-radius-md: 12px;
+    --admin-radius-sm: 8px;
+    --admin-input-bg: rgba(15, 23, 42, 0.8);
+    --admin-input-border: rgba(139, 92, 246, 0.25);
+    --admin-input-focus: rgba(167, 139, 250, 0.5);
+    --admin-table-header-bg: rgba(139, 92, 246, 0.15);
+    --admin-table-row-hover: rgba(139, 92, 246, 0.08);
+    --admin-chip-bg: rgba(139, 92, 246, 0.2);
+    --admin-chip-text: #ddd6fe;
     --admin-warning-bg: rgba(250, 204, 21, 0.18);
     --admin-warning-text: #facc15;
     --admin-info-bg: rgba(59, 130, 246, 0.24);
@@ -403,6 +403,31 @@ body.admin-modern-body {
     -webkit-font-smoothing: antialiased;
 }
 
+body.admin-modern-body.admin-theme-dark {
+    background: linear-gradient(135deg, #080c14 0%, #0a0f1a 25%, #0d1529 50%, #111827 75%, #0f172a 100%);
+    background-attachment: fixed;
+}
+
+body.admin-modern-body.admin-theme-dark::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(ellipse 80% 50% at 20% 40%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 80% 20%, rgba(167, 139, 250, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 30% at 50% 80%, rgba(124, 58, 237, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+body.admin-modern-body.admin-theme-dark .admin-shell {
+    position: relative;
+    z-index: 1;
+}
+
 .admin-modern-body *,
 .admin-modern-body *::before,
 .admin-modern-body *::after {
@@ -452,7 +477,7 @@ body.admin-modern-body {
 
 .admin-sidebar {
     width: 260px;
-    background: var(--admin-surface);
+    background: linear-gradient(180deg, var(--admin-surface) 0%, var(--admin-surface-subtle) 100%);
     border-right: 1px solid var(--admin-border);
     display: flex;
     flex-direction: column;
@@ -461,6 +486,23 @@ body.admin-modern-body {
     z-index: 30;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     box-shadow: var(--admin-shadow-card);
+    position: relative;
+}
+
+.admin-theme-dark .admin-sidebar {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 15, 30, 0.95) 100%);
+    border-right: 1px solid rgba(139, 92, 246, 0.15);
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.3);
+}
+
+.admin-theme-dark .admin-sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(139, 92, 246, 0.4) 0%, rgba(167, 139, 250, 0.1) 50%, rgba(139, 92, 246, 0.3) 100%);
 }
 
 .sidebar-brand {
@@ -728,6 +770,10 @@ body.admin-modern-body {
     overflow-y: auto;
 }
 
+.admin-theme-dark .admin-main {
+    background: linear-gradient(135deg, rgba(10, 15, 26, 0.95) 0%, rgba(13, 21, 41, 0.98) 50%, rgba(15, 23, 42, 0.95) 100%);
+}
+
 .tab-panels {
     display: flex;
     flex-direction: column;
@@ -741,6 +787,13 @@ body.admin-modern-body {
     padding: 32px;
     box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
     display: none;
+}
+
+.admin-theme-dark .tab-panels .tab-content {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(139, 92, 246, 0.12);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
 }
 
 .tab-panels .tab-content.active {

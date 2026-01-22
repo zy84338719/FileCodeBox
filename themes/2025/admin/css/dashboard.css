@@ -307,3 +307,100 @@
         text-align: center;
     }
 }
+
+/* 深色主题 - 科技蓝紫风格 */
+.admin-theme-dark .dashboard-header {
+    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%);
+    box-shadow: 0 15px 40px rgba(139, 92, 246, 0.35);
+}
+
+.admin-theme-dark .stat-card {
+    background: rgba(15, 23, 42, 0.9);
+    border-left: 4px solid #8b5cf6;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+}
+
+.admin-theme-dark .stat-card:hover {
+    box-shadow: 0 12px 40px rgba(139, 92, 246, 0.25);
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.admin-theme-dark .stat-icon {
+    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+}
+
+.admin-theme-dark .stat-number {
+    color: #f1f5f9;
+}
+
+.admin-theme-dark .stat-label {
+    color: rgba(148, 163, 184, 0.9);
+}
+
+.admin-theme-dark .stat-trend {
+    color: #4ade80;
+}
+
+.admin-theme-dark .dashboard-actions {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(139, 92, 246, 0.12);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+}
+
+.admin-theme-dark .dashboard-actions h4 {
+    color: #f1f5f9;
+}
+
+.admin-theme-dark .action-card {
+    background: rgba(20, 30, 55, 0.8);
+    border: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.admin-theme-dark .action-card:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+    box-shadow: 0 12px 35px rgba(139, 92, 246, 0.4);
+    border-color: transparent;
+}
+
+.admin-theme-dark .action-icon {
+    background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+}
+
+.admin-theme-dark .action-content h5 {
+    color: #f1f5f9;
+}
+
+.admin-theme-dark .action-content p {
+    color: rgba(148, 163, 184, 0.85);
+}
+
+.admin-theme-dark .action-card:hover .action-content h5,
+.admin-theme-dark .action-card:hover .action-content p {
+    color: #fff;
+}
+
+.admin-theme-dark .dashboard-status {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(139, 92, 246, 0.12);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+}
+
+.admin-theme-dark .dashboard-status h4 {
+    color: #f1f5f9;
+}
+
+.admin-theme-dark .status-item {
+    background: rgba(20, 30, 55, 0.8);
+    border-left: 4px solid #4ade80;
+    border-radius: 12px;
+}
+
+.admin-theme-dark .status-label {
+    color: rgba(148, 163, 184, 0.9);
+}
+
+.admin-theme-dark .status-value {
+    color: #f1f5f9;
+}
