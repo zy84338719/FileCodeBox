@@ -2,7 +2,7 @@ name: Build and Release
 
 on:
   push:
-  # Only trigger the heavy multi-platform build on version tag pushes (e.g. v1.10.2)
+  # Only trigger the heavy multi-platform build on version tag pushes (e.g. v1.10.4)
     tags:
       - 'v*'
   # Allow manual dispatch for ad-hoc builds from the UI

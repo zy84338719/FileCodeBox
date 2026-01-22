@@ -2,7 +2,7 @@ swagger: "2.0"
 info:
   title: "FileCodeBox API"
   description: "FileCodeBox 是一个用于文件分享和代码片段管理的 Web 应用程序"
-  version: "1.10.2"
+  version: "1.10.4"
   termsOfService: "http://swagger.io/terms/"
   contact:
     name: "API Support"
@@ -75,7 +75,7 @@ paths:
                 example: "2025-09-11T10:00:00Z"
               version:
                 type: "string"
-                example: "1.10.2"
+                example: "1.10.4"
               uptime:
                 type: "string"
                 example: "2h30m15s"

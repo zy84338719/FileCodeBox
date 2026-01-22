@@ -4,7 +4,7 @@ This document explains how our GitHub Actions are gated and how to trigger heavi
 
 ### CI design principles
 - Lightweight checks (unit tests, linters) run on `push` / `pull_request` for `main` and `develop` branches.
-- Heavy tasks (cross-platform builds, Docker image builds & push, release packaging) only run on tag pushes (e.g. `v1.10.2`) or when explicitly requested.
+- Heavy tasks (cross-platform builds, Docker image builds & push, release packaging) only run on tag pushes (e.g. `v1.10.4`) or when explicitly requested.
 
 This reduces wasted CI minutes and avoids building/publishing artifacts for every code merge.
 
@@ -13,8 +13,8 @@ There are multiple intentional ways to trigger full/heavy workflows:
 
 - Push a semantic version tag (recommended for releases):
   ```bash
-  git tag v1.10.2
-  git push origin v1.10.2
+  git tag v1.10.4
+  git push origin v1.10.4
   ```
   Tag pushes trigger the `build.yml` / `release.yml` flows which do cross-platform builds and create the Release.
 
