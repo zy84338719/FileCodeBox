@@ -27,14 +27,6 @@ func SetEmbeddedFS(efs embed.FS) {
 	embeddedFSSet = true
 }
 
-// getEmbeddedSubFS returns a sub-filesystem for the themes directory
-func getEmbeddedSubFS() (fs.FS, error) {
-	if !embeddedFSSet {
-		return nil, fs.ErrNotExist
-	}
-	return fs.Sub(embeddedFS, "themes/2025")
-}
-
 func themeCandidates(cfg *config.ConfigManager) []string {
 	var candidates []string
 	seen := make(map[string]struct{})
