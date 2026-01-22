@@ -38,6 +38,7 @@ import (
 	"github.com/zy84338719/filecodebox/internal/repository"
 	"github.com/zy84338719/filecodebox/internal/routes"
 	"github.com/zy84338719/filecodebox/internal/services"
+	"github.com/zy84338719/filecodebox/internal/static"
 	"github.com/zy84338719/filecodebox/internal/storage"
 	"github.com/zy84338719/filecodebox/internal/tasks"
 
@@ -48,6 +49,9 @@ import (
 )
 
 func main() {
+	// 初始化嵌入的静态文件
+	static.SetEmbeddedFS(EmbeddedThemes)
+
 	// 如果有子命令参数，切换到 CLI 模式（使用 Cobra）
 	if len(os.Args) > 1 {
 		// delay import of CLI to avoid cycles

@@ -1,8 +1,10 @@
 package static
 
 import (
+	"embed"
 	"fmt"
 	"html"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,6 +15,24 @@ import (
 )
 
 const defaultThemeDir = "themes/2025"
+
+// embeddedFS holds the embedded themes filesystem, set via SetEmbeddedFS
+var embeddedFS embed.FS
+var embeddedFSSet bool
+
+// SetEmbeddedFS sets the embedded filesystem for static assets
+func SetEmbeddedFS(efs embed.FS) {
+	embeddedFS = efs
+	embeddedFSSet = true
+}
+
+// getEmbeddedSubFS returns a sub-filesystem for the themes directory
+func getEmbeddedSubFS() (fs.FS, error) {
+	if !embeddedFSSet {
+		return nil, fs.ErrNotExist
+	}
+	return fs.Sub(embeddedFS, "themes/2025")
+}
 
 func themeCandidates(cfg *config.ConfigManager) []string {
 	var candidates []string
@@ -79,16 +99,74 @@ func resolveThemeFilePath(cfg *config.ConfigManager, parts ...string) (string, e
 }
 
 func loadThemeFile(cfg *config.ConfigManager, parts ...string) ([]byte, error) {
+	// First try filesystem
 	path, err := resolveThemeFilePath(cfg, parts...)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		return os.ReadFile(path)
 	}
-	return os.ReadFile(path)
+	// Fallback to embedded FS
+	if embeddedFSSet {
+		embeddedPath := filepath.Join(parts...)
+		data, embErr := fs.ReadFile(embeddedFS, "themes/2025/"+embeddedPath)
+		if embErr == nil {
+			return data, nil
+		}
+	}
+	return nil, err
 }
 
 // ResolveThemeFile returns the concrete filesystem path for a theme file, applying fallbacks.
 func ResolveThemeFile(cfg *config.ConfigManager, parts ...string) (string, error) {
 	return resolveThemeFilePath(cfg, parts...)
+}
+
+// ServeThemeFile serves a theme file, falling back to embedded FS if filesystem path not found
+func ServeThemeFile(c *gin.Context, cfg *config.ConfigManager, parts ...string) {
+	// First try filesystem
+	path, err := resolveThemeFilePath(cfg, parts...)
+	if err == nil {
+		c.File(path)
+		return
+	}
+	// Fallback to embedded FS
+	if embeddedFSSet {
+		embeddedPath := "themes/2025/" + filepath.Join(parts...)
+		data, embErr := fs.ReadFile(embeddedFS, embeddedPath)
+		if embErr == nil {
+			// Detect content type
+			contentType := "application/octet-stream"
+			ext := filepath.Ext(embeddedPath)
+			switch ext {
+			case ".html":
+				contentType = "text/html; charset=utf-8"
+			case ".css":
+				contentType = "text/css; charset=utf-8"
+			case ".js":
+				contentType = "application/javascript; charset=utf-8"
+			case ".json":
+				contentType = "application/json; charset=utf-8"
+			case ".svg":
+				contentType = "image/svg+xml"
+			case ".png":
+				contentType = "image/png"
+			case ".jpg", ".jpeg":
+				contentType = "image/jpeg"
+			case ".gif":
+				contentType = "image/gif"
+			case ".ico":
+				contentType = "image/x-icon"
+			case ".woff":
+				contentType = "font/woff"
+			case ".woff2":
+				contentType = "font/woff2"
+			case ".ttf":
+				contentType = "font/ttf"
+			}
+			c.Data(http.StatusOK, contentType, data)
+			return
+		}
+	}
+	c.Status(http.StatusNotFound)
 }
 
 // ThemePath returns the resolved theme directory joined with optional relative parts.
@@ -104,10 +182,32 @@ func ThemePath(cfg *config.ConfigManager, parts ...string) string {
 // RegisterStaticRoutes registers public-facing static routes (assets, css, js, components)
 func RegisterStaticRoutes(router *gin.Engine, cfg *config.ConfigManager) {
 	themeDir := firstExistingThemeDir(cfg)
-	router.Static("/assets", filepath.Join(themeDir, "assets"))
-	router.Static("/css", filepath.Join(themeDir, "css"))
-	router.Static("/js", filepath.Join(themeDir, "js"))
-	router.Static("/components", filepath.Join(themeDir, "components"))
+	
+	// Check if filesystem theme exists
+	if themeDirExists(themeDir) {
+		router.Static("/assets", filepath.Join(themeDir, "assets"))
+		router.Static("/css", filepath.Join(themeDir, "css"))
+		router.Static("/js", filepath.Join(themeDir, "js"))
+		router.Static("/components", filepath.Join(themeDir, "components"))
+		return
+	}
+	
+	// Fallback to embedded FS
+	if embeddedFSSet {
+		registerEmbeddedStatic(router, "/assets", "themes/2025/assets")
+		registerEmbeddedStatic(router, "/css", "themes/2025/css")
+		registerEmbeddedStatic(router, "/js", "themes/2025/js")
+		registerEmbeddedStatic(router, "/components", "themes/2025/components")
+	}
+}
+
+// registerEmbeddedStatic registers a static route from embedded FS
+func registerEmbeddedStatic(router *gin.Engine, urlPath, fsPath string) {
+	subFS, err := fs.Sub(embeddedFS, fsPath)
+	if err != nil {
+		return
+	}
+	router.StaticFS(urlPath, http.FS(subFS))
 }
 
 // Note: admin static routes are intentionally not registered here.

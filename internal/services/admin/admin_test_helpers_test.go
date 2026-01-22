@@ -9,7 +9,7 @@ import (
 	"github.com/zy84338719/filecodebox/internal/repository"
 	admin "github.com/zy84338719/filecodebox/internal/services/admin"
 	"github.com/zy84338719/filecodebox/internal/storage"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 

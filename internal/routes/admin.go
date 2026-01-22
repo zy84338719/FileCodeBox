@@ -57,12 +57,7 @@ func SetupAdminRoutes(
 		return func(c *gin.Context) {
 			rel := c.Param("filepath")
 			joined := append(parts, rel)
-			path, err := static.ResolveThemeFile(cfg, joined...)
-			if err != nil {
-				c.Status(404)
-				return
-			}
-			c.File(path)
+			static.ServeThemeFile(c, cfg, joined...)
 		}
 	}
 
