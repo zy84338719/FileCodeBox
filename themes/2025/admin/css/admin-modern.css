@@ -1777,15 +1777,15 @@ body.admin-modern-body {
 }
 
 .admin-modern-body .metric-card {
-    background: rgba(15, 23, 42, 0.58);
-    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: rgb(255, 255, 255);
+    border: 1px solid rgb(255, 255, 255);
     border-radius: 18px;
     padding: 18px;
-    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.45);
+    box-shadow: 0 18px 45px rgba(70, 69, 69, 0.775);
 }
 
 .admin-modern-body .metric-label {
-    color: rgba(226, 232, 240, 0.72);
+    color: rgba(6, 6, 6, 0.72);
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -1948,7 +1948,7 @@ body.admin-modern-body {
 }
 
 .admin-modern-body .pagination-container {
-    background: rgba(15, 23, 42, 0.45);
+    background: rgba(255, 255, 255, 0.45);
     border: 1px solid rgba(148, 163, 184, 0.14);
     border-radius: 14px;
     padding: 12px 18px;
