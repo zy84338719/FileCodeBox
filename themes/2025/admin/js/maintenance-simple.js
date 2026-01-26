@@ -28,6 +28,30 @@ async function restartSystem() {
 }
 
 /**
+ * 系统关闭
+ */
+async function shutdownSystem() {
+    if (!confirm('确定要关闭程序吗？这将停止所有服务。')) {
+        return;
+    }
+
+    try {
+        const result = await apiRequest('/admin/maintenance/shutdown', {
+            method: 'POST'
+        });
+
+        if (result.code === 200) {
+            showAlert('系统关闭指令已发送', 'success');
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('系统关闭失败:', error);
+        showAlert('系统关闭失败: ' + error.message, 'error');
+    }
+}
+
+/**
  * 清理临时文件
  */
 async function cleanTempFiles() {

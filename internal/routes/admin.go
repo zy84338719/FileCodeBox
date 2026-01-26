@@ -1,6 +1,9 @@
 package routes
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/zy84338719/filecodebox/internal/config"
 	"github.com/zy84338719/filecodebox/internal/handlers"
 	"github.com/zy84338719/filecodebox/internal/middleware"
@@ -55,7 +58,11 @@ func SetupAdminRoutes(
 	// 注意：API 路由仍然放在受保护的 authGroup 中
 	serveFile := func(parts ...string) func(*gin.Context) {
 		return func(c *gin.Context) {
-			rel := c.Param("filepath")
+			rel := strings.TrimPrefix(c.Param("filepath"), "/")
+			if rel == "" {
+				c.Status(http.StatusNotFound)
+				return
+			}
 			joined := append(parts, rel)
 			static.ServeThemeFile(c, cfg, joined...)
 		}
@@ -172,6 +179,7 @@ func setupMaintenanceRoutes(authGroup *gin.RouterGroup, adminHandler *handlers.A
 
 	// 系统控制
 	authGroup.POST("/maintenance/restart", adminHandler.RestartSystem)
+	authGroup.POST("/maintenance/shutdown", adminHandler.ShutdownSystem)
 }
 
 // setupUserRoutes 设置用户管理路由

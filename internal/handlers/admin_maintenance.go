@@ -363,3 +363,23 @@ func (h *AdminHandler) RestartSystem(c *gin.Context) {
 	h.recordOperationLog(c, "maintenance.system_restart", "system", true, "系统重启指令已发送", start)
 	common.SuccessWithMessage(c, "系统重启指令已发送", nil)
 }
+
+// ShutdownSystem 关闭系统
+func (h *AdminHandler) ShutdownSystem(c *gin.Context) {
+	start := time.Now()
+	shutdown := GetShutdownFunc()
+	if shutdown == nil {
+		msg := "关闭系统功能未启用"
+		h.recordOperationLog(c, "maintenance.system_shutdown", "system", false, msg, start)
+		common.InternalServerErrorResponse(c, msg)
+		return
+	}
+
+	h.recordOperationLog(c, "maintenance.system_shutdown", "system", true, "系统关闭指令已发送", start)
+	common.SuccessWithMessage(c, "系统关闭指令已发送", nil)
+
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		shutdown()
+	}()
+}

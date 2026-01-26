@@ -49,12 +49,8 @@ elif git describe --tags --abbrev=0 >/dev/null 2>&1; then
         VERSION="$LATEST_TAG"
         print_info "使用最近的 tag: $VERSION"
     fi
-elif [ -f "VERSION" ]; then
-    # fallback 到 VERSION 文件
-    VERSION=$(cat VERSION | tr -d '\n')
-    print_info "使用 VERSION 文件: $VERSION"
 else
-    print_warning "未找到 Git tags 或 VERSION 文件，使用默认版本: $VERSION"
+    print_warning "未找到 Git tags，使用默认版本: $VERSION"
 fi
 
 # 获取 Git 提交哈希

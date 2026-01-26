@@ -28,12 +28,24 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 获取版本信息
-VERSION="1.0.0"
-if [ -f "VERSION" ]; then
-    VERSION=$(cat VERSION | tr -d '\n')
+# 获取版本信息（基于 Git tag）
+VERSION="dev"
+if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
+    VERSION=$(git describe --tags --exact-match HEAD)
+    print_info "使用当前 commit 的 tag: $VERSION"
 elif git describe --tags --abbrev=0 >/dev/null 2>&1; then
-    VERSION=$(git describe --tags --abbrev=0)
+    LATEST_TAG=$(git describe --tags --abbrev=0)
+    COMMITS_SINCE_TAG=$(git rev-list --count ${LATEST_TAG}..HEAD)
+    if [ "$COMMITS_SINCE_TAG" -gt 0 ]; then
+        SHORT_COMMIT=$(git rev-parse --short HEAD)
+        VERSION="${LATEST_TAG}-${COMMITS_SINCE_TAG}-g${SHORT_COMMIT}"
+        print_info "使用最近的 tag 加提交数: $VERSION"
+    else
+        VERSION="$LATEST_TAG"
+        print_info "使用最近的 tag: $VERSION"
+    fi
+else
+    print_info "未找到 Git tags，使用默认版本: $VERSION"
 fi
 
 GIT_COMMIT="unknown"

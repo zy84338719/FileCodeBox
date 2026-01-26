@@ -28,8 +28,18 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&dataPath, "data-path", "", "Override data path (overrides DATA_PATH env)")
 }
 
+func printVersion() {
+	buildInfo := models.GetBuildInfo()
+	fmt.Printf("FileCodeBox %s\nCommit: %s\nBuilt: %s\nGo Version: %s\n", buildInfo.Version, buildInfo.GitCommit, buildInfo.BuildTime, runtime.Version())
+}
+
 // Execute executes the root cobra command
 func Execute() {
+	if len(os.Args) == 2 && (os.Args[1] == "-version" || os.Args[1] == "--version") {
+		printVersion()
+		return
+	}
+
 	// add subcommands
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(adminCmd)
@@ -76,8 +86,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information",
 	Run: func(cmd *cobra.Command, args []string) {
-		buildInfo := models.GetBuildInfo()
-		fmt.Printf("FileCodeBox %s\nCommit: %s\nBuilt: %s\nGo Version: %s\n", buildInfo.Version, buildInfo.GitCommit, buildInfo.BuildTime, runtime.Version())
+		printVersion()
 	},
 }
 

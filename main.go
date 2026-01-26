@@ -68,6 +68,7 @@ func main() {
 	// 使用上下文管理生命周期
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	handlers.SetShutdownFunc(cancel)
 
 	// 初始化配置管理器
 	manager := config.InitManager()

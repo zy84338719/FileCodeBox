@@ -13,8 +13,6 @@ VERSION ?= $(shell \
 		else \
 			echo "$${LATEST_TAG}"; \
 		fi; \
-	elif [ -f "VERSION" ]; then \
-		cat VERSION; \
 	else \
 		echo "dev"; \
 	fi)

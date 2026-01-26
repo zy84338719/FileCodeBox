@@ -177,7 +177,7 @@ body {
 
 .section-header {
     padding: 20px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #000000;
     display: flex;
     justify-content: space-between;
     align-items: center;

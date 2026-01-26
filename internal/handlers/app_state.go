@@ -10,6 +10,7 @@ import (
 type AppState struct {
 	mcpManager   *mcp.MCPManager
 	adminHandler *AdminHandler
+	shutdownFunc func()
 	mu           sync.RWMutex
 }
 
@@ -41,4 +42,18 @@ func GetInjectedAdminHandler() *AdminHandler {
 	appState.mu.RLock()
 	defer appState.mu.RUnlock()
 	return appState.adminHandler
+}
+
+// SetShutdownFunc 注入应用关闭函数
+func SetShutdownFunc(fn func()) {
+	appState.mu.Lock()
+	defer appState.mu.Unlock()
+	appState.shutdownFunc = fn
+}
+
+// GetShutdownFunc 获取应用关闭函数
+func GetShutdownFunc() func() {
+	appState.mu.RLock()
+	defer appState.mu.RUnlock()
+	return appState.shutdownFunc
 }

@@ -121,23 +121,8 @@ validate_version() {
 # 更新版本信息
 update_version_info() {
     local version=$1
-    local version_num=${version#v}  # 移除v前缀
-    
-    log_info "更新版本信息到 $version..."
-    
-    # 更新main.go中的版本信息（如果存在）
-    if [[ -f "main.go" ]]; then
-        if grep -q "Version.*=.*\"" main.go; then
-            sed -i.bak "s/Version.*=.*\".*/Version = \"$version_num\"/" main.go
-            rm -f main.go.bak
-            log_success "已更新main.go中的版本信息"
-        fi
-    fi
-    
-    # 更新README.md中的版本信息（如果存在）
-    if [[ -f "README.md" ]] && grep -q "版本" README.md; then
-        log_info "提示: 可能需要手动更新README.md中的版本信息"
-    fi
+
+    log_info "版本信息由 Git tag 提供，跳过文件内版本更新 ($version)"
 }
 
 # 运行测试
