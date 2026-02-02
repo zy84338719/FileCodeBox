@@ -35,6 +35,12 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
+	// 检查是否允许注册
+	if !h.userService.IsRegistrationAllowed() {
+		common.ForbiddenResponse(c, "当前不允许用户注册")
+		return
+	}
+
 	var req web.AuthRegisterRequest
 	if !utils.BindJSONWithValidation(c, &req) {
 		return

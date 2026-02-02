@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/zy84338719/filecodebox/internal/common"
@@ -21,6 +22,18 @@ type ShareHandler struct {
 
 func NewShareHandler(service *share.Service) *ShareHandler {
 	return &ShareHandler{service: service}
+}
+
+// buildFullShareURL 构建完整的分享URL（包含协议和域名）
+func (h *ShareHandler) buildFullShareURL(c *gin.Context, path string) string {
+	// 获取请求的协议和主机
+	protocol := "http"
+	if c.Request.TLS != nil {
+		protocol = "https"
+	}
+
+	host := c.Request.Host
+	return fmt.Sprintf("%s://%s%s", protocol, host, path)
 }
 
 // ShareText 分享文本
@@ -73,10 +86,12 @@ func (h *ShareHandler) ShareText(c *gin.Context) {
 	}
 
 	response := web.ShareResponse{
-		Code:      fileResult.Code,
-		ShareURL:  fileResult.ShareURL,
-		FileName:  "文本分享",
-		ExpiredAt: fileResult.ExpiredAt,
+		Code:         fileResult.Code,
+		ShareURL:     fileResult.ShareURL,
+		FileName:     "文本分享",
+		ExpiredAt:    fileResult.ExpiredAt,
+		FullShareURL: h.buildFullShareURL(c, fileResult.ShareURL),
+		QRCodeData:   h.buildFullShareURL(c, fileResult.ShareURL),
 	}
 
 	common.SuccessWithMessage(c, "分享成功", response)
@@ -158,10 +173,12 @@ func (h *ShareHandler) ShareFile(c *gin.Context) {
 	}
 
 	response := web.ShareResponse{
-		Code:      fileResult.Code,
-		ShareURL:  fileResult.ShareURL,
-		FileName:  fileResult.FileName,
-		ExpiredAt: fileResult.ExpiredAt,
+		Code:         fileResult.Code,
+		ShareURL:     fileResult.ShareURL,
+		FileName:     fileResult.FileName,
+		ExpiredAt:    fileResult.ExpiredAt,
+		FullShareURL: h.buildFullShareURL(c, fileResult.ShareURL),
+		QRCodeData:   h.buildFullShareURL(c, fileResult.ShareURL),
 	}
 
 	common.SuccessResponse(c, response)

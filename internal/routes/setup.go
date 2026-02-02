@@ -291,6 +291,9 @@ func RegisterDynamicRoutes(
 	SetupChunkRoutes(router, chunkHandler, manager, userService)
 	SetupAPIRoutes(router, shareHandler, chunkHandler, manager, userService)
 	SetupAdminRoutes(router, adminHandler, storageHandler, manager, userService)
+
+	// 注册二维码路由
+	SetupQRRoutes(router)
 	// System init routes are no longer needed after DB init
 }
 

@@ -38,10 +38,12 @@ type ShareCodeRequest struct {
 
 // ShareResponse 分享响应
 type ShareResponse struct {
-	Code      string     `json:"code"`
-	ShareURL  string     `json:"share_url"`
-	FileName  string     `json:"file_name,omitempty"`
-	ExpiredAt *time.Time `json:"expired_at"`
+	Code         string     `json:"code"`
+	ShareURL     string     `json:"share_url"`
+	FileName     string     `json:"file_name,omitempty"`
+	ExpiredAt    *time.Time `json:"expired_at"`
+	FullShareURL string     `json:"full_share_url,omitempty"` // 完整的分享链接（包含域名）
+	QRCodeData   string     `json:"qr_code_data,omitempty"`   // 用于生成二维码的数据
 }
 
 // FileInfoResponse 文件信息响应

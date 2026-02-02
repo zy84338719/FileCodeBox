@@ -33,7 +33,7 @@
     --admin-primary-btn-start: rgba(99, 102, 241, 0.82);
     --admin-primary-btn-end: rgba(129, 140, 248, 0.68);
     --admin-primary-btn-shadow: 0 12px 24px rgba(99, 102, 241, 0.22);
-    --admin-form-hint: rgba(71, 85, 105, 0.72);
+    --admin-form-hint: rgba(51, 65, 85, 0.85);
     --admin-stat-bg: rgba(255, 255, 255, 0.9);
     --admin-stat-border: rgba(99, 102, 241, 0.16);
     --admin-stat-highlight: rgba(99, 102, 241, 0.14);
@@ -1284,6 +1284,9 @@ body.admin-modern-body {
     color: var(--admin-text);
     border-radius: 12px;
     transition: border 0.2s ease, box-shadow 0.2s ease;
+    padding: 10px 14px;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 .admin-modern-body .form-control:focus,
@@ -1570,6 +1573,9 @@ body.admin-modern-body {
 .admin-modern-body .form-group .form-text {
     display: block;
     margin-top: 6px;
+    color: var(--admin-form-hint);
+    font-size: 13px;
+    line-height: 1.5;
 }
 
 .admin-modern-body form label {

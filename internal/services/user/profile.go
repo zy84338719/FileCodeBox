@@ -300,10 +300,10 @@ func (s *Service) GetUserFiles(userID uint, page, limit int) (interface{}, int64
 	return files, total, nil
 }
 
-// IsRegistrationAllowed 检查是否允许注册 (兼容性方法)
+// IsRegistrationAllowed 检查是否允许注册
 func (s *Service) IsRegistrationAllowed() bool {
-	// 检查用户系统是否启用
-	return s.manager.IsUserSystemEnabled()
+	// 检查用户系统是否启用以及是否允许注册
+	return s.manager.User.IsRegistrationAllowed()
 }
 
 // DeleteUserFileByCode 根据代码删除用户文件 (兼容性方法)

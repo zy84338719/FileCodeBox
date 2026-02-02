@@ -26,9 +26,12 @@ func SetupUserRoutes(
 		userPageGroup.GET("/login", func(c *gin.Context) {
 			static.ServeUserPage(c, cfg, "login.html")
 		})
-		userPageGroup.GET("/register", func(c *gin.Context) {
-			static.ServeUserPage(c, cfg, "register.html")
-		})
+		// 只有允许注册时才提供注册页面
+		if cfg.User.IsRegistrationAllowed() {
+			userPageGroup.GET("/register", func(c *gin.Context) {
+				static.ServeUserPage(c, cfg, "register.html")
+			})
+		}
 		userPageGroup.GET("/dashboard", func(c *gin.Context) {
 			static.ServeUserPage(c, cfg, "dashboard.html")
 		})
@@ -49,7 +52,10 @@ func SetupUserAPIRoutes(
 	userGroup := router.Group("/user")
 	{
 		// 公开路由（不需要认证）
-		userGroup.POST("/register", userHandler.Register)
+		// 只有允许注册时才注册这个路由
+		if cfg.User.IsRegistrationAllowed() {
+			userGroup.POST("/register", userHandler.Register)
+		}
 		userGroup.POST("/login", userHandler.Login)
 		// `/user/system-info` 由 `SetupBaseRoutes` 全局注册并在有 `userHandler` 时委托处理，
 		// 因此在此处不要重复注册以避免路由冲突（Gin 在重复注册同一路径时会 panic）

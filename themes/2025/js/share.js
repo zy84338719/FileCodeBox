@@ -75,12 +75,23 @@ const ShareManager = {
                 const shareCode = result.data.code;
                 copyToClipboardAuto(shareCode);
                 
+                // 生成二维码
+                const qrCodeData = result.data.qr_code_data || result.data.full_share_url || `${window.location.origin}/s/${shareCode}`;
+                
                 showResult(`
                     <h3>文本分享成功！</h3>
                     <div class="result-code">${result.data.code}</div>
                     <p>文本长度: ${event.target.text.value.length} 字符</p>
                     <p>✅ 提取码已自动复制到剪贴板</p>
+                    <div class="qr-section">
+                        <h4>📱 扫码分享</h4>
+                        <div id="qr-code-container" class="qr-container"></div>
+                        <p class="qr-tip">扫描二维码快速访问分享内容</p>
+                    </div>
                 `);
+                
+                // 生成并显示二维码
+                this.generateQRCode(qrCodeData);
                 
                 // 重置表单
                 event.target.text.value = '';
@@ -194,6 +205,40 @@ const ShareManager = {
                 <button onclick="copyToClipboard('${escapedText.replace(/'/g, "\\'")}', this)" class="btn" style="background: #17a2b8; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">📋 复制文本</button>
             </div>
         `);
+    },
+    
+    /**
+     * 生成二维码
+     * @param {string} data - 二维码数据
+     */
+    generateQRCode(data) {
+        const container = document.getElementById('qr-code-container');
+        if (!container) return;
+        
+        // 显示加载状态
+        container.innerHTML = '<div class="qr-loading">正在生成二维码...</div>';
+        
+        // 调用后端API生成二维码
+        const qrUrl = `/api/qrcode/generate?data=${encodeURIComponent(data)}&size=200`;
+        
+        const img = document.createElement('img');
+        img.src = qrUrl;
+        img.alt = '二维码';
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.style.border = '1px solid #ddd';
+        img.style.borderRadius = '8px';
+        img.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+        
+        img.onload = () => {
+            container.innerHTML = '';
+            container.appendChild(img);
+        };
+        
+        img.onerror = () => {
+            console.error('二维码加载失败');
+            container.innerHTML = '<div class="qr-error">二维码生成失败，请刷新重试</div>';
+        };
     }
 };
 

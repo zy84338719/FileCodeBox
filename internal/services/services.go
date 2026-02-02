@@ -19,6 +19,7 @@ type AuthService = auth.Service
 type ChunkService = chunk.Service
 type ShareService = share.Service
 type UserService = user.Service
+
 type APIKeyAuthResult = user.APIKeyAuthResult
 
 type AdminUserUpdateParams = admin.UserUpdateParams

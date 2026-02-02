@@ -4,7 +4,7 @@ base:
     keywords: FileCodeBox, 文件快递柜, 口令传送箱, 匿名口令分享文本, 文件
     port: 12345
     host: 0.0.0.0
-    datapath: /Users/zhangyi/gitclone/FileCodeBox/data
+    datapath: /Users/zhangyi/FileCodeBox/data
     production: false
 database:
     type: sqlite

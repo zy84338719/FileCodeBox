@@ -179,7 +179,11 @@ const FileUpload = {
         if (file.size > this.config.maxSize) {
             const maxSizeMB = (this.config.maxSize / 1024 / 1024).toFixed(2);
             const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
-            throw new Error(`文件大小超过限制！\n文件大小: ${fileSizeMB}MB\n最大允许: ${maxSizeMB}MB\n\n请选择更小的文件或使用管理后台调整上传大小限制。`);
+            throw new Error(`文件大小超过限制！
+文件大小: ${fileSizeMB}MB
+最大允许: ${maxSizeMB}MB
+
+请选择更小的文件或使用管理后台调整上传大小限制。`);
         }
         
         // 检查文件类型（如果配置了允许的类型）
@@ -382,6 +386,9 @@ const FileUpload = {
                         const shareCode = result.data.code;
                         copyToClipboardAuto(shareCode);
                         
+                        // 获取二维码数据
+                        const qrCodeData = result.data.qr_code_data || result.data.full_share_url || `${window.location.origin}/s/${shareCode}`;
+                        
                         setTimeout(() => {
                             showResult(`
                                 <h3>文件上传成功！</h3>
@@ -389,7 +396,15 @@ const FileUpload = {
                                 <p>文件名: ${result.data.file_name}</p>
                                 <p>文件大小: ${formatFileSize(file.size)}</p>
                                 <p>✅ 提取码已自动复制到剪贴板</p>
+                                <div class="qr-section">
+                                    <h4>📱 扫码分享</h4>
+                                    <div id="qr-code-container" class="qr-container"></div>
+                                    <p class="qr-tip">扫描二维码快速访问分享内容</p>
+                                </div>
                             `);
+                            
+                            // 生成并显示二维码
+                            this.generateQRCode(qrCodeData);
                             
                             // 重置表单
                             this.resetUpload();
@@ -472,5 +487,39 @@ const FileUpload = {
         
         // 清空文件夹文件缓存
         this.currentFolderFiles = null;
+    },
+    
+    /**
+     * 生成二维码
+     * @param {string} data - 二维码数据
+     */
+    generateQRCode(data) {
+        const container = document.getElementById('qr-code-container');
+        if (!container) return;
+        
+        // 显示加载状态
+        container.innerHTML = '<div class="qr-loading">正在生成二维码...</div>';
+        
+        // 调用后端API生成二维码
+        const qrUrl = `/api/qrcode/generate?data=${encodeURIComponent(data)}&size=200`;
+        
+        const img = document.createElement('img');
+        img.src = qrUrl;
+        img.alt = '二维码';
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.style.border = '1px solid #ddd';
+        img.style.borderRadius = '8px';
+        img.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+        
+        img.onload = () => {
+            container.innerHTML = '';
+            container.appendChild(img);
+        };
+        
+        img.onerror = () => {
+            console.error('二维码加载失败');
+            container.innerHTML = '<div class="qr-error">二维码生成失败，请刷新重试</div>';
+        };
     }
 };
