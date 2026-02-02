@@ -94,18 +94,18 @@ func generateDefaultConfigFile(path string, cm *ConfigManager) error {
 func (cm *ConfigManager) SetDB(db *gorm.DB) { cm.db = db }
 func (cm *ConfigManager) GetDB() *gorm.DB   { return cm.db }
 
-// mergeUserConfig 合并用户配置，避免覆盖默认值
+// mergeUserConfig 合并用户配置，但允许覆盖为 0 的开关值
 func (cm *ConfigManager) mergeUserConfig(fileUser *UserSystemConfig) {
 	if fileUser == nil {
 		return
 	}
 
-	if fileUser.AllowUserRegistration != 0 {
-		cm.User.AllowUserRegistration = fileUser.AllowUserRegistration
-	}
-	if fileUser.RequireEmailVerify != 0 {
-		cm.User.RequireEmailVerify = fileUser.RequireEmailVerify
-	}
+	// 对于开关型配置（0/1），需要始终应用，包括 0 值
+	// 注意：这里不能检查 != 0，因为 0 是有效的配置值（禁用）
+	cm.User.AllowUserRegistration = fileUser.AllowUserRegistration
+	cm.User.RequireEmailVerify = fileUser.RequireEmailVerify
+
+	// 对于数值配置，只在非 0 时应用，0 表示使用默认值
 	if fileUser.UserUploadSize != 0 {
 		cm.User.UserUploadSize = fileUser.UserUploadSize
 	}

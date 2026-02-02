@@ -9,13 +9,13 @@ import (
 
 // UserSystemConfig 用户系统配置
 type UserSystemConfig struct {
-	AllowUserRegistration int    `json:"allow_user_registration"` // 是否允许用户注册
-	RequireEmailVerify    int    `json:"require_email_verify"`    // 是否需要邮箱验证
-	UserUploadSize        int64  `json:"user_upload_size"`        // 用户上传文件大小限制
-	UserStorageQuota      int64  `json:"user_storage_quota"`      // 用户存储配额
-	SessionExpiryHours    int    `json:"session_expiry_hours"`    // 用户会话过期时间
-	MaxSessionsPerUser    int    `json:"max_sessions_per_user"`   // 每个用户最大会话数
-	JWTSecret             string `json:"jwt_secret"`              // JWT签名密钥
+	AllowUserRegistration int    `yaml:"allowuserregistration" json:"allow_user_registration"` // 是否允许用户注册
+	RequireEmailVerify    int    `yaml:"requireemailverify" json:"require_email_verify"`       // 是否需要邮箱验证
+	UserUploadSize        int64  `yaml:"useruploadsize" json:"user_upload_size"`               // 用户上传文件大小限制
+	UserStorageQuota      int64  `yaml:"userstoragequota" json:"user_storage_quota"`           // 用户存储配额
+	SessionExpiryHours    int    `yaml:"sessionexpiryhours" json:"session_expiry_hours"`       // 用户会话过期时间
+	MaxSessionsPerUser    int    `yaml:"maxsessionsperuser" json:"max_sessions_per_user"`      // 每个用户最大会话数
+	JWTSecret             string `yaml:"jwtsecret" json:"jwt_secret"`                          // JWT签名密钥
 }
 
 // NewUserSystemConfig 创建用户系统配置
