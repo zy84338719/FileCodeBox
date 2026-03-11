@@ -13,11 +13,11 @@ linters:
     - unused
 
 issues:
-  exclude-rules:
+  rules:
     - path: _test\.go
       linters:
         - errcheck
-    
+
     - linters:
         - errcheck
       text: "Error return value of .(Close|Write|Remove|Shutdown|Sscanf). is not checked"
