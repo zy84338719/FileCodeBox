@@ -54,6 +54,9 @@ jobs:
 
     - name: Run integration tests
       run: |
+        # 创建必要的目录
+        mkdir -p backend/data/uploads
+        
         # 构建并启动服务
         make build
         cd backend && ./bin/server &
