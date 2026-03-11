@@ -29,14 +29,14 @@ type SystemConfig struct {
 		Description string `json:"description"`
 		Port        int    `json:"port"`
 	} `json:"base"`
-	
+
 	Storage struct {
 		Type    string `json:"type"`
 		MaxSize int64  `json:"max_size"`
 	} `json:"storage"`
-	
+
 	Transfer struct {
-		MaxCount     int `json:"max_count"`
+		MaxCount      int `json:"max_count"`
 		ExpireDefault int `json:"expire_default"`
 	} `json:"transfer"`
 }
@@ -234,7 +234,7 @@ func (s *Service) GetConfig(ctx context.Context) (*SystemConfig, error) {
 				MaxSize: 1024 * 1024 * 1024, // 1GB
 			},
 			Transfer: struct {
-				MaxCount     int `json:"max_count"`
+				MaxCount      int `json:"max_count"`
 				ExpireDefault int `json:"expire_default"`
 			}{
 				MaxCount:      100,
@@ -249,7 +249,7 @@ func (s *Service) GetConfig(ctx context.Context) (*SystemConfig, error) {
 func (s *Service) UpdateConfig(ctx context.Context, newConfig *SystemConfig) error {
 	// TODO: 验证配置有效性
 	// TODO: 保存到数据库或配置文件
-	
+
 	s.config = newConfig
 	return nil
 }
@@ -353,14 +353,14 @@ func (s *Service) CleanTempFiles(ctx context.Context) (int64, int64, error) {
 
 // SystemInfo 系统信息
 type SystemInfo struct {
-	Version      string `json:"version"`
-	OS           string `json:"os"`
-	Arch         string `json:"arch"`
-	Uptime       string `json:"uptime"`
-	Goroutines   int64  `json:"goroutines"`
-	MemoryAlloc  int64  `json:"memory_alloc"`
-	MemoryTotal  int64  `json:"memory_total"`
-	MemorySys    int64  `json:"memory_sys"`
+	Version     string `json:"version"`
+	OS          string `json:"os"`
+	Arch        string `json:"arch"`
+	Uptime      string `json:"uptime"`
+	Goroutines  int64  `json:"goroutines"`
+	MemoryAlloc int64  `json:"memory_alloc"`
+	MemoryTotal int64  `json:"memory_total"`
+	MemorySys   int64  `json:"memory_sys"`
 }
 
 // GetSystemInfo 获取系统信息
@@ -384,11 +384,11 @@ func (s *Service) GetSystemInfo(ctx context.Context) (*SystemInfo, error) {
 
 // StorageStatus 存储状态
 type StorageStatus struct {
-	StorageType string  `json:"storage_type"`
-	TotalSpace  int64   `json:"total_space"`
-	UsedSpace   int64   `json:"used_space"`
-	FreeSpace   int64   `json:"free_space"`
-	FileCount   int64   `json:"file_count"`
+	StorageType  string  `json:"storage_type"`
+	TotalSpace   int64   `json:"total_space"`
+	UsedSpace    int64   `json:"used_space"`
+	FreeSpace    int64   `json:"free_space"`
+	FileCount    int64   `json:"file_count"`
 	UsagePercent float64 `json:"usage_percent"`
 }
 
@@ -415,11 +415,11 @@ func (s *Service) GetStorageStatus(ctx context.Context) (*StorageStatus, error) 
 	}
 
 	return &StorageStatus{
-		StorageType: storageType,
-		TotalSpace:  totalSpace,
-		UsedSpace:   totalSize,
-		FreeSpace:   freeSpace,
-		FileCount:   totalFiles,
+		StorageType:  storageType,
+		TotalSpace:   totalSpace,
+		UsedSpace:    totalSize,
+		FreeSpace:    freeSpace,
+		FileCount:    totalFiles,
 		UsagePercent: usagePercent,
 	}, nil
 }

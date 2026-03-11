@@ -50,7 +50,7 @@ func AuthMiddleware() app.HandlerFunc {
 		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
 		c.Set("role", claims.Role)
-		
+
 		// 同时设置 Header，方便 handler 读取
 		c.Header("X-User-ID", fmt.Sprintf("%d", claims.UserID))
 		c.Header("X-Username", claims.Username)
@@ -124,7 +124,7 @@ func OptionalAuthMiddleware() app.HandlerFunc {
 		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
 		c.Set("role", claims.Role)
-		
+
 		// 同时设置 Header
 		c.Header("X-User-ID", fmt.Sprintf("%d", claims.UserID))
 		c.Header("X-Username", claims.Username)

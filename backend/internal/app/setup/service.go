@@ -72,7 +72,7 @@ func (s *Service) InitializeSystem(ctx context.Context, req *InitializeSystemReq
 		Nickname:      req.AdminUsername, // 默认使用用户名作为昵称
 		Role:          "admin",
 		Status:        "active",
-		EmailVerified:  true,
+		EmailVerified: true,
 	}
 
 	err = s.userRepo.Create(ctx, admin)

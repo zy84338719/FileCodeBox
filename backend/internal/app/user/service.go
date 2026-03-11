@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
+	usermodel "github.com/zy84338719/fileCodeBox/biz/model/user"
 	"github.com/zy84338719/fileCodeBox/internal/pkg/auth"
 	"github.com/zy84338719/fileCodeBox/internal/repo/db/dao"
 	"github.com/zy84338719/fileCodeBox/internal/repo/db/model"
-	usermodel "github.com/zy84338719/fileCodeBox/biz/model/user"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -33,15 +33,15 @@ type UpdateUserReq struct {
 }
 
 type Service struct {
-	repo *dao.UserRepository
+	repo       *dao.UserRepository
 	apiKeyRepo *dao.UserAPIKeyRepository
 }
 
 func NewService() *Service {
 	// 延迟初始化 repository，确保数据库已经准备好
 	return &Service{
-		repo: nil,        // 延迟初始化
-		apiKeyRepo: nil,  // 延迟初始化
+		repo:       nil, // 延迟初始化
+		apiKeyRepo: nil, // 延迟初始化
 	}
 }
 
@@ -290,14 +290,14 @@ func (s *Service) GetStats(ctx context.Context, userID uint) (*model.UserStats, 
 // ==================== API Key 相关常量和类型 ====================
 
 const (
-	apiKeyPrefix = "fcb_sk_"
-	maxUserAPIKeys = 5  // 每个用户最多保留的有效密钥数量
+	apiKeyPrefix   = "fcb_sk_"
+	maxUserAPIKeys = 5 // 每个用户最多保留的有效密钥数量
 )
 
 // CreateAPIKeyReq 创建 API Key 请求
 type CreateAPIKeyReq struct {
-	Name         string
-	ExpiresAt    *time.Time
+	Name          string
+	ExpiresAt     *time.Time
 	ExpiresInDays *int64
 }
 
@@ -479,17 +479,17 @@ func (s *Service) GetUserFiles(ctx context.Context, userID uint, page, pageSize 
 		}
 
 		fileItems[i] = &usermodel.UserFileItem{
-			Id:          uint32(file.ID),
-			Code:        file.Code,
-			Prefix:      file.Prefix,
-			Suffix:      file.Suffix,
-			FileName:    fileName,
-			FilePath:    file.FilePath,
-			Size:        file.Size,
+			Id:           uint32(file.ID),
+			Code:         file.Code,
+			Prefix:       file.Prefix,
+			Suffix:       file.Suffix,
+			FileName:     fileName,
+			FilePath:     file.FilePath,
+			Size:         file.Size,
 			ExpiredCount: int32(file.ExpiredCount),
-			UsedCount:   int32(file.UsedCount),
-			CreatedAt:   file.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt:   file.UpdatedAt.Format("2006-01-02 15:04:05"),
+			UsedCount:    int32(file.UsedCount),
+			CreatedAt:    file.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:    file.UpdatedAt.Format("2006-01-02 15:04:05"),
 		}
 
 		// 格式化过期时间

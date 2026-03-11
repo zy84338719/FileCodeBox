@@ -28,12 +28,12 @@ type CORSConfig struct {
 // DefaultCORSConfig 返回默认的 CORS 配置
 func DefaultCORSConfig() *CORSConfig {
 	return &CORSConfig{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With", "X-API-Key"},
-		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
-		AllowCredentials: false,
-		MaxAge:           86400,
+		AllowOrigins:       []string{"*"},
+		AllowMethods:       []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
+		AllowHeaders:       []string{"Origin", "Content-Type", "Authorization", "X-Requested-With", "X-API-Key"},
+		ExposeHeaders:      []string{"Content-Length", "Content-Type"},
+		AllowCredentials:   false,
+		MaxAge:             86400,
 		OptionsPassthrough: false,
 	}
 }

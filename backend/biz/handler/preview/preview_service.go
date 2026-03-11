@@ -8,8 +8,8 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	previewService "github.com/zy84338719/fileCodeBox/internal/preview"
-	dao_preview "github.com/zy84338719/fileCodeBox/internal/repo/db/dao_preview"
 	"github.com/zy84338719/fileCodeBox/internal/repo/db/dao"
+	dao_preview "github.com/zy84338719/fileCodeBox/internal/repo/db/dao_preview"
 	"github.com/zy84338719/fileCodeBox/internal/repo/db/model"
 )
 

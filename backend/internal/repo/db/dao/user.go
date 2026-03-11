@@ -3,9 +3,9 @@ package dao
 import (
 	"context"
 
-	"gorm.io/gorm"
 	"github.com/zy84338719/fileCodeBox/internal/repo/db"
 	"github.com/zy84338719/fileCodeBox/internal/repo/db/model"
+	"gorm.io/gorm"
 )
 
 type UserRepository struct {

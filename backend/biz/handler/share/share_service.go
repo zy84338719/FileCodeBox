@@ -13,11 +13,11 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+	"github.com/google/uuid"
 	sharemodel "github.com/zy84338719/fileCodeBox/biz/model/share"
 	shareService "github.com/zy84338719/fileCodeBox/internal/app/share"
 	"github.com/zy84338719/fileCodeBox/internal/pkg/utils"
 	"github.com/zy84338719/fileCodeBox/internal/storage"
-	"github.com/google/uuid"
 )
 
 var shareSvc *shareService.Service
@@ -298,9 +298,9 @@ func GetUserShares(ctx context.Context, c *app.RequestContext) {
 		"code":    200,
 		"message": "获取成功",
 		"data": map[string]interface{}{
-			"items":    items,
-			"total":    total,
-			"page":     page,
+			"items":     items,
+			"total":     total,
+			"page":      page,
 			"page_size": pageSize,
 		},
 	})

@@ -36,7 +36,7 @@ func (s *Service) GetStorageInfo(ctx context.Context) (*StorageInfo, error) {
 		Type:         "local",
 		Available:    true,
 		StoragePath:  s.getStoragePath(),
-		UsagePercent:  s.getDiskUsage(),
+		UsagePercent: s.getDiskUsage(),
 	}
 
 	// 当前存储类型
@@ -51,8 +51,8 @@ func (s *Service) GetStorageInfo(ctx context.Context) (*StorageInfo, error) {
 	return &StorageInfo{
 		Current:        currentType,
 		Available:      availableStorages,
-		StorageDetails:  storageDetails,
-		StorageConfig:   storageConfig,
+		StorageDetails: storageDetails,
+		StorageConfig:  storageConfig,
 	}, nil
 }
 
@@ -143,9 +143,9 @@ func (s *Service) getStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		Type:        s.config.Storage.Type,
 		StoragePath: s.getStoragePath(),
-		WebDAV:     s.getWebDAVConfig(),
-		S3:         s.getS3Config(),
-		NFS:        s.getNFSConfig(),
+		WebDAV:      s.getWebDAVConfig(),
+		S3:          s.getS3Config(),
+		NFS:         s.getNFSConfig(),
 	}
 }
 
@@ -171,7 +171,7 @@ func (s *Service) getS3Config() *S3Config {
 		EndpointURL:     "",
 		RegionName:      "",
 		Hostname:        "",
-		Proxy:          "",
+		Proxy:           "",
 	}
 }
 
@@ -209,11 +209,11 @@ type StorageDetail struct {
 }
 
 type StorageConfig struct {
-	Type        string         `json:"type"`
-	StoragePath string         `json:"storage_path"`
-	WebDAV      *WebDAVConfig  `json:"webdav,omitempty"`
-	S3          *S3Config      `json:"s3,omitempty"`
-	NFS         *NFSConfig     `json:"nfs,omitempty"`
+	Type        string        `json:"type"`
+	StoragePath string        `json:"storage_path"`
+	WebDAV      *WebDAVConfig `json:"webdav,omitempty"`
+	S3          *S3Config     `json:"s3,omitempty"`
+	NFS         *NFSConfig    `json:"nfs,omitempty"`
 }
 
 type WebDAVConfig struct {
@@ -231,7 +231,7 @@ type S3Config struct {
 	EndpointURL     string `json:"endpoint_url"`
 	RegionName      string `json:"region_name"`
 	Hostname        string `json:"hostname"`
-	Proxy          string `json:"proxy"`
+	Proxy           string `json:"proxy"`
 }
 
 type NFSConfig struct {
@@ -250,9 +250,9 @@ type NFSConfig struct {
 type UpdateConfigRequest struct {
 	Type   string `json:"type"`
 	Config struct {
-		StoragePath string         `json:"storage_path"`
-		WebDAV      *WebDAVConfig  `json:"webdav"`
-		S3          *S3Config      `json:"s3"`
-		NFS         *NFSConfig     `json:"nfs"`
+		StoragePath string        `json:"storage_path"`
+		WebDAV      *WebDAVConfig `json:"webdav"`
+		S3          *S3Config     `json:"s3"`
+		NFS         *NFSConfig    `json:"nfs"`
 	} `json:"config"`
 }

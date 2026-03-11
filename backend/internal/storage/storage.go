@@ -16,9 +16,9 @@ import (
 type StorageType string
 
 const (
-	StorageTypeLocal   StorageType = "local"
-	StorageTypeS3      StorageType = "s3"
-	StorageTypeWebDAV  StorageType = "webdav"
+	StorageTypeLocal    StorageType = "local"
+	StorageTypeS3       StorageType = "s3"
+	StorageTypeWebDAV   StorageType = "webdav"
 	StorageTypeOneDrive StorageType = "onedrive"
 )
 
@@ -57,9 +57,9 @@ type StorageInterface interface {
 
 // StorageConfig 存储配置
 type StorageConfig struct {
-	Type      StorageType
-	DataPath  string // 本地存储路径
-	BaseURL   string // 基础URL
+	Type     StorageType
+	DataPath string // 本地存储路径
+	BaseURL  string // 基础URL
 
 	// S3 配置
 	Endpoint  string

@@ -10,9 +10,9 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-	"github.com/zy84338719/fileCodeBox/internal/conf"
 	usermodel "github.com/zy84338719/fileCodeBox/biz/model/user"
 	userservice "github.com/zy84338719/fileCodeBox/internal/app/user"
+	"github.com/zy84338719/fileCodeBox/internal/conf"
 )
 
 var userService = userservice.NewService()
@@ -129,7 +129,7 @@ func UserInfo(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	
+
 	userID, ok := userIDVal.(uint)
 	if !ok {
 		c.JSON(consts.StatusInternalServerError, map[string]interface{}{
@@ -246,7 +246,7 @@ func UserFiles(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	
+
 	userID, ok := userIDVal.(uint)
 	if !ok {
 		c.JSON(consts.StatusInternalServerError, map[string]interface{}{
@@ -309,7 +309,7 @@ func ListAPIKeys(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	
+
 	userID, ok := userIDVal.(uint)
 	if !ok {
 		c.JSON(consts.StatusInternalServerError, map[string]interface{}{
@@ -361,7 +361,7 @@ func CreateAPIKey(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	
+
 	userID, ok := userIDVal.(uint)
 	if !ok {
 		c.JSON(consts.StatusInternalServerError, map[string]interface{}{
@@ -450,7 +450,7 @@ func DeleteAPIKey(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	
+
 	userID, ok := userIDVal.(uint)
 	if !ok {
 		c.JSON(consts.StatusInternalServerError, map[string]interface{}{

@@ -92,12 +92,12 @@ type UserConfig struct {
 
 // UploadConfig 上传配置
 type UploadConfig struct {
-	OpenUpload    bool  `mapstructure:"open_upload"`
-	UploadSize    int64 `mapstructure:"upload_size"`
-	EnableChunk   bool  `mapstructure:"enable_chunk"`
-	ChunkSize     int64 `mapstructure:"chunk_size"`
+	OpenUpload     bool  `mapstructure:"open_upload"`
+	UploadSize     int64 `mapstructure:"upload_size"`
+	EnableChunk    bool  `mapstructure:"enable_chunk"`
+	ChunkSize      int64 `mapstructure:"chunk_size"`
 	MaxSaveSeconds int   `mapstructure:"max_save_seconds"`
-	RequireLogin  bool  `mapstructure:"require_login"`
+	RequireLogin   bool  `mapstructure:"require_login"`
 }
 
 // DownloadConfig 下载配置

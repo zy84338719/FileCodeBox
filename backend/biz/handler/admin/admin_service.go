@@ -244,10 +244,10 @@ func GetSystemInfo(ctx context.Context, c *app.RequestContext) {
 // @router /admin/maintenance/monitor/storage [GET]
 func GetStorageStatus(ctx context.Context, c *app.RequestContext) {
 	status := map[string]interface{}{
-		"type":          "local",
-		"total_size":    0,
-		"used_size":     0,
-		"available":     true,
+		"type":       "local",
+		"total_size": 0,
+		"used_size":  0,
+		"available":  true,
 	}
 	c.JSON(consts.StatusOK, map[string]interface{}{
 		"code": 200,

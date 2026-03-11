@@ -57,8 +57,8 @@ func (g *AudioGenerator) GenerateThumbnail(ctx context.Context, filePath string,
 
 // AudioInfo 音频信息
 type AudioInfo struct {
-	Duration  int // 秒
-	BitRate   int
+	Duration   int // 秒
+	BitRate    int
 	SampleRate int
 }
 

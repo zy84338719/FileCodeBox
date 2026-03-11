@@ -8,15 +8,15 @@ import (
 type PreviewType string
 
 const (
-	PreviewTypeImage    PreviewType = "image"    // 图片
-	PreviewTypePDF      PreviewType = "pdf"      // PDF
-	PreviewTypeVideo    PreviewType = "video"    // 视频
-	PreviewTypeAudio    PreviewType = "audio"    // 音频
-	PreviewTypeOffice   PreviewType = "office"   // Office文档
-	PreviewTypeCode     PreviewType = "code"     // 代码
-	PreviewTypeText     PreviewType = "text"     // 纯文本
-	PreviewTypeArchive  PreviewType = "archive"  // 压缩包
-	PreviewTypeUnknown  PreviewType = "unknown"  // 未知类型
+	PreviewTypeImage   PreviewType = "image"   // 图片
+	PreviewTypePDF     PreviewType = "pdf"     // PDF
+	PreviewTypeVideo   PreviewType = "video"   // 视频
+	PreviewTypeAudio   PreviewType = "audio"   // 音频
+	PreviewTypeOffice  PreviewType = "office"  // Office文档
+	PreviewTypeCode    PreviewType = "code"    // 代码
+	PreviewTypeText    PreviewType = "text"    // 纯文本
+	PreviewTypeArchive PreviewType = "archive" // 压缩包
+	PreviewTypeUnknown PreviewType = "unknown" // 未知类型
 )
 
 // PreviewData 预览数据
@@ -38,10 +38,10 @@ type PreviewData struct {
 type Generator interface {
 	// Generate 生成预览
 	Generate(ctx context.Context, filePath string, ext string) (*PreviewData, error)
-	
+
 	// SupportedTypes 支持的文件类型
 	SupportedTypes() []string
-	
+
 	// GenerateThumbnail 生成缩略图
 	GenerateThumbnail(ctx context.Context, filePath string, width, height int) (string, error)
 }
@@ -54,7 +54,7 @@ type Config struct {
 	MaxFileSize      int64  `mapstructure:"max_preview_size"` // 最大预览文件大小
 	PreviewCachePath string `mapstructure:"preview_cache_path"`
 	LibreOfficePath  string `mapstructure:"libreoffice_path"` // LibreOffice可执行文件路径
-	FFmpegPath       string `mapstructure:"ffmpeg_path"`       // FFmpeg可执行文件路径
+	FFmpegPath       string `mapstructure:"ffmpeg_path"`      // FFmpeg可执行文件路径
 }
 
 // Service 预览服务
@@ -75,7 +75,7 @@ func NewService(cfg *Config) *Service {
 func (s *Service) GeneratePreview(ctx context.Context, filePath string, ext string) (*PreviewData, error) {
 	// 根据扩展名确定预览类型
 	previewType := s.detectPreviewType(ext)
-	
+
 	generator, ok := s.generators[previewType]
 	if !ok {
 		// 返回基本信息
@@ -83,7 +83,7 @@ func (s *Service) GeneratePreview(ctx context.Context, filePath string, ext stri
 			Type: previewType,
 		}, nil
 	}
-	
+
 	return generator.Generate(ctx, filePath, ext)
 }
 

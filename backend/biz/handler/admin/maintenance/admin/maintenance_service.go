@@ -7,7 +7,7 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-	admin "github.com/zy84338719/fileCodeBox/biz/model/admin"
+	maintenance "github.com/zy84338719/fileCodeBox/biz/model/maintenance"
 	adminsvc "github.com/zy84338719/fileCodeBox/internal/app/admin"
 )
 
@@ -21,7 +21,7 @@ func init() {
 // @router /admin/maintenance/clean-expired [POST]
 func CleanExpiredFiles(ctx context.Context, c *app.RequestContext) {
 	var err error
-	var req admin.CleanExpiredFilesReq
+	var req maintenance.CleanExpiredFilesReq
 	err = c.BindAndValidate(&req)
 	if err != nil {
 		c.String(consts.StatusBadRequest, err.Error())
@@ -31,17 +31,17 @@ func CleanExpiredFiles(ctx context.Context, c *app.RequestContext) {
 	// 调用服务层清理过期文件
 	deletedCount, freedSpace, err := maintenanceService.CleanExpiredFiles(ctx)
 	if err != nil {
-		c.JSON(consts.StatusInternalServerError, &admin.CleanExpiredFilesResp{
+		c.JSON(consts.StatusInternalServerError, &maintenance.CleanExpiredFilesResp{
 			Code:    500,
 			Message: "清理失败: " + err.Error(),
 		})
 		return
 	}
 
-	resp := &admin.CleanExpiredFilesResp{
+	resp := &maintenance.CleanExpiredFilesResp{
 		Code:    200,
 		Message: "清理完成",
-		Data: &admin.CleanExpiredFilesData{
+		Data: &maintenance.CleanExpiredFilesData{
 			DeletedCount: deletedCount,
 			FreedSpace:   freedSpace,
 		},
@@ -54,7 +54,7 @@ func CleanExpiredFiles(ctx context.Context, c *app.RequestContext) {
 // @router /admin/maintenance/clean-temp [POST]
 func CleanTempFiles(ctx context.Context, c *app.RequestContext) {
 	var err error
-	var req admin.CleanTempFilesReq
+	var req maintenance.CleanTempFilesReq
 	err = c.BindAndValidate(&req)
 	if err != nil {
 		c.String(consts.StatusBadRequest, err.Error())
@@ -64,17 +64,17 @@ func CleanTempFiles(ctx context.Context, c *app.RequestContext) {
 	// 调用服务层清理临时文件
 	deletedCount, _, err := maintenanceService.CleanTempFiles(ctx)
 	if err != nil {
-		c.JSON(consts.StatusInternalServerError, &admin.CleanTempFilesResp{
+		c.JSON(consts.StatusInternalServerError, &maintenance.CleanTempFilesResp{
 			Code:    500,
 			Message: "清理失败: " + err.Error(),
 		})
 		return
 	}
 
-	resp := &admin.CleanTempFilesResp{
+	resp := &maintenance.CleanTempFilesResp{
 		Code:    200,
 		Message: "清理完成",
-		Data: &admin.CleanTempFilesData{
+		Data: &maintenance.CleanTempFilesData{
 			DeletedCount: deletedCount,
 			FreedSpace:   0,
 		},
@@ -87,7 +87,7 @@ func CleanTempFiles(ctx context.Context, c *app.RequestContext) {
 // @router /admin/maintenance/system-info [GET]
 func GetSystemInfo(ctx context.Context, c *app.RequestContext) {
 	var err error
-	var req admin.GetSystemInfoReq
+	var req maintenance.GetSystemInfoReq
 	err = c.BindAndValidate(&req)
 	if err != nil {
 		c.String(consts.StatusBadRequest, err.Error())
@@ -97,25 +97,25 @@ func GetSystemInfo(ctx context.Context, c *app.RequestContext) {
 	// 调用服务层获取系统信息
 	info, err := maintenanceService.GetSystemInfo(ctx)
 	if err != nil {
-		c.JSON(consts.StatusInternalServerError, &admin.GetSystemInfoResp{
+		c.JSON(consts.StatusInternalServerError, &maintenance.GetSystemInfoResp{
 			Code:    500,
 			Message: "获取系统信息失败: " + err.Error(),
 		})
 		return
 	}
 
-	resp := &admin.GetSystemInfoResp{
+	resp := &maintenance.GetSystemInfoResp{
 		Code:    200,
 		Message: "获取成功",
-		Data: &admin.SystemInfoData{
-			Version:      info.Version,
-			Os:           info.OS,
-			Arch:         info.Arch,
-			Uptime:       info.Uptime,
-			Goroutines:   info.Goroutines,
-			MemoryAlloc:  info.MemoryAlloc,
-			MemoryTotal:  info.MemoryTotal,
-			MemorySys:    info.MemorySys,
+		Data: &maintenance.SystemInfoData{
+			Version:     info.Version,
+			Os:          info.OS,
+			Arch:        info.Arch,
+			Uptime:      info.Uptime,
+			Goroutines:  info.Goroutines,
+			MemoryAlloc: info.MemoryAlloc,
+			MemoryTotal: info.MemoryTotal,
+			MemorySys:   info.MemorySys,
 		},
 	}
 
@@ -126,7 +126,7 @@ func GetSystemInfo(ctx context.Context, c *app.RequestContext) {
 // @router /admin/maintenance/monitor/storage [GET]
 func GetStorageStatus(ctx context.Context, c *app.RequestContext) {
 	var err error
-	var req admin.GetStorageStatusReq
+	var req maintenance.GetStorageStatusReq
 	err = c.BindAndValidate(&req)
 	if err != nil {
 		c.String(consts.StatusBadRequest, err.Error())
@@ -136,22 +136,22 @@ func GetStorageStatus(ctx context.Context, c *app.RequestContext) {
 	// 调用服务层获取存储状态
 	status, err := maintenanceService.GetStorageStatus(ctx)
 	if err != nil {
-		c.JSON(consts.StatusInternalServerError, &admin.GetStorageStatusResp{
+		c.JSON(consts.StatusInternalServerError, &maintenance.GetStorageStatusResp{
 			Code:    500,
 			Message: "获取存储状态失败: " + err.Error(),
 		})
 		return
 	}
 
-	resp := &admin.GetStorageStatusResp{
+	resp := &maintenance.GetStorageStatusResp{
 		Code:    200,
 		Message: "获取成功",
-		Data: &admin.StorageStatusData{
-			StorageType: status.StorageType,
-			TotalSpace:  status.TotalSpace,
-			UsedSpace:   status.UsedSpace,
-			FreeSpace:   status.FreeSpace,
-			FileCount:   status.FileCount,
+		Data: &maintenance.StorageStatusData{
+			StorageType:  status.StorageType,
+			TotalSpace:   status.TotalSpace,
+			UsedSpace:    status.UsedSpace,
+			FreeSpace:    status.FreeSpace,
+			FileCount:    status.FileCount,
 			UsagePercent: status.UsagePercent,
 		},
 	}
@@ -163,7 +163,7 @@ func GetStorageStatus(ctx context.Context, c *app.RequestContext) {
 // @router /admin/maintenance/logs [GET]
 func GetSystemLogs(ctx context.Context, c *app.RequestContext) {
 	var err error
-	var req admin.GetSystemLogsReq
+	var req maintenance.GetSystemLogsReq
 	err = c.BindAndValidate(&req)
 	if err != nil {
 		c.String(consts.StatusBadRequest, err.Error())
@@ -183,7 +183,7 @@ func GetSystemLogs(ctx context.Context, c *app.RequestContext) {
 	// 调用服务层获取系统日志
 	logs, total, err := maintenanceService.GetSystemLogs(ctx, req.Level, int(page), int(pageSize))
 	if err != nil {
-		c.JSON(consts.StatusInternalServerError, &admin.GetSystemLogsResp{
+		c.JSON(consts.StatusInternalServerError, &maintenance.GetSystemLogsResp{
 			Code:    500,
 			Message: "获取系统日志失败: " + err.Error(),
 		})
@@ -191,9 +191,9 @@ func GetSystemLogs(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// 转换为响应格式
-	logEntries := make([]*admin.LogEntry, len(logs))
+	logEntries := make([]*maintenance.LogEntry, len(logs))
 	for i, log := range logs {
-		logEntries[i] = &admin.LogEntry{
+		logEntries[i] = &maintenance.LogEntry{
 			Id:        log.ID,
 			Level:     log.Level,
 			Message:   log.Message,
@@ -203,14 +203,14 @@ func GetSystemLogs(ctx context.Context, c *app.RequestContext) {
 		}
 	}
 
-	resp := &admin.GetSystemLogsResp{
+	resp := &maintenance.GetSystemLogsResp{
 		Code:    200,
 		Message: "获取成功",
-		Data: &admin.SystemLogsData{
+		Data: &maintenance.SystemLogsData{
 			Logs:     logEntries,
 			Total:    total,
 			Page:     page,
-			PageSize:  pageSize,
+			PageSize: pageSize,
 		},
 	}
 

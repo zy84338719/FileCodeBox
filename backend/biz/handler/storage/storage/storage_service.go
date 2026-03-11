@@ -48,7 +48,7 @@ func GetStorageInfo(ctx context.Context, c *app.RequestContext) {
 			Type:         v.Type,
 			Available:    v.Available,
 			StoragePath:  v.StoragePath,
-			UsagePercent:  v.UsagePercent,
+			UsagePercent: v.UsagePercent,
 		}
 		storageDetails[k].Error = v.Error
 	}
@@ -235,7 +235,7 @@ func convertToProtoS3Config(cfg *storagesvc.S3Config) *storage.S3Config {
 		EndpointUrl:     cfg.EndpointURL,
 		RegionName:      cfg.RegionName,
 		Hostname:        cfg.Hostname,
-		Proxy:          cfg.Proxy,
+		Proxy:           cfg.Proxy,
 	}
 }
 
@@ -280,7 +280,7 @@ func convertFromProtoS3Config(cfg *storage.S3Config) *storagesvc.S3Config {
 		EndpointURL:     cfg.EndpointUrl,
 		RegionName:      cfg.RegionName,
 		Hostname:        cfg.Hostname,
-		Proxy:          cfg.Proxy,
+		Proxy:           cfg.Proxy,
 	}
 }
 
