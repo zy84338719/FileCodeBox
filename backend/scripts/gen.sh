@@ -5,7 +5,7 @@ set -euo pipefail
 # 基础配置
 ############################################
 
-MODULE="github.com/zy84338719/fileCodeBox"
+MODULE="github.com/zy84338719/fileCodeBox/backend"
 IDL_DIR="idl"
 HZ_OUT_DIR="."                        # hz --out_dir，相对于项目根（.hz 在此目录）
 HANDLER_DIR="gen/http/handler"        # 相对于 HZ_OUT_DIR
@@ -106,10 +106,14 @@ _ensure_hz_meta() {
 ############################################
 
 _build_exclude_args() {
-  local -n _result=$1  # nameref to output array
-  _result=()
+  local _varname=$1
+  local _idx=0
+  eval "$_varname=()"
   while IFS= read -r -d '' f; do
-    _result+=("-E" "$f")
+    eval "$_varname[$_idx]=\"-E\""
+    _idx=$((_idx + 1))
+    eval "$_varname[$_idx]=\"$f\""
+    _idx=$((_idx + 1))
   done < <(find "$HANDLER_DIR" -name "*.go" -print0 2>/dev/null)
 }
 
@@ -120,14 +124,18 @@ _build_exclude_args() {
 ############################################
 
 _build_proto_path_args() {
-  local -n _pp_result=$1
+  local _varname=$1
   local idl_file=$2
   local idl_dir
   idl_dir="$(dirname "$idl_file")"
-  _pp_result=()
+  local _idx=0
+  eval "$_varname=()"
   # 如果 IDL 文件不在 IDL_DIR 根目录，需要添加 -I 让 protoc 找到依赖
   if [[ "$idl_dir" != "$IDL_DIR" ]]; then
-    _pp_result+=("-I" "$IDL_DIR")
+    eval "$_varname[$_idx]=\"-I\""
+    _idx=$((_idx + 1))
+    eval "$_varname[$_idx]=\"$IDL_DIR\""
+    _idx=$((_idx + 1))
   fi
 }
 

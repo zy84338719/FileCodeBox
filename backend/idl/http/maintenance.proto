@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package http.admin;
+package http.maintenance;
 
-option go_package = "github.com/zy84338719/fileCodeBox/biz/model/admin";
+option go_package = "maintenance";
 
 import "api/api.proto";
 

@@ -16,9 +16,9 @@ package handler
 import (
     "context"
     
-    "github.com/zy84338719/fileCodeBox/gen/rpc/base"
-    "github.com/zy84338719/fileCodeBox/gen/rpc/user"
-    userSvc "github.com/zy84338719/fileCodeBox/internal/app/user"
+    "github.com/zy84338719/fileCodeBox/backend/gen/rpc/base"
+    "github.com/zy84338719/fileCodeBox/backend/gen/rpc/user"
+    userSvc "github.com/zy84338719/fileCodeBox/backend/internal/app/user"
 )
 
 type UserServiceImpl struct {
@@ -83,8 +83,8 @@ func (s *UserServiceImpl) GetUser(ctx context.Context, req *user.GetUserReq) (*u
 package main
 
 import (
-    "github.com/zy84338719/fileCodeBox/gen/rpc/user/userservice"
-    "github.com/zy84338719/fileCodeBox/internal/transport/rpc/handler"
+    "github.com/zy84338719/fileCodeBox/backend/gen/rpc/user/userservice"
+    "github.com/zy84338719/fileCodeBox/backend/internal/transport/rpc/handler"
 )
 
 func main() {

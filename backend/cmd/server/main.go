@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/zy84338719/fileCodeBox/cmd/server/bootstrap"
-	"github.com/zy84338719/fileCodeBox/internal/pkg/logger"
+	"github.com/zy84338719/fileCodeBox/backend/cmd/server/bootstrap"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/logger"
 )
 
 func main() {

@@ -56,7 +56,7 @@ jobs:
       run: |
         # 构建并启动服务
         make build
-        ./backend/bin/server &
+        cd backend && ./bin/server &
         SERVER_PID=$!
         
         # 等待服务启动

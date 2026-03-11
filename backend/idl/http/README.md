@@ -66,7 +66,7 @@ make gen-http-update IDL=http/health.proto
 ```protobuf
 syntax = "proto3";
 package http.example;
-option go_package = "github.com/zy84338719/fileCodeBox/gen/http/model/example";
+option go_package = "github.com/zy84338719/fileCodeBox/backend/gen/http/model/example";
 
 import "api/api.proto";
 

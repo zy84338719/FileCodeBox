@@ -149,7 +149,7 @@ syntax = "proto3";
 
 package http.example;
 
-option go_package = "github.com/zy84338719/fileCodeBox/gen/http/model/example";
+option go_package = "github.com/zy84338719/fileCodeBox/backend/gen/http/model/example";
 
 import "api/api.proto";
 
@@ -184,7 +184,7 @@ syntax = "proto3";
 
 package rpc.example;
 
-option go_package = "github.com/zy84338719/fileCodeBox/gen/rpc/example";
+option go_package = "github.com/zy84338719/fileCodeBox/backend/gen/rpc/example";
 
 message ExampleReq {
     string name = 1;
@@ -301,7 +301,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id uint) (*model.User, err
 ## Redis 操作
 
 ```go
-import "github.com/zy84338719/fileCodeBox/internal/repo/redis"
+import "github.com/zy84338719/fileCodeBox/backend/internal/repo/redis"
 
 // 基本操作
 redis.Set(ctx, "key", "value", time.Hour)
@@ -332,7 +332,7 @@ items, _ := redis.LRange(ctx, "queue", 0, -1)
 使用方式：
 
 ```go
-import "github.com/zy84338719/fileCodeBox/internal/pkg/resp"
+import "github.com/zy84338719/fileCodeBox/backend/internal/pkg/resp"
 
 resp.Success(c, data)
 resp.Page(c, list, total, page, pageSize)

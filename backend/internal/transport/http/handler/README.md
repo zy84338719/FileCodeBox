@@ -25,8 +25,8 @@ import (
     "context"
     
     "github.com/cloudwego/hertz/pkg/app"
-    "github.com/zy84338719/fileCodeBox/internal/app/user"
-    "github.com/zy84338719/fileCodeBox/internal/pkg/resp"
+    "github.com/zy84338719/fileCodeBox/backend/internal/app/user"
+    "github.com/zy84338719/fileCodeBox/backend/internal/pkg/resp"
 )
 
 type UserHandler struct {

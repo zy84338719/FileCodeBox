@@ -35,9 +35,9 @@ ARG VERSION=dev
 ARG COMMIT=unknown
 ARG BUILD_TIME=unknown
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags="-X 'github.com/zy84338719/fileCodeBox/internal/models/service.Version=${VERSION}' \
-              -X 'github.com/zy84338719/fileCodeBox/internal/models/service.GitCommit=${COMMIT}' \
-              -X 'github.com/zy84338719/fileCodeBox/internal/models/service.BuildTime=${BUILD_TIME}' \
+    -ldflags="-X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.Version=${VERSION}' \
+              -X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.GitCommit=${COMMIT}' \
+              -X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.BuildTime=${BUILD_TIME}' \
               -w -s" \
     -o bin/server ./cmd/server
 

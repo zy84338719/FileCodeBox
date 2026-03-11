@@ -8,7 +8,7 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
-	handler "github.com/zy84338719/fileCodeBox/biz/handler"
+	handler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler"
 )
 
 // customizeRegister registers customize routers.

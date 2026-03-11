@@ -42,5 +42,5 @@ pkg/
 3. 在需要的地方导入使用
 
 ```go
-import "github.com/zy84338719/fileCodeBox/internal/pkg/yourpkg"
+import "github.com/zy84338719/fileCodeBox/backend/internal/pkg/yourpkg"
 ```

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/glebarez/sqlite"
-	"github.com/zy84338719/fileCodeBox/internal/conf"
-	"github.com/zy84338719/fileCodeBox/internal/repo/db/model"
+	"github.com/zy84338719/fileCodeBox/backend/internal/conf"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package http.qrcode;
 
-option go_package = "github.com/zy84338719/fileCodeBox/biz/model/qrcode";
+option go_package = "qrcode";
 
 import "api/api.proto";
 

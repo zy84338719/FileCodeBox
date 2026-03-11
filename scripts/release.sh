@@ -166,9 +166,9 @@ build_project() {
         local build_time=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
 
         local ldflags="-w -s"
-        ldflags="$ldflags -X 'github.com/zy84338719/filecodebox/internal/models/service.Version=$version_value'"
-        ldflags="$ldflags -X 'github.com/zy84338719/filecodebox/internal/models/service.GitCommit=$git_commit'"
-        ldflags="$ldflags -X 'github.com/zy84338719/filecodebox/internal/models/service.BuildTime=$build_time'"
+        ldflags="$ldflags -X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.Version=$version_value'"
+        ldflags="$ldflags -X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.GitCommit=$git_commit'"
+        ldflags="$ldflags -X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.BuildTime=$build_time'"
 
         if ! go build -ldflags="$ldflags" -o filecodebox .; then
             log_error "构建失败"

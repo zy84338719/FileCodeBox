@@ -83,9 +83,9 @@ mkdir -p "$OUTPUT_DIR"
 
 # 定义 ldflags
 LDFLAGS="-s -w"
-LDFLAGS="$LDFLAGS -X 'github.com/zy84338719/filecodebox/internal/models/service.Version=$VERSION'"
-LDFLAGS="$LDFLAGS -X 'github.com/zy84338719/filecodebox/internal/models/service.GitCommit=$GIT_COMMIT'"
-LDFLAGS="$LDFLAGS -X 'github.com/zy84338719/filecodebox/internal/models/service.BuildTime=$BUILD_TIME'"
+LDFLAGS="$LDFLAGS -X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.Version=$VERSION'"
+LDFLAGS="$LDFLAGS -X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.GitCommit=$GIT_COMMIT'"
+LDFLAGS="$LDFLAGS -X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.BuildTime=$BUILD_TIME'"
 
 # 构建每个平台
 FAILED_BUILDS=()

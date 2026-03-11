@@ -8,8 +8,8 @@ import (
 	"sync"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/zy84338719/fileCodeBox/internal/repo/db/dao"
-	"github.com/zy84338719/fileCodeBox/internal/repo/db/model"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 )
 
 const (

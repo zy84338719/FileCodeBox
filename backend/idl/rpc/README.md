@@ -52,7 +52,7 @@ make gen-rpc IDL=rpc/health.proto
 ```protobuf
 syntax = "proto3";
 package rpc.example;
-option go_package = "github.com/zy84338719/fileCodeBox/gen/rpc/example";
+option go_package = "github.com/zy84338719/fileCodeBox/backend/gen/rpc/example";
 
 message ExampleReq {
     string name = 1;

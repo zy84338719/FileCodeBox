@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/zy84338719/fileCodeBox/internal/conf"
+	"github.com/zy84338719/fileCodeBox/backend/internal/conf"
 )
 
 // Service 存储服务

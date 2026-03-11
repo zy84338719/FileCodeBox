@@ -29,5 +29,5 @@ make hz-new
 make hz-update
 
 # 生成 RPC 代码（如需要）
-kitex -module github.com/zy84338719/fileCodeBox idl/xxx.thrift
+kitex -module github.com/zy84338719/fileCodeBox/backend idl/xxx.thrift
 ```

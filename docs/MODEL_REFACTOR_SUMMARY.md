@@ -99,8 +99,8 @@ var GetBuildInfo = service.GetBuildInfo
 ### 1. 新代码推荐
 ```go
 // 推荐：直接使用分层模型
-import "github.com/zy84338719/filecodebox/internal/models/db"
-import "github.com/zy84338719/filecodebox/internal/models/service"
+import "github.com/zy84338719/fileCodeBox/backend/internal/models/db"
+import "github.com/zy84338719/fileCodeBox/backend/internal/models/service"
 
 var user *db.User
 var buildInfo *service.BuildInfo
@@ -109,7 +109,7 @@ var buildInfo *service.BuildInfo
 ### 2. 现有代码
 ```go
 // 现有代码继续可用
-import "github.com/zy84338719/filecodebox/internal/models"
+import "github.com/zy84338719/fileCodeBox/backend/internal/models"
 
 var user *models.User
 var buildInfo *models.BuildInfo

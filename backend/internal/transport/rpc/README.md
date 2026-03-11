@@ -29,8 +29,8 @@ rpc/
 package rpc
 
 import (
-    "github.com/zy84338719/fileCodeBox/gen/rpc/user"
-    userSvc "github.com/zy84338719/fileCodeBox/internal/app/user"
+    "github.com/zy84338719/fileCodeBox/backend/gen/rpc/user"
+    userSvc "github.com/zy84338719/fileCodeBox/backend/internal/app/user"
 )
 
 // UserServiceImpl 实现 Kitex 生成的 UserService 接口

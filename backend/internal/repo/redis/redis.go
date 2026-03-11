@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/zy84338719/fileCodeBox/internal/conf"
+	"github.com/zy84338719/fileCodeBox/backend/internal/conf"
 )
 
 var Client *redis.Client

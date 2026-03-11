@@ -22,9 +22,9 @@ GO_VERSION := $(shell go version | awk '{print $$3}')
 
 # 构建标志
 LDFLAGS := -ldflags "\
-	-X 'github.com/zy84338719/fileCodeBox/internal/models/service.Version=$(VERSION)' \
-	-X 'github.com/zy84338719/fileCodeBox/internal/models/service.GitCommit=$(COMMIT)' \
-	-X 'github.com/zy84338719/fileCodeBox/internal/models/service.BuildTime=$(DATE)' \
+	-X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.Version=$(VERSION)' \
+	-X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.GitCommit=$(COMMIT)' \
+	-X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.BuildTime=$(DATE)' \
 	-w -s"
 
 # 默认目标

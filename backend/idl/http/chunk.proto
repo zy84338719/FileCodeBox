@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package http.chunk;
 
-option go_package = "github.com/zy84338719/fileCodeBox/biz/model/chunk";
+option go_package = "chunk";
 
 import "api/api.proto";
 

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package http.share;
 
-option go_package = "github.com/zy84338719/fileCodeBox/biz/model/share";
+option go_package = "share";
 
 import "api/api.proto";
 

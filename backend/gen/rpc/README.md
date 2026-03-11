@@ -29,7 +29,7 @@ make gen-rpc IDL=rpc/health.proto
 
 ```go
 import (
-    "github.com/zy84338719/fileCodeBox/gen/rpc/health/healthservice"
+    "github.com/zy84338719/fileCodeBox/backend/gen/rpc/health/healthservice"
 )
 
 // 实现服务接口
@@ -56,7 +56,7 @@ svr.Run()
 
 ```go
 import (
-    "github.com/zy84338719/fileCodeBox/gen/rpc/health"
+    "github.com/zy84338719/fileCodeBox/backend/gen/rpc/health"
 )
 
 // 创建客户端

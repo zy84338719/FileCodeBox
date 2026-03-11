@@ -54,7 +54,7 @@ info:
   description: FileCodeBox 是一个用于文件分享和代码片段管理的 Web 应用程序
   license:
     name: MIT
-    url: https://github.com/zy84338719/filecodebox/blob/main/LICENSE
+    url: https://github.com/zy84338719/fileCodeBox/backend/blob/main/LICENSE
   termsOfService: http://swagger.io/terms/
   title: FileCodeBox API
   version: "1.10.7"

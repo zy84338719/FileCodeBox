@@ -10,7 +10,7 @@ info:
     email: "support@swagger.io"
   license:
     name: "MIT"
-    url: "https://github.com/zy84338719/filecodebox/blob/main/LICENSE"
+    url: "https://github.com/zy84338719/fileCodeBox/backend/blob/main/LICENSE"
 
 host: "localhost:12345"
 basePath: "/"

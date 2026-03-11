@@ -10,7 +10,7 @@
 ```go
 import (
     // ... 其他导入
-    "github.com/zy84338719/filecodebox/internal/models/web"
+    "github.com/zy84338719/fileCodeBox/backend/internal/models/web"
     // ... 其他导入
 )
 ```

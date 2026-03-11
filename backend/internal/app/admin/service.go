@@ -6,9 +6,9 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/zy84338719/fileCodeBox/internal/pkg/auth"
-	"github.com/zy84338719/fileCodeBox/internal/repo/db/dao"
-	"github.com/zy84338719/fileCodeBox/internal/repo/db/model"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/auth"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 	"golang.org/x/crypto/bcrypt"
 )
 

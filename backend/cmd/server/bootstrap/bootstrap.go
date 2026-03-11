@@ -1,23 +1,51 @@
 package bootstrap
 
 import (
+	"context"
 	"fmt"
 	"log"
 
+	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/spf13/viper"
-	"github.com/zy84338719/fileCodeBox/biz/router"
-	"github.com/zy84338719/fileCodeBox/internal/conf"
-	"github.com/zy84338719/fileCodeBox/internal/pkg/logger"
-	previewPkg "github.com/zy84338719/fileCodeBox/internal/preview"
-	"github.com/zy84338719/fileCodeBox/internal/repo/db"
-	"github.com/zy84338719/fileCodeBox/internal/repo/db/model"
+	"github.com/zy84338719/fileCodeBox/backend/gen/http/router"
+	"github.com/zy84338719/fileCodeBox/backend/internal/conf"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/logger"
+	previewPkg "github.com/zy84338719/fileCodeBox/backend/internal/preview"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 // 使用 internal/conf 包中的统一配置类型
 type Config = conf.AppConfiguration
+
+// CORS 跨域中间件
+func CORS() app.HandlerFunc {
+	return func(ctx context.Context, c *app.RequestContext) {
+		origin := string(c.GetHeader("Origin"))
+		if origin == "" {
+			origin = "*"
+		}
+
+		// 设置 CORS 头
+		c.Header("Access-Control-Allow-Origin", origin)
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Max-Age", "86400") // 24小时
+
+		// 处理预检请求
+		if string(c.Method()) == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next(ctx)
+	}
+}
 
 // GetConfig 获取全局配置
 func GetConfig() *Config {
@@ -130,7 +158,7 @@ var (
 func Bootstrap() (*server.Hertz, error) {
 	// 1. 初始化配置
 	var err error
-	config, err = InitConfig("./conf/config.yaml")
+	config, err = InitConfig("configs/config.yaml")
 	if err != nil {
 		return nil, fmt.Errorf("failed to init config: %w", err)
 	}
@@ -175,6 +203,9 @@ func Bootstrap() (*server.Hertz, error) {
 	h := server.New(
 		server.WithHostPorts(fmt.Sprintf("%s:%d", config.Server.Host, port)),
 	)
+
+	// 添加 CORS 中间件
+	h.Use(CORS())
 
 	// 6. 注册路由
 	router.GeneratedRegister(h)

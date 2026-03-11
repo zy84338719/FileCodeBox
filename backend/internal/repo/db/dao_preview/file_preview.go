@@ -2,8 +2,9 @@ package dao_preview
 
 import (
 	"context"
-	"github.com/zy84338719/fileCodeBox/internal/repo/db"
-	"github.com/zy84338719/fileCodeBox/internal/repo/db/model"
+
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 	"gorm.io/gorm"
 )
 

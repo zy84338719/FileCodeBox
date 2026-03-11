@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/zy84338719/fileCodeBox/internal/pkg/auth"
-	"github.com/zy84338719/fileCodeBox/internal/pkg/errors"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/auth"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/errors"
 )
 
 const (

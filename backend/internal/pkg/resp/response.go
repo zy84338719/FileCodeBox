@@ -3,7 +3,7 @@ package resp
 import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-	"github.com/zy84338719/fileCodeBox/internal/pkg/errors"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/errors"
 )
 
 type Response struct {

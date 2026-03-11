@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	resp "github.com/zy84338719/fileCodeBox/internal/pkg/resp"
+	resp "github.com/zy84338719/fileCodeBox/backend/internal/pkg/resp"
 )
 
 func Recovery() app.HandlerFunc {

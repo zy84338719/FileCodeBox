@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package http.user;
 
-option go_package = "github.com/zy84338719/fileCodeBox/biz/model/user";
+option go_package = "user";
 
 import "api/api.proto";
 

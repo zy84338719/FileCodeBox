@@ -198,7 +198,7 @@ user:
 
 1. 在 `backend/idl/http/` 添加 `.proto` 文件
 2. 运行 `make gen-http-update IDL=http/your_api.proto`
-3. 实现 `backend/biz/handler/` 中的 handler
+3. 实现 `backend/gen/handler/` 中的 handler
 4. 在 `backend/internal/app/` 中添加业务逻辑
 
 ### 修改前端

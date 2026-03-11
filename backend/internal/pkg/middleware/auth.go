@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/zy84338719/fileCodeBox/internal/pkg/auth"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/auth"
 )
 
 // AuthMiddleware JWT认证中间件

@@ -1,7 +1,7 @@
 .PHONY: build run test clean docker-build docker-run lint gen-http-new gen-http-update gen-http-update-all gen-http-init gen-rpc gen-rpc-all kitex-install hz-install
 
 APP_NAME=FileCodeBox
-MODULE_NAME=github.com/zy84338719/fileCodeBox
+MODULE_NAME=github.com/zy84338719/fileCodeBox/backend
 MAIN_PATH=./cmd/server
 IDL_PATH=idl
 GEN_SCRIPT=./scripts/gen.sh

@@ -47,9 +47,9 @@ ARG BUILD_TIME=unknown
 # 编译后端
 RUN CGO_ENABLED=1 go build \
     -ldflags="-w -s \
-    -X 'github.com/zy84338719/fileCodeBox/internal/models/service.Version=${VERSION}' \
-    -X 'github.com/zy84338719/fileCodeBox/internal/models/service.GitCommit=${COMMIT}' \
-    -X 'github.com/zy84338719/fileCodeBox/internal/models/service.BuildTime=${BUILD_TIME}'" \
+    -X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.Version=${VERSION}' \
+    -X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.GitCommit=${COMMIT}' \
+    -X 'github.com/zy84338719/fileCodeBox/backend/internal/models/service.BuildTime=${BUILD_TIME}'" \
     -o bin/server ./cmd/server
 
 # Stage 3: 运行时镜像

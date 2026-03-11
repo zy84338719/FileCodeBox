@@ -4,7 +4,7 @@ package api;
 
 import "google/protobuf/descriptor.proto";
 
-option go_package = "github.com/zy84338719/fileCodeBox/biz/model/api";
+option go_package = "github.com/zy84338719/fileCodeBox/backend/gen/http/model/api";
 
 extend google.protobuf.FieldOptions {
     optional string raw_body = 50101;

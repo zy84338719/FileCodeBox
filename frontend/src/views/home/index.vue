@@ -111,7 +111,7 @@
           </template>
         </el-alert>
         <div class="footer-links">
-          <a href="https://github.com/zy84338719/FileCodeBox" target="_blank">
+          <a href="https://github.com/zy84338719/fileCodeBox/backend" target="_blank">
             <el-icon><Link /></el-icon>
             GitHub
           </a>

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/zy84338719/fileCodeBox/internal/repo/db/dao"
-	"github.com/zy84338719/fileCodeBox/internal/repo/db/model"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 )
 
 type InitiateUploadReq struct {

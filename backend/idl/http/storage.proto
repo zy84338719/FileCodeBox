@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package http.storage;
 
-option go_package = "github.com/zy84338719/fileCodeBox/biz/model/storage";
+option go_package = "storage";
 
 import "api/api.proto";
 
