@@ -1,22 +1,26 @@
 version: '3.8'
 
 services:
-  filecodebox-go:
-    build: 
+  backend:
+    build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: backend/Dockerfile
+      args:
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${COMMIT:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
     container_name: filecodebox
     ports:
-      - "12345:12345"
+      - "8888:8888"
     volumes:
       - ./data:/app/data
+      - ./config:/app/config
       - ./themes:/app/themes
     environment:
-      - GIN_MODE=release
       - TZ=Asia/Shanghai
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:12345/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8888/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -41,8 +45,3 @@ services:
 # networks:
 #   filecodebox-network:
 #     driver: bridge
-
-# 如果需要使用外部存储卷
-# volumes:
-#   filecodebox-data:
-#     driver: local

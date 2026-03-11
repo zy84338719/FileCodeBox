@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package http.qrcode;
+
+option go_package = "github.com/zy84338719/fileCodeBox/biz/model/qrcode";
+
+import "api/api.proto";
+
+// ==================== 生成二维码 ====================
+
+message GenerateQRCodeReq {
+    string data = 1 [(api.body) = "data"];
+    int32 size = 2 [(api.body) = "size"];
+    bool return_base64 = 3 [(api.body) = "return_base64"];
+}
+
+message GenerateQRCodeResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    QRCodeData data = 3 [(api.body) = "data"];
+}
+
+message QRCodeData {
+    string id = 1 [(api.body) = "id"];
+    string data = 2 [(api.body) = "data"];
+    int32 size = 3 [(api.body) = "size"];
+    string image_url = 4 [(api.body) = "image_url"];
+    string base64_data = 5 [(api.body) = "base64_data"];
+}
+
+// ==================== 获取二维码 ====================
+
+message GetQRCodeReq {
+    string id = 1 [(api.path) = "id"];
+}
+
+// ==================== 服务定义 ====================
+
+service QRCodeService {
+    // 生成二维码
+    rpc GenerateQRCode(GenerateQRCodeReq) returns (GenerateQRCodeResp) {
+        option (api.post) = "/qrcode/generate";
+    }
+
+    // 获取二维码图片
+    rpc GetQRCode(GetQRCodeReq) returns (GetQRCodeReq) {
+        option (api.get) = "/qrcode/:id";
+    }
+}

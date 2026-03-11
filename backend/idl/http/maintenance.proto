@@ -1,0 +1,136 @@
+syntax = "proto3";
+
+package http.admin;
+
+option go_package = "github.com/zy84338719/fileCodeBox/biz/model/admin";
+
+import "api/api.proto";
+
+// ==================== 清理过期文件 ====================
+
+message CleanExpiredFilesReq {}
+
+message CleanExpiredFilesResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    CleanExpiredFilesData data = 3 [(api.body) = "data"];
+}
+
+message CleanExpiredFilesData {
+    int64 deleted_count = 1 [(api.body) = "deleted_count"];
+    int64 freed_space = 2 [(api.body) = "freed_space"];
+}
+
+// ==================== 清理临时文件 ====================
+
+message CleanTempFilesReq {}
+
+message CleanTempFilesResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    CleanTempFilesData data = 3 [(api.body) = "data"];
+}
+
+message CleanTempFilesData {
+    int64 deleted_count = 1 [(api.body) = "deleted_count"];
+    int64 freed_space = 2 [(api.body) = "freed_space"];
+}
+
+// ==================== 系统信息 ====================
+
+message GetSystemInfoReq {}
+
+message GetSystemInfoResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    SystemInfoData data = 3 [(api.body) = "data"];
+}
+
+message SystemInfoData {
+    string version = 1 [(api.body) = "version"];
+    string os = 2 [(api.body) = "os"];
+    string arch = 3 [(api.body) = "arch"];
+    string uptime = 4 [(api.body) = "uptime"];
+    int64 goroutines = 5 [(api.body) = "goroutines"];
+    int64 memory_alloc = 6 [(api.body) = "memory_alloc"];
+    int64 memory_total = 7 [(api.body) = "memory_total"];
+    int64 memory_sys = 8 [(api.body) = "memory_sys"];
+}
+
+// ==================== 存储状态 ====================
+
+message GetStorageStatusReq {}
+
+message GetStorageStatusResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    StorageStatusData data = 3 [(api.body) = "data"];
+}
+
+message StorageStatusData {
+    string storage_type = 1 [(api.body) = "storage_type"];
+    int64 total_space = 2 [(api.body) = "total_space"];
+    int64 used_space = 3 [(api.body) = "used_space"];
+    int64 free_space = 4 [(api.body) = "free_space"];
+    int64 file_count = 5 [(api.body) = "file_count"];
+    double usage_percent = 6 [(api.body) = "usage_percent"];
+}
+
+// ==================== 系统日志 ====================
+
+message GetSystemLogsReq {
+    string level = 1 [(api.query) = "level"];
+    int32 page = 2 [(api.query) = "page"];
+    int32 page_size = 3 [(api.query) = "page_size"];
+}
+
+message GetSystemLogsResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    SystemLogsData data = 3 [(api.body) = "data"];
+}
+
+message SystemLogsData {
+    repeated LogEntry logs = 1 [(api.body) = "logs"];
+    int64 total = 2 [(api.body) = "total"];
+    int32 page = 3 [(api.body) = "page"];
+    int32 page_size = 4 [(api.body) = "page_size"];
+}
+
+message LogEntry {
+    uint64 id = 1 [(api.body) = "id"];
+    string level = 2 [(api.body) = "level"];
+    string message = 3 [(api.body) = "message"];
+    string created_at = 4 [(api.body) = "created_at"];
+    string module = 5 [(api.body) = "module"];
+    string user_id = 6 [(api.body) = "user_id"];
+}
+
+// ==================== 服务定义 ====================
+
+service MaintenanceService {
+    // 清理过期文件
+    rpc CleanExpiredFiles(CleanExpiredFilesReq) returns (CleanExpiredFilesResp) {
+        option (api.post) = "/admin/maintenance/clean-expired";
+    }
+
+    // 清理临时文件
+    rpc CleanTempFiles(CleanTempFilesReq) returns (CleanTempFilesResp) {
+        option (api.post) = "/admin/maintenance/clean-temp";
+    }
+
+    // 获取系统信息
+    rpc GetSystemInfo(GetSystemInfoReq) returns (GetSystemInfoResp) {
+        option (api.get) = "/admin/maintenance/system-info";
+    }
+
+    // 获取存储状态
+    rpc GetStorageStatus(GetStorageStatusReq) returns (GetStorageStatusResp) {
+        option (api.get) = "/admin/maintenance/monitor/storage";
+    }
+
+    // 获取系统日志
+    rpc GetSystemLogs(GetSystemLogsReq) returns (GetSystemLogsResp) {
+        option (api.get) = "/admin/maintenance/logs";
+    }
+}

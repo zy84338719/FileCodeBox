@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package http.storage;
+
+option go_package = "github.com/zy84338719/fileCodeBox/biz/model/storage";
+
+import "api/api.proto";
+
+// ==================== 获取存储信息 ====================
+
+message GetStorageInfoReq {}
+
+message GetStorageInfoResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    StorageInfoData data = 3 [(api.body) = "data"];
+}
+
+message StorageInfoData {
+    string current = 1 [(api.body) = "current"];                   // 当前存储类型
+    repeated string available = 2 [(api.body) = "available"];       // 可用存储类型列表
+    map<string, StorageDetail> storage_details = 3 [(api.body) = "storage_details"]; // 各存储类型详细信息
+    StorageConfig storage_config = 4 [(api.body) = "storage_config"]; // 存储配置
+}
+
+message StorageDetail {
+    string type = 1 [(api.body) = "type"];
+    bool available = 2 [(api.body) = "available"];
+    string storage_path = 3 [(api.body) = "storage_path"];
+    int32 usage_percent = 4 [(api.body) = "usage_percent"];
+    string error = 5 [(api.body) = "error"];
+}
+
+message StorageConfig {
+    string type = 1 [(api.body) = "type"];
+    string storage_path = 2 [(api.body) = "storage_path"];
+    WebDAVConfig webdav = 3 [(api.body) = "webdav"];
+    S3Config s3 = 4 [(api.body) = "s3"];
+    NFSConfig nfs = 5 [(api.body) = "nfs"];
+}
+
+message WebDAVConfig {
+    string hostname = 1 [(api.body) = "hostname"];
+    string username = 2 [(api.body) = "username"];
+    string password = 3 [(api.body) = "password"];
+    string root_path = 4 [(api.body) = "root_path"];
+    string url = 5 [(api.body) = "url"];
+}
+
+message S3Config {
+    string access_key_id = 1 [(api.body) = "access_key_id"];
+    string secret_access_key = 2 [(api.body) = "secret_access_key"];
+    string bucket_name = 3 [(api.body) = "bucket_name"];
+    string endpoint_url = 4 [(api.body) = "endpoint_url"];
+    string region_name = 5 [(api.body) = "region_name"];
+    string hostname = 6 [(api.body) = "hostname"];
+    string proxy = 7 [(api.body) = "proxy"];
+}
+
+message NFSConfig {
+    string server = 1 [(api.body) = "server"];
+    string path = 2 [(api.body) = "path"];
+    string mount_point = 3 [(api.body) = "mount_point"];
+    string version = 4 [(api.body) = "version"];
+    string options = 5 [(api.body) = "options"];
+    int32 timeout = 6 [(api.body) = "timeout"];
+    int32 auto_mount = 7 [(api.body) = "auto_mount"];
+    int32 retry_count = 8 [(api.body) = "retry_count"];
+    string sub_path = 9 [(api.body) = "sub_path"];
+}
+
+// ==================== 切换存储 ====================
+
+message SwitchStorageReq {
+    string type = 1 [(api.body) = "type"];
+}
+
+message SwitchStorageResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    SwitchStorageData data = 3 [(api.body) = "data"];
+}
+
+message SwitchStorageData {
+    bool success = 1 [(api.body) = "success"];
+    string message = 2 [(api.body) = "message"];
+    string current_type = 3 [(api.body) = "current_type"];
+}
+
+// ==================== 测试存储连接 ====================
+
+message TestStorageConnectionReq {
+    string type = 1 [(api.path) = "type"];
+}
+
+message TestStorageConnectionResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    TestStorageData data = 3 [(api.body) = "data"];
+}
+
+message TestStorageData {
+    string type = 1 [(api.body) = "type"];
+    string status = 2 [(api.body) = "status"];
+}
+
+// ==================== 更新存储配置 ====================
+
+message UpdateStorageConfigReq {
+    string type = 1 [(api.body) = "type"];
+    UpdateConfig config = 2 [(api.body) = "config"];
+}
+
+message UpdateConfig {
+    string storage_path = 1 [(api.body) = "storage_path"];
+    WebDAVConfig webdav = 2 [(api.body) = "webdav"];
+    S3Config s3 = 3 [(api.body) = "s3"];
+    NFSConfig nfs = 4 [(api.body) = "nfs"];
+}
+
+message UpdateStorageConfigResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+}
+
+// ==================== 服务定义 ====================
+
+service StorageService {
+    // 获取存储信息
+    rpc GetStorageInfo(GetStorageInfoReq) returns (GetStorageInfoResp) {
+        option (api.get) = "/admin/storage";
+    }
+
+    // 切换存储
+    rpc SwitchStorage(SwitchStorageReq) returns (SwitchStorageResp) {
+        option (api.post) = "/admin/storage/switch";
+    }
+
+    // 测试存储连接
+    rpc TestStorageConnection(TestStorageConnectionReq) returns (TestStorageConnectionResp) {
+        option (api.get) = "/admin/storage/test/:type";
+    }
+
+    // 更新存储配置
+    rpc UpdateStorageConfig(UpdateStorageConfigReq) returns (UpdateStorageConfigResp) {
+        option (api.put) = "/admin/storage/config";
+    }
+}

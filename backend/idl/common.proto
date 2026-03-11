@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "common";
+
+import "api/api.proto";
+
+message EmptyReq {}
+
+message HealthResp {
+    string status = 1 [(api.body) = "status"];
+}
+
+message IndexResp {
+    string name = 1 [(api.body) = "name"];
+    string version = 2 [(api.body) = "version"];
+    string status = 3 [(api.body) = "status"];
+}
+
+message PingResp {
+    string message = 1 [(api.body) = "message"];
+}
+
+service CommonService {
+    rpc Health(EmptyReq) returns(HealthResp) {
+        option (api.get) = "/health";
+    }
+    rpc Index(EmptyReq) returns(IndexResp) {
+        option (api.get) = "/";
+    }
+    rpc Ping(EmptyReq) returns(PingResp) {
+        option (api.get) = "/api/v1/ping";
+    }
+}

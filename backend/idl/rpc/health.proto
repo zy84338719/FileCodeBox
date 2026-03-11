@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package rpc.health;
+
+option go_package = "health";
+
+// ==================== 健康检查 ====================
+
+message PingReq {}
+
+message PingResp {
+    string message = 1;
+}
+
+// ==================== 服务探活 ====================
+
+message HealthCheckReq {}
+
+message HealthCheckResp {
+    bool healthy = 1;
+    string status = 2;
+    string timestamp = 3;
+}
+
+// ==================== 服务信息 ====================
+
+message ServiceInfoReq {}
+
+message ServiceInfoResp {
+    string name = 1;
+    string version = 2;
+    string git_commit = 3;
+    string build_time = 4;
+}
+
+// ==================== 服务定义 ====================
+
+service HealthService {
+    // Ping/Pong 探活
+    rpc Ping(PingReq) returns (PingResp);
+    
+    // 健康检查
+    rpc Check(HealthCheckReq) returns (HealthCheckResp);
+    
+    // 服务信息
+    rpc Info(ServiceInfoReq) returns (ServiceInfoResp);
+}

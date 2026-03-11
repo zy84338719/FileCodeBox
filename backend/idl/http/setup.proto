@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package http.setup;
+
+option go_package = "github.com/zy84338719/fileCodeBox/biz/model/setup";
+
+import "api/api.proto";
+
+// ==================== 系统初始化检查 ====================
+
+message CheckInitializationReq {}
+
+message CheckInitializationResp {
+    bool initialized = 1 [(api.body) = "initialized"];
+    string message = 2 [(api.body) = "message"];
+}
+
+// ==================== 系统初始化 ====================
+
+message InitializeReq {
+    string admin_username = 1 [(api.body) = "admin_username"];
+    string admin_password = 2 [(api.body) = "admin_password"];
+    string admin_email = 3 [(api.body) = "admin_email"];
+    BaseConfig base_config = 4 [(api.body) = "base_config"];
+}
+
+message BaseConfig {
+    string name = 1 [(api.body) = "name"];
+    string description = 2 [(api.body) = "description"];
+    int32 port = 3 [(api.body) = "port"];
+    string host = 4 [(api.body) = "host"];
+}
+
+message InitializeResp {
+    string message = 1 [(api.body) = "message"];
+    string username = 2 [(api.body) = "username"];
+}
+
+// ==================== 服务定义 ====================
+
+service SetupService {
+    // 检查系统是否已初始化
+    rpc CheckInitialization(CheckInitializationReq) returns (CheckInitializationResp) {
+        option (api.get) = "/setup/check";
+    }
+
+    // 初始化系统
+    rpc Initialize(InitializeReq) returns (InitializeResp) {
+        option (api.post) = "/setup";
+    }
+}
