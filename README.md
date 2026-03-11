@@ -86,7 +86,7 @@ make deps
 make dev
 
 # 或分别启动
-make dev-backend   # 后端 :12346
+make dev-backend   # 后端 :12345
 make dev-frontend  # 前端 :5173
 ```
 
@@ -110,10 +110,10 @@ docker-compose up -d
 
 # 或手动构建
 docker build -t filecodebox ./backend
-docker run -d -p 12346:12346 -v $(pwd)/data:/data filecodebox
+docker run -d -p 12345:12345 -v $(pwd)/data:/data filecodebox
 ```
 
-服务默认监听 `http://127.0.0.1:12346`。
+服务默认监听 `http://127.0.0.1:12345`。
 
 ---
 
@@ -176,7 +176,7 @@ docker run -d -p 12346:12346 -v $(pwd)/data:/data filecodebox
 ```yaml
 server:
   host: "0.0.0.0"
-  port: 12346
+  port: 12345
 
 database:
   driver: "sqlite"

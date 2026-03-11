@@ -134,7 +134,7 @@ func Bootstrap() (*server.Hertz, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to init config: %w", err)
 	}
-	
+
 	// 设置全局配置（供其他包访问）
 	conf.SetGlobalConfig(config)
 
@@ -169,11 +169,8 @@ func Bootstrap() (*server.Hertz, error) {
 
 	// 5. 创建 HTTP 服务器
 	port := config.Server.Port
-	if port == 12345 { // 避免端口冲突
-		port = 12346
-	}
 	if port == 0 {
-		port = 12346
+		port = 12345
 	}
 	h := server.New(
 		server.WithHostPorts(fmt.Sprintf("%s:%d", config.Server.Host, port)),
@@ -217,6 +214,6 @@ func initPreviewService() error {
 		PreviewCachePath: "./data/previews",
 		FFmpegPath:       "ffmpeg",
 	}
-	
+
 	return previewPkg.InitService(previewConfig)
 }

@@ -11,7 +11,7 @@ services:
         BUILD_TIME: ${BUILD_TIME:-unknown}
     container_name: filecodebox
     ports:
-      - "8888:8888"
+      - "12345:12345"
     volumes:
       - ./data:/app/data
       - ./config:/app/config
@@ -20,7 +20,7 @@ services:
       - TZ=Asia/Shanghai
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8888/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:12345/health"]
       interval: 30s
       timeout: 10s
       retries: 3

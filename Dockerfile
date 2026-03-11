@@ -80,11 +80,11 @@ RUN mkdir -p data configs && chown -R app:app /app
 USER app
 
 # 暴露端口
-EXPOSE 12346
+EXPOSE 12345
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:12346/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:12345/health || exit 1
 
 # 启动服务
 CMD ["./server"]

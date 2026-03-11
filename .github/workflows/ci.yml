@@ -25,14 +25,13 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
         cache: true
-        cache-dependency-path: |
-          go.sum
-          go.mod
+        cache-dependency-path: backend/go.sum
 
     - name: Download dependencies
       run: make deps
 
     - name: Verify dependencies
+      working-directory: backend
       run: go mod verify
 
     - name: Run checks
@@ -45,7 +44,7 @@ jobs:
       if: matrix.go-version == '1.25'
       uses: codecov/codecov-action@v4
       with:
-        file: ./coverage.out
+        file: ./backend/coverage.out
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
@@ -57,7 +56,7 @@ jobs:
       run: |
         # 构建并启动服务
         make build
-        ./filecodebox &
+        ./backend/bin/server &
         SERVER_PID=$!
         
         # 等待服务启动
@@ -93,11 +92,14 @@ jobs:
       with:
         go-version: '1.25'
         cache: true
+        cache-dependency-path: backend/go.sum
 
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v6
       with:
-        version: latest
+        version: v1.64.8
+        install-mode: go
+        working-directory: backend
         args: --timeout=5m
 
   docker-test:
@@ -173,6 +175,8 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.25'
+        cache: true
+        cache-dependency-path: backend/go.sum
 
     - name: Run Basic Security Checks
       run: |
