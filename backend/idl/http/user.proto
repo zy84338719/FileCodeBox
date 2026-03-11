@@ -1,0 +1,245 @@
+syntax = "proto3";
+
+package http.user;
+
+option go_package = "user";
+
+import "api/api.proto";
+
+// ==================== 用户注册 ====================
+
+message RegisterReq {
+    string username = 1 [(api.body) = "username"];
+    string email = 2 [(api.body) = "email"];
+    string password = 3 [(api.body) = "password"];
+    string nickname = 4 [(api.body) = "nickname"];
+}
+
+message RegisterResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    UserData data = 3 [(api.body) = "data"];
+}
+
+// ==================== 用户登录 ====================
+
+message LoginReq {
+    string username = 1 [(api.body) = "username"];
+    string password = 2 [(api.body) = "password"];
+}
+
+message LoginResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    LoginData data = 3 [(api.body) = "data"];
+}
+
+message LoginData {
+    string token = 1 [(api.body) = "token"];
+    UserData user = 2 [(api.body) = "user"];
+}
+
+// ==================== 用户信息 ====================
+
+message UserInfoReq {}
+
+message UserInfoResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    UserData data = 3 [(api.body) = "data"];
+}
+
+message UserData {
+    uint32 id = 1 [(api.body) = "id"];
+    string username = 2 [(api.body) = "username"];
+    string email = 3 [(api.body) = "email"];
+    string nickname = 4 [(api.body) = "nickname"];
+    string avatar = 5 [(api.body) = "avatar"];
+    int32 status = 6 [(api.body) = "status"];
+    string created_at = 7 [(api.body) = "created_at"];
+}
+
+// ==================== 用户资料更新 ====================
+
+message UpdateProfileReq {
+    string nickname = 1 [(api.body) = "nickname"];
+    string avatar = 2 [(api.body) = "avatar"];
+}
+
+message UpdateProfileResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    UserData data = 3 [(api.body) = "data"];
+}
+
+// ==================== 修改密码 ====================
+
+message ChangePasswordReq {
+    string old_password = 1 [(api.body) = "old_password"];
+    string new_password = 2 [(api.body) = "new_password"];
+}
+
+message ChangePasswordResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+}
+
+// ==================== 用户统计信息 ====================
+
+message UserStatsReq {}
+
+message UserStatsResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    UserStats data = 3 [(api.body) = "data"];
+}
+
+// ==================== 空请求 ====================
+
+message EmptyReq {}
+
+message UserStats {
+    int64 total_uploads = 1 [(api.body) = "total_uploads"];
+    int64 total_size = 2 [(api.body) = "total_size"];
+    int64 quota_used = 3 [(api.body) = "quota_used"];
+    int64 quota_limit = 4 [(api.body) = "quota_limit"];
+}
+
+// ==================== 用户文件列表 ====================
+
+message UserFilesReq {
+    int32 page = 1 [(api.query) = "page"];
+    int32 page_size = 2 [(api.query) = "page_size"];
+}
+
+message UserFilesResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    UserFileList data = 3 [(api.body) = "data"];
+}
+
+message UserFileList {
+    repeated UserFileItem files = 1 [(api.body) = "files"];
+    UserFilePagination pagination = 2 [(api.body) = "pagination"];
+}
+
+message UserFileItem {
+    uint32 id = 1 [(api.body) = "id"];
+    string code = 2 [(api.body) = "code"];
+    string prefix = 3 [(api.body) = "prefix"];
+    string suffix = 4 [(api.body) = "suffix"];
+    string file_name = 5 [(api.body) = "file_name"];
+    string file_path = 6 [(api.body) = "file_path"];
+    int64 size = 7 [(api.body) = "size"];
+    string expired_at = 8 [(api.body) = "expired_at"];
+    int32 expired_count = 9 [(api.body) = "expired_count"];
+    int32 used_count = 10 [(api.body) = "used_count"];
+    string created_at = 11 [(api.body) = "created_at"];
+    string updated_at = 12 [(api.body) = "updated_at"];
+}
+
+message UserFilePagination {
+    int32 page = 1 [(api.body) = "page"];
+    int32 page_size = 2 [(api.body) = "page_size"];
+    int64 total = 3 [(api.body) = "total"];
+    int32 total_pages = 4 [(api.body) = "total_pages"];
+    bool has_next = 5 [(api.body) = "has_next"];
+    bool has_prev = 6 [(api.body) = "has_prev"];
+}
+
+// ==================== API Key 管理 ====================
+
+message APIKeyData {
+    uint32 id = 1 [(api.body) = "id"];
+    string name = 2 [(api.body) = "name"];
+    string prefix = 3 [(api.body) = "prefix"];
+    string last_used_at = 4 [(api.body) = "last_used_at"];
+    string expires_at = 5 [(api.body) = "expires_at"];
+    string created_at = 6 [(api.body) = "created_at"];
+    bool revoked = 7 [(api.body) = "revoked"];
+}
+
+message APIKeyListResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    repeated APIKeyData keys = 3 [(api.body) = "keys"];
+}
+
+message CreateAPIKeyReq {
+    string name = 1 [(api.body) = "name"];
+    string expires_at = 2 [(api.body) = "expires_at"];
+    int64 expires_in_days = 3 [(api.body) = "expires_in_days"];
+}
+
+message CreateAPIKeyResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    message Data {
+        string key = 1 [(api.body) = "key"];
+        APIKeyData api_key = 2 [(api.body) = "api_key"];
+    }
+    Data data = 3 [(api.body) = "data"];
+}
+
+message DeleteAPIKeyReq {
+    uint32 id = 1 [(api.path) = "id"];
+}
+
+message DeleteAPIKeyResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+}
+
+// ==================== 服务定义 ====================
+
+service UserService {
+    // 用户注册
+    rpc Register(RegisterReq) returns (RegisterResp) {
+        option (api.post) = "/user/register";
+    }
+    
+    // 用户登录
+    rpc Login(LoginReq) returns (LoginResp) {
+        option (api.post) = "/user/login";
+    }
+    
+    // 获取用户信息
+    rpc UserInfo(UserInfoReq) returns (UserInfoResp) {
+        option (api.get) = "/user/info";
+    }
+    
+    // 更新用户资料
+    rpc UpdateProfile(UpdateProfileReq) returns (UpdateProfileResp) {
+        option (api.put) = "/user/profile";
+    }
+    
+    // 修改密码
+    rpc ChangePassword(ChangePasswordReq) returns (ChangePasswordResp) {
+        option (api.post) = "/user/change-password";
+    }
+    
+    // 用户统计信息
+    rpc UserStats(UserStatsReq) returns (UserStatsResp) {
+        option (api.get) = "/user/stats";
+    }
+
+    // 获取用户文件列表
+    rpc UserFiles(UserFilesReq) returns (UserFilesResp) {
+        option (api.get) = "/user/files";
+    }
+
+    // 获取 API Key 列表
+    rpc ListAPIKeys(EmptyReq) returns (APIKeyListResp) {
+        option (api.get) = "/user/api-keys";
+    }
+
+    // 创建 API Key
+    rpc CreateAPIKey(CreateAPIKeyReq) returns (CreateAPIKeyResp) {
+        option (api.post) = "/user/api-keys";
+    }
+
+    // 删除 API Key
+    rpc DeleteAPIKey(DeleteAPIKeyReq) returns (DeleteAPIKeyResp) {
+        option (api.delete) = "/user/api-keys/:id";
+    }
+}

@@ -1,0 +1,87 @@
+# FileCodeBox 生产环境配置模板
+# 请根据实际部署环境修改相关配置
+
+server:
+  host: "0.0.0.0"
+  port: 8888
+  mode: "release"          # 生产环境使用 release 模式
+  base_url: "https://your-domain.com"  # 修改为实际域名
+  read_timeout: 30
+  write_timeout: 30
+
+database:
+  driver: "sqlite"
+  # SQLite 配置：文件路径或 ":memory:" 表示内存数据库
+  # 生产环境建议使用持久化路径
+  db_name: "/app/data/fileCodeBox.db"
+
+# Redis 配置（如需要）
+redis:
+  host: "redis"            # 如果使用 docker-compose 中的 redis 服务
+  port: 6379
+  password: ""             # 生产环境请设置密码
+  db: 0
+
+log:
+  level: "info"            # 生产环境使用 info 级别
+  filename: "/app/data/filecodebox.log"  # 日志文件路径
+  max_size: 100            # MB
+  max_backups: 10
+  max_age: 30              # days
+  compress: true
+
+app:
+  name: "FileCodeBox"
+  version: "1.0.0"
+  description: "开箱即用的文件快传系统"
+  keywords: "FileCodeBox, 文件快递柜, 口令传送箱, 匿名口令分享文本, 文件"
+  datapath: "/app/data"
+  production: true         # 生产环境
+
+# 上传配置
+upload:
+  open_upload: true
+  upload_size: 10485760      # 10MB
+  enable_chunk: true
+  chunk_size: 2097152       # 2MB
+  max_save_seconds: 0      # 0 表示永不过期
+  require_login: false
+
+# 下载配置
+download:
+  enable_concurrent_download: true
+  max_concurrent_downloads: 10
+  download_timeout: 300     # 5分钟
+  require_login: false
+
+# 存储配置
+storage:
+  type: "local"              # local, s3, webdav, onedrive, nfs
+  storage_path: "/app/data/uploads"
+  # s3: null
+  # webdav: null
+  # onedrive: null
+  # nfs: null
+
+# 用户配置
+user:
+  allow_user_registration: false  # 生产环境建议关闭注册或设置严格验证
+  require_email_verify: false
+  user_upload_size: 52428800    # 50MB
+  user_storage_quota: 1073741824 # 1GB
+  session_expiry_hours: 168     # 7天
+  max_sessions_per_user: 5
+  jwt_secret: "CHANGE_THIS_TO_A_SECURE_RANDOM_STRING_IN_PRODUCTION"  # 生产环境必须修改
+
+# UI 配置
+ui:
+  theme: "themes/2025"
+  background: ""
+  page_explain: "请勿上传或分享违法内容。根据《中华人民共和国网络安全法》、《中华人民共和国刑法》、《中华人民共和国治安管理处罚法》等相关规定。传播或存储违法、违规内容，会受到相关处罚，严重者将承担刑事责任。本站坚决配合相关部门，确保网络内容的安全，和谐，打造绿色网络环境。"
+  robots_text: |
+    User-agent: *
+    Disallow: /
+  show_admin_addr: false
+  opacity: 1
+  notify_title: ""
+  notify_content: ""

@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package http.chunk;
+
+option go_package = "chunk";
+
+import "api/api.proto";
+
+// ==================== 初始化分片上传 ====================
+
+message ChunkUploadInitReq {
+    string file_name = 1 [(api.body) = "file_name"];
+    int64 file_size = 2 [(api.body) = "file_size"];
+    string file_hash = 3 [(api.body) = "file_hash"];
+    int32 chunk_size = 4 [(api.body) = "chunk_size"];
+    int32 total_chunks = 5 [(api.body) = "total_chunks"];
+}
+
+message ChunkUploadInitResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    ChunkUploadInitData data = 3 [(api.body) = "data"];
+}
+
+message ChunkUploadInitData {
+    string upload_id = 1 [(api.body) = "upload_id"];
+    string chunk_size = 2 [(api.body) = "chunk_size"];
+    string total_chunks = 3 [(api.body) = "total_chunks"];
+    bool is_quick_upload = 4 [(api.body) = "is_quick_upload"]; // Quick upload flag
+    string share_code = 5 [(api.body) = "share_code"]; // If quick upload, return share code directly
+}
+
+// ==================== 上传单个分片 ====================
+
+message ChunkUploadReq {
+    string upload_id = 1 [(api.path) = "upload_id"];
+    int32 chunk_index = 2 [(api.path) = "chunk_index"];
+    // 分片数据通过 multipart/form-data 上传
+}
+
+message ChunkUploadResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    ChunkUploadData data = 3 [(api.body) = "data"];
+}
+
+message ChunkUploadData {
+    int32 chunk_index = 1 [(api.body) = "chunk_index"];
+    string chunk_hash = 2 [(api.body) = "chunk_hash"];
+}
+
+// ==================== 查询上传进度 ====================
+
+message ChunkUploadStatusReq {
+    string upload_id = 1 [(api.path) = "upload_id"];
+}
+
+message ChunkUploadStatusResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    ChunkUploadStatusData data = 3 [(api.body) = "data"];
+}
+
+message ChunkUploadStatusData {
+    string upload_id = 1 [(api.body) = "upload_id"];
+    int32 total_chunks = 2 [(api.body) = "total_chunks"];
+    int32 uploaded_chunks = 3 [(api.body) = "uploaded_chunks"];
+    repeated int32 uploaded_indexes = 4 [(api.body) = "uploaded_indexes"];
+    int32 progress = 5 [(api.body) = "progress"]; // 百分比
+    string status = 6 [(api.body) = "status"]; // uploading, completed, cancelled
+}
+
+// ==================== 完成上传 ====================
+
+message ChunkUploadCompleteReq {
+    string upload_id = 1 [(api.path) = "upload_id"];
+    int32 expire_value = 2 [(api.body) = "expire_value"];
+    string expire_style = 3 [(api.body) = "expire_style"];
+    bool require_auth = 4 [(api.body) = "require_auth"];
+}
+
+message ChunkUploadCompleteResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    ChunkUploadCompleteData data = 3 [(api.body) = "data"];
+}
+
+message ChunkUploadCompleteData {
+    string share_code = 1 [(api.body) = "share_code"];
+    string share_url = 2 [(api.body) = "share_url"];
+    string file_name = 3 [(api.body) = "file_name"];
+    int64 file_size = 4 [(api.body) = "file_size"];
+}
+
+// ==================== 取消上传 ====================
+
+message ChunkUploadCancelReq {
+    string upload_id = 1 [(api.path) = "upload_id"];
+}
+
+message ChunkUploadCancelResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+}
+
+// ==================== 服务定义 ====================
+
+service ChunkService {
+    // 初始化分片上传
+    rpc ChunkUploadInit(ChunkUploadInitReq) returns (ChunkUploadInitResp) {
+        option (api.post) = "/chunk/upload/init/";
+    }
+    
+    // 上传单个分片
+    rpc ChunkUpload(ChunkUploadReq) returns (ChunkUploadResp) {
+        option (api.post) = "/chunk/upload/chunk/:upload_id/:chunk_index";
+    }
+    
+    // 查询上传进度
+    rpc ChunkUploadStatus(ChunkUploadStatusReq) returns (ChunkUploadStatusResp) {
+        option (api.get) = "/chunk/upload/status/:upload_id";
+    }
+    
+    // 完成上传
+    rpc ChunkUploadComplete(ChunkUploadCompleteReq) returns (ChunkUploadCompleteResp) {
+        option (api.post) = "/chunk/upload/complete/:upload_id";
+    }
+    
+    // 取消上传
+    rpc ChunkUploadCancel(ChunkUploadCancelReq) returns (ChunkUploadCancelResp) {
+        option (api.delete) = "/chunk/upload/cancel/:upload_id";
+    }
+}

@@ -30,14 +30,14 @@
 1. 启动服务（或在已运行服务上重启以加载最新代码）。
 2. 未认证时访问应返回 401：
    ```bash
-   curl -i http://127.0.0.1:12346/admin/
-   curl -i http://127.0.0.1:12346/admin/js/main.js
-   curl -I http://127.0.0.1:12346/admin/css/base.css
+   curl -i http://127.0.0.1:12345/admin/
+   curl -i http://127.0.0.1:12345/admin/js/main.js
+   curl -I http://127.0.0.1:12345/admin/css/base.css
    ```
 3. 公共资源仍可访问：
    ```bash
-   curl -i http://127.0.0.1:12346/js/main.js
-   curl -i http://127.0.0.1:12346/user/login
+   curl -i http://127.0.0.1:12345/js/main.js
+   curl -i http://127.0.0.1:12345/user/login
    ```
 4. 认证后（使用管理员 JWT）应能访问 admin 页面与 admin 静态资源。
 

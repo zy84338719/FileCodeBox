@@ -1,0 +1,82 @@
+server:
+  host: "0.0.0.0"
+  port: 12345
+  mode: "debug"
+  base_url: "http://localhost:12345"
+  read_timeout: 30
+  write_timeout: 30
+
+database:
+  driver: "sqlite"
+  # SQLite 配置：文件路径或 ":memory:" 表示内存数据库
+  db_name: "./data/fileCodeBox.db"
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+
+log:
+  level: "info"
+  filename: ""
+  max_size: 100
+  max_backups: 10
+  max_age: 30
+  compress: true
+
+app:
+  name: "FileCodeBox"
+  version: "1.0.0"
+  description: "开箱即用的文件快传系统"
+  keywords: "FileCodeBox, 文件快递柜, 口令传送箱, 匿名口令分享文本, 文件"
+  datapath: "./data"
+  production: false
+
+# 上传配置
+upload:
+  open_upload: true
+  upload_size: 10485760      # 10MB
+  enable_chunk: true
+  chunk_size: 2097152       # 2MB
+  max_save_seconds: 0      # 0 表示永不过期
+  require_login: false
+
+# 下载配置
+download:
+  enable_concurrent_download: true
+  max_concurrent_downloads: 10
+  download_timeout: 300     # 5分钟
+  require_login: false
+
+# 存储配置
+storage:
+  type: "local"              # local, s3, webdav, onedrive, nfs
+  storage_path: "./data/uploads"
+  # s3: null
+  # webdav: null
+  # onedrive: null
+  # nfs: null
+
+# 用户配置
+user:
+  allow_user_registration: false
+  require_email_verify: false
+  user_upload_size: 52428800    # 50MB
+  user_storage_quota: 1073741824 # 1GB
+  session_expiry_hours: 168     # 7天
+  max_sessions_per_user: 5
+  jwt_secret: "FileCodeBox2025JWT"
+
+# UI 配置
+ui:
+  theme: "themes/2025"
+  background: ""
+  page_explain: "请勿上传或分享违法内容。根据《中华人民共和国网络安全法》、《中华人民共和国刑法》、《中华人民共和国治安管理处罚法》等相关规定。传播或存储违法、违规内容，会受到相关处罚，严重者将承担刑事责任。本站坚决配合相关部门，确保网络内容的安全，和谐，打造绿色网络环境。"
+  robots_text: |
+    User-agent: *
+    Disallow: /
+  show_admin_addr: false
+  opacity: 1
+  notify_title: ""
+  notify_content: ""

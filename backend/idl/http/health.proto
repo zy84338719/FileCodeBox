@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package http.health;
+
+option go_package = "health";
+
+import "api/api.proto";
+
+// ==================== 健康检查 ====================
+
+message HealthCheckReq {}
+
+message HealthCheckResp {
+    string status = 1 [(api.body) = "status"];
+    string timestamp = 2 [(api.body) = "timestamp"];
+}
+
+// ==================== 就绪检查 ====================
+
+message ReadinessReq {}
+
+message ReadinessResp {
+    string status = 1 [(api.body) = "status"];
+    bool database = 2 [(api.body) = "database"];
+    bool redis = 3 [(api.body) = "redis"];
+}
+
+// ==================== 存活检查 ====================
+
+message LivenessReq {}
+
+message LivenessResp {
+    string status = 1 [(api.body) = "status"];
+}
+
+// ==================== 版本信息 ====================
+
+message VersionReq {}
+
+message VersionResp {
+    string name = 1 [(api.body) = "name"];
+    string version = 2 [(api.body) = "version"];
+    string build_time = 3 [(api.body) = "build_time"];
+    string git_commit = 4 [(api.body) = "git_commit"];
+    string go_version = 5 [(api.body) = "go_version"];
+}
+
+// ==================== Ping/Pong ====================
+
+message PingReq {}
+
+message PingResp {
+    string message = 1 [(api.body) = "message"];
+}
+
+// ==================== 服务定义 ====================
+
+service HealthService {
+    // 健康检查 - 基础健康状态
+    rpc Health(HealthCheckReq) returns (HealthCheckResp) {
+        option (api.get) = "/health";
+    }
+    
+    // 就绪检查 - K8s readinessProbe
+    rpc Readiness(ReadinessReq) returns (ReadinessResp) {
+        option (api.get) = "/ready";
+    }
+    
+    // 存活检查 - K8s livenessProbe
+    rpc Liveness(LivenessReq) returns (LivenessResp) {
+        option (api.get) = "/live";
+    }
+    
+    // 版本信息
+    rpc Version(VersionReq) returns (VersionResp) {
+        option (api.get) = "/version";
+    }
+    
+    // Ping/Pong
+    rpc Ping(PingReq) returns (PingResp) {
+        option (api.get) = "/ping";
+    }
+}

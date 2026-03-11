@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package http.share;
+
+option go_package = "share";
+
+import "api/api.proto";
+
+// ==================== 分享文本 ====================
+
+message ShareTextReq {
+    string text = 1 [(api.body) = "text"];
+    int32 expire_value = 2 [(api.body) = "expire_value"];
+    string expire_style = 3 [(api.body) = "expire_style"]; // minute, hour, day, week, month, year, forever
+    bool require_auth = 4 [(api.body) = "require_auth"];
+}
+
+message ShareTextResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    ShareData data = 3 [(api.body) = "data"];
+}
+
+message ShareData {
+    string code = 1 [(api.body) = "code"];
+    string url = 2 [(api.body) = "url"];
+}
+
+// ==================== 分享文件 ====================
+
+message ShareFileReq {
+    // 文件通过 multipart/form-data 上传
+    int32 expire_value = 1 [(api.form) = "expire_value"];
+    string expire_style = 2 [(api.form) = "expire_style"];
+    bool require_auth = 3 [(api.form) = "require_auth"];
+}
+
+message ShareFileResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    ShareData data = 3 [(api.body) = "data"];
+}
+
+// ==================== 获取分享 ====================
+
+message GetShareReq {
+    string code = 1 [(api.path) = "code"];
+    string password = 2 [(api.query) = "password"];
+}
+
+message GetShareResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    ShareDetail data = 3 [(api.body) = "data"];
+}
+
+message ShareDetail {
+    string code = 1 [(api.body) = "code"];
+    string text = 2 [(api.body) = "text"];
+    string file_name = 3 [(api.body) = "file_name"];
+    string file_size = 4 [(api.body) = "file_size"];
+    string url = 5 [(api.body) = "url"];
+    bool has_password = 6 [(api.body) = "has_password"];
+    string expire_time = 7 [(api.body) = "expire_time"];
+}
+
+// ==================== 下载分享 ====================
+
+message DownloadFileReq {
+    string code = 1 [(api.query) = "code"];
+    string password = 2 [(api.query) = "password"];
+}
+
+message DownloadFileResp {
+    // 文件下载使用流式响应，此消息用于 JSON 错误响应
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+}
+
+// ==================== 服务定义 ====================
+
+service ShareService {
+    // 分享文本
+    rpc ShareText(ShareTextReq) returns (ShareTextResp) {
+        option (api.post) = "/share/text/";
+    }
+
+    // 分享文件
+    rpc ShareFile(ShareFileReq) returns (ShareFileResp) {
+        option (api.post) = "/share/file/";
+    }
+
+    // 获取分享内容
+    rpc GetShare(GetShareReq) returns (GetShareResp) {
+        option (api.get) = "/share/select/";
+    }
+
+    // 下载文件
+    rpc DownloadFile(DownloadFileReq) returns (DownloadFileResp) {
+        option (api.get) = "/share/download";
+    }
+}

@@ -45,7 +45,7 @@ ui:
 
 mcp:
   enable_mcp_server: 1
-  mcp_port: "12346"
+  mcp_port: "12345"
   mcp_host: "127.0.0.1"
 
 storage:

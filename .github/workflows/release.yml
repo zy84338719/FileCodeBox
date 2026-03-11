@@ -129,7 +129,7 @@ jobs:
         #### 方式四：源码编译
         
         \`\`\`bash
-        git clone https://github.com/zy84338719/filecodebox.git
+        git clone https://github.com/zy84338719/fileCodeBox/backend.git
         cd filecodebox
         git checkout $CURRENT_TAG
         make build

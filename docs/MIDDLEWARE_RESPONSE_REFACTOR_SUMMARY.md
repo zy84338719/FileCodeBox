@@ -23,10 +23,10 @@ func TooManyRequestsResponse(c *gin.Context, message string) {
 import (
     // 移除了：
     // "net/http"
-    // "github.com/zy84338719/filecodebox/internal/models/web"
+    // "github.com/zy84338719/fileCodeBox/backend/internal/models/web"
     
     // 新增了：
-    "github.com/zy84338719/filecodebox/internal/common"
+    "github.com/zy84338719/fileCodeBox/backend/internal/common"
     
     // 保留其他必要导入...
 )

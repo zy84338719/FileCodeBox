@@ -3,7 +3,7 @@ package docs
 
 import (
 	"github.com/swaggo/swag"
-	"github.com/zy84338719/filecodebox/internal/models/service"
+	"github.com/zy84338719/fileCodeBox/backend/internal/models/service"
 )
 
 const docTemplate = `{
@@ -20,7 +20,7 @@ const docTemplate = `{
         },
         "license": {
             "name": "MIT",
-            "url": "https://github.com/zy84338719/filecodebox/blob/main/LICENSE"
+            "url": "https://github.com/zy84338719/fileCodeBox/backend/blob/main/LICENSE"
         },
         "version": "{{.Version}}"
     },

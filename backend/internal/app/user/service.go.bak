@@ -1,0 +1,266 @@
+package user
+
+import (
+	"context"
+	"errors"
+
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/auth"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+)
+
+type CreateUserReq struct {
+	Username string
+	Email    string
+	Password string
+	Nickname string
+}
+
+type UpdateUserReq struct {
+	Nickname string
+	Avatar   string
+	Role     string
+	Status   string
+}
+
+type Service struct {
+	repo *dao.UserRepository
+}
+
+func NewService() *Service {
+	// 延迟初始化 repository，确保数据库已经准备好
+	return &Service{
+		repo: nil, // 延迟初始化
+	}
+}
+
+// ensureRepository 确保repository已初始化
+func (s *Service) ensureRepository() {
+	if s.repo == nil {
+		s.repo = dao.NewUserRepository()
+	}
+}
+
+func (s *Service) Create(ctx context.Context, req *CreateUserReq) (*model.UserResp, error) {
+	s.ensureRepository()
+
+	existing, err := s.repo.GetByUsername(ctx, req.Username)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, errors.New("username already exists")
+	}
+
+	existing, err = s.repo.GetByEmail(ctx, req.Email)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, errors.New("email already exists")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+
+	user := &model.User{
+		Username:     req.Username,
+		Email:        req.Email,
+		PasswordHash: string(hashedPassword),
+		Nickname:     req.Nickname,
+		Status:       "active",
+		Role:         "user",
+	}
+
+	if err := s.repo.Create(ctx, user); err != nil {
+		return nil, err
+	}
+
+	return user.ToResp(), nil
+}
+
+func (s *Service) GetByID(ctx context.Context, id uint) (*model.UserResp, error) {
+	user, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+	return user.ToResp(), nil
+}
+
+func (s *Service) Update(ctx context.Context, id uint, req *UpdateUserReq) (*model.UserResp, error) {
+	user, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+
+	if req.Nickname != "" {
+		user.Nickname = req.Nickname
+	}
+	if req.Avatar != "" {
+		user.Avatar = req.Avatar
+	}
+	if req.Role != "" {
+		user.Role = req.Role
+	}
+	if req.Status != "" {
+		user.Status = req.Status
+	}
+
+	if err := s.repo.Update(ctx, user); err != nil {
+		return nil, err
+	}
+
+	return user.ToResp(), nil
+}
+
+func (s *Service) Delete(ctx context.Context, id uint) error {
+	_, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("user not found")
+		}
+		return err
+	}
+
+	return s.repo.Delete(ctx, id)
+}
+
+func (s *Service) List(ctx context.Context, page, pageSize int) ([]*model.UserResp, int64, error) {
+	users, total, err := s.repo.List(ctx, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	resps := make([]*model.UserResp, len(users))
+	for i, user := range users {
+		resps[i] = user.ToResp()
+	}
+
+	return resps, total, nil
+}
+
+// Login 用户登录
+func (s *Service) Login(ctx context.Context, username, password string) (*model.UserResp, string, error) {
+	user, err := s.repo.GetByUsername(ctx, username)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, "", errors.New("用户名或密码错误")
+		}
+		return nil, "", err
+	}
+
+	// 验证密码
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		return nil, "", errors.New("用户名或密码错误")
+	}
+
+	// 检查用户状态
+	if user.Status != "active" {
+		return nil, "", errors.New("用户账号已被禁用")
+	}
+
+	// 生成 JWT Token
+	token, err := auth.GenerateToken(user.ID, user.Username, user.Role)
+	if err != nil {
+		return nil, "", errors.New("生成令牌失败")
+	}
+
+	return user.ToResp(), token, nil
+}
+
+// LoginByEmail 通过邮箱登录
+func (s *Service) LoginByEmail(ctx context.Context, email, password string) (*model.UserResp, string, error) {
+	user, err := s.repo.GetByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, "", errors.New("邮箱或密码错误")
+		}
+		return nil, "", err
+	}
+
+	// 验证密码
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		return nil, "", errors.New("邮箱或密码错误")
+	}
+
+	// 检查用户状态
+	if user.Status != "active" {
+		return nil, "", errors.New("用户账号已被禁用")
+	}
+
+	// 生成 JWT Token
+	token, err := auth.GenerateToken(user.ID, user.Username, user.Role)
+	if err != nil {
+		return nil, "", errors.New("生成令牌失败")
+	}
+
+	return user.ToResp(), token, nil
+}
+
+// ChangePassword 修改密码
+func (s *Service) ChangePassword(ctx context.Context, userID uint, oldPassword, newPassword string) error {
+	user, err := s.repo.GetByID(ctx, userID)
+	if err != nil {
+		return errors.New("用户不存在")
+	}
+
+	// 验证旧密码
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(oldPassword)); err != nil {
+		return errors.New("旧密码错误")
+	}
+
+	// 生成新密码哈希
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	user.PasswordHash = string(hashedPassword)
+	return s.repo.Update(ctx, user)
+}
+
+// UpdateUserStats 更新用户统计信息
+func (s *Service) UpdateUserStats(userID uint, statsType string, value int64) error {
+	ctx := context.Background()
+	user, err := s.repo.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	switch statsType {
+	case "upload", "uploads":
+		user.TotalUploads += int(value)
+	case "download", "downloads":
+		user.TotalDownloads += int(value)
+	case "storage":
+		user.TotalStorage += value
+	}
+
+	return s.repo.Update(ctx, user)
+}
+
+// GetStats 获取用户统计信息
+func (s *Service) GetStats(ctx context.Context, userID uint) (*model.UserStats, error) {
+	user, err := s.repo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.UserStats{
+		UserID:         user.ID,
+		TotalUploads:   user.TotalUploads,
+		TotalDownloads: user.TotalDownloads,
+		TotalStorage:   user.TotalStorage,
+		FileCount:      0, // TODO: 从 FileCode 表统计
+	}, nil
+}

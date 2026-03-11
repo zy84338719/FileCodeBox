@@ -1,0 +1,220 @@
+syntax = "proto3";
+
+package http.admin;
+
+option go_package = "admin";
+
+import "api/api.proto";
+
+// ==================== 管理员登录 ====================
+
+message AdminLoginReq {
+    string username = 1 [(api.body) = "username"];
+    string password = 2 [(api.body) = "password"];
+}
+
+message AdminLoginResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    AdminLoginData data = 3 [(api.body) = "data"];
+}
+
+message AdminLoginData {
+    string token = 1 [(api.body) = "token"];
+    string token_type = 2 [(api.body) = "token_type"];
+    int64 expires_in = 3 [(api.body) = "expires_in"];
+}
+
+// ==================== 系统统计 ====================
+
+message AdminStatsReq {}
+
+message AdminStatsResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    AdminStatsData data = 3 [(api.body) = "data"];
+}
+
+message AdminStatsData {
+    int64 total_files = 1 [(api.body) = "total_files"];
+    int64 total_users = 2 [(api.body) = "total_users"];
+    int64 total_size = 3 [(api.body) = "total_size"];
+    int64 today_uploads = 4 [(api.body) = "today_uploads"];
+    int64 today_downloads = 5 [(api.body) = "today_downloads"];
+}
+
+// ==================== 文件管理 ====================
+
+message AdminListFilesReq {
+    int32 page = 1 [(api.query) = "page"];
+    int32 page_size = 2 [(api.query) = "page_size"];
+    string keyword = 3 [(api.query) = "keyword"];
+    string sort_by = 4 [(api.query) = "sort_by"];
+}
+
+message AdminListFilesResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    AdminFileList data = 3 [(api.body) = "data"];
+}
+
+message AdminFileList {
+    repeated FileItem items = 1 [(api.body) = "items"];
+    int64 total = 2 [(api.body) = "total"];
+    int32 page = 3 [(api.body) = "page"];
+    int32 page_size = 4 [(api.body) = "page_size"];
+}
+
+message FileItem {
+    uint32 id = 1 [(api.body) = "id"];
+    string code = 2 [(api.body) = "code"];
+    string file_name = 3 [(api.body) = "file_name"];
+    int64 file_size = 4 [(api.body) = "file_size"];
+    string expire_time = 5 [(api.body) = "expire_time"];
+    int32 view_count = 6 [(api.body) = "view_count"];
+    int32 download_count = 7 [(api.body) = "download_count"];
+    string created_at = 8 [(api.body) = "created_at"];
+}
+
+// ==================== 删除文件 ====================
+
+message AdminDeleteFileReq {
+    uint32 id = 1 [(api.path) = "id"];
+}
+
+message AdminDeleteFileResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+}
+
+// ==================== 用户管理 ====================
+
+message AdminListUsersReq {
+    int32 page = 1 [(api.query) = "page"];
+    int32 page_size = 2 [(api.query) = "page_size"];
+    string keyword = 3 [(api.query) = "keyword"];
+    int32 status = 4 [(api.query) = "status"];
+}
+
+message AdminListUsersResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    AdminUserList data = 3 [(api.body) = "data"];
+}
+
+message AdminUserList {
+    repeated UserItem items = 1 [(api.body) = "items"];
+    int64 total = 2 [(api.body) = "total"];
+    int32 page = 3 [(api.body) = "page"];
+    int32 page_size = 4 [(api.body) = "page_size"];
+}
+
+message UserItem {
+    uint32 id = 1 [(api.body) = "id"];
+    string username = 2 [(api.body) = "username"];
+    string email = 3 [(api.body) = "email"];
+    string nickname = 4 [(api.body) = "nickname"];
+    int32 status = 5 [(api.body) = "status"];
+    int64 quota_used = 6 [(api.body) = "quota_used"];
+    int64 quota_limit = 7 [(api.body) = "quota_limit"];
+    string created_at = 8 [(api.body) = "created_at"];
+}
+
+// ==================== 更新用户状态 ====================
+
+message AdminUpdateUserStatusReq {
+    uint32 id = 1 [(api.path) = "id"];
+    int32 status = 2 [(api.body) = "status"];
+}
+
+message AdminUpdateUserStatusResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+}
+
+// ==================== 系统配置 ====================
+
+message AdminGetConfigReq {}
+
+message AdminGetConfigResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+    ConfigData data = 3 [(api.body) = "data"];
+}
+
+message ConfigData {
+    BaseConfig base = 1 [(api.body) = "base"];
+    StorageConfig storage = 2 [(api.body) = "storage"];
+    TransferConfig transfer = 3 [(api.body) = "transfer"];
+}
+
+message BaseConfig {
+    string name = 1 [(api.body) = "name"];
+    string description = 2 [(api.body) = "description"];
+    int32 port = 3 [(api.body) = "port"];
+}
+
+message StorageConfig {
+    string type = 1 [(api.body) = "type"];
+    int64 max_size = 2 [(api.body) = "max_size"];
+}
+
+message TransferConfig {
+    int32 max_count = 1 [(api.body) = "max_count"];
+    int32 expire_default = 2 [(api.body) = "expire_default"];
+}
+
+// ==================== 更新配置 ====================
+
+message AdminUpdateConfigReq {
+    ConfigData config = 1 [(api.body) = "config"];
+}
+
+message AdminUpdateConfigResp {
+    int32 code = 1 [(api.body) = "code"];
+    string message = 2 [(api.body) = "message"];
+}
+
+// ==================== 服务定义 ====================
+
+service AdminService {
+    // 管理员登录
+    rpc AdminLogin(AdminLoginReq) returns (AdminLoginResp) {
+        option (api.post) = "/admin/login";
+    }
+
+    // 系统统计
+    rpc AdminStats(AdminStatsReq) returns (AdminStatsResp) {
+        option (api.get) = "/admin/stats";
+    }
+    
+    // 文件列表
+    rpc AdminListFiles(AdminListFilesReq) returns (AdminListFilesResp) {
+        option (api.get) = "/admin/files";
+    }
+    
+    // 删除文件
+    rpc AdminDeleteFile(AdminDeleteFileReq) returns (AdminDeleteFileResp) {
+        option (api.delete) = "/admin/files/:id";
+    }
+    
+    // 用户列表
+    rpc AdminListUsers(AdminListUsersReq) returns (AdminListUsersResp) {
+        option (api.get) = "/admin/users";
+    }
+    
+    // 更新用户状态
+    rpc AdminUpdateUserStatus(AdminUpdateUserStatusReq) returns (AdminUpdateUserStatusResp) {
+        option (api.put) = "/admin/users/:id/status";
+    }
+    
+    // 获取系统配置
+    rpc AdminGetConfig(AdminGetConfigReq) returns (AdminGetConfigResp) {
+        option (api.get) = "/admin/config";
+    }
+    
+    // 更新系统配置
+    rpc AdminUpdateConfig(AdminUpdateConfigReq) returns (AdminUpdateConfigResp) {
+        option (api.put) = "/admin/config";
+    }
+}
