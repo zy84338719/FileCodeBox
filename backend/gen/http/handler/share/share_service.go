@@ -107,7 +107,7 @@ func ShareText(ctx context.Context, c *app.RequestContext) {
 		Message: "分享成功",
 		Data: &sharemodel.ShareData{
 			Code: result.Code,
-			Url:  result.FullShareURL,
+			URL:  result.FullShareURL,
 		},
 	}
 
@@ -226,7 +226,7 @@ func ShareFile(ctx context.Context, c *app.RequestContext) {
 		Message: "文件上传成功",
 		Data: &sharemodel.ShareData{
 			Code: shareResult.Code,
-			Url:  fullShareURL,
+			URL:  fullShareURL,
 		},
 	}
 
@@ -417,7 +417,7 @@ func GetShare(ctx context.Context, c *app.RequestContext) {
 			Text:        fileCode.Text,
 			FileName:    fileCode.UUIDFileName,
 			FileSize:    fmt.Sprintf("%d", fileCode.Size),
-			Url:         fmt.Sprintf("/download/%s", fileCode.Code),
+			URL:         fmt.Sprintf("/download/%s", fileCode.Code),
 			HasPassword: fileCode.RequireAuth,
 			// ExpireTime:  fileCode.ExpiredAt.Format("2006-01-02 15:04:05"),
 		},

@@ -40,9 +40,8 @@ jobs:
 
     - name: Generate IDL code (thrift)
       working-directory: backend
-      # thrift-gen 只生成无 legacy proto-gen 残留的新服务 IDL
-      # legacy 服务（admin/user/share/...）待 task4（删 proto + 切命名空间）完成后切到 thrift-gen-all
-      run: make thrift-gen
+      # task4 完成后切到 thrift-gen-all（全量 thrift 重新生成）
+      run: make thrift-gen-all
 
     - name: Run checks
       run: make check

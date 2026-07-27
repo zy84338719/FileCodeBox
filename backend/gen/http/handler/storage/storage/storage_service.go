@@ -220,7 +220,7 @@ func convertToProtoWebDAVConfig(cfg *storagesvc.WebDAVConfig) *storage.WebDAVCon
 		Username: cfg.Username,
 		Password: cfg.Password,
 		RootPath: cfg.RootPath,
-		Url:      cfg.URL,
+		URL:      cfg.URL,
 	}
 }
 
@@ -229,10 +229,10 @@ func convertToProtoS3Config(cfg *storagesvc.S3Config) *storage.S3Config {
 		return nil
 	}
 	return &storage.S3Config{
-		AccessKeyId:     cfg.AccessKeyID,
+		AccessKeyID:     cfg.AccessKeyID,
 		SecretAccessKey: cfg.SecretAccessKey,
 		BucketName:      cfg.BucketName,
-		EndpointUrl:     cfg.EndpointURL,
+		EndpointURL:     cfg.EndpointURL,
 		RegionName:      cfg.RegionName,
 		Hostname:        cfg.Hostname,
 		Proxy:           cfg.Proxy,
@@ -265,7 +265,7 @@ func convertFromProtoWebDAVConfig(cfg *storage.WebDAVConfig) *storagesvc.WebDAVC
 		Username: cfg.Username,
 		Password: cfg.Password,
 		RootPath: cfg.RootPath,
-		URL:      cfg.Url,
+		URL:      cfg.URL,
 	}
 }
 
@@ -274,10 +274,10 @@ func convertFromProtoS3Config(cfg *storage.S3Config) *storagesvc.S3Config {
 		return nil
 	}
 	return &storagesvc.S3Config{
-		AccessKeyID:     cfg.AccessKeyId,
+		AccessKeyID:     cfg.AccessKeyID,
 		SecretAccessKey: cfg.SecretAccessKey,
 		BucketName:      cfg.BucketName,
-		EndpointURL:     cfg.EndpointUrl,
+		EndpointURL:     cfg.EndpointURL,
 		RegionName:      cfg.RegionName,
 		Hostname:        cfg.Hostname,
 		Proxy:           cfg.Proxy,

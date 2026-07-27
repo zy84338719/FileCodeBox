@@ -10,10 +10,10 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"gorm.io/gorm"
 
+	notifymodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/notify"
 	notifyapp "github.com/zy84338719/fileCodeBox/backend/internal/app/notify"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/errcode"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/resp"
-	notifymodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/notify"
 )
 
 var notifySvc *notifyapp.Service

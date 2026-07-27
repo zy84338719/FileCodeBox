@@ -479,7 +479,7 @@ func (s *Service) GetUserFiles(ctx context.Context, userID uint, page, pageSize 
 		}
 
 		fileItems[i] = &usermodel.UserFileItem{
-			Id:           uint32(file.ID),
+			ID:           int64(file.ID),
 			Code:         file.Code,
 			Prefix:       file.Prefix,
 			Suffix:       file.Suffix,

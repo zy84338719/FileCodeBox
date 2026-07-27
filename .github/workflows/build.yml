@@ -68,7 +68,7 @@ jobs:
 
     - name: Generate IDL code (thrift)
       working-directory: backend
-      run: make thrift-gen
+      run: make thrift-gen-all
 
     - name: Run tests
       run: make test

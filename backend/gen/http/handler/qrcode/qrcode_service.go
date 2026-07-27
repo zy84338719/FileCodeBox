@@ -87,7 +87,7 @@ func GenerateQRCode(ctx context.Context, c *app.RequestContext) {
 		Code:    200,
 		Message: "生成成功",
 		Data: &qrcode.QRCodeData{
-			Id:   id,
+			ID:   id,
 			Data: req.Data,
 			Size: req.Size,
 		},
@@ -106,7 +106,7 @@ func GenerateQRCode(ctx context.Context, c *app.RequestContext) {
 		resp.Data.Base64Data = base64Data
 	} else {
 		// 返回图片URL
-		resp.Data.ImageUrl = fmt.Sprintf("/qrcode/%s", id)
+		resp.Data.ImageURL = fmt.Sprintf("/qrcode/%s", id)
 	}
 
 	c.JSON(consts.StatusOK, resp)
@@ -124,7 +124,7 @@ func GetQRCode(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// 检查二维码是否存在
-	storedQR, exists := QRCodeStore[req.Id]
+	storedQR, exists := QRCodeStore[req.ID]
 	if !exists {
 		c.JSON(consts.StatusNotFound, map[string]interface{}{
 			"code":    404,

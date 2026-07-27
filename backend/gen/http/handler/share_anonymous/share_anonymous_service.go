@@ -10,10 +10,10 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"github.com/redis/go-redis/v9"
 
+	anonmodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/share_anonymous"
 	anonapp "github.com/zy84338719/fileCodeBox/backend/internal/app/anonymous"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/errcode"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/resp"
-	anonmodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/share_anonymous"
 )
 
 var anonSvc *anonapp.Service

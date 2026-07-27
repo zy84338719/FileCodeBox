@@ -4,8 +4,14 @@ package maintenance
 
 import (
 	"github.com/cloudwego/hertz/pkg/app/server"
-	maintenancehandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/maintenance"
+	maintenance "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/maintenance"
 )
+
+/*
+ This file will register all the routes of the services in the master idl.
+ And it will update automatically when you use the "update" command for the idl.
+ So don't modify the contents of the file, or your code will be deleted when it is updated.
+*/
 
 // Register register routes based on the IDL 'api.${HTTP Method}' annotation.
 func Register(r *server.Hertz) {
@@ -15,13 +21,13 @@ func Register(r *server.Hertz) {
 		_admin := root.Group("/admin", _adminMw()...)
 		{
 			_maintenance := _admin.Group("/maintenance", _maintenanceMw()...)
-			_maintenance.POST("/clean-expired", append(_cleanExpiredFilesMw(), maintenancehandler.CleanExpiredFiles)...)
-			_maintenance.POST("/clean-temp", append(_cleanTempFilesMw(), maintenancehandler.CleanTempFiles)...)
-			_maintenance.GET("/logs", append(_getSystemLogsMw(), maintenancehandler.GetSystemLogs)...)
-			_maintenance.GET("/system-info", append(_getSystemInfoMw(), maintenancehandler.GetSystemInfo)...)
+			_maintenance.POST("/clean-expired", append(_cleanexpiredfilesMw(), maintenance.CleanExpiredFiles)...)
+			_maintenance.POST("/clean-temp", append(_cleantempfilesMw(), maintenance.CleanTempFiles)...)
+			_maintenance.GET("/logs", append(_getsystemlogsMw(), maintenance.GetSystemLogs)...)
+			_maintenance.GET("/system-info", append(_getsysteminfoMw(), maintenance.GetSystemInfo)...)
 			{
 				_monitor := _maintenance.Group("/monitor", _monitorMw()...)
-				_monitor.GET("/storage", append(_getStorageStatusMw(), maintenancehandler.GetStorageStatus)...)
+				_monitor.GET("/storage", append(_getstoragestatusMw(), maintenance.GetStorageStatus)...)
 			}
 		}
 	}

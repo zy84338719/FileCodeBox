@@ -108,7 +108,7 @@ func ChunkUploadInit(ctx context.Context, c *app.RequestContext) {
 				Code:    200,
 				Message: "文件已存在，快速上传成功",
 				Data: &chunkmodel.ChunkUploadInitData{
-					UploadId:      uploadID,
+					UploadID:      uploadID,
 					ChunkSize:     fmt.Sprintf("%d", req.ChunkSize),
 					TotalChunks:   fmt.Sprintf("%d", req.TotalChunks),
 					IsQuickUpload: true,
@@ -142,7 +142,7 @@ func ChunkUploadInit(ctx context.Context, c *app.RequestContext) {
 		Code:    200,
 		Message: "初始化成功",
 		Data: &chunkmodel.ChunkUploadInitData{
-			UploadId:      result.UploadID,
+			UploadID:      result.UploadID,
 			ChunkSize:     fmt.Sprintf("%d", result.ChunkSize),
 			TotalChunks:   fmt.Sprintf("%d", result.TotalChunks),
 			IsQuickUpload: false,
@@ -312,7 +312,7 @@ func ChunkUploadStatus(ctx context.Context, c *app.RequestContext) {
 		Code:    200,
 		Message: "获取成功",
 		Data: &chunkmodel.ChunkUploadStatusData{
-			UploadId:        info.UploadID,
+			UploadID:        info.UploadID,
 			TotalChunks:     int32(info.TotalChunks),
 			UploadedChunks:  int32(len(uploadedIndexes)),
 			UploadedIndexes: uploadedIndexes32,
@@ -461,7 +461,7 @@ func ChunkUploadComplete(ctx context.Context, c *app.RequestContext) {
 		Message: "上传完成",
 		Data: &chunkmodel.ChunkUploadCompleteData{
 			ShareCode: shareResult.Code,
-			ShareUrl:  fullShareURL,
+			ShareURL:  fullShareURL,
 			FileName:  info.FileName,
 			FileSize:  info.FileSize,
 		},

@@ -9,10 +9,10 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/redis/go-redis/v9"
 
+	presignmodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/presign"
 	presignapp "github.com/zy84338719/fileCodeBox/backend/internal/app/presign"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/errcode"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/resp"
-	presignmodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/presign"
 )
 
 var presignSvc *presignapp.Service

@@ -18,6 +18,7 @@ func Register(r *server.Hertz) {
 
 	root := r.Group("/", rootMw()...)
 	root.GET("/", append(_indexMw(), common.Index)...)
+	root.GET("/health", append(_healthMw(), common.Health)...)
 	{
 		_api := root.Group("/api", _apiMw()...)
 		{

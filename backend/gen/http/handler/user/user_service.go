@@ -60,7 +60,7 @@ func Register(ctx context.Context, c *app.RequestContext) {
 		Code:    200,
 		Message: "注册成功",
 		Data: &usermodel.UserData{
-			Id:        uint32(result.ID),
+			ID:        int64(result.ID),
 			Username:  result.Username,
 			Email:     result.Email,
 			Nickname:  result.Nickname,
@@ -103,7 +103,7 @@ func Login(ctx context.Context, c *app.RequestContext) {
 		Data: &usermodel.LoginData{
 			Token: token,
 			User: &usermodel.UserData{
-				Id:        uint32(userInfo.ID),
+				ID:        int64(userInfo.ID),
 				Username:  userInfo.Username,
 				Email:     userInfo.Email,
 				Nickname:  userInfo.Nickname,
@@ -153,7 +153,7 @@ func UserInfo(ctx context.Context, c *app.RequestContext) {
 		Code:    200,
 		Message: "获取成功",
 		Data: &usermodel.UserData{
-			Id:        uint32(user.ID),
+			ID:        int64(user.ID),
 			Username:  user.Username,
 			Email:     user.Email,
 			Nickname:  user.Nickname,
