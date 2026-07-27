@@ -146,8 +146,57 @@ thriftgo-install:
 kitex-install:
 	go install github.com/cloudwego/kitex/tool/cmd/kitex@latest
 
+# tools-install 安装全部工具（hz + thriftgo + kitex）
 tools-install: hz-install thriftgo-install kitex-install
 	@echo "工具安装完成"
+
+# install-tools 是 tools-install 的友好别名（CI 使用）
+install-tools: tools-install
+	@echo "alias: install-tools -> tools-install"
+
+# ===== 顶层 IDL 生成（CI 一键入口） =====
+
+# 新版 thrift IDL（无 legacy proto-gen 产物）— 安全生成
+THRIFT_NEW_IDLS := idl/notify.thrift idl/presign.thrift idl/ratelimit.thrift idl/share_anonymous.thrift
+
+# thrift-gen 批量生成全部 thrift IDL（推荐 CI 使用）
+# 流程：
+#   1. 仅生成"新" thrift IDL（无 legacy .pb.go 残留的服务）
+#   2. legacy IDL（admin/user/share/...）保留 proto-gen 代码直到 task4 完成
+#   3. 跳过 go mod tidy / go fmt（保持幂等，避免无关格式变更）
+#
+# 如需强制全量重新生成（含 legacy 服务），用 thrift-gen-all（注意：会破坏 build 直到 task4 完成）
+thrift-gen:
+	@echo "==> 批量生成 thrift IDL（新服务）..."
+	@chmod +x $(GEN_SCRIPT)
+	@for f in $(THRIFT_NEW_IDLS); do \
+		echo "-------------------------------------------"; \
+		echo "处理 thrift IDL: $$f"; \
+		SKIP_TIDY=1 SKIP_FMT=1 $(GEN_SCRIPT) thrift-update $$f || { echo "❌ 生成失败: $$f"; exit 1; }; \
+	done
+	@echo "✅ thrift-gen 完成（仅新服务）"
+
+# thrift-gen-all 强制全量重新生成（task4 完成后用）
+thrift-gen-all:
+	@echo "==> 清理 proto 残留 (.pb.go)..."
+	@find $(MODEL_DIR) -name "*.pb.go" -type f -delete 2>/dev/null || true
+	@echo "==> 批量生成全部 thrift IDL..."
+	@chmod +x $(GEN_SCRIPT)
+	$(GEN_SCRIPT) thrift-update-all
+
+# hz-gen 批量生成全部 proto IDL（保留兼容）
+hz-gen:
+	@chmod +x $(GEN_SCRIPT)
+	$(GEN_SCRIPT) hz-update-all
+
+# rpc-gen 批量生成全部 kitex RPC IDL
+rpc-gen:
+	@chmod +x $(GEN_SCRIPT)
+	$(GEN_SCRIPT) kitex $$(find $(IDL_PATH)/rpc -name "*.proto" 2>/dev/null | head -1)
+
+# generate 顶层入口：thrift 优先
+generate: thrift-gen
+	@echo "✅ IDL 代码生成完成"
 
 # ===== 兼容旧命令 =====
 
@@ -155,5 +204,5 @@ gen-new: gen-http-new
 gen-update: gen-http-update
 gen-update-all: gen-http-update-all
 
-.PHONY: all
+.PHONY: all build run test clean docker-build docker-run lint gen-http-new gen-http-update gen-http-update-all gen-http-init gen-rpc gen-rpc-all gen-thrift-new gen-thrift-update gen-thrift-update-all kitex-install hz-install thriftgo-install tools-install install-tools thrift-gen thrift-gen-all hz-gen rpc-gen generate
 all: tidy build

@@ -62,6 +62,14 @@ jobs:
     - name: Download dependencies
       run: make deps
 
+    - name: Install IDL tools (hz + thriftgo + kitex)
+      working-directory: backend
+      run: make install-tools
+
+    - name: Generate IDL code (thrift)
+      working-directory: backend
+      run: make thrift-gen
+
     - name: Run tests
       run: make test
 

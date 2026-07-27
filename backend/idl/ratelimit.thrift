@@ -87,7 +87,7 @@ struct StatusResp {
 
 // ==================== 服务定义 ====================
 
-service RateLimitService {
+service RatelimitService {
     // GetConfig 获取限流配置
     GetConfigResp GetConfig(1: GetConfigReq req) (api.get = "/admin/ratelimit/config")
 

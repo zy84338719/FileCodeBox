@@ -432,14 +432,33 @@ gen_thrift_update_all() {
     err "未在 ${IDL_DIR} 或 ${IDL_DIR}/http 中找到任何 .thrift 文件"
   fi
 
-  log "共找到 ${#idl_files[@]} 个 thrift IDL 文件，开始批量更新..."
+  # 过滤：跳过没有 service 定义的 IDL（纯 struct/文档）
+  # 不带 service 的 IDL 不应该生成 handler/router 桩
+  local real_idl_files=()
+  local skipped=()
+  for f in "${idl_files[@]}"; do
+    if grep -qE '^[[:space:]]*service[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\{' "$f"; then
+      real_idl_files+=("$f")
+    else
+      skipped+=("$f")
+    fi
+  done
+
+  if [[ ${#skipped[@]} -gt 0 ]]; then
+    warn "跳过非服务 IDL（无 service 定义，仅为 struct/文档）:"
+    for s in "${skipped[@]}"; do
+      warn "  - $s"
+    done
+  fi
+
+  log "共找到 ${#real_idl_files[@]} 个有效 thrift IDL 文件（service 定义），开始批量更新..."
 
   _ensure_hz_meta
 
   local exclude_args
   _build_exclude_args exclude_args
 
-  for f in "${idl_files[@]}"; do
+  for f in "${real_idl_files[@]}"; do
     IDL_FILE="$f"
     log "-------------------------------------------"
     log "处理 thrift IDL: $f"
@@ -458,7 +477,7 @@ gen_thrift_update_all() {
   done
 
   log "==========================================="
-  log "批量更新完成，共处理 ${#idl_files[@]} 个 thrift IDL 文件"
+  log "批量更新完成，共处理 ${#real_idl_files[@]} 个 thrift IDL 文件"
 }
 
 ############################################
@@ -507,9 +526,17 @@ esac
 ############################################
 
 log "执行 go mod tidy..."
-go mod tidy
+if [[ "${SKIP_TIDY:-0}" != "1" ]]; then
+  go mod tidy
+else
+  warn "跳过 go mod tidy (SKIP_TIDY=1)"
+fi
 
 log "执行 go fmt..."
-go fmt ./...
+if [[ "${SKIP_FMT:-0}" != "1" ]]; then
+  go fmt ./...
+else
+  warn "跳过 go fmt (SKIP_FMT=1)"
+fi
 
 log "生成完成 ✅"

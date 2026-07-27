@@ -2936,7 +2936,7 @@ func (p *StatusResp) String() string {
 }
 
 // ==================== 服务定义 ====================
-type RateLimitService interface {
+type RatelimitService interface {
 	// GetConfig 获取限流配置
 	GetConfig(ctx context.Context, req *GetConfigReq) (r *GetConfigResp, err error)
 	// UpdateConfig 更新限流配置
@@ -2947,96 +2947,96 @@ type RateLimitService interface {
 	Status(ctx context.Context, req *StatusReq) (r *StatusResp, err error)
 }
 
-type RateLimitServiceClient struct {
+type RatelimitServiceClient struct {
 	c thrift.TClient
 }
 
-func NewRateLimitServiceClientFactory(t thrift.TTransport, f thrift.TProtocolFactory) *RateLimitServiceClient {
-	return &RateLimitServiceClient{
+func NewRatelimitServiceClientFactory(t thrift.TTransport, f thrift.TProtocolFactory) *RatelimitServiceClient {
+	return &RatelimitServiceClient{
 		c: thrift.NewTStandardClient(f.GetProtocol(t), f.GetProtocol(t)),
 	}
 }
 
-func NewRateLimitServiceClientProtocol(t thrift.TTransport, iprot thrift.TProtocol, oprot thrift.TProtocol) *RateLimitServiceClient {
-	return &RateLimitServiceClient{
+func NewRatelimitServiceClientProtocol(t thrift.TTransport, iprot thrift.TProtocol, oprot thrift.TProtocol) *RatelimitServiceClient {
+	return &RatelimitServiceClient{
 		c: thrift.NewTStandardClient(iprot, oprot),
 	}
 }
 
-func NewRateLimitServiceClient(c thrift.TClient) *RateLimitServiceClient {
-	return &RateLimitServiceClient{
+func NewRatelimitServiceClient(c thrift.TClient) *RatelimitServiceClient {
+	return &RatelimitServiceClient{
 		c: c,
 	}
 }
 
-func (p *RateLimitServiceClient) Client_() thrift.TClient {
+func (p *RatelimitServiceClient) Client_() thrift.TClient {
 	return p.c
 }
 
-func (p *RateLimitServiceClient) GetConfig(ctx context.Context, req *GetConfigReq) (r *GetConfigResp, err error) {
-	var _args RateLimitServiceGetConfigArgs
+func (p *RatelimitServiceClient) GetConfig(ctx context.Context, req *GetConfigReq) (r *GetConfigResp, err error) {
+	var _args RatelimitServiceGetConfigArgs
 	_args.Req = req
-	var _result RateLimitServiceGetConfigResult
+	var _result RatelimitServiceGetConfigResult
 	if err = p.Client_().Call(ctx, "GetConfig", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
-func (p *RateLimitServiceClient) UpdateConfig(ctx context.Context, req *UpdateConfigReq) (r *UpdateConfigResp, err error) {
-	var _args RateLimitServiceUpdateConfigArgs
+func (p *RatelimitServiceClient) UpdateConfig(ctx context.Context, req *UpdateConfigReq) (r *UpdateConfigResp, err error) {
+	var _args RatelimitServiceUpdateConfigArgs
 	_args.Req = req
-	var _result RateLimitServiceUpdateConfigResult
+	var _result RatelimitServiceUpdateConfigResult
 	if err = p.Client_().Call(ctx, "UpdateConfig", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
-func (p *RateLimitServiceClient) Test(ctx context.Context, req *TestReq) (r *TestResp, err error) {
-	var _args RateLimitServiceTestArgs
+func (p *RatelimitServiceClient) Test(ctx context.Context, req *TestReq) (r *TestResp, err error) {
+	var _args RatelimitServiceTestArgs
 	_args.Req = req
-	var _result RateLimitServiceTestResult
+	var _result RatelimitServiceTestResult
 	if err = p.Client_().Call(ctx, "Test", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
-func (p *RateLimitServiceClient) Status(ctx context.Context, req *StatusReq) (r *StatusResp, err error) {
-	var _args RateLimitServiceStatusArgs
+func (p *RatelimitServiceClient) Status(ctx context.Context, req *StatusReq) (r *StatusResp, err error) {
+	var _args RatelimitServiceStatusArgs
 	_args.Req = req
-	var _result RateLimitServiceStatusResult
+	var _result RatelimitServiceStatusResult
 	if err = p.Client_().Call(ctx, "Status", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
 
-type RateLimitServiceProcessor struct {
+type RatelimitServiceProcessor struct {
 	processorMap map[string]thrift.TProcessorFunction
-	handler      RateLimitService
+	handler      RatelimitService
 }
 
-func (p *RateLimitServiceProcessor) AddToProcessorMap(key string, processor thrift.TProcessorFunction) {
+func (p *RatelimitServiceProcessor) AddToProcessorMap(key string, processor thrift.TProcessorFunction) {
 	p.processorMap[key] = processor
 }
 
-func (p *RateLimitServiceProcessor) GetProcessorFunction(key string) (processor thrift.TProcessorFunction, ok bool) {
+func (p *RatelimitServiceProcessor) GetProcessorFunction(key string) (processor thrift.TProcessorFunction, ok bool) {
 	processor, ok = p.processorMap[key]
 	return processor, ok
 }
 
-func (p *RateLimitServiceProcessor) ProcessorMap() map[string]thrift.TProcessorFunction {
+func (p *RatelimitServiceProcessor) ProcessorMap() map[string]thrift.TProcessorFunction {
 	return p.processorMap
 }
 
-func NewRateLimitServiceProcessor(handler RateLimitService) *RateLimitServiceProcessor {
-	self := &RateLimitServiceProcessor{handler: handler, processorMap: make(map[string]thrift.TProcessorFunction)}
-	self.AddToProcessorMap("GetConfig", &rateLimitServiceProcessorGetConfig{handler: handler})
-	self.AddToProcessorMap("UpdateConfig", &rateLimitServiceProcessorUpdateConfig{handler: handler})
-	self.AddToProcessorMap("Test", &rateLimitServiceProcessorTest{handler: handler})
-	self.AddToProcessorMap("Status", &rateLimitServiceProcessorStatus{handler: handler})
+func NewRatelimitServiceProcessor(handler RatelimitService) *RatelimitServiceProcessor {
+	self := &RatelimitServiceProcessor{handler: handler, processorMap: make(map[string]thrift.TProcessorFunction)}
+	self.AddToProcessorMap("GetConfig", &ratelimitServiceProcessorGetConfig{handler: handler})
+	self.AddToProcessorMap("UpdateConfig", &ratelimitServiceProcessorUpdateConfig{handler: handler})
+	self.AddToProcessorMap("Test", &ratelimitServiceProcessorTest{handler: handler})
+	self.AddToProcessorMap("Status", &ratelimitServiceProcessorStatus{handler: handler})
 	return self
 }
-func (p *RateLimitServiceProcessor) Process(ctx context.Context, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+func (p *RatelimitServiceProcessor) Process(ctx context.Context, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
 	name, _, seqId, err := iprot.ReadMessageBegin()
 	if err != nil {
 		return false, err
@@ -3054,12 +3054,12 @@ func (p *RateLimitServiceProcessor) Process(ctx context.Context, iprot, oprot th
 	return false, x
 }
 
-type rateLimitServiceProcessorGetConfig struct {
-	handler RateLimitService
+type ratelimitServiceProcessorGetConfig struct {
+	handler RatelimitService
 }
 
-func (p *rateLimitServiceProcessorGetConfig) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := RateLimitServiceGetConfigArgs{}
+func (p *ratelimitServiceProcessorGetConfig) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := RatelimitServiceGetConfigArgs{}
 	if err = args.Read(iprot); err != nil {
 		iprot.ReadMessageEnd()
 		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
@@ -3072,7 +3072,7 @@ func (p *rateLimitServiceProcessorGetConfig) Process(ctx context.Context, seqId 
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	result := RateLimitServiceGetConfigResult{}
+	result := RatelimitServiceGetConfigResult{}
 	var retval *GetConfigResp
 	if retval, err2 = p.handler.GetConfig(ctx, args.Req); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing GetConfig: "+err2.Error())
@@ -3102,12 +3102,12 @@ func (p *rateLimitServiceProcessorGetConfig) Process(ctx context.Context, seqId 
 	return true, err
 }
 
-type rateLimitServiceProcessorUpdateConfig struct {
-	handler RateLimitService
+type ratelimitServiceProcessorUpdateConfig struct {
+	handler RatelimitService
 }
 
-func (p *rateLimitServiceProcessorUpdateConfig) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := RateLimitServiceUpdateConfigArgs{}
+func (p *ratelimitServiceProcessorUpdateConfig) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := RatelimitServiceUpdateConfigArgs{}
 	if err = args.Read(iprot); err != nil {
 		iprot.ReadMessageEnd()
 		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
@@ -3120,7 +3120,7 @@ func (p *rateLimitServiceProcessorUpdateConfig) Process(ctx context.Context, seq
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	result := RateLimitServiceUpdateConfigResult{}
+	result := RatelimitServiceUpdateConfigResult{}
 	var retval *UpdateConfigResp
 	if retval, err2 = p.handler.UpdateConfig(ctx, args.Req); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing UpdateConfig: "+err2.Error())
@@ -3150,12 +3150,12 @@ func (p *rateLimitServiceProcessorUpdateConfig) Process(ctx context.Context, seq
 	return true, err
 }
 
-type rateLimitServiceProcessorTest struct {
-	handler RateLimitService
+type ratelimitServiceProcessorTest struct {
+	handler RatelimitService
 }
 
-func (p *rateLimitServiceProcessorTest) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := RateLimitServiceTestArgs{}
+func (p *ratelimitServiceProcessorTest) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := RatelimitServiceTestArgs{}
 	if err = args.Read(iprot); err != nil {
 		iprot.ReadMessageEnd()
 		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
@@ -3168,7 +3168,7 @@ func (p *rateLimitServiceProcessorTest) Process(ctx context.Context, seqId int32
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	result := RateLimitServiceTestResult{}
+	result := RatelimitServiceTestResult{}
 	var retval *TestResp
 	if retval, err2 = p.handler.Test(ctx, args.Req); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing Test: "+err2.Error())
@@ -3198,12 +3198,12 @@ func (p *rateLimitServiceProcessorTest) Process(ctx context.Context, seqId int32
 	return true, err
 }
 
-type rateLimitServiceProcessorStatus struct {
-	handler RateLimitService
+type ratelimitServiceProcessorStatus struct {
+	handler RatelimitService
 }
 
-func (p *rateLimitServiceProcessorStatus) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := RateLimitServiceStatusArgs{}
+func (p *ratelimitServiceProcessorStatus) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := RatelimitServiceStatusArgs{}
 	if err = args.Read(iprot); err != nil {
 		iprot.ReadMessageEnd()
 		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
@@ -3216,7 +3216,7 @@ func (p *rateLimitServiceProcessorStatus) Process(ctx context.Context, seqId int
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	result := RateLimitServiceStatusResult{}
+	result := RatelimitServiceStatusResult{}
 	var retval *StatusResp
 	if retval, err2 = p.handler.Status(ctx, args.Req); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing Status: "+err2.Error())
@@ -3246,35 +3246,35 @@ func (p *rateLimitServiceProcessorStatus) Process(ctx context.Context, seqId int
 	return true, err
 }
 
-type RateLimitServiceGetConfigArgs struct {
+type RatelimitServiceGetConfigArgs struct {
 	Req *GetConfigReq `thrift:"req,1"`
 }
 
-func NewRateLimitServiceGetConfigArgs() *RateLimitServiceGetConfigArgs {
-	return &RateLimitServiceGetConfigArgs{}
+func NewRatelimitServiceGetConfigArgs() *RatelimitServiceGetConfigArgs {
+	return &RatelimitServiceGetConfigArgs{}
 }
 
-func (p *RateLimitServiceGetConfigArgs) InitDefault() {
+func (p *RatelimitServiceGetConfigArgs) InitDefault() {
 }
 
-var RateLimitServiceGetConfigArgs_Req_DEFAULT *GetConfigReq
+var RatelimitServiceGetConfigArgs_Req_DEFAULT *GetConfigReq
 
-func (p *RateLimitServiceGetConfigArgs) GetReq() (v *GetConfigReq) {
+func (p *RatelimitServiceGetConfigArgs) GetReq() (v *GetConfigReq) {
 	if !p.IsSetReq() {
-		return RateLimitServiceGetConfigArgs_Req_DEFAULT
+		return RatelimitServiceGetConfigArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-var fieldIDToName_RateLimitServiceGetConfigArgs = map[int16]string{
+var fieldIDToName_RatelimitServiceGetConfigArgs = map[int16]string{
 	1: "req",
 }
 
-func (p *RateLimitServiceGetConfigArgs) IsSetReq() bool {
+func (p *RatelimitServiceGetConfigArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *RateLimitServiceGetConfigArgs) Read(iprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceGetConfigArgs) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -3320,7 +3320,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RateLimitServiceGetConfigArgs[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RatelimitServiceGetConfigArgs[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -3330,7 +3330,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceGetConfigArgs) ReadField1(iprot thrift.TProtocol) error {
+func (p *RatelimitServiceGetConfigArgs) ReadField1(iprot thrift.TProtocol) error {
 	_field := NewGetConfigReq()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -3339,7 +3339,7 @@ func (p *RateLimitServiceGetConfigArgs) ReadField1(iprot thrift.TProtocol) error
 	return nil
 }
 
-func (p *RateLimitServiceGetConfigArgs) Write(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceGetConfigArgs) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("GetConfig_args"); err != nil {
 		goto WriteStructBeginError
@@ -3367,7 +3367,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceGetConfigArgs) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceGetConfigArgs) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -3384,43 +3384,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *RateLimitServiceGetConfigArgs) String() string {
+func (p *RatelimitServiceGetConfigArgs) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("RateLimitServiceGetConfigArgs(%+v)", *p)
+	return fmt.Sprintf("RatelimitServiceGetConfigArgs(%+v)", *p)
 
 }
 
-type RateLimitServiceGetConfigResult struct {
+type RatelimitServiceGetConfigResult struct {
 	Success *GetConfigResp `thrift:"success,0,optional"`
 }
 
-func NewRateLimitServiceGetConfigResult() *RateLimitServiceGetConfigResult {
-	return &RateLimitServiceGetConfigResult{}
+func NewRatelimitServiceGetConfigResult() *RatelimitServiceGetConfigResult {
+	return &RatelimitServiceGetConfigResult{}
 }
 
-func (p *RateLimitServiceGetConfigResult) InitDefault() {
+func (p *RatelimitServiceGetConfigResult) InitDefault() {
 }
 
-var RateLimitServiceGetConfigResult_Success_DEFAULT *GetConfigResp
+var RatelimitServiceGetConfigResult_Success_DEFAULT *GetConfigResp
 
-func (p *RateLimitServiceGetConfigResult) GetSuccess() (v *GetConfigResp) {
+func (p *RatelimitServiceGetConfigResult) GetSuccess() (v *GetConfigResp) {
 	if !p.IsSetSuccess() {
-		return RateLimitServiceGetConfigResult_Success_DEFAULT
+		return RatelimitServiceGetConfigResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-var fieldIDToName_RateLimitServiceGetConfigResult = map[int16]string{
+var fieldIDToName_RatelimitServiceGetConfigResult = map[int16]string{
 	0: "success",
 }
 
-func (p *RateLimitServiceGetConfigResult) IsSetSuccess() bool {
+func (p *RatelimitServiceGetConfigResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *RateLimitServiceGetConfigResult) Read(iprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceGetConfigResult) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -3466,7 +3466,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RateLimitServiceGetConfigResult[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RatelimitServiceGetConfigResult[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -3476,7 +3476,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceGetConfigResult) ReadField0(iprot thrift.TProtocol) error {
+func (p *RatelimitServiceGetConfigResult) ReadField0(iprot thrift.TProtocol) error {
 	_field := NewGetConfigResp()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -3485,7 +3485,7 @@ func (p *RateLimitServiceGetConfigResult) ReadField0(iprot thrift.TProtocol) err
 	return nil
 }
 
-func (p *RateLimitServiceGetConfigResult) Write(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceGetConfigResult) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("GetConfig_result"); err != nil {
 		goto WriteStructBeginError
@@ -3513,7 +3513,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceGetConfigResult) writeField0(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceGetConfigResult) writeField0(oprot thrift.TProtocol) (err error) {
 	if p.IsSetSuccess() {
 		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
 			goto WriteFieldBeginError
@@ -3532,43 +3532,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
 }
 
-func (p *RateLimitServiceGetConfigResult) String() string {
+func (p *RatelimitServiceGetConfigResult) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("RateLimitServiceGetConfigResult(%+v)", *p)
+	return fmt.Sprintf("RatelimitServiceGetConfigResult(%+v)", *p)
 
 }
 
-type RateLimitServiceUpdateConfigArgs struct {
+type RatelimitServiceUpdateConfigArgs struct {
 	Req *UpdateConfigReq `thrift:"req,1"`
 }
 
-func NewRateLimitServiceUpdateConfigArgs() *RateLimitServiceUpdateConfigArgs {
-	return &RateLimitServiceUpdateConfigArgs{}
+func NewRatelimitServiceUpdateConfigArgs() *RatelimitServiceUpdateConfigArgs {
+	return &RatelimitServiceUpdateConfigArgs{}
 }
 
-func (p *RateLimitServiceUpdateConfigArgs) InitDefault() {
+func (p *RatelimitServiceUpdateConfigArgs) InitDefault() {
 }
 
-var RateLimitServiceUpdateConfigArgs_Req_DEFAULT *UpdateConfigReq
+var RatelimitServiceUpdateConfigArgs_Req_DEFAULT *UpdateConfigReq
 
-func (p *RateLimitServiceUpdateConfigArgs) GetReq() (v *UpdateConfigReq) {
+func (p *RatelimitServiceUpdateConfigArgs) GetReq() (v *UpdateConfigReq) {
 	if !p.IsSetReq() {
-		return RateLimitServiceUpdateConfigArgs_Req_DEFAULT
+		return RatelimitServiceUpdateConfigArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-var fieldIDToName_RateLimitServiceUpdateConfigArgs = map[int16]string{
+var fieldIDToName_RatelimitServiceUpdateConfigArgs = map[int16]string{
 	1: "req",
 }
 
-func (p *RateLimitServiceUpdateConfigArgs) IsSetReq() bool {
+func (p *RatelimitServiceUpdateConfigArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *RateLimitServiceUpdateConfigArgs) Read(iprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceUpdateConfigArgs) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -3614,7 +3614,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RateLimitServiceUpdateConfigArgs[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RatelimitServiceUpdateConfigArgs[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -3624,7 +3624,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceUpdateConfigArgs) ReadField1(iprot thrift.TProtocol) error {
+func (p *RatelimitServiceUpdateConfigArgs) ReadField1(iprot thrift.TProtocol) error {
 	_field := NewUpdateConfigReq()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -3633,7 +3633,7 @@ func (p *RateLimitServiceUpdateConfigArgs) ReadField1(iprot thrift.TProtocol) er
 	return nil
 }
 
-func (p *RateLimitServiceUpdateConfigArgs) Write(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceUpdateConfigArgs) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("UpdateConfig_args"); err != nil {
 		goto WriteStructBeginError
@@ -3661,7 +3661,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceUpdateConfigArgs) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceUpdateConfigArgs) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -3678,43 +3678,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *RateLimitServiceUpdateConfigArgs) String() string {
+func (p *RatelimitServiceUpdateConfigArgs) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("RateLimitServiceUpdateConfigArgs(%+v)", *p)
+	return fmt.Sprintf("RatelimitServiceUpdateConfigArgs(%+v)", *p)
 
 }
 
-type RateLimitServiceUpdateConfigResult struct {
+type RatelimitServiceUpdateConfigResult struct {
 	Success *UpdateConfigResp `thrift:"success,0,optional"`
 }
 
-func NewRateLimitServiceUpdateConfigResult() *RateLimitServiceUpdateConfigResult {
-	return &RateLimitServiceUpdateConfigResult{}
+func NewRatelimitServiceUpdateConfigResult() *RatelimitServiceUpdateConfigResult {
+	return &RatelimitServiceUpdateConfigResult{}
 }
 
-func (p *RateLimitServiceUpdateConfigResult) InitDefault() {
+func (p *RatelimitServiceUpdateConfigResult) InitDefault() {
 }
 
-var RateLimitServiceUpdateConfigResult_Success_DEFAULT *UpdateConfigResp
+var RatelimitServiceUpdateConfigResult_Success_DEFAULT *UpdateConfigResp
 
-func (p *RateLimitServiceUpdateConfigResult) GetSuccess() (v *UpdateConfigResp) {
+func (p *RatelimitServiceUpdateConfigResult) GetSuccess() (v *UpdateConfigResp) {
 	if !p.IsSetSuccess() {
-		return RateLimitServiceUpdateConfigResult_Success_DEFAULT
+		return RatelimitServiceUpdateConfigResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-var fieldIDToName_RateLimitServiceUpdateConfigResult = map[int16]string{
+var fieldIDToName_RatelimitServiceUpdateConfigResult = map[int16]string{
 	0: "success",
 }
 
-func (p *RateLimitServiceUpdateConfigResult) IsSetSuccess() bool {
+func (p *RatelimitServiceUpdateConfigResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *RateLimitServiceUpdateConfigResult) Read(iprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceUpdateConfigResult) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -3760,7 +3760,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RateLimitServiceUpdateConfigResult[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RatelimitServiceUpdateConfigResult[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -3770,7 +3770,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceUpdateConfigResult) ReadField0(iprot thrift.TProtocol) error {
+func (p *RatelimitServiceUpdateConfigResult) ReadField0(iprot thrift.TProtocol) error {
 	_field := NewUpdateConfigResp()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -3779,7 +3779,7 @@ func (p *RateLimitServiceUpdateConfigResult) ReadField0(iprot thrift.TProtocol) 
 	return nil
 }
 
-func (p *RateLimitServiceUpdateConfigResult) Write(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceUpdateConfigResult) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("UpdateConfig_result"); err != nil {
 		goto WriteStructBeginError
@@ -3807,7 +3807,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceUpdateConfigResult) writeField0(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceUpdateConfigResult) writeField0(oprot thrift.TProtocol) (err error) {
 	if p.IsSetSuccess() {
 		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
 			goto WriteFieldBeginError
@@ -3826,43 +3826,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
 }
 
-func (p *RateLimitServiceUpdateConfigResult) String() string {
+func (p *RatelimitServiceUpdateConfigResult) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("RateLimitServiceUpdateConfigResult(%+v)", *p)
+	return fmt.Sprintf("RatelimitServiceUpdateConfigResult(%+v)", *p)
 
 }
 
-type RateLimitServiceTestArgs struct {
+type RatelimitServiceTestArgs struct {
 	Req *TestReq `thrift:"req,1"`
 }
 
-func NewRateLimitServiceTestArgs() *RateLimitServiceTestArgs {
-	return &RateLimitServiceTestArgs{}
+func NewRatelimitServiceTestArgs() *RatelimitServiceTestArgs {
+	return &RatelimitServiceTestArgs{}
 }
 
-func (p *RateLimitServiceTestArgs) InitDefault() {
+func (p *RatelimitServiceTestArgs) InitDefault() {
 }
 
-var RateLimitServiceTestArgs_Req_DEFAULT *TestReq
+var RatelimitServiceTestArgs_Req_DEFAULT *TestReq
 
-func (p *RateLimitServiceTestArgs) GetReq() (v *TestReq) {
+func (p *RatelimitServiceTestArgs) GetReq() (v *TestReq) {
 	if !p.IsSetReq() {
-		return RateLimitServiceTestArgs_Req_DEFAULT
+		return RatelimitServiceTestArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-var fieldIDToName_RateLimitServiceTestArgs = map[int16]string{
+var fieldIDToName_RatelimitServiceTestArgs = map[int16]string{
 	1: "req",
 }
 
-func (p *RateLimitServiceTestArgs) IsSetReq() bool {
+func (p *RatelimitServiceTestArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *RateLimitServiceTestArgs) Read(iprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceTestArgs) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -3908,7 +3908,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RateLimitServiceTestArgs[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RatelimitServiceTestArgs[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -3918,7 +3918,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceTestArgs) ReadField1(iprot thrift.TProtocol) error {
+func (p *RatelimitServiceTestArgs) ReadField1(iprot thrift.TProtocol) error {
 	_field := NewTestReq()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -3927,7 +3927,7 @@ func (p *RateLimitServiceTestArgs) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *RateLimitServiceTestArgs) Write(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceTestArgs) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("Test_args"); err != nil {
 		goto WriteStructBeginError
@@ -3955,7 +3955,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceTestArgs) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceTestArgs) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -3972,43 +3972,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *RateLimitServiceTestArgs) String() string {
+func (p *RatelimitServiceTestArgs) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("RateLimitServiceTestArgs(%+v)", *p)
+	return fmt.Sprintf("RatelimitServiceTestArgs(%+v)", *p)
 
 }
 
-type RateLimitServiceTestResult struct {
+type RatelimitServiceTestResult struct {
 	Success *TestResp `thrift:"success,0,optional"`
 }
 
-func NewRateLimitServiceTestResult() *RateLimitServiceTestResult {
-	return &RateLimitServiceTestResult{}
+func NewRatelimitServiceTestResult() *RatelimitServiceTestResult {
+	return &RatelimitServiceTestResult{}
 }
 
-func (p *RateLimitServiceTestResult) InitDefault() {
+func (p *RatelimitServiceTestResult) InitDefault() {
 }
 
-var RateLimitServiceTestResult_Success_DEFAULT *TestResp
+var RatelimitServiceTestResult_Success_DEFAULT *TestResp
 
-func (p *RateLimitServiceTestResult) GetSuccess() (v *TestResp) {
+func (p *RatelimitServiceTestResult) GetSuccess() (v *TestResp) {
 	if !p.IsSetSuccess() {
-		return RateLimitServiceTestResult_Success_DEFAULT
+		return RatelimitServiceTestResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-var fieldIDToName_RateLimitServiceTestResult = map[int16]string{
+var fieldIDToName_RatelimitServiceTestResult = map[int16]string{
 	0: "success",
 }
 
-func (p *RateLimitServiceTestResult) IsSetSuccess() bool {
+func (p *RatelimitServiceTestResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *RateLimitServiceTestResult) Read(iprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceTestResult) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -4054,7 +4054,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RateLimitServiceTestResult[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RatelimitServiceTestResult[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -4064,7 +4064,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceTestResult) ReadField0(iprot thrift.TProtocol) error {
+func (p *RatelimitServiceTestResult) ReadField0(iprot thrift.TProtocol) error {
 	_field := NewTestResp()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -4073,7 +4073,7 @@ func (p *RateLimitServiceTestResult) ReadField0(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *RateLimitServiceTestResult) Write(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceTestResult) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("Test_result"); err != nil {
 		goto WriteStructBeginError
@@ -4101,7 +4101,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceTestResult) writeField0(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceTestResult) writeField0(oprot thrift.TProtocol) (err error) {
 	if p.IsSetSuccess() {
 		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
 			goto WriteFieldBeginError
@@ -4120,43 +4120,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
 }
 
-func (p *RateLimitServiceTestResult) String() string {
+func (p *RatelimitServiceTestResult) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("RateLimitServiceTestResult(%+v)", *p)
+	return fmt.Sprintf("RatelimitServiceTestResult(%+v)", *p)
 
 }
 
-type RateLimitServiceStatusArgs struct {
+type RatelimitServiceStatusArgs struct {
 	Req *StatusReq `thrift:"req,1"`
 }
 
-func NewRateLimitServiceStatusArgs() *RateLimitServiceStatusArgs {
-	return &RateLimitServiceStatusArgs{}
+func NewRatelimitServiceStatusArgs() *RatelimitServiceStatusArgs {
+	return &RatelimitServiceStatusArgs{}
 }
 
-func (p *RateLimitServiceStatusArgs) InitDefault() {
+func (p *RatelimitServiceStatusArgs) InitDefault() {
 }
 
-var RateLimitServiceStatusArgs_Req_DEFAULT *StatusReq
+var RatelimitServiceStatusArgs_Req_DEFAULT *StatusReq
 
-func (p *RateLimitServiceStatusArgs) GetReq() (v *StatusReq) {
+func (p *RatelimitServiceStatusArgs) GetReq() (v *StatusReq) {
 	if !p.IsSetReq() {
-		return RateLimitServiceStatusArgs_Req_DEFAULT
+		return RatelimitServiceStatusArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-var fieldIDToName_RateLimitServiceStatusArgs = map[int16]string{
+var fieldIDToName_RatelimitServiceStatusArgs = map[int16]string{
 	1: "req",
 }
 
-func (p *RateLimitServiceStatusArgs) IsSetReq() bool {
+func (p *RatelimitServiceStatusArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *RateLimitServiceStatusArgs) Read(iprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceStatusArgs) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -4202,7 +4202,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RateLimitServiceStatusArgs[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RatelimitServiceStatusArgs[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -4212,7 +4212,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceStatusArgs) ReadField1(iprot thrift.TProtocol) error {
+func (p *RatelimitServiceStatusArgs) ReadField1(iprot thrift.TProtocol) error {
 	_field := NewStatusReq()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -4221,7 +4221,7 @@ func (p *RateLimitServiceStatusArgs) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *RateLimitServiceStatusArgs) Write(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceStatusArgs) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("Status_args"); err != nil {
 		goto WriteStructBeginError
@@ -4249,7 +4249,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceStatusArgs) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceStatusArgs) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -4266,43 +4266,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *RateLimitServiceStatusArgs) String() string {
+func (p *RatelimitServiceStatusArgs) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("RateLimitServiceStatusArgs(%+v)", *p)
+	return fmt.Sprintf("RatelimitServiceStatusArgs(%+v)", *p)
 
 }
 
-type RateLimitServiceStatusResult struct {
+type RatelimitServiceStatusResult struct {
 	Success *StatusResp `thrift:"success,0,optional"`
 }
 
-func NewRateLimitServiceStatusResult() *RateLimitServiceStatusResult {
-	return &RateLimitServiceStatusResult{}
+func NewRatelimitServiceStatusResult() *RatelimitServiceStatusResult {
+	return &RatelimitServiceStatusResult{}
 }
 
-func (p *RateLimitServiceStatusResult) InitDefault() {
+func (p *RatelimitServiceStatusResult) InitDefault() {
 }
 
-var RateLimitServiceStatusResult_Success_DEFAULT *StatusResp
+var RatelimitServiceStatusResult_Success_DEFAULT *StatusResp
 
-func (p *RateLimitServiceStatusResult) GetSuccess() (v *StatusResp) {
+func (p *RatelimitServiceStatusResult) GetSuccess() (v *StatusResp) {
 	if !p.IsSetSuccess() {
-		return RateLimitServiceStatusResult_Success_DEFAULT
+		return RatelimitServiceStatusResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-var fieldIDToName_RateLimitServiceStatusResult = map[int16]string{
+var fieldIDToName_RatelimitServiceStatusResult = map[int16]string{
 	0: "success",
 }
 
-func (p *RateLimitServiceStatusResult) IsSetSuccess() bool {
+func (p *RatelimitServiceStatusResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *RateLimitServiceStatusResult) Read(iprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceStatusResult) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -4348,7 +4348,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RateLimitServiceStatusResult[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_RatelimitServiceStatusResult[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -4358,7 +4358,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceStatusResult) ReadField0(iprot thrift.TProtocol) error {
+func (p *RatelimitServiceStatusResult) ReadField0(iprot thrift.TProtocol) error {
 	_field := NewStatusResp()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -4367,7 +4367,7 @@ func (p *RateLimitServiceStatusResult) ReadField0(iprot thrift.TProtocol) error 
 	return nil
 }
 
-func (p *RateLimitServiceStatusResult) Write(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceStatusResult) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("Status_result"); err != nil {
 		goto WriteStructBeginError
@@ -4395,7 +4395,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *RateLimitServiceStatusResult) writeField0(oprot thrift.TProtocol) (err error) {
+func (p *RatelimitServiceStatusResult) writeField0(oprot thrift.TProtocol) (err error) {
 	if p.IsSetSuccess() {
 		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
 			goto WriteFieldBeginError
@@ -4414,10 +4414,10 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
 }
 
-func (p *RateLimitServiceStatusResult) String() string {
+func (p *RatelimitServiceStatusResult) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("RateLimitServiceStatusResult(%+v)", *p)
+	return fmt.Sprintf("RatelimitServiceStatusResult(%+v)", *p)
 
 }

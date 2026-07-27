@@ -34,6 +34,16 @@ jobs:
       working-directory: backend
       run: go mod verify
 
+    - name: Install IDL tools (hz + thriftgo + kitex)
+      working-directory: backend
+      run: make install-tools
+
+    - name: Generate IDL code (thrift)
+      working-directory: backend
+      # thrift-gen 只生成无 legacy proto-gen 残留的新服务 IDL
+      # legacy 服务（admin/user/share/...）待 task4（删 proto + 切命名空间）完成后切到 thrift-gen-all
+      run: make thrift-gen
+
     - name: Run checks
       run: make check
 
