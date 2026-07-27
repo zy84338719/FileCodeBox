@@ -1,4 +1,4 @@
-.PHONY: build run test clean docker-build docker-run lint gen-http-new gen-http-update gen-http-update-all gen-http-init gen-rpc gen-rpc-all kitex-install hz-install
+.PHONY: build run test clean docker-build docker-run lint gen-http-new gen-http-update gen-http-update-all gen-http-init gen-rpc gen-rpc-all gen-thrift-new gen-thrift-update gen-thrift-update-all kitex-install hz-install thriftgo-install tools-install
 
 APP_NAME=FileCodeBox
 MODULE_NAME=github.com/zy84338719/fileCodeBox/backend
@@ -82,6 +82,36 @@ gen-http-init:
 	@chmod +x $(GEN_SCRIPT)
 	$(GEN_SCRIPT) hz-init $(IDL_PATH)/$(IDL)
 
+# ===== Thrift HTTP 代码生成（生成到 gen/http/，与 proto 共享同一目录）=====
+# 用法同 gen-http-*,只是 IDL 改成 *.thrift
+
+# 初始化新项目（首次使用，thrift）
+# 用法: make gen-thrift-new IDL=common.thrift
+gen-thrift-new:
+	@if [ -z "$(IDL)" ]; then \
+		echo "用法: make gen-thrift-new IDL=<thrift文件名>"; \
+		echo "示例: make gen-thrift-new IDL=common.thrift"; \
+		exit 1; \
+	fi
+	@chmod +x $(GEN_SCRIPT)
+	$(GEN_SCRIPT) thrift-new $(IDL_PATH)/$(IDL)
+
+# 更新 HTTP 代码（指定单个 thrift IDL）
+# 用法: make gen-thrift-update IDL=common.thrift
+gen-thrift-update:
+	@if [ -z "$(IDL)" ]; then \
+		echo "用法: make gen-thrift-update IDL=<thrift文件名>"; \
+		echo "示例: make gen-thrift-update IDL=common.thrift"; \
+		exit 1; \
+	fi
+	@chmod +x $(GEN_SCRIPT)
+	$(GEN_SCRIPT) thrift-update $(IDL_PATH)/$(IDL)
+
+# 批量更新所有 thrift IDL
+gen-thrift-update-all:
+	@chmod +x $(GEN_SCRIPT)
+	$(GEN_SCRIPT) thrift-update-all
+
 # ===== Kitex RPC 代码生成 (生成到 gen/rpc/) =====
 
 # 生成 RPC 代码
@@ -110,10 +140,13 @@ gen-rpc-all:
 hz-install:
 	go install github.com/cloudwego/hertz/cmd/hz@latest
 
+thriftgo-install:
+	go install github.com/cloudwego/thriftgo/cmd/thriftgo@latest
+
 kitex-install:
 	go install github.com/cloudwego/kitex/tool/cmd/kitex@latest
 
-tools-install: hz-install kitex-install
+tools-install: hz-install thriftgo-install kitex-install
 	@echo "工具安装完成"
 
 # ===== 兼容旧命令 =====

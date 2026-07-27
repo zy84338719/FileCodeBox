@@ -37,6 +37,12 @@ check_hz() {
   fi
 }
 
+check_thriftgo() {
+  if ! command -v thriftgo &> /dev/null; then
+    err "thriftgo 未安装，请执行：go install github.com/cloudwego/thriftgo/cmd/thriftgo@latest"
+  fi
+}
+
 check_kitex() {
   if ! command -v kitex &> /dev/null; then
     err "kitex 未安装，请执行：go install github.com/cloudwego/kitex/tool/cmd/kitex@latest"
@@ -56,6 +62,9 @@ usage() {
   echo "  hz-update       更新 Hz HTTP 代码（指定单个 IDL，.hz 不存在时自动初始化）"
   echo "  hz-update-all   扫描所有 idl/*.proto 和 idl/http/*.proto 批量更新"
   echo "  hz-init         强制重新初始化 .hz 配置（备份 handler 后 hz new --force）"
+  echo "  thrift-new      初始化 Hz HTTP 项目（指定单个 thrift IDL）"
+  echo "  thrift-update   更新 Hz HTTP 代码（指定单个 thrift IDL）"
+  echo "  thrift-update-all  扫描所有 idl/*.thrift 批量更新"
   echo "  kitex           生成 Kitex RPC 代码（指定单个 IDL）"
   echo ""
   echo "Examples:"
@@ -64,6 +73,9 @@ usage() {
   echo "  ./scripts/gen.sh hz-update idl/http/health.proto"
   echo "  ./scripts/gen.sh hz-update-all"
   echo "  ./scripts/gen.sh hz-init idl/common.proto"
+  echo "  ./scripts/gen.sh thrift-new idl/common.thrift"
+  echo "  ./scripts/gen.sh thrift-update idl/http/health.thrift"
+  echo "  ./scripts/gen.sh thrift-update-all"
   echo "  ./scripts/gen.sh kitex idl/rpc/user.proto"
   exit 1
 }
@@ -322,6 +334,134 @@ gen_kitex() {
 }
 
 ############################################
+# Thrift IDL 代码生成（与 proto 共用同一 gen/http/ 输出目录）
+############################################
+
+# 校验 IDL 是 thrift
+_check_thrift() {
+  case "$IDL_FILE" in
+    *.thrift) ;;
+    *) err "thrift 命令要求 .thrift 文件: $IDL_FILE" ;;
+  esac
+}
+
+# thrift 包含路径：thrift 用 include 关键字解析，不需要 -I 参数
+# 简单实现：thrift IDL 应在 idl/ 根或 idl/http/ 子目录，thriftgo 会自动找
+_build_thrift_include_args() {
+  local _varname=$1
+  eval "$_varname=()"
+  # thrift include path：idl/ 根目录，让 hz 找到 api.thrift 等
+  eval "$_varname[0]=\"-I\""
+  eval "$_varname[1]=\"$IDL_DIR\""
+}
+
+gen_thrift_new() {
+  check_hz
+  check_thriftgo
+  _check_thrift
+  if [[ -z "$IDL_FILE" ]]; then
+    err "thrift-new 需要指定 IDL 文件，用法: ./scripts/gen.sh thrift-new idl/common.thrift"
+  fi
+  if [[ ! -f "$IDL_FILE" ]]; then
+    err "IDL 文件不存在: $IDL_FILE"
+  fi
+
+  mkdir -p "$HANDLER_DIR" "$MODEL_DIR" "$ROUTER_DIR"
+
+  local thrift_args
+  _build_thrift_include_args thrift_args
+
+  log "执行 hz new (thrift): $IDL_FILE"
+  hz new \
+    --idl "$IDL_FILE" \
+    --module "$MODULE" \
+    --out_dir "$HZ_OUT_DIR" \
+    --handler_dir "$HANDLER_DIR" \
+    --model_dir "$MODEL_DIR" \
+    --router_dir "$ROUTER_DIR" \
+    "${thrift_args[@]+"${thrift_args[@]}"}"
+  _fix_hz_meta
+}
+
+gen_thrift_update() {
+  check_hz
+  check_thriftgo
+  _check_thrift
+  if [[ -z "$IDL_FILE" ]]; then
+    err "thrift-update 需要指定 IDL 文件，用法: ./scripts/gen.sh thrift-update idl/common.thrift"
+  fi
+  if [[ ! -f "$IDL_FILE" ]]; then
+    err "IDL 文件不存在: $IDL_FILE"
+  fi
+
+  mkdir -p "$HANDLER_DIR" "$MODEL_DIR" "$ROUTER_DIR"
+
+  _ensure_hz_meta
+
+  local exclude_args
+  _build_exclude_args exclude_args
+
+  local thrift_args
+  _build_thrift_include_args thrift_args
+
+  log "执行 hz update (thrift): $IDL_FILE"
+  hz update \
+    --idl "$IDL_FILE" \
+    --module "$MODULE" \
+    --out_dir "$HZ_OUT_DIR" \
+    --model_dir "$MODEL_DIR" \
+    "${thrift_args[@]+"${thrift_args[@]}"}" \
+    "${exclude_args[@]+"${exclude_args[@]}"}"
+}
+
+gen_thrift_update_all() {
+  check_hz
+  check_thriftgo
+  mkdir -p "$HANDLER_DIR" "$MODEL_DIR" "$ROUTER_DIR"
+
+  # 收集所有 HTTP IDL 文件：idl/*.thrift + idl/http/*.thrift
+  local idl_files=()
+  while IFS= read -r -d '' f; do
+    idl_files+=("$f")
+  done < <(find "$IDL_DIR" -maxdepth 1 -name "*.thrift" -print0 2>/dev/null)
+  while IFS= read -r -d '' f; do
+    idl_files+=("$f")
+  done < <(find "$IDL_DIR/http" -name "*.thrift" -print0 2>/dev/null)
+
+  if [[ ${#idl_files[@]} -eq 0 ]]; then
+    err "未在 ${IDL_DIR} 或 ${IDL_DIR}/http 中找到任何 .thrift 文件"
+  fi
+
+  log "共找到 ${#idl_files[@]} 个 thrift IDL 文件，开始批量更新..."
+
+  _ensure_hz_meta
+
+  local exclude_args
+  _build_exclude_args exclude_args
+
+  for f in "${idl_files[@]}"; do
+    IDL_FILE="$f"
+    log "-------------------------------------------"
+    log "处理 thrift IDL: $f"
+
+    local thrift_args
+    _build_thrift_include_args thrift_args
+
+    log "执行 hz update (thrift): $f"
+    hz update \
+      --idl "$f" \
+      --module "$MODULE" \
+      --out_dir "$HZ_OUT_DIR" \
+      --model_dir "$MODEL_DIR" \
+      "${thrift_args[@]+"${thrift_args[@]}"}" \
+      "${exclude_args[@]+"${exclude_args[@]}"}"
+  done
+
+  log "==========================================="
+  log "批量更新完成，共处理 ${#idl_files[@]} 个 thrift IDL 文件"
+}
+
+############################################
 # 执行生成
 ############################################
 
@@ -337,6 +477,15 @@ case "$ACTION" in
     ;;
   hz-init)
     gen_hz_init
+    ;;
+  thrift-new)
+    gen_thrift_new
+    ;;
+  thrift-update)
+    gen_thrift_update
+    ;;
+  thrift-update-all)
+    gen_thrift_update_all
     ;;
   kitex)
     gen_kitex
