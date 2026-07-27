@@ -11,11 +11,18 @@ import (
 	"github.com/zy84338719/fileCodeBox/backend/gen/http/router"
 	"github.com/zy84338719/fileCodeBox/backend/internal/conf"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/logger"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/middleware"
 	previewPkg "github.com/zy84338719/fileCodeBox/backend/internal/preview"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/redis"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+
+	anonHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/share_anonymous"
+	notifyHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/notify"
+	presignHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/presign"
+	ratelimitHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/ratelimit"
 )
 
 // 使用 internal/conf 包中的统一配置类型
@@ -195,6 +202,9 @@ func Bootstrap() (*server.Hertz, error) {
 		logger.Error("Failed to init preview service", zap.Error(err))
 	}
 
+	// 4.6 初始化新服务（thrift IDL 对应：notify/presign/anonymous/ratelimit）
+	initThriftIDLServices(database)
+
 	// 5. 创建 HTTP 服务器
 	port := config.Server.Port
 	if port == 0 {
@@ -247,4 +257,29 @@ func initPreviewService() error {
 	}
 
 	return previewPkg.InitService(previewConfig)
+}
+
+// initThriftIDLServices 初始化 thrift IDL 对应的新服务
+// 关联 internal/app/ → gen/http/handler/ 各 SetXxx 入口
+func initThriftIDLServices(database *gorm.DB) {
+	// 1. notify service（需要 DB）
+	notifyHandler.SetDB(database)
+
+	// 2. presign service（需要 Redis + baseURL + signingKey）
+	presignHandler.SetService(redis.GetClient(),
+		fmt.Sprintf("http://%s:%d", config.Server.Host, config.Server.Port),
+		"filecodebox-dev-signing-key-change-me")
+
+	// 3. anonymous service（需要 Redis）
+	anonHandler.SetService(redis.GetClient())
+
+	// 4. ratelimit service（直接用 default limiter）
+	ratelimitHandler.SetLimiter(middleware.GetDefaultRateLimiter())
+
+	// 5. 自动迁移 notify 表
+	if err := database.AutoMigrate(&model.Notify{}); err != nil {
+		logger.Error("Failed to migrate notify table", zap.Error(err))
+	} else {
+		logger.Info("Notify table migrated")
+	}
 }

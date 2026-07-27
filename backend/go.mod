@@ -3,6 +3,7 @@ module github.com/zy84338719/fileCodeBox/backend
 go 1.25.0
 
 require (
+	github.com/apache/thrift v0.24.0
 	github.com/cloudwego/hertz v0.9.6
 	github.com/disintegration/imaging v1.6.2
 	github.com/glebarez/sqlite v1.11.0
@@ -21,7 +22,6 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.24.0 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.15.0 // indirect
 	github.com/bytedance/sonic/loader v0.5.0 // indirect
@@ -71,3 +71,5 @@ require (
 	modernc.org/memory v1.5.0 // indirect
 	modernc.org/sqlite v1.23.1 // indirect
 )
+
+replace github.com/apache/thrift => github.com/apache/thrift v0.13.0

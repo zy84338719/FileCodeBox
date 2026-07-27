@@ -57,17 +57,18 @@ func NewService(rdb *redis.Client, baseURL string, signingKey string) *Service {
 
 // InitMeta init 元信息
 type InitMeta struct {
-	UploadID   string    `json:"upload_id"`
-	ObjectKey  string    `json:"object_key"`
-	FileName   string    `json:"file_name"`
-	FileSize   int64     `json:"file_size"`
-	Scheme     string    `json:"scheme"`
-	ExpireAt   time.Time `json:"expire_at"`
-	Complete   bool      `json:"complete"`
-	UserID     uint      `json:"user_id"`
-	ExpireValue int32    `json:"expire_value"`
-	ExpireStyle string   `json:"expire_style"`
-	RequireAuth bool     `json:"require_auth"`
+	UploadID    string    `json:"upload_id"`
+	ObjectKey   string    `json:"object_key"`
+	FileName    string    `json:"file_name"`
+	FileSize    int64     `json:"file_size"`
+	ContentType string    `json:"content_type"`
+	Scheme      string    `json:"scheme"`
+	ExpireAt    time.Time `json:"expire_at"`
+	Complete    bool      `json:"complete"`
+	UserID      uint      `json:"user_id"`
+	ExpireValue int32     `json:"expire_value"`
+	ExpireStyle string    `json:"expire_style"`
+	RequireAuth bool      `json:"require_auth"`
 }
 
 // InitResult init 返回
