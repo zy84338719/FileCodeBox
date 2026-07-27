@@ -171,6 +171,12 @@ func (s *Service) ShareTextWithAuth(ctx context.Context, text string, expireValu
 
 // ShareFile 分享文件
 func (s *Service) ShareFile(ctx context.Context, req *ShareFileReq) (*ShareResp, error) {
+	return s.CreateShare(ctx, req)
+}
+
+// CreateShare 创建分享记录（ShareFile 的语义化别名，便于其他 service 调用）
+// 行为：生成 code → 写 file_codes 表 → 返回 share_code / url
+func (s *Service) CreateShare(ctx context.Context, req *ShareFileReq) (*ShareResp, error) {
 	s.ensureRepository()
 
 	code := s.GenerateCode()

@@ -4,6 +4,7 @@ package presign
 
 import (
 	"context"
+	"errors"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/redis/go-redis/v9"
@@ -19,6 +20,15 @@ var presignSvc *presignapp.Service
 // SetService 注入 service
 func SetService(rdb *redis.Client, baseURL, signingKey string) {
 	presignSvc = presignapp.NewService(rdb, baseURL, signingKey)
+}
+
+// SetShareService 注入 share service（用于 Complete 时写分享表）
+func SetShareService(svc presignapp.ShareServiceInterface) {
+	if presignSvc == nil {
+		// 容错：允许先注入 share，再调 SetService
+		return
+	}
+	presignSvc.SetShareService(svc)
 }
 
 func getService() *presignapp.Service {
@@ -70,31 +80,52 @@ func Complete(ctx context.Context, c *app.RequestContext) {
 		resp.NewErrorWithMessage(c, errcode.CodeInvalidParam, err.Error())
 		return
 	}
-	meta, err := getService().Complete(ctx, req.UploadID, req.Token)
+	ownerIP := clientIP(c)
+	result, err := getService().Complete(ctx, req.UploadID, req.Token, ownerIP)
 	if err != nil {
-		switch err {
-		case presignapp.ErrUploadNotFound:
+		// 区分 token 校验错误 vs share 写入错误
+		switch {
+		case errors.Is(err, presignapp.ErrUploadNotFound):
 			resp.NewErrorByCode(c, errcode.CodeNotFound)
-		case presignapp.ErrTokenInvalid:
+		case errors.Is(err, presignapp.ErrTokenInvalid):
 			resp.NewErrorByCode(c, errcode.CodePresignToken)
-		case presignapp.ErrUploadExpired:
+		case errors.Is(err, presignapp.ErrUploadExpired):
 			resp.NewErrorByCode(c, errcode.CodePresignExpired)
-		case presignapp.ErrAlreadyComplete:
+		case errors.Is(err, presignapp.ErrAlreadyComplete):
 			resp.NewErrorByCode(c, errcode.CodePresignFailed)
 		default:
 			resp.NewErrorWithMessage(c, errcode.CodeInternal, err.Error())
 		}
 		return
 	}
-	// TODO: 写 share 表（这里返回 share_code 还需要 share service 配合）
-	_ = meta
+	meta := result.InitMeta
+	downloadURL := result.FullShareURL
+	if downloadURL == "" {
+		downloadURL = result.ShareURL
+	}
 	resp.Success(c, &presignmodel.CompleteData{
-		Code:        meta.UploadID, // 暂时用 uploadID 占位
-		URL:         "",
+		Code:        result.ShareCode,
+		URL:         result.ShareURL,
 		FileName:    meta.FileName,
 		FileSize:    meta.FileSize,
-		DownloadURL: "",
+		DownloadURL: downloadURL,
 	})
+}
+
+// clientIP 取客户端 IP（X-Forwarded-For 优先，其次 RemoteAddr）
+func clientIP(c *app.RequestContext) string {
+	if xff := string(c.GetHeader("X-Forwarded-For")); xff != "" {
+		for i := 0; i < len(xff); i++ {
+			if xff[i] == ',' {
+				return xff[:i]
+			}
+		}
+		return xff
+	}
+	if xri := string(c.GetHeader("X-Real-IP")); xri != "" {
+		return xri
+	}
+	return c.RemoteAddr().String()
 }
 
 // Abort .

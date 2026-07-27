@@ -22,6 +22,9 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	"github.com/zy84338719/fileCodeBox/backend/internal/app/share"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/utils"
 )
 
 // Redis key 模板
@@ -39,10 +42,19 @@ var (
 
 // Service 预签名上传 service
 type Service struct {
-	rdb            *redis.Client
-	defaultExpire  time.Duration
-	signingKey     []byte
-	baseURL        string
+	rdb           *redis.Client
+	defaultExpire time.Duration
+	signingKey    []byte
+	baseURL       string
+	// shareService 注入的 share service（Complete 时调用写分享表）
+	shareService ShareServiceInterface
+}
+
+// ShareServiceInterface share service 接口（避免循环依赖）
+// 与 share.Service.ShareFile / CreateShare 签名保持一致
+type ShareServiceInterface interface {
+	ShareFile(ctx context.Context, req *share.ShareFileReq) (*share.ShareResp, error)
+	CreateShare(ctx context.Context, req *share.ShareFileReq) (*share.ShareResp, error)
 }
 
 // NewService 创建 service
@@ -53,6 +65,11 @@ func NewService(rdb *redis.Client, baseURL string, signingKey string) *Service {
 		signingKey:    []byte(signingKey),
 		baseURL:       baseURL,
 	}
+}
+
+// SetShareService 注入 share service（用于 Complete 时写分享表）
+func (s *Service) SetShareService(svc ShareServiceInterface) {
+	s.shareService = svc
 }
 
 // InitMeta init 元信息
@@ -121,8 +138,17 @@ func (s *Service) Init(ctx context.Context, meta InitMeta) (*InitResult, error) 
 	}, nil
 }
 
-// Complete 完成通知
-func (s *Service) Complete(ctx context.Context, uploadID, token string) (*InitMeta, error) {
+// CompleteResult Complete 返回结果（包含 share_code）
+type CompleteResult struct {
+	*InitMeta
+	ShareCode     string
+	ShareURL      string
+	FullShareURL  string
+	OwnerIP       string
+}
+
+// Complete 完成通知（调 share service 写分享表）
+func (s *Service) Complete(ctx context.Context, uploadID, token, ownerIP string) (*CompleteResult, error) {
 	// 1. 读 meta
 	metaJSON, err := s.rdb.Get(ctx, fmt.Sprintf(keyUploadMeta, uploadID)).Result()
 	if errors.Is(err, redis.Nil) {
@@ -160,7 +186,67 @@ func (s *Service) Complete(ctx context.Context, uploadID, token string) (*InitMe
 	// 保留 meta 一段时间供查询（5 分钟）
 	s.rdb.Set(ctx, fmt.Sprintf(keyUploadMeta, uploadID), updatedJSON, 5*time.Minute)
 
-	return &meta, nil
+	// 6. 调 share service 写分享表
+	shareCode, shareURL, fullShareURL, shareErr := s.createShareRecord(ctx, &meta, ownerIP)
+	if shareErr != nil {
+		// 写分享表失败不算 fatal（meta 已标记 complete），返回 shareErr 让调用方决定
+		return &CompleteResult{
+			InitMeta:    &meta,
+			ShareCode:   "",
+			ShareURL:    "",
+			FullShareURL: "",
+			OwnerIP:     ownerIP,
+		}, fmt.Errorf("create share record: %w", shareErr)
+	}
+
+	return &CompleteResult{
+		InitMeta:     &meta,
+		ShareCode:    shareCode,
+		ShareURL:     shareURL,
+		FullShareURL: fullShareURL,
+		OwnerIP:      ownerIP,
+	}, nil
+}
+
+// createShareRecord 调 share service 写分享记录
+// 返回 (shareCode, shareURL, fullShareURL, error)
+func (s *Service) createShareRecord(ctx context.Context, meta *InitMeta, ownerIP string) (string, string, string, error) {
+	if s.shareService == nil {
+		// share service 未注入：返回 mock 数据（用于单测 / 未配置场景）
+		return "mock_" + meta.UploadID, "/share/mock", s.baseURL + "/share/mock", nil
+	}
+
+	// 计算过期时间（与 share.ShareTextWithAuth 行为一致）
+	expireTime := utils.CalculateExpireTime(int(meta.ExpireValue), meta.ExpireStyle)
+	expireCount := utils.CalculateExpireCount(meta.ExpireStyle, int(meta.ExpireValue))
+
+	uploadType := "presign_anonymous"
+	var userIDPtr *uint
+	if meta.UserID != 0 {
+		uid := meta.UserID
+		userIDPtr = &uid
+		uploadType = "presign_authenticated"
+	}
+
+	req := &share.ShareFileReq{
+		FilePath:     meta.ObjectKey,
+		Size:         meta.FileSize,
+		Text:         meta.FileName,
+		ExpiredAt:    expireTime,
+		ExpiredCount: expireCount,
+		RequireAuth:  meta.RequireAuth,
+		UserID:       userIDPtr,
+		UploadType:   uploadType,
+		OwnerIP:      ownerIP,
+		UploadID:     meta.UploadID,
+	}
+
+	resp, err := s.shareService.CreateShare(ctx, req)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	return resp.Code, resp.ShareURL, resp.FullShareURL, nil
 }
 
 // Abort 取消

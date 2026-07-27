@@ -16,6 +16,7 @@ import (
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/redis"
+	"github.com/zy84338719/fileCodeBox/backend/internal/storage"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
@@ -23,6 +24,7 @@ import (
 	notifyHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/notify"
 	presignHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/presign"
 	ratelimitHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/ratelimit"
+	shareService "github.com/zy84338719/fileCodeBox/backend/internal/app/share"
 )
 
 // 使用 internal/conf 包中的统一配置类型
@@ -265,10 +267,14 @@ func initThriftIDLServices(database *gorm.DB) {
 	// 1. notify service（需要 DB）
 	notifyHandler.SetDB(database)
 
-	// 2. presign service（需要 Redis + baseURL + signingKey）
+	// 2. presign service（需要 Redis + baseURL + signingKey + share service）
+	baseURL := fmt.Sprintf("http://%s:%d", config.Server.Host, config.Server.Port)
 	presignHandler.SetService(redis.GetClient(),
-		fmt.Sprintf("http://%s:%d", config.Server.Host, config.Server.Port),
+		baseURL,
 		"filecodebox-dev-signing-key-change-me")
+	// 2.1 注入 share service（Complete 时写分享表）
+	shareSvc := shareService.NewService(baseURL, getBootstrapStorageService())
+	presignHandler.SetShareService(shareSvc)
 
 	// 3. anonymous service（需要 Redis）
 	anonHandler.SetService(redis.GetClient())
@@ -282,4 +288,27 @@ func initThriftIDLServices(database *gorm.DB) {
 	} else {
 		logger.Info("Notify table migrated")
 	}
+}
+
+// getBootstrapStorageService bootstrap 用的 storage service
+// 后续应该从 conf 读 storage 配置（task4 后续）
+func getBootstrapStorageService() *storage.StorageService {
+	dataPath := "./data"
+	if config != nil && config.Storage.StoragePath != "" {
+		dataPath = config.Storage.StoragePath
+	}
+	storageType := storage.StorageTypeLocal
+	if config != nil && config.Storage.Type != "" {
+		switch config.Storage.Type {
+		case "s3":
+			storageType = storage.StorageTypeS3
+		case "webdav":
+			storageType = storage.StorageTypeWebDAV
+		}
+	}
+	return storage.NewStorageService(&storage.StorageConfig{
+		Type:     storageType,
+		DataPath: dataPath,
+		BaseURL:  fmt.Sprintf("http://%s:%d", config.Server.Host, config.Server.Port),
+	})
 }
