@@ -25,10 +25,12 @@ FileCodeBox 是一个使用 Go + Vue 3 实现的轻量级分享服务，采用�
 | 分类 | 能力速览 |
 | --- | --- |
 | 性能 | Go 原生并发、分片上传、断点续传、秒传校验 |
-| 分享体验 | 文本/文件双通道、链接有效期控制、密码和访问次数限制 |
-| 管理后台 | 仪表板、文件列表、用户管理、存储面板、系统配置 |
-| 安全 | JWT 认证、API Key 支持、限流中间件 |
-| 存储 | 本地磁盘、S3 兼容对象存储（可扩展） |
+| 分享体验 | 文本/文件双通道、链接有效期控制、密码和访问次数限制、**匿名取件（vastsa UX）** |
+| 管理后台 | 仪表板、文件列表、用户管理、存储面板、系统配置、**系统通知公告** |
+| 安全 | JWT 认证、API Key 支持、**限流中间件（IP+接口双层）** |
+| 存储 | 本地磁盘、S3 兼容对象存储、WebDAV、NFS、**OpenDAL 风格抽象** |
+| 上传 | 直传 + **预签名上传**（init/complete/abort） |
+| 工程 | **统一错误码体系**、**统一响应 envelope**（code/message/data/trace_id） |
 | 部署 | Docker / Docker Compose、单二进制部署 |
 | 前端 | Vue 3 + TypeScript、自适应布局、现代化 UI |
 
@@ -38,18 +40,26 @@ FileCodeBox 是一个使用 Go + Vue 3 实现的轻量级分享服务，采用�
 
 ```
 FileCodeBox/
-├── backend/           # Go 后端 (Hertz + GORM)
-│   ├── cmd/server/    # 入口
+├── backend/           # Go 后端 (Hertz v0.9.6 + Thrift IDL)
+│   ├── cmd/server/    # 入口 + bootstrap
 │   ├── internal/      # 内部包
-│   │   ├── app/       # 业务逻辑
-│   │   ├── repo/      # 数据访问
+│   │   ├── app/       # 业务逻辑（user/admin/share/anonymous/presign/notify/...）
+│   │   ├── repo/      # 数据访问（db/redis）
 │   │   ├── conf/      # 配置
-│   │   └── pkg/       # 工具库
-│   ├── biz/           # Hertz 生成代码
-│   │   ├── handler/   # HTTP handlers
-│   │   ├── model/     # Proto 生成的模型
+│   │   ├── pkg/
+│   │   │   ├── errcode/   # 业务码段位（1xxxx/2xxxx/...）
+│   │   │   ├── resp/      # 统一响应 envelope（带 trace_id）
+│   │   │   ├── middleware # auth + ratelimit
+│   │   │   └── ...
+│   │   └── storage/
+│   │       ├── storage.go     # 旧 4-driver 抽象（local/s3/webdav/nfs）
+│   │       └── opendal/      # OpenDAL 风格抽象
+│   ├── gen/http/      # hz 生成（thrift）
+│   │   ├── handler/   # HTTP handlers（stub + 业务覆盖）
+│   │   ├── model/     # Thrift 生成的模型
 │   │   └── router/    # 路由注册
-│   ├── idl/           # Proto API 定义
+│   ├── idl/           # Thrift IDL（从 proto 全量迁移）
+│   ├── scripts/       # hz 生成脚本 + 工具安装
 │   └── configs/       # 配置文件
 │
 ├── frontend/          # Vue 3 前端
