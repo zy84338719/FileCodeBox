@@ -206,9 +206,9 @@ user:
 
 ### 添加新 API
 
-1. 在 `backend/idl/http/` 添加 `.proto` 文件
-2. 运行 `make gen-http-update IDL=http/your_api.proto`
-3. 实现 `backend/gen/handler/` 中的 handler
+1. 在 `backend/idl/http/` 添加 `.thrift` 文件
+2. 运行 `make thrift-gen IDL=idl/http/your_api.thrift` 或 `make thrift-gen-all`（CI 用）
+3. 实现 `backend/gen/http/handler/` 中的 handler
 4. 在 `backend/internal/app/` 中添加业务逻辑
 
 ### 修改前端
@@ -216,6 +216,20 @@ user:
 1. 修改 `frontend/src/` 下的代码
 2. 运行 `make build-frontend` 构建
 3. 运行 `make copy-frontend` 复制到后端
+
+---
+
+## 🚧 已知限制 / 后续计划
+
+| 项 | 状态 | 说明 |
+| --- | --- | --- |
+| OpenDAL 真实 binding | 待 Linux 部署 | macOS/Windows 编译走 stub；Linux 生产环境启用 Apache OpenDAL Go binding，对接 S3/OSS/WebDAV/HDFS 等 |
+| proto IDL | ✅ 已全量切 thrift | 第一阶段 10 个 proto → thrift 迁移已完成；第二阶段 task4 删 proto + 命名空间切换完成，CI 走 `make thrift-gen-all` |
+| 前端 i18n | 待做 | 后端错误码已分语言（zh/en），前端 vue-i18n 接入待开发 |
+| 前端暗色模式 | 待做 | Element Plus 主题切换可后端透传 `theme=dark` 启用，前端主题切换器待实现 |
+| 限流压测 | 待压测平台 | `ratelimit` 中间件 IP+scope 双层已实现并单测覆盖；生产环境 QPS 阈值校准需要 k6/wrk/Locust 等压测平台验证 |
+| 业务单测覆盖率 | 起步 | 4 个核心 service（anonymous/presign/notify/ratelimit）共 53 个 case 已补；其他 service（chunk/share/user/admin/storage）待补 |
+| ratelimit 持久化 | 当前在内存 | 服务重启会丢限流计数；需要 Redis 持久化或 sticky session |
 
 ---
 
