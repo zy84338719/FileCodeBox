@@ -10,13 +10,21 @@
   --primary-color: #667eea;
   --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 
-  // 中性色
+  // 中性色（亮色模式）
   --color-bg: #f5f7fb;
   --color-surface: #ffffff;
   --color-border: #e4e7ed;
   --color-text-primary: #303133;
   --color-text-regular: #606266;
   --color-text-secondary: #909399;
+  --color-muted: #fafafa;
+  --color-card-bg: #ffffff;
+  --color-elevated: #ffffff;
+  --color-input-bg: #ffffff;
+  --color-alert-bg: #ecf5ff;
+  --color-warn-bg: #fdf6ec;
+  --color-success-bg: #f0f9eb;
+  --color-danger-bg: #fef0f0;
 
   // 功能色
   --color-success: #67c23a;
@@ -38,11 +46,32 @@
   --radius-xl: 16px;
 }
 
+// 暗色模式覆盖（由 theme store 注入 .dark class）
+html.dark {
+  --color-bg: #0f1117;
+  --color-surface: #1a1f2e;
+  --color-border: #2a2f3e;
+  --color-text-primary: #e4e7ed;
+  --color-text-regular: #c0c4cc;
+  --color-text-secondary: #909399;
+  --color-muted: #232734;
+  --color-card-bg: #1a1f2e;
+  --color-elevated: #232734;
+  --color-input-bg: #232734;
+  --color-alert-bg: #1d2c3a;
+  --color-warn-bg: #2d2519;
+  --color-success-bg: #1a2b1c;
+  --color-danger-bg: #2c1a1a;
+  --primary-color: #7e8cf3;
+  --primary-gradient: linear-gradient(135deg, #7e8cf3 0%, #9c6dd6 100%);
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: var(--color-bg);
   color: var(--color-text-primary);
   line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #app {
@@ -64,10 +93,12 @@ body {
 
 // 卡片样式
 .card {
-  background: var(--color-surface);
+  background: var(--color-card-bg);
   border-radius: var(--radius-lg);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   padding: var(--spacing-lg);
+  color: var(--color-text-primary);
+  transition: background-color 0.3s ease;
 }
 
 // 按钮样式
@@ -83,5 +114,52 @@ body {
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+}
+
+// EP 4 dark 模式适配
+html.dark {
+  .el-card {
+    background-color: var(--el-fill-color-blank) !important;
+    border-color: var(--el-border-color-lighter) !important;
+  }
+
+  .el-card__header {
+    border-bottom-color: var(--el-border-color-lighter) !important;
+  }
+
+  .el-table {
+    background-color: transparent !important;
+    --el-table-bg-color: transparent;
+    --el-table-tr-bg-color: transparent;
+    --el-table-header-bg-color: var(--color-elevated);
+  }
+
+  .el-table th.el-table__cell {
+    background-color: var(--color-elevated) !important;
+  }
+
+  .el-table tr {
+    background-color: transparent !important;
+  }
+
+  .el-menu {
+    background-color: transparent !important;
+  }
+
+  .el-alert--info {
+    background-color: var(--color-alert-bg) !important;
+  }
+
+  .el-alert--warning {
+    background-color: var(--color-warn-bg) !important;
+  }
+
+  .el-alert--success {
+    background-color: var(--color-success-bg) !important;
+  }
+
+  .el-alert--error {
+    background-color: var(--color-danger-bg) !important;
   }
 }

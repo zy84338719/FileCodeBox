@@ -23,6 +23,7 @@
 
         <div class="user-section">
           <LocaleSwitcher />
+          <ThemeSwitcher />
           <el-button class="retrieve-btn" @click="$router.push('/retrieve')">
             <el-icon><Postcard /></el-icon>
             {{ t('home.retrieve') }}
@@ -206,6 +207,7 @@ import FileUpload from '@/components/upload/FileUpload.vue'
 import TextShare from '@/components/upload/TextShare.vue'
 import GetShare from '@/components/upload/GetShare.vue'
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 
 const router = useRouter()
 const userStore = useUserStore()

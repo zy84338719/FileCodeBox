@@ -55,7 +55,10 @@
         </el-menu>
 
         <div class="sidebar-footer">
-          <LocaleSwitcher />
+          <div class="sidebar-footer-row">
+            <LocaleSwitcher />
+            <ThemeSwitcher />
+          </div>
           <el-button @click="goToUser" class="user-page-btn">
             <el-icon><Promotion /></el-icon>
             {{ t('admin.accessSite') }}
@@ -119,6 +122,7 @@ import {
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -253,7 +257,13 @@ const handleCommand = async (command: string) => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: center;
+  align-items: stretch;
+}
+
+.sidebar-footer-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
 }
 
 .user-page-btn {
