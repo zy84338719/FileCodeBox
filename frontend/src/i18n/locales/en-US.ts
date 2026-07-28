@@ -266,6 +266,9 @@ export default {
     uploader: 'Uploader',
     uploadedAt: 'Uploaded at',
     createdAt: 'Created at',
+    uploads: 'Uploads',
+    downloads: 'Downloads',
+    noData: 'No data',
   },
   notify: {
     title: 'System notice',

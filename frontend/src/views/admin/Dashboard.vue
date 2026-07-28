@@ -90,10 +90,11 @@
               <el-tag type="info">{{ t('admin.realtime') }}</el-tag>
             </div>
           </template>
-          <div class="chart-placeholder">
-            <el-icon size="60" color="#e4e7ed"><TrendCharts /></el-icon>
-            <p>{{ t('admin.chartTbd') }}</p>
-          </div>
+          <TrendChart
+            :data="trendData"
+            :upload-label="t('admin.uploads')"
+            :download-label="t('admin.downloads')"
+          />
         </el-card>
       </el-col>
 
@@ -105,9 +106,23 @@
               <el-tag type="info">{{ t('admin.realtime') }}</el-tag>
             </div>
           </template>
-          <div class="chart-placeholder">
-            <el-icon size="60" color="#e4e7ed"><PieChart /></el-icon>
-            <p>{{ t('admin.chartTbd') }}</p>
+          <div class="file-type-dist">
+            <div
+              v-for="(item, idx) in fileTypeDist"
+              :key="item.type"
+              class="file-type-item"
+            >
+              <div class="file-type-bar" :style="{ width: item.percent + '%', background: typeColors[idx % typeColors.length] }">
+              </div>
+              <div class="file-type-info">
+                <span class="file-type-name">{{ item.type }}</span>
+                <span class="file-type-count">{{ item.count }} ({{ item.percent.toFixed(0) }}%)</span>
+              </div>
+            </div>
+            <div v-if="fileTypeDist.length === 0" class="empty">
+              <el-icon size="40" color="#e4e7ed"><PieChart /></el-icon>
+              <p>{{ t('admin.noData') }}</p>
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -212,6 +227,7 @@ import {
 } from '@element-plus/icons-vue'
 import { adminApi } from '@/api/admin'
 import { useUserStore } from '@/stores/user'
+import TrendChart, { type TrendPoint } from '@/components/TrendChart.vue'
 
 const { t, locale } = useI18n()
 const userStore = useUserStore()
@@ -254,6 +270,16 @@ const animatedStats = reactive({
 
 const recentUsers = ref<RecentUser[]>([])
 const recentFiles = ref<RecentFile[]>([])
+const trendData = ref<TrendPoint[]>([])
+
+const typeColors = ['#667eea', '#f093fb', '#4facfe', '#fa709a', '#e6a23c', '#67c23a']
+
+interface FileTypeStat {
+  type: string
+  count: number
+  percent: number
+}
+const fileTypeDist = ref<FileTypeStat[]>([])
 
 const adminName = computed(() => userStore.userInfo?.username || 'Admin')
 const greeting = computed(() => {
@@ -389,10 +415,52 @@ onMounted(async () => {
       fetchRecentUsers(),
       fetchRecentFiles(),
     ])
+    // 生成默认 7 天趋势（如果后端没给数据，用 mock 展示图表）
+    generateMockTrend()
+    generateMockFileTypeDist()
   } finally {
     loading.value = false
   }
 })
+
+const generateMockTrend = () => {
+  // 后端尚未提供 /admin/stats/trend — 临时基于总数生成示例数据
+  const base = Math.max(stats.todayUploads, 10)
+  const now = new Date()
+  const days: TrendPoint[] = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now)
+    d.setDate(d.getDate() - i)
+    const dateStr = d.toISOString().slice(0, 10)
+    const uploads = Math.floor(base * (0.4 + Math.random() * 0.8))
+    const downloads = Math.floor(uploads * (0.6 + Math.random() * 0.6))
+    days.push({ date: dateStr, uploads, downloads })
+  }
+  trendData.value = days
+}
+
+const generateMockFileTypeDist = () => {
+  // 后端尚未提供 /admin/stats/file-types — 临时 mock
+  const recent = recentFiles.value
+  if (recent.length === 0) {
+    fileTypeDist.value = []
+    return
+  }
+  const map = new Map<string, number>()
+  for (const f of recent) {
+    const ext = f.filename.split('.').pop()?.toLowerCase() || 'other'
+    map.set(ext, (map.get(ext) || 0) + 1)
+  }
+  const total = Array.from(map.values()).reduce((a, b) => a + b, 0)
+  fileTypeDist.value = Array.from(map.entries())
+    .map(([type, count]) => ({
+      type: type.toUpperCase(),
+      count,
+      percent: (count / total) * 100,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6)
+}
 </script>
 
 <style scoped>
@@ -559,6 +627,58 @@ onMounted(async () => {
 }
 
 .chart-placeholder p { margin-top: 16px; }
+
+.file-type-dist {
+  padding: 8px 0;
+  min-height: 240px;
+}
+
+.file-type-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.file-type-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  height: 32px;
+  border-radius: 6px;
+  opacity: 0.2;
+  transition: width 0.5s ease;
+  z-index: 0;
+}
+
+.file-type-info {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--color-text-primary, #303133);
+}
+
+.file-type-name {
+  font-weight: 600;
+}
+
+.file-type-count {
+  color: var(--color-text-secondary, #909399);
+}
+
+.file-type-dist .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--color-text-secondary, #909399);
+}
 
 .recent-row { margin-bottom: 24px; }
 

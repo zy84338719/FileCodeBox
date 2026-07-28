@@ -267,6 +267,9 @@ export default {
     uploader: '上传者',
     uploadedAt: '上传时间',
     createdAt: '创建时间',
+    uploads: '上传',
+    downloads: '下载',
+    noData: '暂无数据',
   },
   notify: {
     title: '系统公告',

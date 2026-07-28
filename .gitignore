@@ -54,3 +54,5 @@ config.json
 # 上传临时文件
 uploads/
 temp/
+backend/bin/
+backend/bin/
