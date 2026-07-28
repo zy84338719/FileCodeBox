@@ -142,32 +142,33 @@ const doUpload = async (retryCount = 0) => {
     // 2. PUT 上传（用 XHR 以支持进度条 + 中断）
     statusText.value = t('upload.presign.upload')
     await new Promise<void>((resolve, reject) => {
-      xhr = new XMLHttpRequest()
-      xhr.open(initData.method || 'PUT', initData.upload_url)
+      const req = new XMLHttpRequest()
+      xhr = req
+      req.open(initData.method || 'PUT', initData.upload_url)
       // 设置后端要求的 headers
       Object.entries(initData.headers || {}).forEach(([k, v]) => {
-        xhr.setRequestHeader(k, v)
+        req.setRequestHeader(k, v)
       })
       // 也要发 file 的 content-type
       if (props.file?.type) {
-        xhr.setRequestHeader('Content-Type', props.file.type)
+        req.setRequestHeader('Content-Type', props.file.type)
       }
-      xhr.upload.onprogress = (e) => {
+      req.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           progress.value = Math.round((e.loaded / e.total) * 95) // 留给 complete 5%
         }
       }
-      xhr.onload = () => {
-        if (xhr && xhr.status >= 200 && xhr.status < 300) {
+      req.onload = () => {
+        if (req.status >= 200 && req.status < 300) {
           resolve()
         } else {
-          reject(new Error(`Upload failed: ${xhr?.status}`))
+          reject(new Error(`Upload failed: ${req.status}`))
         }
       }
-      xhr.onerror = () => reject(new Error('Network error'))
-      xhr.onabort = () => reject(new Error('Aborted'))
+      req.onerror = () => reject(new Error('Network error'))
+      req.onabort = () => reject(new Error('Aborted'))
       if (props.file) {
-        xhr.send(props.file)
+        req.send(props.file)
       }
     })
 
