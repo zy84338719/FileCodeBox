@@ -1,10 +1,14 @@
 <template>
-  <router-view />
+  <div class="app-root">
+    <NotifyBanner />
+    <router-view />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
+import NotifyBanner from '@/components/NotifyBanner.vue'
 
 const userStore = useUserStore()
 
@@ -20,5 +24,10 @@ onMounted(() => {
 #app {
   width: 100%;
   height: 100%;
+}
+
+.app-root {
+  width: 100%;
+  min-height: 100vh;
 }
 </style>

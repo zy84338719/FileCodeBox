@@ -56,6 +56,14 @@ export const useThemeStore = defineStore('theme', () => {
     applyToDocumentClass(effective.value)
   }
 
+  /** 在 light / dark / auto 三态间循环切换（顶栏快速切换按钮用） */
+  function cycle() {
+    const order: ThemeMode[] = ['light', 'dark', 'auto']
+    const idx = order.indexOf(mode.value)
+    const next = order[(idx + 1) % order.length] ?? 'auto'
+    setMode(next)
+  }
+
   function applyToDocument() {
     applyToDocumentClass(effective.value)
     // 监听系统主题变化（仅 auto 模式需要）
@@ -71,5 +79,5 @@ export const useThemeStore = defineStore('theme', () => {
     onScopeDispose(() => mql.removeEventListener('change', handler))
   }
 
-  return { mode, effective, isDark, setMode, applyToDocument }
+  return { mode, effective, isDark, setMode, cycle, applyToDocument }
 })
