@@ -1,11 +1,13 @@
 <template>
   <div class="result-container">
+    <!-- 背景 -->
     <div class="bg-decoration">
       <div class="circle circle1"></div>
       <div class="circle circle2"></div>
     </div>
 
     <div class="result-wrapper">
+      <!-- 顶部 -->
       <header class="result-header">
         <div class="logo-section" @click="$router.push('/')">
           <div class="logo-icon">
@@ -20,39 +22,60 @@
       </header>
 
       <main class="result-main">
-        <div v-if="data" class="result-card">
+        <div v-if="!data" class="result-card empty">
+          <el-icon size="48" color="#909399"><WarningFilled /></el-icon>
+          <h2 class="card-title">{{ t('anonymous.notFound') }}</h2>
+          <p class="card-subtitle">{{ t('anonymous.notFoundHint') }}</p>
+          <el-button type="primary" size="large" @click="$router.push('/retrieve')">
+            <el-icon><Back /></el-icon>
+            {{ t('anonymous.back') }}
+          </el-button>
+        </div>
+
+        <div v-else class="result-card">
           <div class="success-icon">
-            <el-icon size="64"><CircleCheckFilled /></el-icon>
+            <el-icon size="56"><CircleCheckFilled /></el-icon>
           </div>
-          <h1 class="result-title">{{ t('anonymous.success') }}</h1>
+          <h1 class="card-title">{{ t('anonymous.resultTitle') }}</h1>
 
           <div class="file-info">
-            <div class="file-icon-large">
-              <el-icon size="48"><Document /></el-icon>
+            <div class="info-row">
+              <span class="info-label">
+                <el-icon><Document /></el-icon>
+                {{ t('anonymous.fileName') }}
+              </span>
+              <span class="info-value file-name" :title="data.file_name">
+                {{ data.file_name }}
+              </span>
             </div>
-            <div class="file-details">
-              <div class="file-name">{{ data.file_name }}</div>
-              <div class="file-meta">
-                <span class="meta-item">
-                  <el-icon><Coin /></el-icon>
-                  {{ formatFileSize(data.file_size) }}
-                </span>
-                <span class="meta-item">
-                  <el-icon><Timer /></el-icon>
-                  {{ t('anonymous.expireAt') }}: {{ formatExpire(data.expire_at) }}
-                </span>
-                <span class="meta-item">
-                  <el-icon><Histogram /></el-icon>
-                  {{ t('anonymous.remainingCount') }}: {{ data.remaining_count }}
-                </span>
-              </div>
+            <div class="info-row">
+              <span class="info-label">
+                <el-icon><Files /></el-icon>
+                {{ t('anonymous.fileSize') }}
+              </span>
+              <span class="info-value">{{ formatSize(data.file_size) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">
+                <el-icon><Timer /></el-icon>
+                {{ t('anonymous.expiresAt') }}
+              </span>
+              <span class="info-value">{{ formatTime(data.expire_at) }}</span>
+            </div>
+            <div v-if="data.remaining_count !== undefined" class="info-row">
+              <span class="info-label">
+                <el-icon><Histogram /></el-icon>
+                {{ t('anonymous.remaining') }}
+              </span>
+              <span class="info-value">
+                {{ data.remaining_count }}
+              </span>
             </div>
           </div>
 
           <el-button
             type="primary"
             size="large"
-            :loading="downloading"
             class="download-btn"
             @click="handleDownload"
           >
@@ -61,19 +84,22 @@
           </el-button>
 
           <el-button
+            v-if="userStore.isLoggedIn"
+            class="save-btn"
+            size="large"
+            @click="handleSave"
+          >
+            <el-icon><FolderAdd /></el-icon>
+            {{ t('anonymous.saveToMine') }}
+          </el-button>
+
+          <el-button
             link
             class="back-link"
             @click="$router.push('/retrieve')"
           >
             <el-icon><Back /></el-icon>
-            {{ t('common.back') }}
-          </el-button>
-        </div>
-
-        <div v-else class="result-card empty">
-          <el-empty :description="t('anonymous.invalidCode')" />
-          <el-button type="primary" @click="$router.push('/retrieve')">
-            {{ t('common.back') }}
+            {{ t('anonymous.back') }}
           </el-button>
         </div>
       </main>
@@ -82,75 +108,62 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
-  Box, Document, Download, Back, Coin, Timer,
-  Histogram, CircleCheckFilled
+  Box, Document, Files, Timer, Histogram, Download,
+  CircleCheckFilled, WarningFilled, Back, FolderAdd
 } from '@element-plus/icons-vue'
-import { anonymousApi, type RetrieveData } from '@/api/anonymous'
+import { type RetrieveData } from '@/api/anonymous'
+import { useUserStore } from '@/stores/user'
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue'
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 
 const route = useRoute()
 const { t } = useI18n()
+const userStore = useUserStore()
 
-const data = ref<RetrieveData | null>(null)
-const downloading = ref(false)
+const data = computed<RetrieveData | null>(() => {
+  const raw = route.query.data as string | undefined
+  if (!raw) return null
+  try {
+    return JSON.parse(decodeURIComponent(raw)) as RetrieveData
+  } catch {
+    return null
+  }
+})
 
-const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+const formatSize = (bytes: number): string => {
+  if (!Number.isFinite(bytes) || bytes < 0) return '-'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`
 }
 
-const formatExpire = (ts: number): string => {
-  try {
-    return new Date(ts * 1000).toLocaleString()
-  } catch {
-    return '-'
-  }
+const formatTime = (ts: number): string => {
+  if (!Number.isFinite(ts)) return '-'
+  // Unix 秒 → 本地时间
+  const d = new Date(ts * 1000)
+  return d.toLocaleString()
 }
 
 const handleDownload = () => {
   if (!data.value) return
-  const code = (route.query.code as string) || ''
-  // 后端 download URL: /anonymous/download/:code
-  // download_url 已包含后端域名，直接打开即可
-  const url = data.value.download_url || anonymousApi.downloadUrl(code)
-  downloading.value = true
-  try {
-    const a = document.createElement('a')
-    a.href = url
-    a.target = '_blank'
-    a.rel = 'noopener'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  } catch (e) {
-    ElMessage.error(t('anonymous.downloadFailed'))
-  } finally {
-    setTimeout(() => {
-      downloading.value = false
-    }, 800)
+  // RetrieveData 里有 download_url，后端签名直链
+  const target = (data.value as { download_url?: string }).download_url
+  if (target) {
+    window.open(target, '_blank', 'noopener')
+  } else {
+    ElMessage.error(t('anonymous.notFound'))
   }
 }
 
-onMounted(() => {
-  const raw = route.query.data as string
-  if (raw) {
-    try {
-      data.value = JSON.parse(decodeURIComponent(raw)) as RetrieveData
-    } catch (e) {
-      console.error('Failed to parse retrieve data:', e)
-      data.value = null
-    }
-  }
-})
+const handleSave = () => {
+  ElMessage.info(t('anonymous.saveTodo'))
+}
 </script>
 
 <style scoped>
@@ -179,29 +192,29 @@ onMounted(() => {
 }
 
 .circle1 {
-  width: 450px;
-  height: 450px;
-  top: -150px;
+  width: 500px;
+  height: 500px;
+  top: -200px;
   left: -150px;
 }
 
 .circle2 {
-  width: 350px;
-  height: 350px;
-  bottom: -150px;
-  right: -100px;
+  width: 400px;
+  height: 400px;
+  bottom: -200px;
+  right: -150px;
   animation-delay: 6s;
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-30px) scale(1.05); }
+  50% { transform: translateY(-40px) scale(1.05); }
 }
 
 .result-wrapper {
   position: relative;
   z-index: 1;
-  max-width: 700px;
+  max-width: 600px;
   margin: 0 auto;
   padding: 24px;
   min-height: 100vh;
@@ -233,7 +246,7 @@ onMounted(() => {
   height: 40px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 10px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }
@@ -266,74 +279,80 @@ onMounted(() => {
   transition: background-color 0.3s ease;
 }
 
-.success-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #67c23a;
-  margin-bottom: 16px;
+.result-card.empty {
+  padding: 56px 40px;
 }
 
-.result-title {
-  margin: 0 0 32px;
-  font-size: 24px;
+.success-icon {
+  display: inline-flex;
+  width: 96px;
+  height: 96px;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #67c23a 0%, #4a9a2a 100%);
+  color: white;
+  border-radius: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(103, 194, 58, 0.3);
+}
+
+.card-title {
+  margin: 0 0 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: var(--color-text-primary, #303133);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.card-subtitle {
+  margin: 0 0 24px;
+  color: var(--color-text-secondary, #909399);
+  font-size: 14px;
 }
 
 .file-info {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 24px;
-  background: var(--color-muted, #fafafa);
-  border-radius: 16px;
-  margin-bottom: 32px;
   text-align: left;
-  transition: background-color 0.3s ease;
+  background: var(--color-muted, #fafafa);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.file-icon-large {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 16px;
+.info-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.info-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary, #909399);
   flex-shrink: 0;
 }
 
-.file-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.file-name {
-  font-size: 16px;
-  font-weight: 600;
+.info-value {
   color: var(--color-text-primary, #303133);
-  margin-bottom: 8px;
+  font-weight: 600;
+  text-align: right;
   word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
-.file-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--color-text-secondary, #909399);
-}
-
-.meta-item .el-icon {
-  font-size: 14px;
+.info-value.file-name {
+  max-width: 60%;
 }
 
 .download-btn {
@@ -342,35 +361,31 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 600;
   border-radius: 12px;
-  background: linear-gradient(135deg, #67c23a 0%, #5daf34 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .download-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(103, 194, 58, 0.4);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.save-btn {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  margin-bottom: 8px;
 }
 
 .back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  margin-top: 8px;
 }
 
 @media (max-width: 768px) {
-  .result-wrapper {
-    padding: 16px;
-  }
-  .result-card {
-    padding: 32px 24px;
-  }
-  .file-info {
-    flex-direction: column;
-    text-align: center;
-  }
-  .file-meta {
-    align-items: center;
-  }
+  .result-wrapper { padding: 16px; }
+  .result-card { padding: 32px 24px; }
+  .card-title { font-size: 22px; }
+  .info-value.file-name { max-width: 50%; }
 }
 </style>
