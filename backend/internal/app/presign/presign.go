@@ -1,10 +1,10 @@
 // Package presign 实现预签名上传 service。
 //
 // 流程：
-//   1. 客户端调 Init 申请预签名 URL + token
-//   2. 客户端 PUT 直传文件到 URL
-//   3. 客户端调 Complete 通知服务写 share 表
-//   4. 服务返回 share_code
+//  1. 客户端调 Init 申请预签名 URL + token
+//  2. 客户端 PUT 直传文件到 URL
+//  3. 客户端调 Complete 通知服务写 share 表
+//  4. 服务返回 share_code
 //
 // 当前实现：fallback 走"自家直传 URL + token"模式（不依赖真实 S3/OSS 预签名）。
 // 当 OpenDAL binding 接入后，可直接生成真实预签名 URL。
@@ -34,9 +34,9 @@ const (
 
 // 错误定义
 var (
-	ErrUploadNotFound = errors.New("upload not found")
-	ErrTokenInvalid   = errors.New("upload token invalid")
-	ErrUploadExpired  = errors.New("upload expired")
+	ErrUploadNotFound  = errors.New("upload not found")
+	ErrTokenInvalid    = errors.New("upload token invalid")
+	ErrUploadExpired   = errors.New("upload expired")
 	ErrAlreadyComplete = errors.New("upload already completed")
 )
 
@@ -125,9 +125,9 @@ func (s *Service) Init(ctx context.Context, meta InitMeta) (*InitResult, error) 
 	uploadURL := fmt.Sprintf("%s/api/v1/presign/upload-direct/%s", s.baseURL, uploadID)
 
 	return &InitResult{
-		UploadID:      uploadID,
-		UploadURL:     uploadURL,
-		Method:        "PUT",
+		UploadID:  uploadID,
+		UploadURL: uploadURL,
+		Method:    "PUT",
 		Headers: map[string]string{
 			"X-Upload-Token": token,
 		},
@@ -141,10 +141,10 @@ func (s *Service) Init(ctx context.Context, meta InitMeta) (*InitResult, error) 
 // CompleteResult Complete 返回结果（包含 share_code）
 type CompleteResult struct {
 	*InitMeta
-	ShareCode     string
-	ShareURL      string
-	FullShareURL  string
-	OwnerIP       string
+	ShareCode    string
+	ShareURL     string
+	FullShareURL string
+	OwnerIP      string
 }
 
 // Complete 完成通知（调 share service 写分享表）
@@ -191,11 +191,11 @@ func (s *Service) Complete(ctx context.Context, uploadID, token, ownerIP string)
 	if shareErr != nil {
 		// 写分享表失败不算 fatal（meta 已标记 complete），返回 shareErr 让调用方决定
 		return &CompleteResult{
-			InitMeta:    &meta,
-			ShareCode:   "",
-			ShareURL:    "",
+			InitMeta:     &meta,
+			ShareCode:    "",
+			ShareURL:     "",
 			FullShareURL: "",
-			OwnerIP:     ownerIP,
+			OwnerIP:      ownerIP,
 		}, fmt.Errorf("create share record: %w", shareErr)
 	}
 
@@ -288,7 +288,8 @@ func (s *Service) GetMeta(ctx context.Context, uploadID string) (*InitMeta, erro
 // ============ 内部 ============
 
 // signToken 生成 HMAC token
-//   token = hex(hmac-sha256(signingKey, uploadID|objectKey|expireAt.Unix))
+//
+//	token = hex(hmac-sha256(signingKey, uploadID|objectKey|expireAt.Unix))
 func (s *Service) signToken(uploadID, objectKey string, expireAt time.Time) string {
 	mac := hmac.New(sha256.New, s.signingKey)
 	mac.Write([]byte(fmt.Sprintf("%s|%s|%d", uploadID, objectKey, expireAt.Unix())))

@@ -1,44 +1,45 @@
 // Package errcode 提供全站统一业务码定义。
 //
 // 业务码段位规划：
-//   0       成功
-//   1xxxx   通用错误（参数/认证/限流/资源不存在）
-//   2xxxx   业务错误（分享/取件）
-//   3xxxx   存储错误
-//   4xxxx   用户/认证错误
-//   5xxxx   系统/内部错误
-//   9xxxx   第三方错误
+//
+//	0       成功
+//	1xxxx   通用错误（参数/认证/限流/资源不存在）
+//	2xxxx   业务错误（分享/取件）
+//	3xxxx   存储错误
+//	4xxxx   用户/认证错误
+//	5xxxx   系统/内部错误
+//	9xxxx   第三方错误
 //
 // 与 internal/pkg/errors 共存：新代码推荐用本包，旧代码保持兼容。
 package errcode
 
 // 1xxxx 通用
 const (
-	CodeSuccess       = 0
-	CodeUnknown       = 10000 // 未知错误
-	CodeInvalidParam  = 10001 // 参数错误
-	CodeUnauthorized  = 10002 // 未登录
-	CodeForbidden     = 10003 // 无权限
-	CodeNotFound      = 10004 // 资源不存在
-	CodeRateLimit     = 10005 // 限流
-	CodeUnavailable   = 10006 // 服务不可用
-	CodeTimeout       = 10007 // 请求超时
-	CodeInternal      = 10008 // 内部错误
+	CodeSuccess          = 0
+	CodeUnknown          = 10000 // 未知错误
+	CodeInvalidParam     = 10001 // 参数错误
+	CodeUnauthorized     = 10002 // 未登录
+	CodeForbidden        = 10003 // 无权限
+	CodeNotFound         = 10004 // 资源不存在
+	CodeRateLimit        = 10005 // 限流
+	CodeUnavailable      = 10006 // 服务不可用
+	CodeTimeout          = 10007 // 请求超时
+	CodeInternal         = 10008 // 内部错误
 	CodeMethodNotAllowed = 10009 // 方法不允许
-	CodeTooLarge      = 10010 // 请求体过大
+	CodeTooLarge         = 10010 // 请求体过大
 )
 
 // 2xxxx 分享/取件
 const (
-	CodeShareNotFound      = 20001 // 分享不存在
-	CodeShareExpired       = 20002 // 分享过期
-	CodeSharePasswordWrong = 20003 // 密码错误
-	CodeShareReachLimit    = 20004 // 超过取件次数
-	CodePickupCodeNotFound = 20005 // 取件码不存在
-	CodePickupCodeExpired  = 20006 // 取件码已过期
+	CodeShareNotFound       = 20001 // 分享不存在
+	CodeShareExpired        = 20002 // 分享过期
+	CodeSharePasswordWrong  = 20003 // 密码错误
+	CodeShareReachLimit     = 20004 // 超过取件次数
+	CodePickupCodeNotFound  = 20005 // 取件码不存在
+	CodePickupCodeExpired   = 20006 // 取件码已过期
 	CodePickupCodeExhausted = 20007 // 取件码已用完
-	CodeFileNotFound       = 20008 // 文件不存在
-	CodeChunkInvalid       = 20009 // 分片无效
+	CodeFileNotFound        = 20008 // 文件不存在
+	CodeChunkInvalid        = 20009 // 分片无效
 )
 
 // 3xxxx 存储
@@ -72,19 +73,19 @@ const (
 
 // 5xxxx 系统
 const (
-	CodeDBError    = 50001 // 数据库错误
-	CodeCacheError = 50002 // 缓存错误
-	CodeConfigErr  = 50003 // 配置错误
-	CodeSchedule   = 50004 // 调度错误
-	CodeNotInit    = 50005 // 系统未初始化
+	CodeDBError     = 50001 // 数据库错误
+	CodeCacheError  = 50002 // 缓存错误
+	CodeConfigErr   = 50003 // 配置错误
+	CodeSchedule    = 50004 // 调度错误
+	CodeNotInit     = 50005 // 系统未初始化
 	CodeAlreadyInit = 50006 // 系统已初始化
 )
 
 // 9xxxx 第三方
 const (
-	CodeThirdPartySMS    = 90001 // 短信发送失败
-	CodeThirdPartyEmail  = 90002 // 邮件发送失败
-	CodeThirdPartyAPI    = 90003 // 第三方 API 失败
+	CodeThirdPartySMS   = 90001 // 短信发送失败
+	CodeThirdPartyEmail = 90002 // 邮件发送失败
+	CodeThirdPartyAPI   = 90003 // 第三方 API 失败
 )
 
 // messages 业务码 → 默认文案
@@ -92,17 +93,17 @@ var messages = map[int]string{
 	CodeSuccess: "success",
 
 	// 1xxxx
-	CodeUnknown:         "unknown error",
-	CodeInvalidParam:    "invalid parameter",
-	CodeUnauthorized:    "unauthorized",
-	CodeForbidden:       "forbidden",
-	CodeNotFound:        "not found",
-	CodeRateLimit:       "too many requests",
-	CodeUnavailable:     "service unavailable",
-	CodeTimeout:         "request timeout",
-	CodeInternal:        "internal server error",
+	CodeUnknown:          "unknown error",
+	CodeInvalidParam:     "invalid parameter",
+	CodeUnauthorized:     "unauthorized",
+	CodeForbidden:        "forbidden",
+	CodeNotFound:         "not found",
+	CodeRateLimit:        "too many requests",
+	CodeUnavailable:      "service unavailable",
+	CodeTimeout:          "request timeout",
+	CodeInternal:         "internal server error",
 	CodeMethodNotAllowed: "method not allowed",
-	CodeTooLarge:        "request too large",
+	CodeTooLarge:         "request too large",
 
 	// 2xxxx
 	CodeShareNotFound:       "share not found",

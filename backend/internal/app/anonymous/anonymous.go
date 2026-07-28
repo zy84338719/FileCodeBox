@@ -1,9 +1,9 @@
 // Package anonymous 实现匿名取件 service（仿 vastsa/FileCodeBox UX）。
 //
 // 核心流程：
-//   1. 上传方：上传文件后，调用 GenerateCode 获取 6 位取件码
-//   2. 取件方：输入 6 位码 + 可选密码，按码取文件
-//   3. 系统：校验 → 限次 → 返回下载信息
+//  1. 上传方：上传文件后，调用 GenerateCode 获取 6 位取件码
+//  2. 取件方：输入 6 位码 + 可选密码，按码取文件
+//  3. 系统：校验 → 限次 → 返回下载信息
 //
 // 取件码生成：
 //   - 6 位字母数字（去掉易混淆字符 0/O/1/I/L）
@@ -32,9 +32,9 @@ const codeLength = 6
 
 // Redis key 模板
 const (
-	keyPickupCodeMapping = "anon:code:%s"   // pickup_code -> share_code
-	keyPickupCodeMeta    = "anon:meta:%s"    // pickup_code -> meta (JSON-ish: file_name|expire_at|max_count|password_hash)
-	keyPickupCodeCounter = "anon:count:%s"   // pickup_code -> current pickup count
+	keyPickupCodeMapping = "anon:code:%s"  // pickup_code -> share_code
+	keyPickupCodeMeta    = "anon:meta:%s"  // pickup_code -> meta (JSON-ish: file_name|expire_at|max_count|password_hash)
+	keyPickupCodeCounter = "anon:count:%s" // pickup_code -> current pickup count
 )
 
 // ErrCodeNotFound 取件码不存在
@@ -71,13 +71,13 @@ func (s *Service) SetPasswordHasher(fn func(string) string) {
 
 // CodeMeta 取件码元信息
 type CodeMeta struct {
-	ShareCode     string
-	FileName      string
-	FileSize      int64
-	ContentType   string
-	RequireAuth   bool
-	PasswordHash  string
-	ExpireAt      time.Time
+	ShareCode      string
+	FileName       string
+	FileSize       int64
+	ContentType    string
+	RequireAuth    bool
+	PasswordHash   string
+	ExpireAt       time.Time
 	MaxPickupCount int32
 }
 
@@ -239,7 +239,8 @@ func parseMeta(code, shareCode, metaStr string) (*CodeMeta, error) {
 }
 
 // parseMetaRaw 解析元信息原始格式
-//   fileName|fileSize|contentType|passwordHash|expireAt|maxCount
+//
+//	fileName|fileSize|contentType|passwordHash|expireAt|maxCount
 func parseMetaRaw(metaStr string) (string, int64, string, string, int64, int64) {
 	parts := splitBy(metaStr, '|', 6)
 	if len(parts) < 6 {

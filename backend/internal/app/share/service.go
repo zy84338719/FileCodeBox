@@ -390,6 +390,7 @@ func (s *Service) GetFileWithUsage(ctx context.Context, code string, password st
 // RecordViewerAndNotify 记录取件人 + 给 owner 发通知
 //   - viewerIP: 取件人 IP
 //   - notifyType/level: 通知 type / level
+//
 // 若 file_codes 找不到（anonymous 路径 share_code 是 file_name 占位），静默跳过
 func (s *Service) RecordViewerAndNotify(ctx context.Context, code, viewerIP, viewerDetail string) error {
 	s.ensureRepository()
@@ -441,27 +442,27 @@ func (s *Service) modelToResp(fileCode *model.FileCode) *ShareResp {
 
 // UserShareListItem 用户分享列表项（包含 viewer 追踪字段）
 type UserShareListItem struct {
-	ID            uint       `json:"id"`
-	Code          string     `json:"code"`
-	Prefix        string     `json:"prefix"`
-	Suffix        string     `json:"suffix"`
-	FileName      string     `json:"file_name"`
-	FilePath      string     `json:"file_path"`
-	Size          int64      `json:"size"`
-	Text          string     `json:"text"`
-	ExpiredAt     *time.Time `json:"expired_at"`
-	ExpiredCount  int        `json:"expired_count"`
-	UsedCount     int        `json:"used_count"`
-	RequireAuth   bool       `json:"require_auth"`
-	UploadType    string     `json:"upload_type"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	DeletedAt     *time.Time `json:"deleted_at,omitempty"`
-	ViewerIP      string     `json:"viewer_ip"`
-	ViewerAt      *time.Time `json:"viewer_at"`
-	ViewerCount   int        `json:"viewer_count"`
-	IsExpired     bool       `json:"is_expired"`
-	IsTextShare   bool       `json:"is_text_share"`
+	ID           uint       `json:"id"`
+	Code         string     `json:"code"`
+	Prefix       string     `json:"prefix"`
+	Suffix       string     `json:"suffix"`
+	FileName     string     `json:"file_name"`
+	FilePath     string     `json:"file_path"`
+	Size         int64      `json:"size"`
+	Text         string     `json:"text"`
+	ExpiredAt    *time.Time `json:"expired_at"`
+	ExpiredCount int        `json:"expired_count"`
+	UsedCount    int        `json:"used_count"`
+	RequireAuth  bool       `json:"require_auth"`
+	UploadType   string     `json:"upload_type"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
+	ViewerIP     string     `json:"viewer_ip"`
+	ViewerAt     *time.Time `json:"viewer_at"`
+	ViewerCount  int        `json:"viewer_count"`
+	IsExpired    bool       `json:"is_expired"`
+	IsTextShare  bool       `json:"is_text_share"`
 }
 
 // deletedAtToPtr gorm.DeletedAt → *time.Time（nil 表示未删除）

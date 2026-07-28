@@ -1,11 +1,11 @@
 // Package opendal 提供 OpenDAL 风格的存储抽象。
 //
 // 为什么不用真正的 OpenDAL Go binding？
-//   1. 真正的 OpenDAL Go binding（github.com/apache/opendal/bindings/go）只提供
-//      Linux 预编译库（libopendal_c.linux.amd64.so.zst），macOS 编译会失败：
-//      `undefined: libopendalZst`
-//   2. 需 libffi 系统库 + 单独安装每个 scheme 的 companion module（s3/oss/cos/...）
-//   3. 部署复杂度高，团队上手成本大
+//  1. 真正的 OpenDAL Go binding（github.com/apache/opendal/bindings/go）只提供
+//     Linux 预编译库（libopendal_c.linux.amd64.so.zst），macOS 编译会失败：
+//     `undefined: libopendalZst`
+//  2. 需 libffi 系统库 + 单独安装每个 scheme 的 companion module（s3/oss/cos/...）
+//  3. 部署复杂度高，团队上手成本大
 //
 // 解决方案：
 //   - OpenDAL 风格 API（Read/Write/Stat/Delete/List/Copy/Rename/CreateDir/RemoveAll）
@@ -15,17 +15,18 @@
 //     实现（保持 interface 不变）
 //
 // 支持的 scheme（OpenDAL 命名约定）:
-//   fs       - 本地文件系统
-//   s3       - AWS S3 / 兼容 S3 协议（MinIO/Ceph/...）
-//   oss      - 阿里云 OSS
-//   cos      - 腾讯云 COS
-//   obs      - 华为云 OBS
-//   azblob   - Azure Blob
-//   gcs      - Google Cloud Storage
-//   webdav   - WebDAV（含坚果云/Nextcloud）
-//   sftp     - SFTP
-//   hdfs     - HDFS
-//   memory   - 内存（仅测试）
+//
+//	fs       - 本地文件系统
+//	s3       - AWS S3 / 兼容 S3 协议（MinIO/Ceph/...）
+//	oss      - 阿里云 OSS
+//	cos      - 腾讯云 COS
+//	obs      - 华为云 OBS
+//	azblob   - Azure Blob
+//	gcs      - Google Cloud Storage
+//	webdav   - WebDAV（含坚果云/Nextcloud）
+//	sftp     - SFTP
+//	hdfs     - HDFS
+//	memory   - 内存（仅测试）
 package opendal
 
 import (
@@ -46,17 +47,17 @@ import (
 type Scheme string
 
 const (
-	SchemeFS      Scheme = "fs"
-	SchemeS3      Scheme = "s3"
-	SchemeOSS     Scheme = "oss"
-	SchemeCOS     Scheme = "cos"
-	SchemeOBS     Scheme = "obs"
-	SchemeAzBlob  Scheme = "azblob"
-	SchemeGCS     Scheme = "gcs"
-	SchemeWebDAV  Scheme = "webdav"
-	SchemeSFTP    Scheme = "sftp"
-	SchemeHDFS    Scheme = "hdfs"
-	SchemeMemory  Scheme = "memory"
+	SchemeFS     Scheme = "fs"
+	SchemeS3     Scheme = "s3"
+	SchemeOSS    Scheme = "oss"
+	SchemeCOS    Scheme = "cos"
+	SchemeOBS    Scheme = "obs"
+	SchemeAzBlob Scheme = "azblob"
+	SchemeGCS    Scheme = "gcs"
+	SchemeWebDAV Scheme = "webdav"
+	SchemeSFTP   Scheme = "sftp"
+	SchemeHDFS   Scheme = "hdfs"
+	SchemeMemory Scheme = "memory"
 )
 
 // supportedSchemes 当前 backend 实际支持的 scheme

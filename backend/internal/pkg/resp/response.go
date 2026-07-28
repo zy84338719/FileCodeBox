@@ -9,12 +9,13 @@ import (
 )
 
 // Response 全站统一响应 envelope
-// {
-//   "code":      业务码 (0=成功),
-//   "message":   业务码默认文案 / 自定义 message,
-//   "data":      业务数据 (omitempty),
-//   "trace_id":  请求链路 ID (omitempty, 用于排错)
-// }
+//
+//	{
+//	  "code":      业务码 (0=成功),
+//	  "message":   业务码默认文案 / 自定义 message,
+//	  "data":      业务数据 (omitempty),
+//	  "trace_id":  请求链路 ID (omitempty, 用于排错)
+//	}
 type Response struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
@@ -99,7 +100,8 @@ func ErrorWithData(c *app.RequestContext, code int, message string, data interfa
 
 // NewErrorByCode 新版业务码错误响应（推荐）
 // 自动根据业务码选择 HTTP 状态：
-//   401/403/404/429/500/503 等
+//
+//	401/403/404/429/500/503 等
 func NewErrorByCode(c *app.RequestContext, code int) {
 	c.JSON(httpStatusForCode(code), Response{
 		Code:    code,

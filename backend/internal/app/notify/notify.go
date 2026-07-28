@@ -264,14 +264,14 @@ func ParseID(s string) (uint, error) {
 
 // UserNotifyItem 用户通知项
 type UserNotifyItem struct {
-	ID         uint       `json:"id"`
-	Title      string     `json:"title"`
-	Content    string     `json:"content"`
-	Type       string     `json:"type"`
-	Level      string     `json:"level"`
-	ReadAt     *time.Time `json:"read_at,omitempty"`
-	CreatedAt  time.Time  `json:"created_at"`
-	IsRead     bool       `json:"is_read"`
+	ID        uint       `json:"id"`
+	Title     string     `json:"title"`
+	Content   string     `json:"content"`
+	Type      string     `json:"type"`
+	Level     string     `json:"level"`
+	ReadAt    *time.Time `json:"read_at,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+	IsRead    bool       `json:"is_read"`
 }
 
 // UserNotifyListData 用户通知列表
@@ -361,13 +361,13 @@ func (s *Service) MarkAllReadForUser(ctx context.Context, userID uint) (int64, e
 func (s *Service) CreateForUser(ctx context.Context, userID uint, title, content, notifyType, level string) (*model.Notify, error) {
 	uid := userID
 	n := &model.Notify{
-		Title:         title,
-		Content:       content,
-		Type:          notifyType,
-		Level:         level,
-		Status:        1,
-		AuthorID:      0,
-		TargetUserID:  &uid,
+		Title:        title,
+		Content:      content,
+		Type:         notifyType,
+		Level:        level,
+		Status:       1,
+		AuthorID:     0,
+		TargetUserID: &uid,
 	}
 	if err := s.db.WithContext(ctx).Create(n).Error; err != nil {
 		return nil, err

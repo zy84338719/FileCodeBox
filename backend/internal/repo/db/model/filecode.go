@@ -33,10 +33,10 @@ type FileCode struct {
 	OwnerIP     string `gorm:"size:45" json:"owner_ip"`                        // 上传者IP地址
 
 	// 取件追踪（软删除字段 gorm.Model.DeletedAt 已自带）
-	ViewerIP     string     `gorm:"size:45" json:"viewer_ip"`      // 最近一次取件人IP
-	ViewerAt     *time.Time `json:"viewer_at"`                     // 最近一次取件时间
-	ViewerCount  int        `gorm:"default:0" json:"viewer_count"` // 累计取件次数
-	LastNotifiedAt *time.Time `json:"last_notified_at"`            // 最近一次给 owner 发通知的时间（用于去重）
+	ViewerIP       string     `gorm:"size:45" json:"viewer_ip"`      // 最近一次取件人IP
+	ViewerAt       *time.Time `json:"viewer_at"`                     // 最近一次取件时间
+	ViewerCount    int        `gorm:"default:0" json:"viewer_count"` // 累计取件次数
+	LastNotifiedAt *time.Time `json:"last_notified_at"`              // 最近一次给 owner 发通知的时间（用于去重）
 }
 
 // IsExpired 检查是否过期

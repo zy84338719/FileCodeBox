@@ -18,13 +18,13 @@ import (
 
 // mockShareService 用于单测的 share service mock
 type mockShareService struct {
-	mu          sync.Mutex
-	called      int
-	lastReq     *share.ShareFileReq
-	returnCode  string
-	returnURL   string
-	returnFull  string
-	returnErr   error
+	mu         sync.Mutex
+	called     int
+	lastReq    *share.ShareFileReq
+	returnCode string
+	returnURL  string
+	returnFull string
+	returnErr  error
 }
 
 func (m *mockShareService) ShareFile(ctx context.Context, req *share.ShareFileReq) (*share.ShareResp, error) {

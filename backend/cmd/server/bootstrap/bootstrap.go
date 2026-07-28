@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
+	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
+	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"github.com/spf13/viper"
 	"github.com/zy84338719/fileCodeBox/backend/gen/http/router"
 	"github.com/zy84338719/fileCodeBox/backend/internal/conf"
@@ -20,13 +23,14 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	anonHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/share_anonymous"
 	notifyHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/notify"
 	presignHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/presign"
 	ratelimitHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/ratelimit"
+	anonHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/share_anonymous"
 	notifyAppService "github.com/zy84338719/fileCodeBox/backend/internal/app/notify"
 	shareService "github.com/zy84338719/fileCodeBox/backend/internal/app/share"
 	customHandler "github.com/zy84338719/fileCodeBox/backend/internal/transport/http/handler"
+	customMw "github.com/zy84338719/fileCodeBox/backend/internal/transport/http/middleware"
 )
 
 // 使用 internal/conf 包中的统一配置类型
@@ -218,7 +222,12 @@ func Bootstrap() (*server.Hertz, error) {
 		server.WithHostPorts(fmt.Sprintf("%s:%d", config.Server.Host, port)),
 	)
 
-	// 添加 CORS 中间件
+	// 全局中间件（顺序：Recovery → RequestID → CORS）
+	// Recovery 必须最先，确保任何 panic 都被捕获并转为 500，避免进程崩溃
+	h.Use(middleware.Recovery())
+	// RequestID 为每个请求生成/透传 trace_id（X-Trace-Id），写入 ctx 供日志/resp 使用
+	h.Use(middleware.RequestID())
+	// CORS 跨域
 	h.Use(CORS())
 
 	// 6. 注册路由
@@ -244,9 +253,79 @@ func Cleanup() {
 	logger.Sync()
 }
 
-// customizedRegister registers customize routers.
+// customizedRegister 注册自定义路由（不走 thrift IDL 生成）。
+//
+// 历史背景：该函数此前为空，导致前端 SPA 静态服务、Swagger 文档、
+// “我的分享管理”与“用户通知”REST API 全部未生效。本函数把此前残留在
+// 根目录 router.go（死代码）中的逻辑正式接线，使单二进制 / Docker 部署
+// 即可打开前端页面并使用全部功能。
 func customizedRegister(r *server.Hertz) {
-	// 这里可以添加自定义路由，现在为空，所有的路由都通过 GeneratedRegister 注册
+	// ===== OpenAPI 文档（Swagger UI）=====
+	r.GET("/openapi.json", customHandler.OpenAPISpec)
+
+	// ===== 自定义 REST API（需用户 JWT 认证）=====
+	apiV1 := r.Group("/api/v1", customMw.UserAuth())
+	{
+		// 我的分享管理（批量删除 / 批量延期 / 恢复 / 永久删除）
+		userShares := apiV1.Group("/user/shares")
+		userShares.GET("", customHandler.ListUserShares)
+		userShares.POST("/batch-delete", customHandler.BatchDeleteUserShares)
+		userShares.POST("/batch-extend", customHandler.BatchExtendUserShares)
+		userShares.POST("/:code/restore", customHandler.RestoreUserShare)
+		userShares.DELETE("/:code/hard", customHandler.HardDeleteUserShare)
+
+		// 用户站内通知（列表 / 未读数 / 标记已读）
+		apiV1.GET("/notifies/mine", customHandler.ListMyNotifications)
+		apiV1.GET("/notifies/unread-count", customHandler.UnreadNotifyCount)
+		apiV1.POST("/notifies/mark-read", customHandler.MarkNotifyRead)
+	}
+
+	// ===== 前端 SPA 静态资源服务 =====
+	// 服务 /static 前缀的构建产物（JS/CSS/图片等）。
+	// 注意：必须用 NewPathSlashesStripper(1) 剥离 "/static" 前缀，
+	// 否则 handler 会在 root 下重复拼接导致 404。
+	r.StaticFS("/static", &app.FS{
+		Root:         "./static",
+		PathRewrite:  app.NewPathSlashesStripper(1),
+		CacheDuration: 7 * 24 * time.Hour,
+	})
+	// SPA fallback：根路径 "/" 与所有非 API 路径一律回退到 index.html，
+	// 交给前端 hash 路由处理（前端使用 createWebHashHistory）。
+	r.NoRoute(func(ctx context.Context, c *app.RequestContext) {
+		path := string(c.Request.URI().Path())
+		if isAPIPath(path) {
+			c.JSON(consts.StatusNotFound, map[string]interface{}{
+				"code":    404,
+				"message": "API endpoint not found",
+			})
+			return
+		}
+		c.File("./static/index.html")
+	})
+}
+
+// apiPathPrefixes 仅含"纯 API"前缀——这些前缀下不存在前端页面，
+// 未命中路由时返回 JSON 404，而不是回退到 SPA index.html。
+//
+// 注意：/user、/admin、/anonymous、/share 同时是后端 API 前缀与前端 hash
+// 路由的页面路径（如 /user/login、/admin/dashboard、/share/:code）。前端使用
+// createWebHashHistory，浏览器实际只请求 "/"，但若用户直接访问这些 history
+// 路径（如刷新、外链），应回退到 SPA 由前端路由处理，而非返回 API 404。
+// 因此它们不在本列表中。
+var apiPathPrefixes = []string{
+	"/api", "/chunk", "/notifies",
+	"/health", "/live", "/ready", "/ping", "/version",
+	"/openapi", "/metrics", "/preview", "/qrcode", "/setup",
+}
+
+// isAPIPath 判断路径是否属于后端 API（而非前端 SPA 路由）。
+func isAPIPath(path string) bool {
+	for _, p := range apiPathPrefixes {
+		if path == p || strings.HasPrefix(path, p+"/") {
+			return true
+		}
+	}
+	return false
 }
 
 // initPreviewService 初始化预览服务

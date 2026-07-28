@@ -43,9 +43,9 @@ func userIDFromCtx(c *app.RequestContext) (uint, bool) {
 
 // UserSharesResp 列表响应
 type UserSharesResp struct {
-	Code    int                          `json:"code"`
-	Message string                       `json:"message"`
-	Data    *UserSharesListData          `json:"data,omitempty"`
+	Code    int                 `json:"code"`
+	Message string              `json:"message"`
+	Data    *UserSharesListData `json:"data,omitempty"`
 }
 
 type UserSharesListData struct {

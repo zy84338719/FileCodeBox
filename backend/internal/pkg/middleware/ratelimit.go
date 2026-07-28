@@ -21,13 +21,13 @@ import (
 
 // RateLimitConfig 限流配置（运行时可调）
 type RateLimitConfig struct {
-	GlobalQPS    int   // 全局 IP 维度 QPS（每 IP）
-	UploadQPS    int   // 上传接口 QPS
-	DownloadQPS  int   // 下载接口 QPS
-	LoginQPS     int   // 登录接口 QPS
-	Burst        int   // 突发容量
-	Enabled      bool  // 总开关
-	BlockSeconds int   // 阻断后封禁秒数
+	GlobalQPS    int  // 全局 IP 维度 QPS（每 IP）
+	UploadQPS    int  // 上传接口 QPS
+	DownloadQPS  int  // 下载接口 QPS
+	LoginQPS     int  // 登录接口 QPS
+	Burst        int  // 突发容量
+	Enabled      bool // 总开关
+	BlockSeconds int  // 阻断后封禁秒数
 }
 
 // DefaultRateLimitConfig 默认限流配置
@@ -61,10 +61,10 @@ type clientLimiter struct {
 
 // RateLimiter 限流管理器
 type RateLimiter struct {
-	mu       sync.Mutex
-	clients  map[scope]map[string]*clientLimiter
-	cfg      RateLimitConfig
-	stopCh   chan struct{}
+	mu      sync.Mutex
+	clients map[scope]map[string]*clientLimiter
+	cfg     RateLimitConfig
+	stopCh  chan struct{}
 }
 
 // NewRateLimiter 创建限流管理器

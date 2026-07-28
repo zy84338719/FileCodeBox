@@ -32,7 +32,7 @@ func TestCreate_CreateNotify(t *testing.T) {
 	ctx := context.Background()
 	item, err := svc.Create(ctx, CreateReq{
 		Title:    "系统升级通知",
-		Content: "今晚 0 点系统升级",
+		Content:  "今晚 0 点系统升级",
 		Type:     "maintenance",
 		Level:    "warning",
 		AuthorID: 1,
