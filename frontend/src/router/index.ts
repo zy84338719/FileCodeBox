@@ -15,6 +15,18 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '分享详情' },
   },
   {
+    path: '/retrieve',
+    name: 'AnonymousRetrieve',
+    component: () => import('@/views/anonymous/Retrieve.vue'),
+    meta: { title: '匿名取件' },
+  },
+  {
+    path: '/retrieve/result',
+    name: 'AnonymousResult',
+    component: () => import('@/views/anonymous/Result.vue'),
+    meta: { title: '取件结果' },
+  },
+  {
     path: '/user/login',
     name: 'Login',
     component: () => import('@/views/user/Login.vue'),

@@ -28,7 +28,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
 import { notifyApi, type NotifyItem } from '@/api/notify'
 
 const { t } = useI18n()
