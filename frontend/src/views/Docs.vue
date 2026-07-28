@@ -38,19 +38,26 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Refresh, Link, Loading } from '@element-plus/icons-vue'
-// 注意：SwaggerUIStandalonePreset 不在 swagger-ui-es-bundle 导出路径中（该路径只导出 bundle
-// default），从错误路径导入会得到 undefined，导致 "Cannot read properties of undefined
-// (reading 'presets')" 运行时崩溃。改为只用 SwaggerUIBundle 自带的 presets.apis + 默认
-// BaseLayout，足以渲染标准 OpenAPI 文档（含 Try it out），且无 CommonJS/ESM 互操作问题。
-import { SwaggerUIBundle } from 'swagger-ui-dist/swagger-ui-es-bundle'
+// Swagger UI 集成说明：
+// 1. 用默认导入（import SwaggerUIBundle），Vite 对 CommonJS 模块的默认导入互操作最可靠。
+//    具名导入 { SwaggerUIBundle } 在某些 Vite 版本下会丢失 .presets 等静态属性。
+// 2. 不显式传 presets/layout，SwaggerUIBundle 默认会启用内置 apis preset + BaseLayout，
+//    足以渲染标准 OpenAPI 文档（含 Try it out）。
+// 3. 之前的写法（具名导入 SwaggerUIStandalonePreset + SwaggerUIBundle.presets.apis）会因
+//    ESM 互导丢失属性而崩溃 "Cannot read properties of undefined (reading 'presets')"。
+import SwaggerUIBundle from 'swagger-ui-dist/swagger-ui-es-bundle'
 import 'swagger-ui-dist/swagger-ui.css'
+
+// swagger-ui-es-bundle 运行时是可调用函数（CommonJS module.exports = fn），
+// 但其类型声明是 namespace，导致 TS 报 "not callable"。用类型断言对齐运行时。
+const SwaggerUI = SwaggerUIBundle as unknown as (opts: Record<string, unknown>) => { presetApis?: unknown }
 
 const { t } = useI18n()
 
 const swaggerRef = ref<HTMLElement | null>(null)
 const loading = ref(false)
 const error = ref('')
-let ui: ReturnType<typeof SwaggerUIBundle> | null = null
+let ui: ReturnType<typeof SwaggerUI> | null = null
 
 const loadSpec = async () => {
   loading.value = true
@@ -64,13 +71,11 @@ const loadSpec = async () => {
     const url = '/openapi.json'
     await nextTick()
     if (!swaggerRef.value) return
-    ui = SwaggerUIBundle({
+    ui = SwaggerUI({
       url,
       domNode: swaggerRef.value,
       deepLinking: true,
-      // 只用内置 apis preset + 默认 BaseLayout，避免依赖 standalone preset
-      presets: [SwaggerUIBundle.presets.apis],
-      layout: 'BaseLayout',
+      // 不传 presets：SwaggerUIBundle 默认启用内置 apis preset + BaseLayout
       docExpansion: 'list',
       filter: true,
       tryItOutEnabled: true,
