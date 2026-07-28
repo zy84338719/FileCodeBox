@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/zy84338719/fileCodeBox/backend/gen/http/router"
 	"github.com/zy84338719/fileCodeBox/backend/internal/conf"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/auth"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/logger"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/middleware"
 	previewPkg "github.com/zy84338719/fileCodeBox/backend/internal/preview"
@@ -67,33 +69,142 @@ func GetConfig() *Config {
 	return config
 }
 
-// InitConfig 初始化配置
+// InitConfig 初始化配置。
+//
+// 配置来源优先级（高 → 低）：
+//  1. 环境变量（FCB_ 前缀完整名 / 文档化的短名，见 bindEnvironment）
+//  2. 配置文件（yaml，路径由 configPath 或 CONFIG_PATH 决定）
+//  3. 代码内默认值（SetDefault）
+//
+// 这样容器化部署（K8s/Docker）可通过 env 注入敏感配置（jwt_secret、db 密码等），
+// 而无需修改镜像内的配置文件，符合 12-factor。
 func InitConfig(configPath string) (*Config, error) {
+	// 解析最终配置文件路径：参数 > CONFIG_PATH env > 默认
+	if configPath == "" {
+		configPath = os.Getenv("CONFIG_PATH")
+	}
+	if configPath == "" {
+		configPath = "configs/config.yaml"
+	}
+
 	v := viper.New()
 	v.SetConfigFile(configPath)
 	v.SetConfigType("yaml")
 
-	// 设置默认值
-	v.SetDefault("server.host", "0.0.0.0")
-	v.SetDefault("server.port", 12345)
-	v.SetDefault("server.mode", "debug")
-	v.SetDefault("database.driver", "sqlite")
-	v.SetDefault("database.db_name", "./data/filecodebox.db")
-	// 用户配置默认值
-	v.SetDefault("user.allow_user_registration", true)
-	v.SetDefault("user.require_email_verify", false)
-	v.SetDefault("user.jwt_secret", "FileCodeBox2025JWT")
+	// 代码内默认值（仅当文件与 env 均未设置时生效）
+	setDefaults(v)
 
+	// 绑定环境变量（优先级最高）
+	bindEnvironment(v)
+
+	// 读取配置文件（缺失时降级为仅默认值 + env，便于无文件启动）
 	if err := v.ReadInConfig(); err != nil {
-		log.Printf("Warning: Failed to read config file: %v, using defaults", err)
+		log.Printf("Warning: Failed to read config file %s: %v, using defaults + env", configPath, err)
+	} else {
+		log.Printf("Loaded config from: %s", v.ConfigFileUsed())
 	}
 
-	var config Config
-	if err := v.Unmarshal(&config); err != nil {
+	var cfg Config
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	return &config, nil
+	// 生产环境敏感配置 fail-fast 校验
+	if err := validateSecrets(&cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
+}
+
+// setDefaults 设置代码内默认值。
+func setDefaults(v *viper.Viper) {
+	v.SetDefault("server.host", "0.0.0.0")
+	v.SetDefault("server.port", 12345)
+	v.SetDefault("server.mode", "debug")
+	v.SetDefault("server.base_url", "")
+	v.SetDefault("database.driver", "sqlite")
+	v.SetDefault("database.db_name", "./data/filecodebox.db")
+	v.SetDefault("user.allow_user_registration", true)
+	v.SetDefault("user.require_email_verify", false)
+	v.SetDefault("observability.metrics.enabled", true)
+	v.SetDefault("observability.metrics.path", "/metrics")
+	v.SetDefault("observability.tracing.enabled", false)
+}
+
+// envBindings 环境变量 → 配置 key 的映射。
+// 同时支持两套命名：
+//   - 文档化的短扁平名（PORT / DATABASE_HOST 等，便于运维记忆）
+//   - FCB_ 前缀 + 下划线的完整名（FCB_SERVER_PORT，与 mapstructure key 对齐）
+var envBindings = map[string][]string{
+	// server
+	"server.host":          {"FCB_SERVER_HOST", "HOST"},
+	"server.port":          {"FCB_SERVER_PORT", "PORT"},
+	"server.mode":          {"FCB_SERVER_MODE"},
+	"server.base_url":      {"FCB_SERVER_BASE_URL", "BASE_URL"},
+	"server.read_timeout":  {"FCB_SERVER_READ_TIMEOUT"},
+	"server.write_timeout": {"FCB_SERVER_WRITE_TIMEOUT"},
+	// database
+	"database.driver":   {"FCB_DATABASE_DRIVER", "DATABASE_TYPE", "DB_TYPE"},
+	"database.db_name":  {"FCB_DATABASE_DB_NAME", "DATABASE_NAME", "DB_NAME"},
+	"database.host":     {"FCB_DATABASE_HOST", "DATABASE_HOST", "DB_HOST"},
+	"database.port":     {"FCB_DATABASE_PORT", "DATABASE_PORT", "DB_PORT"},
+	"database.user":     {"FCB_DATABASE_USER", "DATABASE_USER", "DB_USER"},
+	"database.password": {"FCB_DATABASE_PASSWORD", "DATABASE_PASS", "DB_PASS"},
+	// redis
+	"redis.host":     {"FCB_REDIS_HOST", "REDIS_HOST"},
+	"redis.port":     {"FCB_REDIS_PORT", "REDIS_PORT"},
+	"redis.password": {"FCB_REDIS_PASSWORD", "REDIS_PASSWORD"},
+	"redis.db":       {"FCB_REDIS_DB", "REDIS_DB"},
+	// app
+	"app.datapath":   {"FCB_DATA_PATH", "DATA_PATH"},
+	"app.production": {"FCB_PRODUCTION", "PRODUCTION"},
+	// user
+	"user.jwt_secret":             {"FCB_JWT_SECRET", "JWT_SECRET"},
+	"user.allow_user_registration": {"FCB_USER_ALLOW_REGISTRATION"},
+	// upload
+	"upload.open_upload": {"FCB_OPEN_UPLOAD", "OPEN_UPLOAD"},
+	"upload.upload_size": {"FCB_UPLOAD_SIZE", "UPLOAD_SIZE"},
+	// storage
+	"storage.type":         {"FCB_STORAGE_TYPE"},
+	"storage.storage_path": {"FCB_STORAGE_PATH"},
+	// observability
+	"observability.metrics.enabled": {"FCB_METRICS_ENABLED"},
+	"observability.metrics.path":    {"FCB_METRICS_PATH"},
+	"observability.tracing.enabled": {"FCB_TRACING_ENABLED"},
+}
+
+// bindEnvironment 把环境变量绑定到 viper 配置 key。
+// 列表中靠前的 env 名优先（viper BindEnv 只绑定第一个非空）。
+func bindEnvironment(v *viper.Viper) {
+	for key, envs := range envBindings {
+		// 绑定所有候选 env 名；viper 会取最后一个 BindEnv 的值，
+		// 因此我们逐个检查并显式设置，确保优先级正确。
+		for _, env := range envs {
+			if val, ok := os.LookupEnv(env); ok {
+				v.Set(key, val)
+				break
+			}
+		}
+	}
+}
+
+// insecureDefaultSecrets 已知的不安全默认密钥（禁止在生产环境使用）。
+var insecureDefaultSecrets = map[string]string{
+	"FileCodeBox2025JWT":                   "user.jwt_secret",
+	"filecodebox-dev-signing-key-change-me": "presign signing key",
+}
+
+// validateSecrets 在生产环境校验敏感配置，避免使用默认/弱密钥启动（fail-fast）。
+func validateSecrets(cfg *Config) error {
+	if !cfg.IsProduction() {
+		return nil
+	}
+	// jwt_secret
+	if sec := cfg.User.JWTSecret; sec == "" || insecureDefaultSecrets[sec] != "" {
+		return fmt.Errorf("production mode requires a secure user.jwt_secret: current value is empty or a known default; set FCB_JWT_SECRET env to a strong random string")
+	}
+	return nil
 }
 
 // InitDatabase 初始化数据库
@@ -169,17 +280,23 @@ var (
 	config   *Config
 )
 
-// Bootstrap 应用程序启动入口
-func Bootstrap() (*server.Hertz, error) {
+// Bootstrap 应用程序启动入口。
+// configPath 为空时依次回退到 CONFIG_PATH 环境变量、默认 configs/config.yaml。
+func Bootstrap(configPath string) (*server.Hertz, error) {
 	// 1. 初始化配置
 	var err error
-	config, err = InitConfig("configs/config.yaml")
+	config, err = InitConfig(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init config: %w", err)
 	}
 
 	// 设置全局配置（供其他包访问）
 	conf.SetGlobalConfig(config)
+
+	// 1.1 注入 JWT secret 到 auth 包（覆盖硬编码默认值）。
+	// 此前 jwt.go 使用硬编码 "FileCodeBox2025SecretKey"，且与 config 的 jwt_secret
+	// 不一致，导致配置中的 secret 从未生效。此处统一从配置/env 读取。
+	auth.SetJWTSecret(config.User.JWTSecret)
 
 	// 2. 初始化日志
 	loggerConfig := &logger.Config{
@@ -193,6 +310,8 @@ func Bootstrap() (*server.Hertz, error) {
 	if err := logger.Init(loggerConfig); err != nil {
 		return nil, fmt.Errorf("failed to init logger: %w", err)
 	}
+	logger.Info("JWT secret loaded from configuration",
+		zap.Bool("production", config.IsProduction()))
 
 	// 3. 初始化数据库
 	database, err = InitDatabase(&config.Database)
@@ -352,10 +471,19 @@ func initThriftIDLServices(database *gorm.DB) {
 	customHandler.SetNotifyService(notifyApp)
 
 	// 2. presign service（需要 Redis + baseURL + signingKey + share service）
-	baseURL := fmt.Sprintf("http://%s:%d", config.Server.Host, config.Server.Port)
+	// baseURL 优先用配置的对外地址（server.base_url），否则用 host:port
+	baseURL := config.Server.BaseURL
+	if baseURL == "" {
+		baseURL = fmt.Sprintf("http://%s:%d", config.Server.Host, config.Server.Port)
+	}
+	// presign 签名密钥：优先专用 FCB_PRESIGN_SIGNING_KEY，否则复用 jwt_secret
+	signingKey := os.Getenv("FCB_PRESIGN_SIGNING_KEY")
+	if signingKey == "" {
+		signingKey = config.User.JWTSecret
+	}
 	presignHandler.SetService(redis.GetClient(),
 		baseURL,
-		"filecodebox-dev-signing-key-change-me")
+		signingKey)
 	// 2.1 注入 share service（Complete 时写分享表）
 	shareSvc := shareService.NewService(baseURL, getBootstrapStorageService())
 	presignHandler.SetShareService(shareSvc)

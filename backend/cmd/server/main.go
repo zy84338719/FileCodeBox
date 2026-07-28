@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -12,7 +13,12 @@ import (
 )
 
 func main() {
-	h, err := bootstrap.Bootstrap()
+	// 解析命令行参数。
+	// --config 指定配置文件路径；亦可通过 CONFIG_PATH 环境变量设置（flag 优先）。
+	configPath := flag.String("config", "", "配置文件路径（默认 configs/config.yaml，可用 CONFIG_PATH 环境变量覆盖）")
+	flag.Parse()
+
+	h, err := bootstrap.Bootstrap(*configPath)
 	if err != nil {
 		fmt.Printf("Bootstrap failed: %v\n", err)
 		os.Exit(1)

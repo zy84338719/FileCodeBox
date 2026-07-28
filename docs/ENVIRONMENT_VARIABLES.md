@@ -1,6 +1,20 @@
 # FileCodeBox 环境变量配置
 
-FileCodeBox 现在支持通过环境变量进行配置，便于容器化部署和配置管理。
+FileCodeBox 支持通过环境变量进行配置，便于容器化部署和配置管理（12-factor）。
+
+## 配置优先级
+
+环境变量 > 配置文件（yaml）> 代码默认值。即环境变量始终覆盖配置文件中的同名项，
+无需修改镜像内文件即可注入敏感配置（密钥、密码等）。
+
+## 两套命名规范
+
+为兼顾易用与规范，支持两套环境变量名（同一配置项任选其一）：
+
+1. **FCB_ 前缀完整名**（推荐，与配置 key 一致）：`FCB_SERVER_PORT`、`FCB_DATABASE_HOST`、`FCB_JWT_SECRET`
+2. **短扁平名**（便于运维记忆）：`PORT`、`DATABASE_HOST`、`JWT_SECRET`
+
+完整映射见下表。FCB_ 前缀名与短名效果相同。
 
 ## 支持的环境变量
 
@@ -19,6 +33,37 @@ FileCodeBox 现在支持通过环境变量进行配置，便于容器化部署�
 |---------|------|--------|------|
 | `OPEN_UPLOAD` | int | 1 | 启用上传功能 (0=禁用, 1=启用) |
 | `UPLOAD_SIZE` | int64 | 10485760 | 最大上传文件大小 (字节) |
+
+### 🔒 安全配置（生产环境必填）
+
+| 环境变量 | 完整名 | 说明 |
+|---------|--------|------|
+| `JWT_SECRET` | `FCB_JWT_SECRET` | JWT 签名密钥。生产模式（`PRODUCTION=1`）下若为空或已知默认值将**拒绝启动** |
+| `FCB_PRESIGN_SIGNING_KEY` | — | 预签名上传签名密钥，未设置时复用 `JWT_SECRET` |
+
+### 🔴 Redis 配置
+
+| 环境变量 | 完整名 | 默认值 | 说明 |
+|---------|--------|--------|------|
+| `REDIS_HOST` | `FCB_REDIS_HOST` | localhost | Redis 主机 |
+| `REDIS_PORT` | `FCB_REDIS_PORT` | 6379 | Redis 端口 |
+| `REDIS_PASSWORD` | `FCB_REDIS_PASSWORD` | "" | Redis 密码 |
+| `REDIS_DB` | `FCB_REDIS_DB` | 0 | Redis DB 编号 |
+
+### 📊 可观测性配置
+
+| 环境变量 | 完整名 | 默认值 | 说明 |
+|---------|--------|--------|------|
+| `FCB_METRICS_ENABLED` | — | true | 启用 Prometheus 指标（`/metrics`） |
+| `FCB_METRICS_PATH` | — | /metrics | 指标暴露路径 |
+| `FCB_TRACING_ENABLED` | — | false | 启用 OpenTelemetry 追踪 |
+
+### 🗄️ 存储配置
+
+| 环境变量 | 完整名 | 默认值 | 说明 |
+|---------|--------|--------|------|
+| `FCB_STORAGE_TYPE` | — | local | 存储类型 (local/s3/webdav) |
+| `FCB_STORAGE_PATH` | — | ./data/uploads | 本地存储路径 |
 
 ### 🗄️ 数据库配置
 

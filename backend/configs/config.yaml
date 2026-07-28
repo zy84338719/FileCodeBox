@@ -80,3 +80,15 @@ ui:
   opacity: 1
   notify_title: ""
   notify_content: ""
+
+# 可观测性（Prometheus 指标 / OpenTelemetry 追踪）
+observability:
+  metrics:
+    enabled: true
+    path: "/metrics"
+  tracing:
+    enabled: false
+    exporter: "otlp"
+    endpoint: "localhost:4317"
+    service_name: "filecodebox"
+

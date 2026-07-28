@@ -7,15 +7,17 @@ var globalConfig *AppConfiguration
 
 // AppConfiguration 完整应用配置
 type AppConfiguration struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Database DatabaseConfig `mapstructure:"database"`
-	Redis    RedisConfig    `mapstructure:"redis"`
-	Log      LogConfig      `mapstructure:"log"`
-	App      AppConfig      `mapstructure:"app"`
-	User     UserConfig     `mapstructure:"user"`
-	Upload   UploadConfig   `mapstructure:"upload"`
-	Download DownloadConfig `mapstructure:"download"`
-	Storage  StorageConfig  `mapstructure:"storage"`
+	Server        ServerConfig        `mapstructure:"server"`
+	Database      DatabaseConfig      `mapstructure:"database"`
+	Redis         RedisConfig         `mapstructure:"redis"`
+	Log           LogConfig           `mapstructure:"log"`
+	App           AppConfig           `mapstructure:"app"`
+	User          UserConfig          `mapstructure:"user"`
+	Upload        UploadConfig        `mapstructure:"upload"`
+	Download      DownloadConfig      `mapstructure:"download"`
+	Storage       StorageConfig       `mapstructure:"storage"`
+	UI            UIConfig            `mapstructure:"ui"`
+	Observability ObservabilityConfig `mapstructure:"observability"`
 }
 
 // SetGlobalConfig 设置全局配置
@@ -32,7 +34,8 @@ func GetGlobalConfig() *AppConfiguration {
 type ServerConfig struct {
 	Host         string `mapstructure:"host"`
 	Port         int    `mapstructure:"port"`
-	Mode         string `mapstructure:"mode"` // debug, release, test
+	Mode         string `mapstructure:"mode"`     // debug, release, test
+	BaseURL      string `mapstructure:"base_url"` // 对外可访问的基础 URL（用于生成分享链接等）
 	ReadTimeout  int    `mapstructure:"read_timeout"`
 	WriteTimeout int    `mapstructure:"write_timeout"`
 }
@@ -110,6 +113,63 @@ type DownloadConfig struct {
 
 // StorageConfig 存储配置
 type StorageConfig struct {
-	Type        string `mapstructure:"type"`
-	StoragePath string `mapstructure:"storage_path"`
+	Type        string       `mapstructure:"type"` // local, s3, webdav, onedrive, nfs
+	StoragePath string       `mapstructure:"storage_path"`
+	S3          *S3Config    `mapstructure:"s3"`
+	WebDAV      *WebDAVConfig `mapstructure:"webdav"`
+}
+
+// S3Config S3 兼容对象存储配置（AWS S3 / 阿里云 OSS / 腾讯云 COS 等）
+type S3Config struct {
+	Endpoint        string `mapstructure:"endpoint"`
+	Region          string `mapstructure:"region"`
+	Bucket          string `mapstructure:"bucket"`
+	AccessKey       string `mapstructure:"access_key"`
+	SecretKey       string `mapstructure:"secret_key"`
+	UseSSL          bool   `mapstructure:"use_ssl"`
+	PathStyle       bool   `mapstructure:"path_style"`
+}
+
+// WebDAVConfig WebDAV 存储配置
+type WebDAVConfig struct {
+	Endpoint string `mapstructure:"endpoint"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+}
+
+// UIConfig 前端 UI 相关配置（透传给前端展示）
+type UIConfig struct {
+	Theme        string  `mapstructure:"theme"`
+	Background   string  `mapstructure:"background"`
+	PageExplain  string  `mapstructure:"page_explain"`
+	RobotsText   string  `mapstructure:"robots_text"`
+	ShowAdminAddr bool   `mapstructure:"show_admin_addr"`
+	Opacity      float64 `mapstructure:"opacity"`
+	NotifyTitle  string  `mapstructure:"notify_title"`
+	NotifyContent string `mapstructure:"notify_content"`
+}
+
+// ObservabilityConfig 可观测性配置（metrics / tracing）
+type ObservabilityConfig struct {
+	Metrics MetricsConfig `mapstructure:"metrics"`
+	Tracing TracingConfig `mapstructure:"tracing"`
+}
+
+// MetricsConfig Prometheus 指标配置
+type MetricsConfig struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Path    string `mapstructure:"path"` // 指标暴露路径，默认 /metrics
+}
+
+// TracingConfig 分布式追踪配置（OpenTelemetry）
+type TracingConfig struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	Exporter string `mapstructure:"exporter"` // otlp / stdout / 空表示禁用
+	Endpoint string `mapstructure:"endpoint"` // OTLP collector 地址
+	ServiceName string `mapstructure:"service_name"`
+}
+
+// IsProduction 是否生产模式（综合 server.mode 与 app.production 判断）
+func (c *AppConfiguration) IsProduction() bool {
+	return c.App.Production || c.Server.Mode == "release"
 }

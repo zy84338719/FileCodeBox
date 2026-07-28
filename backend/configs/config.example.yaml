@@ -1,0 +1,110 @@
+# FileCodeBox 配置示例（脱敏模板）
+#
+# 所有敏感配置（jwt_secret、数据库密码、Redis 密码）请通过环境变量注入，
+# 不要把真实密钥写入配置文件。环境变量优先级高于本文件。
+# 详见 docs/ENVIRONMENT_VARIABLES.md
+#
+# 启动方式：
+#   ./server                                    # 默认读 configs/config.yaml
+#   ./server --config /path/to/config.yaml      # 指定配置文件
+#   CONFIG_PATH=/path/to/config.yaml ./server   # 或用环境变量
+
+server:
+  host: "0.0.0.0"
+  port: 12345              # env: FCB_SERVER_PORT / PORT
+  mode: "debug"            # debug | release | test
+  base_url: ""             # 对外可访问地址，如 https://your-domain.com（生成分享链接用）
+  read_timeout: 30         # 秒
+  write_timeout: 30        # 秒
+
+database:
+  driver: "sqlite"         # sqlite | mysql | postgres  (env: FCB_DATABASE_DRIVER / DATABASE_TYPE)
+  db_name: "./data/fileCodeBox.db"
+  # MySQL/Postgres 专用：
+  host: "localhost"        # env: FCB_DATABASE_HOST / DATABASE_HOST
+  port: 3306               # env: FCB_DATABASE_PORT / DATABASE_PORT
+  user: "root"             # env: FCB_DATABASE_USER / DATABASE_USER
+  password: ""             # env: FCB_DATABASE_PASSWORD / DATABASE_PASS  ⚠️ 生产请用 env 注入
+
+redis:
+  host: "localhost"        # env: FCB_REDIS_HOST / REDIS_HOST
+  port: 6379               # env: FCB_REDIS_PORT / REDIS_PORT
+  password: ""             # env: FCB_REDIS_PASSWORD / REDIS_PASSWORD  ⚠️ 生产请用 env 注入
+  db: 0
+
+log:
+  level: "info"            # debug | info | warn | error
+  filename: ""             # 空=仅输出到 stdout
+  max_size: 100            # MB
+  max_backups: 10
+  max_age: 30              # 天
+  compress: true
+
+app:
+  name: "FileCodeBox"
+  version: "1.0.0"
+  description: "开箱即用的文件快传系统"
+  datapath: "./data"       # env: FCB_DATA_PATH / DATA_PATH
+  production: false        # env: FCB_PRODUCTION / PRODUCTION（true 时强制校验 secret）
+
+upload:
+  open_upload: true        # env: FCB_OPEN_UPLOAD / OPEN_UPLOAD
+  upload_size: 10485760    # 10MB；env: FCB_UPLOAD_SIZE / UPLOAD_SIZE
+  enable_chunk: true
+  chunk_size: 2097152      # 2MB
+  max_save_seconds: 0      # 0 = 永不过期
+  require_login: false
+
+download:
+  enable_concurrent_download: true
+  max_concurrent_downloads: 10
+  download_timeout: 300    # 秒
+  require_login: false
+
+storage:
+  type: "local"            # local | s3 | webdav
+  storage_path: "./data/uploads"
+  # S3 兼容对象存储（阿里云 OSS / 腾讯云 COS / AWS S3 / MinIO 等）
+  # s3:
+  #   endpoint: "https://s3.amazonaws.com"
+  #   region: "us-east-1"
+  #   bucket: "my-bucket"
+  #   access_key: ""        # ⚠️ 生产请用 env 注入
+  #   secret_key: ""        # ⚠️ 生产请用 env 注入
+  #   use_ssl: true
+  #   path_style: false
+  # WebDAV（坚果云 / Nextcloud 等）
+  # webdav:
+  #   endpoint: "https://dav.example.com"
+  #   username: ""
+  #   password: ""          # ⚠️ 生产请用 env 注入
+
+user:
+  allow_user_registration: false
+  require_email_verify: false
+  user_upload_size: 52428800     # 50MB
+  user_storage_quota: 1073741824 # 1GB
+  session_expiry_hours: 168      # 7 天
+  max_sessions_per_user: 5
+  jwt_secret: "CHANGE_ME_TO_A_SECURE_RANDOM_STRING"  # ⚠️ 生产必须改！env: FCB_JWT_SECRET / JWT_SECRET
+
+ui:
+  theme: "themes/2025"
+  background: ""
+  page_explain: "请勿上传或分享违法内容。"
+  robots_text: |
+    User-agent: *
+    Disallow: /
+  show_admin_addr: false
+  opacity: 1
+
+# 可观测性（Prometheus 指标 + OpenTelemetry 追踪）
+observability:
+  metrics:
+    enabled: true         # env: FCB_METRICS_ENABLED
+    path: "/metrics"      # env: FCB_METRICS_PATH
+  tracing:
+    enabled: false        # env: FCB_TRACING_ENABLED
+    exporter: "otlp"      # otlp | stdout
+    endpoint: "localhost:4317"  # OTLP collector 地址
+    service_name: "filecodebox"
