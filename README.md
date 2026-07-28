@@ -27,11 +27,12 @@ FileCodeBox 是一个使用 Go + Vue 3 实现的轻量级分享服务，采用�
 | 性能 | Go 原生并发、分片上传、断点续传、秒传校验 |
 | 分享体验 | 文本/文件双通道、链接有效期控制、密码和访问次数限制、**匿名取件（vastsa UX）** |
 | 管理后台 | 仪表板、文件列表、用户管理、存储面板、系统配置、**系统通知公告** |
-| 安全 | JWT 认证、API Key 支持、**限流中间件（IP+接口双层）** |
+| 安全 | JWT 认证、API Key 支持、**限流中间件（IP+接口双层）**、**配置化 CORS**、**安全响应头**（HSTS/X-Frame-Options 等）、**生产 secret fail-fast** |
 | 存储 | 本地磁盘、S3 兼容对象存储、WebDAV、NFS、**OpenDAL 风格抽象** |
 | 上传 | 直传 + **预签名上传**（init/complete/abort） |
-| 工程 | **统一错误码体系**、**统一响应 envelope**（code/message/data/trace_id） |
-| 部署 | Docker / Docker Compose、单二进制部署 |
+| 可观测性 | **Prometheus 指标（HTTP RED）**、**结构化访问日志（trace_id 全链路）**、**深度就绪探针（/readyz）** |
+| 工程 | **统一错误码体系**、**统一响应 envelope**（code/message/data/trace_id）、**84 个单测覆盖核心业务** |
+| 部署 | **单二进制**（内置前端 SPA）、Docker、**生产 Compose（含 Redis+Nginx）**、**K8s（探针/Ingress/HPA/ServiceMonitor）**、**环境变量配置（12-factor）** |
 | 前端 | Vue 3 + TypeScript、自适应布局、现代化 UI |
 
 ---
@@ -112,18 +113,72 @@ make build-backend   # 构建后端
 make copy-frontend   # 复制前端到 backend/static/
 ```
 
-### 4. Docker 部署
+### 4. 生产部署（4 种方式，任选其一）
+
+#### 方式 A：单二进制（最简单，内置前端 SPA）
 
 ```bash
-# 使用 docker-compose
-docker-compose up -d
-
-# 或手动构建
-docker build -t filecodebox ./backend
-docker run -d -p 12345:12345 -v $(pwd)/data:/data filecodebox
+make build                # 构建前端 + 后端（前端嵌入 static/）
+cd backend && ./bin/server  # 单二进制即可打开前端 + 全部 API
 ```
 
-服务默认监听 `http://127.0.0.1:12345`。
+#### 方式 B：Docker 单容器
+
+```bash
+docker run -d --name filecodebox \
+  -p 12345:12345 \
+  -v ./data:/app/data \
+  -e FCB_PRODUCTION=1 \
+  -e FCB_JWT_SECRET=$(openssl rand -hex 32) \
+  ghcr.io/zy84338719/filecodebox:latest
+```
+
+#### 方式 C：生产 Compose（后端 + Redis + Nginx 全栈）
+
+```bash
+cp .env.example .env       # 填写 JWT_SECRET 等密钥
+docker compose -f docker-compose.prod.yml up -d
+```
+
+#### 方式 D：Kubernetes（生产级，含探针/伸缩/监控）
+
+```bash
+# 1. 编辑 deploy/k8s/base/secret.yaml 填入真实 JWT_SECRET
+# 2. 编辑 deploy/k8s/base/ingress.yaml 填入域名
+kubectl apply -k deploy/k8s/base        # 或生产 overlay：
+kubectl apply -k deploy/k8s/overlays/prod
+```
+
+> 服务默认监听 `http://0.0.0.0:12345`，首次启动默认管理员 `admin / admin123`（**生产请立即修改**）。
+
+### 5. 配置与环境变量
+
+配置优先级：**环境变量 > 配置文件(yaml) > 默认值**。敏感配置（密钥/密码）建议用环境变量注入，详见 [`docs/ENVIRONMENT_VARIABLES.md`](docs/ENVIRONMENT_VARIABLES.md)。
+
+```bash
+# 常用环境变量（FCB_ 前缀完整名 或 短名均可）
+FCB_SERVER_PORT=12345        # 服务端口
+FCB_PRODUCTION=1             # 生产模式（强制校验 secret）
+FCB_JWT_SECRET=xxx           # JWT 密钥（生产必填）
+FCB_DATABASE_DRIVER=sqlite   # sqlite/mysql/postgres
+FCB_REDIS_HOST=redis         # Redis 地址
+FCB_METRICS_ENABLED=true     # Prometheus 指标开关
+FCB_CORS_ALLOW_ORIGINS=https://your-domain.com  # CORS 白名单
+```
+
+完整配置模板见 [`backend/configs/config.example.yaml`](backend/configs/config.example.yaml)。
+
+### 6. 可观测性
+
+| 端点 | 用途 |
+| --- | --- |
+| `GET /metrics` | Prometheus 指标（HTTP RED：请求数/延迟/在途） |
+| `GET /readyz` | 深度就绪检查（含 DB ping，供 K8s readinessProbe） |
+| `GET /live` | 存活检查（轻量，供 livenessProbe） |
+| `GET /health` | 健康检查 |
+| `GET /openapi.json` | OpenAPI 3.0 规范（Swagger UI） |
+
+所有日志为 zap 结构化 JSON，带 `trace_id`（`X-Trace-Id` header 透传），便于全链路排障。
 
 ---
 
@@ -224,12 +279,18 @@ user:
 | 项 | 状态 | 说明 |
 | --- | --- | --- |
 | OpenDAL 真实 binding | 待 Linux 部署 | macOS/Windows 编译走 stub；Linux 生产环境启用 Apache OpenDAL Go binding，对接 S3/OSS/WebDAV/HDFS 等 |
-| proto IDL | ✅ 已全量切 thrift | 第一阶段 10 个 proto → thrift 迁移已完成；第二阶段 task4 删 proto + 命名空间切换完成，CI 走 `make thrift-gen-all` |
-| 前端 i18n | 待做 | 后端错误码已分语言（zh/en），前端 vue-i18n 接入待开发 |
-| 前端暗色模式 | 待做 | Element Plus 主题切换可后端透传 `theme=dark` 启用，前端主题切换器待实现 |
-| 限流压测 | 待压测平台 | `ratelimit` 中间件 IP+scope 双层已实现并单测覆盖；生产环境 QPS 阈值校准需要 k6/wrk/Locust 等压测平台验证 |
-| 业务单测覆盖率 | 起步 | 4 个核心 service（anonymous/presign/notify/ratelimit）共 53 个 case 已补；其他 service（chunk/share/user/admin/storage）待补 |
-| ratelimit 持久化 | 当前在内存 | 服务重启会丢限流计数；需要 Redis 持久化或 sticky session |
+| proto IDL | ✅ 已全量切 thrift | proto → thrift 迁移完成，CI 走 `make thrift-gen-all` |
+| 前端 i18n | ✅ 已完成 | vue-i18n 接入（zh-CN / en-US） |
+| 前端暗色模式 | ✅ 已完成 | 暗色模式 + 顶栏切换器 |
+| 环境变量配置 | ✅ 已完成 | viper env 绑定（FCB_ 前缀 + 短名），12-factor 合规 |
+| 生产可观测性 | ✅ 已完成 | Prometheus 指标 + 结构化访问日志(trace_id) + 深度就绪探针 |
+| 安全加固 | ✅ 已完成 | 配置化 CORS + 安全响应头 + secret fail-fast + JWT 统一注入 |
+| K8s 生产部署 | ✅ 已完成 | 探针/Ingress/HPA/ServiceMonitor/Secret/ConfigMap + prod overlay |
+| 业务单测覆盖率 | ✅ 起步完成 | 6 service + storage + middleware 共 84 个 case（share/user/chunk/anonymous/notify/presign/ratelimit/storage） |
+| 数据库版本化迁移 | 待做 | 当前用 GORM AutoMigrate；企业级可引入 golang-migrate 做版本化 baseline |
+| 限流持久化 | 待做 | 当前 ratelimit 为内存态；多副本需 Redis 持久化保证一致 |
+| OpenTelemetry 追踪 | 待做 | 已留 observability.tracing 配置位，OTel 中间件 + OTLP exporter 待接入 |
+| 限流压测 | 待压测平台 | ratelimit 中间件已实现并单测覆盖；QPS 阈值校准需 k6/wrk 验证 |
 
 ---
 

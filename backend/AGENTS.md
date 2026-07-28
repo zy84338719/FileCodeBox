@@ -155,7 +155,9 @@ github.com/zy84338719/fileCodeBox/backend
 ├── internal/app/...                    # 业务层
 ├── internal/pkg/errcode                # 业务码
 ├── internal/pkg/resp                   # 统一 envelope
-├── internal/pkg/middleware             # auth + ratelimit
+├── internal/pkg/middleware             # auth + ratelimit + recovery + requestid + accesslog + metrics + security
+├── internal/conf                       # 配置(env 绑定 + AppConfiguration)
+├── internal/pkg/auth                   # JWT（SetJWTSecret 由 bootstrap 注入）
 └── ...
 ```
 
@@ -203,6 +205,20 @@ go test -count=1 -short -timeout 120s ./...
 3. **opendal 包是兼容抽象**：实际 macOS 开发时用本地 fs，Linux 部署时可切真实 OpenDAL
 4. **trace_id 通过 X-Trace-Id header 透传**：客户端可以传，服务器也会自动生成
 5. **rate limit middleware 注入**：通过 `middleware.GetDefaultRateLimiter()` 拿单例
+6. **全局中间件链**（在 `bootstrap.Bootstrap()` 注册，顺序敏感）：
+   `Recovery → RequestID → AccessLog → Metrics → SecurityHeaders → CORS`
+   - 新增全局中间件应插在 `CORS()` 之前
+   - `internal/pkg/middleware` 是活跃包；`internal/transport/http/middleware` 仅自定义路由用
+7. **自定义路由**（不走 thrift IDL）在 `bootstrap.customizedRegister()` 注册，包括：
+   前端 SPA 静态服务、`/openapi.json`、`/metrics`、`/readyz`、
+   `/api/v1/user/shares/*`、`/api/v1/notifies/*`
+8. **配置与环境变量**（12-factor）：优先级 env > yaml > 默认值。
+   - env 双套命名：`FCB_SERVER_PORT`（完整名）/ `PORT`（短名）
+   - 敏感配置（jwt_secret/db password）生产用 env 注入，禁止写配置文件
+   - `--config` flag / `CONFIG_PATH` env 可指定配置文件路径
+   - 生产模式（`FCB_PRODUCTION=1`）检测到默认 jwt_secret 会 fail-fast 拒绝启动
+9. **测试约定**：沿用 testify + glebarez/sqlite 内存 + miniredis。
+   Shape B service（share/user/chunk，DAO 走 `db.GetDB()`）测试用 `db.SetDatabaseInstance(测试库)` 注入。
 
 ## 已知妥协
 
@@ -210,9 +226,14 @@ go test -count=1 -short -timeout 120s ./...
 |---|---|---|
 | OpenDAL 真实 binding | ❌ 未启用 | 只支持 Linux 预编译库，macOS 编译失败 |
 | 匿名取件完整流程 | ⚠️ 部分 | 缺 Redis 时 panic；需补 share table 写入 |
-| 预签名上传 complete | ⚠️ 简化 | 未真正写 share 表（待 share service 集成） |
+| 预签名上传 complete | ⚠️ 简化 | complete 走 share service，简化处理 |
 | proto 旧 IDL | 🔄 并存 | 渐进迁移，下一阶段删除 |
-| 测试覆盖 | ❌ 0 | 项目历史无测试，待补 |
+| 测试覆盖 | ✅ 起步完成 | 6 service + storage + middleware 共 84 个 case |
+| 可观测性 | ✅ 已完成 | Prometheus 指标 + 访问日志(trace_id) + 深度就绪探针 |
+| 配置/环境变量 | ✅ 已完成 | 12-factor env 绑定 + --config flag + secret fail-fast |
+| 安全加固 | ✅ 已完成 | 配置化 CORS + 安全响应头 + JWT 统一注入 |
+| 限流持久化 | ❌ 内存态 | ratelimit 当前内存，多副本需 Redis |
+| 数据库版本化迁移 | ❌ 待做 | 当前 GORM AutoMigrate |
 
 ## 参考项目
 
