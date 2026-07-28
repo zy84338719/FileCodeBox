@@ -45,6 +45,24 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '用户中心', requiresAuth: true },
   },
   {
+    path: '/user/shares',
+    name: 'UserShares',
+    component: () => import('@/views/user/Shares.vue'),
+    meta: { title: '我的分享', requiresAuth: true },
+  },
+  {
+    path: '/user/history',
+    name: 'UserHistory',
+    component: () => import('@/views/user/History.vue'),
+    meta: { title: '取件历史', requiresAuth: true },
+  },
+  {
+    path: '/user/notifications',
+    name: 'UserNotifications',
+    component: () => import('@/views/user/Notifications.vue'),
+    meta: { title: '通知', requiresAuth: true },
+  },
+  {
     path: '/admin/login',
     name: 'AdminLogin',
     component: () => import('@/views/admin/Login.vue'),
