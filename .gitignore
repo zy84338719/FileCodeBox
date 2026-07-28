@@ -18,6 +18,11 @@ go.work
 # 数据目录（包含数据库等）
 data/
 
+# 环境变量（含密钥，禁止提交）
+.env
+.env.*
+!.env.example
+
 # 日志文件
 *.log
 

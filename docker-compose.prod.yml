@@ -1,0 +1,111 @@
+# FileCodeBox 生产环境 Docker Compose
+#
+# 包含: filecodebox (后端+前端) + redis + nginx 反向代理
+# 用法:
+#   1. 复制 .env.example 为 .env 并填写真实配置（尤其 FCB_JWT_SECRET）
+#   2. docker compose -f docker-compose.prod.yml up -d
+#
+# 说明：
+#   - 默认用 SQLite（数据持久化到 ./data 卷），适合中小规模自托管
+#   - 如需 MySQL/Postgres，取消注释对应服务并用 FCB_DATABASE_DRIVER 切换
+#   - nginx 统一入口（80），如需 HTTPS 配合 certbot 或外层 LB 终止 TLS
+
+services:
+  filecodebox:
+    image: ghcr.io/zy84338719/filecodebox:latest
+    container_name: filecodebox-app
+    restart: unless-stopped
+    environment:
+      # 基础
+      FCB_SERVER_HOST: "0.0.0.0"
+      FCB_SERVER_PORT: "12345"
+      FCB_SERVER_MODE: "release"
+      FCB_DATA_PATH: "/app/data"
+      FCB_PRODUCTION: "1"
+      # 数据库（默认 SQLite；如用 MySQL 改 FCB_DATABASE_DRIVER=mysql 并填连接信息）
+      FCB_DATABASE_DRIVER: "sqlite"
+      FCB_DATABASE_DB_NAME: "/app/data/fileCodeBox.db"
+      # FCB_DATABASE_HOST: "mysql"
+      # FCB_DATABASE_PORT: "3306"
+      # FCB_DATABASE_USER: "filecodebox"
+      # FCB_DATABASE_PASSWORD: "${DB_PASSWORD}"
+      # Redis
+      FCB_REDIS_HOST: "redis"
+      FCB_REDIS_PORT: "6379"
+      FCB_REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
+      # 安全（必填！生成: openssl rand -hex 32）
+      FCB_JWT_SECRET: "${JWT_SECRET}"
+      # 可观测性
+      FCB_METRICS_ENABLED: "true"
+      FCB_METRICS_PATH: "/metrics"
+      # 上传
+      FCB_OPEN_UPLOAD: "true"
+      FCB_UPLOAD_SIZE: "10485760"
+      TZ: Asia/Shanghai
+    volumes:
+      - filecodebox-data:/app/data
+    expose:
+      - "12345"  # 仅集群内可见，由 nginx 统一对外
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:12345/readyz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    container_name: filecodebox-redis
+    restart: unless-stopped
+    command: redis-server ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    container_name: filecodebox-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      # - "443:443"  # 如需 HTTPS 取消注释并配置证书
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      filecodebox:
+        condition: service_healthy
+
+  # MySQL（可选，适合大规模部署，取消注释启用）
+  # mysql:
+  #   image: mysql:8
+  #   container_name: filecodebox-mysql
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+  #     MYSQL_DATABASE: "filecodebox"
+  #     MYSQL_USER: "filecodebox"
+  #     MYSQL_PASSWORD: "${DB_PASSWORD}"
+  #   volumes:
+  #     - mysql-data:/var/lib/mysql
+  #   expose:
+  #     - "3306"
+
+volumes:
+  filecodebox-data:
+  redis-data:
+  # mysql-data:

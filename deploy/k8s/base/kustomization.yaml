@@ -3,6 +3,11 @@ kind: Kustomization
 namespace: filecodebox
 resources:
   - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml
+  - ingress.yaml
+  - hpa.yaml
+  - servicemonitor.yaml
