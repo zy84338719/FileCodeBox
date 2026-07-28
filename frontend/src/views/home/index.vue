@@ -24,6 +24,7 @@
         <div class="user-section">
           <LocaleSwitcher />
           <ThemeSwitcher />
+          <NotifyBell v-if="userStore.isLoggedIn" />
           <el-button class="retrieve-btn" @click="$router.push('/retrieve')">
             <el-icon><Postcard /></el-icon>
             {{ t('home.retrieve') }}
@@ -266,6 +267,7 @@ import TextShare from '@/components/upload/TextShare.vue'
 import GetShare from '@/components/upload/GetShare.vue'
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue'
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
+import NotifyBell from '@/components/NotifyBell.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
