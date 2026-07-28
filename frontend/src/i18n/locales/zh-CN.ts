@@ -121,7 +121,22 @@ export default {
       step2Desc: '系统自动生成取件码',
       step3Title: '告诉对方',
       step3Desc: '分享码或链接，对方可下载',
+      step4Title: '对方取件',
+      step4Desc: '对方输入 6 位码 + 密码即可下载',
     },
+    scenario: {
+      self: '自己用',
+      others: '分享给他人',
+    },
+    shareMethod: {
+      code: '6 位码',
+      url: '完整链接',
+      qrcode: '二维码',
+      codeHint: '把 6 位取件码发给对方，他们可以在 /retrieve 输入取件',
+      urlHint: '把完整链接发给对方，浏览器打开即可查看和下载',
+      copyCode: '复制取件码',
+    },
+    codeCopied: '取件码已复制',
   },
   anonymous: {
     title: '匿名取件',

@@ -120,7 +120,22 @@ export default {
       step2Desc: 'A pickup code is generated automatically',
       step3Title: 'Share it',
       step3Desc: 'Share the code or link with anyone',
+      step4Title: 'They retrieve',
+      step4Desc: 'Recipient enters the 6-digit code + password to download',
     },
+    scenario: {
+      self: 'For myself',
+      others: 'Share with others',
+    },
+    shareMethod: {
+      code: '6-digit code',
+      url: 'Full URL',
+      qrcode: 'QR code',
+      codeHint: 'Send the 6-digit code — recipient enters it at /retrieve',
+      urlHint: 'Send the full link — open in browser to view and download',
+      copyCode: 'Copy code',
+    },
+    codeCopied: 'Code copied',
   },
   anonymous: {
     title: 'Anonymous retrieve',

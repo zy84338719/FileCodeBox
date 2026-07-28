@@ -70,8 +70,22 @@
           <p>{{ t('home.description') }}</p>
         </div>
 
-        <!-- 流程说明 -->
-        <div class="workflow-section">
+        <!-- 场景选择 Tab：自己用 / 给他人 -->
+        <div class="scenario-tabs">
+          <el-radio-group v-model="scenario" size="large" class="scenario-radio">
+            <el-radio-button value="others">
+              <el-icon><Promotion /></el-icon>
+              {{ t('home.scenario.others') }}
+            </el-radio-button>
+            <el-radio-button value="self">
+              <el-icon><Folder /></el-icon>
+              {{ t('home.scenario.self') }}
+            </el-radio-button>
+          </el-radio-group>
+        </div>
+
+        <!-- 给他人场景：4 步流程图 -->
+        <div v-if="scenario === 'others'" class="workflow-section">
           <h3 class="workflow-title">{{ t('home.workflow.title') }}</h3>
           <div class="workflow-steps">
             <div class="workflow-step">
@@ -93,6 +107,13 @@
               <div class="step-icon"><el-icon size="28"><Share /></el-icon></div>
               <div class="step-title">{{ t('home.workflow.step3Title') }}</div>
               <div class="step-desc">{{ t('home.workflow.step3Desc') }}</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+              <div class="step-num">4</div>
+              <div class="step-icon"><el-icon size="28"><Download /></el-icon></div>
+              <div class="step-title">{{ t('home.workflow.step4Title') }}</div>
+              <div class="step-desc">{{ t('home.workflow.step4Desc') }}</div>
             </div>
           </div>
         </div>
@@ -152,29 +173,46 @@
       </footer>
     </div>
 
-    <!-- 分享成功对话框 -->
+    <!-- 分享成功对话框 — 分享方式三选一 -->
     <el-dialog
       v-model="showShareDialog"
       :title="t('home.shareSuccess')"
-      width="560px"
+      width="600px"
       :close-on-click-modal="false"
     >
       <div class="share-result">
-        <el-result :icon="'success'" :title="t('home.shareSuccess')" :sub-title="t('home.shareSuccessSubtitle')">
-          <template #extra>
-            <!-- 二维码 -->
-            <div v-if="qrCodeDataUrl" class="qrcode-section">
-              <img :src="qrCodeDataUrl" :alt="t('home.qrCodeTip')" class="qrcode-image" />
-              <p class="qrcode-tip">{{ t('home.qrCodeTip') }}</p>
-            </div>
+        <el-result :icon="'success'" :title="t('home.shareSuccess')" :sub-title="t('home.shareSuccessSubtitle')" />
 
-            <!-- 链接 -->
-            <div class="share-link-box">
-              <el-input
-                v-model="shareUrl"
-                readonly
-                size="large"
-              >
+        <!-- 分享方式三选一 Tab -->
+        <el-tabs v-model="shareMethod" class="share-method-tabs">
+          <!-- 6 位码 -->
+          <el-tab-pane name="code">
+            <template #label>
+              <span class="tab-label">
+                <el-icon><Postcard /></el-icon>
+                {{ t('home.shareMethod.code') }}
+              </span>
+            </template>
+            <div class="code-display">
+              <div class="code-big">{{ shareCode }}</div>
+              <p class="code-hint">{{ t('home.shareMethod.codeHint') }}</p>
+              <el-button type="primary" size="large" @click="copyShareCode">
+                <el-icon><CopyDocument /></el-icon>
+                {{ t('home.shareMethod.copyCode') }}
+              </el-button>
+            </div>
+          </el-tab-pane>
+
+          <!-- 完整 URL -->
+          <el-tab-pane name="url">
+            <template #label>
+              <span class="tab-label">
+                <el-icon><Link /></el-icon>
+                {{ t('home.shareMethod.url') }}
+              </span>
+            </template>
+            <div class="url-display">
+              <el-input v-model="shareUrl" readonly size="large">
                 <template #append>
                   <el-button type="primary" @click="copyShareUrl">
                     <el-icon><CopyDocument /></el-icon>
@@ -182,9 +220,28 @@
                   </el-button>
                 </template>
               </el-input>
+              <p class="code-hint">{{ t('home.shareMethod.urlHint') }}</p>
             </div>
-          </template>
-        </el-result>
+          </el-tab-pane>
+
+          <!-- 二维码 -->
+          <el-tab-pane name="qrcode">
+            <template #label>
+              <span class="tab-label">
+                <el-icon><PictureFilled /></el-icon>
+                {{ t('home.shareMethod.qrcode') }}
+              </span>
+            </template>
+            <div v-if="qrCodeDataUrl" class="qrcode-display">
+              <img :src="qrCodeDataUrl" :alt="t('home.qrCodeTip')" class="qrcode-image" />
+              <p class="code-hint">{{ t('home.qrCodeTip') }}</p>
+            </div>
+            <div v-else class="qrcode-loading">
+              <el-icon class="is-loading"><Loading /></el-icon>
+              <span>{{ t('common.loading') }}</span>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
       </div>
     </el-dialog>
   </div>
@@ -198,7 +255,8 @@ import QRCode from 'qrcode'
 import { useI18n } from 'vue-i18n'
 import {
   Box, ArrowDown, User, SwitchButton, Upload, Document,
-  Download, Link, CopyDocument, Postcard, UploadFilled, Share
+  Download, Link, CopyDocument, Postcard, UploadFilled, Share,
+  Promotion, Folder, PictureFilled, Loading
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useConfigStore } from '@/stores/config'
@@ -216,8 +274,14 @@ const localeStore = useLocaleStore()
 const { t, locale } = useI18n()
 
 const activeTab = ref('file')
+// 场景：自己用 / 给他人（默认给他人）
+const scenario = ref<'self' | 'others'>('others')
+// 分享方式：6 位码 / URL / 二维码
+const shareMethod = ref<'code' | 'url' | 'qrcode'>('code')
+
 const showShareDialog = ref(false)
 const shareUrl = ref('')
+const shareCode = ref('')
 const qrCodeDataUrl = ref('')
 
 interface ShareResult {
@@ -228,6 +292,9 @@ interface ShareResult {
 }
 
 const handleShareSuccess = async (result: ShareResult) => {
+  // 6 位码（取件码）
+  shareCode.value = result.code
+
   // 确保使用正确的 hash 路由格式
   let url = result.full_share_url || result.share_url
 
@@ -246,13 +313,14 @@ const handleShareSuccess = async (result: ShareResult) => {
   }
 
   shareUrl.value = url
+  shareMethod.value = 'code' // 默认显示 6 位码
   showShareDialog.value = true
 
   // 生成二维码
   try {
     const qrData = result.qr_code_data || url
     qrCodeDataUrl.value = await QRCode.toDataURL(qrData, {
-      width: 200,
+      width: 220,
       margin: 2,
       color: {
         dark: '#303133',
@@ -269,6 +337,15 @@ const copyShareUrl = async () => {
   try {
     await navigator.clipboard.writeText(shareUrl.value)
     ElMessage.success(t('home.linkCopied'))
+  } catch (error) {
+    ElMessage.error(t('home.copyLinkFailed'))
+  }
+}
+
+const copyShareCode = async () => {
+  try {
+    await navigator.clipboard.writeText(shareCode.value)
+    ElMessage.success(t('home.codeCopied') || t('home.linkCopied'))
   } catch (error) {
     ElMessage.error(t('home.copyLinkFailed'))
   }
@@ -363,6 +440,102 @@ onMounted(async () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+/* 场景选择 Tab */
+.scenario-tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.scenario-radio :deep(.el-radio-button__inner) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 12px 28px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scenario-radio :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: white;
+  color: #667eea;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 分享方式三选一 */
+.share-method-tabs {
+  margin-top: 20px;
+}
+
+.share-method-tabs :deep(.el-tabs__item) {
+  font-size: 15px;
+  font-weight: 500;
+  padding: 0 20px;
+}
+
+.share-method-tabs :deep(.el-tabs__active-bar) {
+  height: 3px;
+}
+
+.code-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+}
+
+.code-big {
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  color: #667eea;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8eaf6 100%);
+  padding: 24px 48px;
+  border-radius: 16px;
+  font-family: 'Courier New', monospace;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+  margin-bottom: 16px;
+}
+
+.code-hint {
+  color: #909399;
+  font-size: 13px;
+  margin: 8px 0 16px;
+  text-align: center;
+}
+
+.url-display {
+  padding: 20px 8px;
+}
+
+.qrcode-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+}
+
+.qrcode-image {
+  width: 220px;
+  height: 220px;
+  border: 4px solid #f5f7fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.qrcode-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px;
+  color: #909399;
+  font-size: 14px;
 }
 
 /* 顶部导航 */
