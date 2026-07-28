@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -11,6 +12,8 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/expfmt"
 	"github.com/spf13/viper"
 	"github.com/zy84338719/fileCodeBox/backend/gen/http/router"
 	"github.com/zy84338719/fileCodeBox/backend/internal/conf"
@@ -341,12 +344,26 @@ func Bootstrap(configPath string) (*server.Hertz, error) {
 		server.WithHostPorts(fmt.Sprintf("%s:%d", config.Server.Host, port)),
 	)
 
-	// 全局中间件（顺序：Recovery → RequestID → CORS）
-	// Recovery 必须最先，确保任何 panic 都被捕获并转为 500，避免进程崩溃
+	// 可观测性：初始化 Prometheus 指标（在注册中间件前完成）
+	if config.Observability.Metrics.Enabled {
+		middleware.NewMetrics()
+		logger.Info("Prometheus metrics enabled",
+			zap.String("path", config.Observability.Metrics.Path))
+	}
+
+	// 全局中间件链（顺序敏感）：
+	//   Recovery → RequestID → AccessLog → Metrics → CORS → handler
+	//   - Recovery 最外层，捕获任意 panic 转 500，避免进程崩溃
+	//   - RequestID 生成/透传 trace_id（X-Trace-Id），写入 ctx 供下游使用
+	//   - AccessLog 结构化访问日志（带 trace_id），在 handler 执行后记录 status
+	//   - Metrics 采集 RED 指标（延迟/计数/在途），在 handler 执行后记录
+	//   - CORS 跨域，最贴近 handler
 	h.Use(middleware.Recovery())
-	// RequestID 为每个请求生成/透传 trace_id（X-Trace-Id），写入 ctx 供日志/resp 使用
 	h.Use(middleware.RequestID())
-	// CORS 跨域
+	h.Use(middleware.AccessLog())
+	if config.Observability.Metrics.Enabled {
+		h.Use(middleware.MetricsMiddleware())
+	}
 	h.Use(CORS())
 
 	// 6. 注册路由
@@ -381,6 +398,21 @@ func Cleanup() {
 func customizedRegister(r *server.Hertz) {
 	// ===== OpenAPI 文档（Swagger UI）=====
 	r.GET("/openapi.json", customHandler.OpenAPISpec)
+
+	// ===== Prometheus 指标端点 =====
+	if config.Observability.Metrics.Enabled {
+		metricsPath := config.Observability.Metrics.Path
+		if metricsPath == "" {
+			metricsPath = "/metrics"
+		}
+		r.GET(metricsPath, metricsHandler)
+	}
+
+	// ===== 深度就绪检查 =====
+	// /readyz 检查 DB 等依赖连通性，供 K8s readinessProbe 使用；
+	// 依赖不可用时返回 503，避免流量打到未就绪实例。
+	// （IDL 生成的 /ready 为轻量 stub，此处用 /readyz 做深度检查以避免路由冲突）
+	r.GET("/readyz", readinessHandler)
 
 	// ===== 自定义 REST API（需用户 JWT 认证）=====
 	apiV1 := r.Group("/api/v1", customMw.UserAuth())
@@ -433,7 +465,7 @@ func customizedRegister(r *server.Hertz) {
 // 因此它们不在本列表中。
 var apiPathPrefixes = []string{
 	"/api", "/chunk", "/notifies",
-	"/health", "/live", "/ready", "/ping", "/version",
+	"/health", "/live", "/ready", "/readyz", "/ping", "/version",
 	"/openapi", "/metrics", "/preview", "/qrcode", "/setup",
 }
 
@@ -447,7 +479,67 @@ func isAPIPath(path string) bool {
 	return false
 }
 
-// initPreviewService 初始化预览服务
+// metricsHandler 暴露 Prometheus 指标（/metrics）。
+// Hertz 与标准 net/http 接口不同，不能直接用 promhttp.Handler()，
+// 这里手动 gather 指标并用 expfmt 文本格式输出到 buffer 再写入响应。
+func metricsHandler(ctx context.Context, c *app.RequestContext) {
+	mfs, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		c.JSON(consts.StatusInternalServerError, map[string]interface{}{
+			"code":    500,
+			"message": "failed to gather metrics: " + err.Error(),
+		})
+		return
+	}
+	var buf bytes.Buffer
+	enc := expfmt.NewEncoder(&buf, expfmt.NewFormat(expfmt.TypeTextPlain))
+	for _, mf := range mfs {
+		if err := enc.Encode(mf); err != nil {
+			logger.Error("failed to encode metric", zap.String("name", mf.GetName()), zap.Error(err))
+		}
+	}
+	c.SetStatusCode(consts.StatusOK)
+	c.Response.Header.SetContentType(string(expfmt.NewFormat(expfmt.TypeTextPlain)))
+	_, _ = c.Write(buf.Bytes())
+}
+
+// readinessHandler 深度就绪检查：校验 DB 连通性，失败返回 503。
+// 供 K8s readinessProbe 使用——依赖未就绪时不接流量。
+func readinessHandler(ctx context.Context, c *app.RequestContext) {
+	checks := map[string]bool{}
+	allOK := true
+
+	// DB ping
+	if database != nil {
+		if sqlDB, err := database.DB(); err == nil {
+			if err := sqlDB.Ping(); err == nil {
+				checks["database"] = true
+			} else {
+				checks["database"] = false
+				allOK = false
+			}
+		} else {
+			checks["database"] = false
+			allOK = false
+		}
+	} else {
+		checks["database"] = false
+		allOK = false
+	}
+
+	status := "ready"
+	httpStatus := consts.StatusOK
+	if !allOK {
+		status = "not ready"
+		httpStatus = consts.StatusServiceUnavailable
+	}
+	c.JSON(httpStatus, map[string]interface{}{
+		"status": status,
+		"checks": checks,
+	})
+}
+
+
 func initPreviewService() error {
 	previewConfig := &previewPkg.Config{
 		EnablePreview:    true,
