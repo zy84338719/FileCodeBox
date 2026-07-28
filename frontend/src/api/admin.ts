@@ -93,8 +93,9 @@ export const adminApi = {
 
   // 获取用户列表
   getUsers: (params: {
-    page?: number
-    page_size?: number
+    // IDL 中 page/page_size 为 required i32（api.query），必须传值，否则后端返回 400
+    page: number
+    page_size: number
     keyword?: string
     status?: number
   }) => {
@@ -116,8 +117,8 @@ export const adminApi = {
 
   // 别名：获取用户列表
   getUsersList: (params: {
-    page?: number
-    page_size?: number
+    page: number
+    page_size: number
     keyword?: string
     status?: number
   }) => adminApi.getUsers(params),

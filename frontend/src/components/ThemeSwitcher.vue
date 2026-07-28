@@ -1,6 +1,8 @@
 <template>
-  <el-dropdown trigger="click" @command="handleCommand">
-    <el-button circle :title="t('theme.title')" :icon="currentIcon" />
+  <!-- trigger=hover：悬停时展开精选项（light/dark/auto）下拉；
+       按钮点击则走 cycle() 一键在 light→dark→auto 间快速切换，更符合顶栏按钮直觉。 -->
+  <el-dropdown trigger="hover" @command="handleCommand">
+    <el-button circle :title="t('theme.title')" :icon="currentIcon" @click="themeStore.cycle()" />
     <template #dropdown>
       <el-dropdown-menu>
         <el-dropdown-item
@@ -40,6 +42,7 @@ const currentIcon = computed(() => {
   return Sunny
 })
 
+// 下拉菜单精确选择某个模式
 const handleCommand = (value: ThemeMode) => {
   themeStore.setMode(value)
 }

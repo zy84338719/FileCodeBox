@@ -38,7 +38,11 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Refresh, Link, Loading } from '@element-plus/icons-vue'
-import { SwaggerUIBundle, SwaggerUIStandalonePreset } from 'swagger-ui-dist/swagger-ui-es-bundle'
+// 注意：SwaggerUIStandalonePreset 不在 swagger-ui-es-bundle 导出路径中（该路径只导出 bundle
+// default），从错误路径导入会得到 undefined，导致 "Cannot read properties of undefined
+// (reading 'presets')" 运行时崩溃。改为只用 SwaggerUIBundle 自带的 presets.apis + 默认
+// BaseLayout，足以渲染标准 OpenAPI 文档（含 Try it out），且无 CommonJS/ESM 互操作问题。
+import { SwaggerUIBundle } from 'swagger-ui-dist/swagger-ui-es-bundle'
 import 'swagger-ui-dist/swagger-ui.css'
 
 const { t } = useI18n()
@@ -64,11 +68,9 @@ const loadSpec = async () => {
       url,
       domNode: swaggerRef.value,
       deepLinking: true,
-      presets: [
-        SwaggerUIBundle.presets.apis,
-        SwaggerUIStandalonePreset,
-      ],
-      layout: 'StandaloneLayout',
+      // 只用内置 apis preset + 默认 BaseLayout，避免依赖 standalone preset
+      presets: [SwaggerUIBundle.presets.apis],
+      layout: 'BaseLayout',
       docExpansion: 'list',
       filter: true,
       tryItOutEnabled: true,

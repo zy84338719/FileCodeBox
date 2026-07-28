@@ -160,15 +160,17 @@ const fetchUsers = async () => {
     })
     
     if (res.code === 200) {
-      if (res.data && Array.isArray(res.data.users)) {
+      // 后端 AdminUserList 返回 { items, total, page, page_size }
+      if (res.data && Array.isArray(res.data.items)) {
+        usersList.value = res.data.items
+        pagination.total = res.data.total ?? res.data.items.length
+      } else if (res.data && Array.isArray(res.data.users)) {
+        // 兼容历史响应结构
         usersList.value = res.data.users
-        pagination.total = res.data.pagination?.total || res.data.users.length
+        pagination.total = res.data.pagination?.total ?? res.data.users.length
       } else if (Array.isArray(res.data)) {
         usersList.value = res.data
         pagination.total = res.data.length
-      } else if (res.data && Array.isArray(res.data.items)) {
-        usersList.value = res.data.items
-        pagination.total = res.data.total || res.data.items.length
       } else {
         usersList.value = []
       }

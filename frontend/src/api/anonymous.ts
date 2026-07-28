@@ -31,27 +31,39 @@ export interface SearchByCodeData {
 
 export const anonymousApi = {
   // 生成取件码（先上传文件，再调这个拿 6 位码）
+  // 注意：IDL 中 expire_value/expire_style 为 string 类型（generate 接口走 form 绑定），
+  // 用 FormData 发送可避免 number 与 i64/i32 的类型不匹配导致的 400。
   generate: (data: {
     file_name: string
     file_size: number
-    expire_value?: number
+    expire_value?: number | string
     expire_style?: string
     max_pickup_count?: number
     password?: string
   }) => {
+    const formData = new FormData()
+    formData.append('file_name', data.file_name)
+    formData.append('file_size', String(data.file_size))
+    if (data.expire_value !== undefined) formData.append('expire_value', String(data.expire_value))
+    if (data.expire_style) formData.append('expire_style', data.expire_style)
+    if (data.max_pickup_count !== undefined) formData.append('max_pickup_count', String(data.max_pickup_count))
+    if (data.password) formData.append('password', data.password)
     return request<ApiResponse<GenerateCodeData>>({
       url: '/anonymous/generate',
       method: 'POST',
-      data,
+      data: formData,
     })
   },
 
   // 按取件码取件（校验密码 + 返回下载信息）
   retrieve: (data: { code: string; password?: string }) => {
+    const formData = new FormData()
+    formData.append('code', data.code)
+    if (data.password) formData.append('password', data.password)
     return request<ApiResponse<RetrieveData>>({
       url: '/anonymous/retrieve',
       method: 'POST',
-      data,
+      data: formData,
     })
   },
 
