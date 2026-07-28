@@ -7,6 +7,8 @@ import { VueQueryPlugin } from '@tanstack/vue-query'
 
 import App from './App.vue'
 import router from './router'
+import { i18n } from './i18n'
+import { useThemeStore } from './stores/theme'
 import './styles/main.scss'
 
 const app = createApp(App)
@@ -18,7 +20,12 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 
 app.use(createPinia())
 app.use(router)
+app.use(i18n)
 app.use(ElementPlus)
 app.use(VueQueryPlugin)
+
+// 主题状态：pinia 已就绪后从 localStorage 还原并应用到 <html>
+const themeStore = useThemeStore()
+themeStore.applyToDocument()
 
 app.mount('#app')

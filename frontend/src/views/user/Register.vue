@@ -2,9 +2,9 @@
   <div class="register-container">
     <el-card class="register-card">
       <template #header>
-        <h2>用户注册</h2>
+        <h2>{{ t('register.title') }}</h2>
       </template>
-      
+
       <el-form
         ref="registerFormRef"
         :model="registerForm"
@@ -12,57 +12,57 @@
         label-width="80px"
         @submit.prevent="handleRegister"
       >
-        <el-form-item label="用户名" prop="username">
+        <el-form-item :label="t('register.username')" prop="username">
           <el-input
             v-model="registerForm.username"
-            placeholder="请输入用户名"
+            :placeholder="t('register.username')"
             prefix-icon="User"
             clearable
           />
         </el-form-item>
-        
-        <el-form-item label="邮箱" prop="email">
+
+        <el-form-item :label="t('register.email')" prop="email">
           <el-input
             v-model="registerForm.email"
             type="email"
-            placeholder="请输入邮箱"
+            :placeholder="t('register.email')"
             prefix-icon="Message"
             clearable
           />
         </el-form-item>
-        
-        <el-form-item label="昵称" prop="nickname">
+
+        <el-form-item :label="t('register.nickname')" prop="nickname">
           <el-input
             v-model="registerForm.nickname"
-            placeholder="请输入昵称"
+            :placeholder="t('register.nickname')"
             prefix-icon="UserFilled"
             clearable
           />
         </el-form-item>
-        
-        <el-form-item label="密码" prop="password">
+
+        <el-form-item :label="t('register.password')" prop="password">
           <el-input
             v-model="registerForm.password"
             type="password"
-            placeholder="请输入密码"
+            :placeholder="t('register.password')"
             prefix-icon="Lock"
             show-password
             clearable
           />
         </el-form-item>
-        
-        <el-form-item label="确认密码" prop="confirmPassword">
+
+        <el-form-item :label="t('register.confirmPassword')" prop="confirmPassword">
           <el-input
             v-model="registerForm.confirmPassword"
             type="password"
-            placeholder="请再次输入密码"
+            :placeholder="t('register.confirmPassword')"
             prefix-icon="Lock"
             show-password
             clearable
             @keyup.enter="handleRegister"
           />
         </el-form-item>
-        
+
         <el-form-item>
           <el-button
             type="primary"
@@ -70,13 +70,13 @@
             style="width: 100%"
             @click="handleRegister"
           >
-            注册
+            {{ t('register.submit') }}
           </el-button>
         </el-form-item>
-        
+
         <el-form-item>
           <el-link type="primary" @click="$router.push('/user/login')">
-            已有账号？立即登录
+            {{ t('register.hasAccount') }}
           </el-link>
         </el-form-item>
       </el-form>
@@ -88,9 +88,11 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { userApi } from '@/api/user'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const registerFormRef = ref<FormInstance>()
 const loading = ref(false)
@@ -103,9 +105,9 @@ const registerForm = reactive({
   confirmPassword: ''
 })
 
-const validateConfirmPassword = (_rule: any, value: any, callback: any) => {
+const validateConfirmPassword = (_rule: unknown, value: string, callback: (err?: Error) => void) => {
   if (value !== registerForm.password) {
-    callback(new Error('两次输入的密码不一致'))
+    callback(new Error(t('register.passwordMismatch')))
   } else {
     callback()
   }
@@ -113,49 +115,50 @@ const validateConfirmPassword = (_rule: any, value: any, callback: any) => {
 
 const rules: FormRules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' }
+    { required: true, message: () => t('register.username'), trigger: 'blur' },
+    { min: 3, max: 20, message: t('register.usernameRule'), trigger: 'blur' }
   ],
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+    { required: true, message: () => t('register.email'), trigger: 'blur' },
+    { type: 'email', message: t('register.emailRule'), trigger: 'blur' }
   ],
   nickname: [
-    { required: true, message: '请输入昵称', trigger: 'blur' },
-    { min: 2, max: 20, message: '昵称长度在 2 到 20 个字符', trigger: 'blur' }
+    { required: true, message: () => t('register.nickname'), trigger: 'blur' },
+    { min: 2, max: 20, message: '2-20', trigger: 'blur' }
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }
+    { required: true, message: () => t('register.password'), trigger: 'blur' },
+    { min: 6, max: 20, message: t('register.passwordRule'), trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
+    { required: true, message: () => t('register.confirmPassword'), trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' }
   ]
 }
 
 const handleRegister = async () => {
   if (!registerFormRef.value) return
-  
+
   try {
     await registerFormRef.value.validate()
     loading.value = true
-    
+
     const res = await userApi.register({
       username: registerForm.username,
       email: registerForm.email,
       nickname: registerForm.nickname,
       password: registerForm.password
     })
-    
+
     if (res.code === 200) {
-      ElMessage.success('注册成功，请登录')
+      ElMessage.success(t('register.success'))
       router.push('/user/login')
     } else {
-      ElMessage.error(res.message || '注册失败')
+      ElMessage.error(res.message || t('register.failed'))
     }
-  } catch (error: any) {
-    ElMessage.error(error.message || '注册失败')
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : ''
+    ElMessage.error(msg || t('register.failed'))
   } finally {
     loading.value = false
   }

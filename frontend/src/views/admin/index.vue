@@ -9,10 +9,10 @@
           </div>
           <div class="logo-text">
             <h2>FileCodeBox</h2>
-            <p>管理中心</p>
+            <p>{{ t('admin.title') }}</p>
           </div>
         </div>
-        
+
         <el-menu
           :default-active="$route.path"
           class="admin-menu"
@@ -20,48 +20,49 @@
         >
           <el-menu-item index="/admin/dashboard">
             <el-icon><Monitor /></el-icon>
-            <span>仪表盘</span>
+            <span>{{ t('admin.dashboard') }}</span>
           </el-menu-item>
-          
+
           <el-menu-item index="/admin/files">
             <el-icon><Folder /></el-icon>
-            <span>文件管理</span>
+            <span>{{ t('admin.files') }}</span>
           </el-menu-item>
-          
+
           <el-menu-item index="/admin/users">
             <el-icon><User /></el-icon>
-            <span>用户管理</span>
+            <span>{{ t('admin.users') }}</span>
           </el-menu-item>
-          
+
           <el-menu-item index="/admin/storage">
             <el-icon><Box /></el-icon>
-            <span>存储管理</span>
+            <span>{{ t('admin.storage') }}</span>
           </el-menu-item>
 
           <el-menu-item index="/admin/logs">
             <el-icon><Document /></el-icon>
-            <span>传输日志</span>
+            <span>{{ t('admin.logs') }}</span>
           </el-menu-item>
 
           <el-menu-item index="/admin/config">
             <el-icon><Setting /></el-icon>
-            <span>系统配置</span>
+            <span>{{ t('admin.config') }}</span>
           </el-menu-item>
 
           <el-menu-item index="/admin/maintenance">
             <el-icon><Tools /></el-icon>
-            <span>维护工具</span>
+            <span>{{ t('admin.maintenance') }}</span>
           </el-menu-item>
         </el-menu>
 
         <div class="sidebar-footer">
+          <LocaleSwitcher />
           <el-button @click="goToUser" class="user-page-btn">
             <el-icon><Promotion /></el-icon>
-            访问前台
+            {{ t('admin.accessSite') }}
           </el-button>
         </div>
       </el-aside>
-      
+
       <!-- 主内容区 -->
       <el-container>
         <!-- 顶部导航 -->
@@ -69,7 +70,7 @@
           <div class="header-left">
             <h3>{{ pageTitle }}</h3>
           </div>
-          
+
           <div class="header-right">
             <el-dropdown @command="handleCommand" trigger="click">
               <div class="user-info">
@@ -78,7 +79,7 @@
                 </el-avatar>
                 <div class="user-details">
                   <span class="user-name">{{ userStore.userInfo?.nickname }}</span>
-                  <span class="user-role">管理员</span>
+                  <span class="user-role">{{ t('admin.title') }}</span>
                 </div>
                 <el-icon><ArrowDown /></el-icon>
               </div>
@@ -86,18 +87,18 @@
                 <el-dropdown-menu>
                   <el-dropdown-item command="user-center">
                     <el-icon><User /></el-icon>
-                    用户中心
+                    {{ t('admin.userCenter') }}
                   </el-dropdown-item>
                   <el-dropdown-item command="logout" divided>
                     <el-icon><SwitchButton /></el-icon>
-                    退出登录
+                    {{ t('admin.logout') }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
           </div>
         </el-header>
-        
+
         <!-- 内容区 -->
         <el-main class="admin-main">
           <router-view />
@@ -111,28 +112,31 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { 
-  Monitor, Folder, User, Setting, ArrowDown, 
-  Box, Document, Tools, Promotion, SwitchButton 
+import { useI18n } from 'vue-i18n'
+import {
+  Monitor, Folder, User, Setting, ArrowDown,
+  Box, Document, Tools, Promotion, SwitchButton
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const { t } = useI18n()
 
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
-    '/admin/dashboard': '仪表盘',
-    '/admin': '仪表盘',
-    '/admin/files': '文件管理',
-    '/admin/users': '用户管理',
-    '/admin/config': '系统配置',
-    '/admin/storage': '存储管理',
-    '/admin/logs': '传输日志',
-    '/admin/maintenance': '维护工具'
+    '/admin/dashboard': t('admin.dashboard'),
+    '/admin': t('admin.dashboard'),
+    '/admin/files': t('admin.files'),
+    '/admin/users': t('admin.users'),
+    '/admin/config': t('admin.config'),
+    '/admin/storage': t('admin.storage'),
+    '/admin/logs': t('admin.logs'),
+    '/admin/maintenance': t('admin.maintenance'),
   }
-  return titles[route.path] || '管理后台'
+  return titles[route.path] || t('admin.title')
 })
 
 const goToUser = () => {
@@ -146,15 +150,15 @@ const handleCommand = async (command: string) => {
       break
     case 'logout':
       try {
-        await ElMessageBox.confirm('确定要退出登录吗？', '确认退出', {
+        await ElMessageBox.confirm(t('admin.confirmLogout'), t('common.confirm'), {
           type: 'warning',
-          confirmButtonText: '确定',
-          cancelButtonText: '取消'
+          confirmButtonText: t('common.confirm'),
+          cancelButtonText: t('common.cancel')
         })
         userStore.logout()
-        ElMessage.success('已退出登录')
+        ElMessage.success(t('admin.loggedOut'))
         router.push('/admin/login')
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error !== 'cancel') {
           console.error('退出登录失败:', error)
         }
@@ -246,6 +250,10 @@ const handleCommand = async (command: string) => {
 .sidebar-footer {
   padding: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
 }
 
 .user-page-btn {

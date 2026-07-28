@@ -22,6 +22,11 @@
         </div>
 
         <div class="user-section">
+          <LocaleSwitcher />
+          <el-button class="retrieve-btn" @click="$router.push('/retrieve')">
+            <el-icon><Postcard /></el-icon>
+            {{ t('home.retrieve') }}
+          </el-button>
           <template v-if="userStore.isLoggedIn">
             <el-dropdown trigger="click" @command="handleUserCommand">
               <div class="user-info-card">
@@ -30,7 +35,7 @@
                 </el-avatar>
                 <div class="user-details">
                   <span class="user-name">{{ userStore.userInfo?.username }}</span>
-                  <span class="user-label">已登录</span>
+                  <span class="user-label">{{ t('home.loggedIn') }}</span>
                 </div>
                 <el-icon><ArrowDown /></el-icon>
               </div>
@@ -38,11 +43,11 @@
                 <el-dropdown-menu>
                   <el-dropdown-item command="dashboard">
                     <el-icon><User /></el-icon>
-                    用户中心
+                    {{ t('home.userCenter') }}
                   </el-dropdown-item>
                   <el-dropdown-item command="logout" divided>
                     <el-icon><SwitchButton /></el-icon>
-                    退出登录
+                    {{ t('home.logout') }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -51,7 +56,7 @@
           <template v-else>
             <el-button type="primary" class="login-btn" @click="$router.push('/user/login')">
               <el-icon><User /></el-icon>
-              登录
+              {{ t('home.login') }}
             </el-button>
           </template>
         </div>
@@ -60,8 +65,35 @@
       <!-- 主内容区 -->
       <main class="content-area">
         <div class="intro-section">
-          <h2>随时随地，安全分享</h2>
-          <p>支持文件、文本快速分享，设置过期时间，保护您的隐私安全</p>
+          <h2>{{ t('home.slogan') }}</h2>
+          <p>{{ t('home.description') }}</p>
+        </div>
+
+        <!-- 流程说明 -->
+        <div class="workflow-section">
+          <h3 class="workflow-title">{{ t('home.workflow.title') }}</h3>
+          <div class="workflow-steps">
+            <div class="workflow-step">
+              <div class="step-num">1</div>
+              <div class="step-icon"><el-icon size="28"><UploadFilled /></el-icon></div>
+              <div class="step-title">{{ t('home.workflow.step1Title') }}</div>
+              <div class="step-desc">{{ t('home.workflow.step1Desc') }}</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+              <div class="step-num">2</div>
+              <div class="step-icon"><el-icon size="28"><Postcard /></el-icon></div>
+              <div class="step-title">{{ t('home.workflow.step2Title') }}</div>
+              <div class="step-desc">{{ t('home.workflow.step2Desc') }}</div>
+            </div>
+            <div class="workflow-arrow">→</div>
+            <div class="workflow-step">
+              <div class="step-num">3</div>
+              <div class="step-icon"><el-icon size="28"><Share /></el-icon></div>
+              <div class="step-title">{{ t('home.workflow.step3Title') }}</div>
+              <div class="step-desc">{{ t('home.workflow.step3Desc') }}</div>
+            </div>
+          </div>
         </div>
 
         <!-- 功能标签页 -->
@@ -70,7 +102,7 @@
             <template #label>
               <span class="tab-label">
                 <el-icon><Upload /></el-icon>
-                文件分享
+                {{ t('home.tabs.file') }}
               </span>
             </template>
             <FileUpload @success="handleShareSuccess" />
@@ -80,7 +112,7 @@
             <template #label>
               <span class="tab-label">
                 <el-icon><Document /></el-icon>
-                文本分享
+                {{ t('home.tabs.text') }}
               </span>
             </template>
             <TextShare @success="handleShareSuccess" />
@@ -90,7 +122,7 @@
             <template #label>
               <span class="tab-label">
                 <el-icon><Download /></el-icon>
-                获取分享
+                {{ t('home.tabs.get') }}
               </span>
             </template>
             <GetShare />
@@ -106,7 +138,7 @@
         >
           <template #title>
             <div class="footer-content">
-              <p>请勿上传或分享违法内容。根据《中华人民共和国网络安全法》等相关规定，传播违法内容将承担法律责任。</p>
+              <p>{{ t('home.notice') }}</p>
             </div>
           </template>
         </el-alert>
@@ -120,32 +152,32 @@
     </div>
 
     <!-- 分享成功对话框 -->
-    <el-dialog 
-      v-model="showShareDialog" 
-      title="分享成功" 
+    <el-dialog
+      v-model="showShareDialog"
+      :title="t('home.shareSuccess')"
       width="560px"
       :close-on-click-modal="false"
     >
       <div class="share-result">
-        <el-result icon="success" title="分享成功" sub-title="您的分享链接已生成">
+        <el-result :icon="'success'" :title="t('home.shareSuccess')" :sub-title="t('home.shareSuccessSubtitle')">
           <template #extra>
             <!-- 二维码 -->
             <div v-if="qrCodeDataUrl" class="qrcode-section">
-              <img :src="qrCodeDataUrl" alt="分享二维码" class="qrcode-image" />
-              <p class="qrcode-tip">扫码访问</p>
+              <img :src="qrCodeDataUrl" :alt="t('home.qrCodeTip')" class="qrcode-image" />
+              <p class="qrcode-tip">{{ t('home.qrCodeTip') }}</p>
             </div>
-            
+
             <!-- 链接 -->
             <div class="share-link-box">
-              <el-input 
-                v-model="shareUrl" 
+              <el-input
+                v-model="shareUrl"
                 readonly
                 size="large"
               >
                 <template #append>
                   <el-button type="primary" @click="copyShareUrl">
                     <el-icon><CopyDocument /></el-icon>
-                    复制链接
+                    {{ t('home.copyLink') }}
                   </el-button>
                 </template>
               </el-input>
@@ -162,19 +194,24 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import QRCode from 'qrcode'
-import { 
-  Box, ArrowDown, User, SwitchButton, Upload, Document, 
-  Download, Link, CopyDocument 
+import { useI18n } from 'vue-i18n'
+import {
+  Box, ArrowDown, User, SwitchButton, Upload, Document,
+  Download, Link, CopyDocument, Postcard, UploadFilled, Share
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useConfigStore } from '@/stores/config'
+import { useLocaleStore } from '@/stores/locale'
 import FileUpload from '@/components/upload/FileUpload.vue'
 import TextShare from '@/components/upload/TextShare.vue'
 import GetShare from '@/components/upload/GetShare.vue'
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 const configStore = useConfigStore()
+const localeStore = useLocaleStore()
+const { t, locale } = useI18n()
 
 const activeTab = ref('file')
 const showShareDialog = ref(false)
@@ -191,7 +228,7 @@ interface ShareResult {
 const handleShareSuccess = async (result: ShareResult) => {
   // 确保使用正确的 hash 路由格式
   let url = result.full_share_url || result.share_url
-  
+
   // 如果 URL 不包含 #，则添加（适配 hash 路由模式）
   if (!url.includes('#')) {
     // 如果是相对路径 /share/xxx，转换为完整 URL
@@ -205,10 +242,10 @@ const handleShareSuccess = async (result: ShareResult) => {
       }
     }
   }
-  
+
   shareUrl.value = url
   showShareDialog.value = true
-  
+
   // 生成二维码
   try {
     const qrData = result.qr_code_data || url
@@ -229,9 +266,9 @@ const handleShareSuccess = async (result: ShareResult) => {
 const copyShareUrl = async () => {
   try {
     await navigator.clipboard.writeText(shareUrl.value)
-    ElMessage.success('链接已复制到剪贴板')
+    ElMessage.success(t('home.linkCopied'))
   } catch (error) {
-    ElMessage.error('复制失败')
+    ElMessage.error(t('home.copyLinkFailed'))
   }
 }
 
@@ -242,12 +279,15 @@ const handleUserCommand = (command: string) => {
       break
     case 'logout':
       userStore.logout()
-      ElMessage.success('已退出登录')
+      ElMessage.success(t('home.loggedOut'))
       break
   }
 }
 
 onMounted(async () => {
+  // 同步 i18n 和 store
+  locale.value = localeStore.locale
+  document.documentElement.lang = localeStore.locale
   // 加载配置
   await configStore.fetchConfig()
 })
@@ -366,6 +406,12 @@ onMounted(async () => {
   color: rgba(255, 255, 255, 0.8);
 }
 
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .user-info-card {
   display: flex;
   align-items: center;
@@ -404,7 +450,8 @@ onMounted(async () => {
   color: rgba(255, 255, 255, 0.7);
 }
 
-.login-btn {
+.login-btn,
+.retrieve-btn {
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
@@ -414,7 +461,8 @@ onMounted(async () => {
   transition: all 0.3s;
 }
 
-.login-btn:hover {
+.login-btn:hover,
+.retrieve-btn:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -448,6 +496,80 @@ onMounted(async () => {
   margin: 0;
   font-size: 16px;
   color: #909399;
+}
+
+/* 流程说明 */
+.workflow-section {
+  margin-bottom: 40px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+  border-radius: 16px;
+}
+
+.workflow-title {
+  margin: 0 0 20px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.workflow-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.workflow-step {
+  flex: 1;
+  min-width: 160px;
+  text-align: center;
+  padding: 16px 12px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  position: relative;
+}
+
+.step-num {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.step-icon {
+  margin: 8px 0;
+  color: #667eea;
+}
+
+.step-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 4px;
+}
+
+.step-desc {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+}
+
+.workflow-arrow {
+  font-size: 24px;
+  color: #c0c4cc;
 }
 
 /* 功能标签页 */
@@ -577,6 +699,10 @@ onMounted(async () => {
 
   :deep(.el-tabs__item) {
     padding: 0 16px;
+  }
+
+  .workflow-arrow {
+    display: none;
   }
 }
 </style>
