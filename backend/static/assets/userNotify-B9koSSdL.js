@@ -1,1 +1,0 @@
-import{r}from"./index-D5bKyxTb.js";const a={list:(e={})=>r({url:"/api/v1/notifies/mine",method:"GET",params:e}),unreadCount:()=>r({url:"/api/v1/notifies/unread-count",method:"GET"}),markAllRead:()=>r({url:"/api/v1/notifies/mark-read",method:"POST",data:{all:!0}})};export{a as u};
