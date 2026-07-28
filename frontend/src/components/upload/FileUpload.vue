@@ -167,14 +167,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
-import { ElMessage, type UploadFile, type UploadInstance } from 'element-plus'
+import { ElMessage, type UploadFile } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   UploadFilled, Document, InfoFilled, Close, Clock,
   Lock, Upload, CircleCheckFilled, CircleCloseFilled
 } from '@element-plus/icons-vue'
-import { shareApi } from '@/api/share'
-import { presignApi, type PresignCompleteData } from '@/api/presign'
+import { type PresignCompleteData } from '@/api/presign'
 import PresignUploadDialog from './PresignUploadDialog.vue'
 
 const { t } = useI18n()
@@ -193,7 +192,6 @@ interface FileItem {
   xhr?: XMLHttpRequest | null
 }
 
-const uploadRef = ref<UploadInstance>()
 const fileList = ref<FileItem[]>([])
 const isDragging = ref(false)
 
@@ -264,7 +262,8 @@ const removeFile = (idx: number) => {
 
 const cancelFile = (idx: number) => {
   const item = fileList.value[idx]
-  if (item?.xhr) {
+  if (!item) return
+  if (item.xhr) {
     try { item.xhr.abort() } catch { /* noop */ }
   }
   item.status = 'error'
@@ -286,23 +285,21 @@ const uploadOne = (item: FileItem) => {
       presignTarget.value = item
       presignVisible.value = true
       // 等 dialog complete → 走 onPresignSuccess → resolve
-      const unwatch = (() => {
-        // 简单做法：监听 status 变化
-        const stop = setInterval(() => {
-          if (item.status === 'success') {
-            clearInterval(stop)
-            resolve({
-              code: (item as FileItem & { _result?: PresignCompleteData })._result?.code || '',
-              share_url: (item as FileItem & { _result?: PresignCompleteData })._result?.url || '',
-              full_share_url: (item as FileItem & { _result?: PresignCompleteData })._result?.url || '',
-              qr_code_data: (item as FileItem & { _result?: PresignCompleteData })._result?.url || '',
-            })
-          } else if (item.status === 'error') {
-            clearInterval(stop)
-            reject(new Error(item.error || 'Failed'))
-          }
-        }, 200)
-      })()
+      const stop = setInterval(() => {
+        if (item.status === 'success') {
+          clearInterval(stop)
+          const r = (item as FileItem & { _result?: PresignCompleteData })._result
+          resolve({
+            code: r?.code || '',
+            share_url: r?.url || '',
+            full_share_url: r?.url || '',
+            qr_code_data: r?.url || '',
+          })
+        } else if (item.status === 'error') {
+          clearInterval(stop)
+          reject(new Error(item.error || 'Failed'))
+        }
+      }, 200)
       return
     }
 
@@ -421,10 +418,11 @@ const onWindowDrop = (e: DragEvent) => {
 // 全局粘贴
 const onWindowPaste = (e: ClipboardEvent) => {
   if (!e.clipboardData) return
-  const items = e.clipboardData.items
+  const clipItems = e.clipboardData.items
   const files: File[] = []
-  for (let i = 0; i < items.length; i++) {
-    const it = items[i]
+  for (let i = 0; i < clipItems.length; i++) {
+    const it = clipItems[i]
+    if (!it) continue
     if (it.kind === 'file') {
       const f = it.getAsFile()
       if (f) files.push(f)

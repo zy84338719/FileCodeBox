@@ -2,6 +2,7 @@
   <div class="app-root">
     <NotifyBanner />
     <router-view />
+    <ErrorToast />
   </div>
 </template>
 
@@ -9,6 +10,7 @@
 import { onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import NotifyBanner from '@/components/NotifyBanner.vue'
+import ErrorToast from '@/components/ErrorToast.vue'
 
 const userStore = useUserStore()
 
