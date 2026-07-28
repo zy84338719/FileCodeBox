@@ -222,3 +222,130 @@ func (r *FileCodeRepository) CountTodayUploads(ctx context.Context) (int64, erro
 	err := r.db().WithContext(ctx).Model(&model.FileCode{}).Where("created_at >= ?", today).Count(&count).Error
 	return count, err
 }
+
+// UserShareFilter 用户分享列表筛选条件
+type UserShareFilter struct {
+	Status   string // all / active / expired / text / file / deleted
+	Search   string // 模糊搜索 code / 文件名
+	Page     int
+	PageSize int
+}
+
+// GetUserSharesWithFilter 获取用户的分享列表（带筛选）
+//   - "active": 未过期且有剩余次数
+//   - "expired": 时间过期 或 次数用尽
+//   - "text": 文本分享（Text != ""）
+//   - "file": 文件分享（Text == ""）
+//   - "deleted": 软删除的（deleted_at != null）
+//   - "all" / "": 不过滤状态
+func (r *FileCodeRepository) GetUserSharesWithFilter(ctx context.Context, userID uint, filter UserShareFilter) ([]*model.FileCode, int64, error) {
+	page := filter.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := filter.PageSize
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	now := time.Now()
+	q := r.db().WithContext(ctx).Model(&model.FileCode{}).Where("user_id = ?", userID)
+
+	switch filter.Status {
+	case "deleted":
+		// 只看已删除
+		q = q.Unscoped().Where("deleted_at IS NOT NULL")
+	case "active":
+		q = q.Where("(expired_at IS NULL OR expired_at > ?) AND (expired_count <> 0)", now)
+	case "expired":
+		q = q.Where("((expired_at IS NOT NULL AND expired_at <= ?) OR expired_count = 0)")
+	case "text":
+		q = q.Where("text <> ''")
+	case "file":
+		q = q.Where("(text = '' OR text IS NULL)")
+	}
+
+	if filter.Search != "" {
+		like := "%" + filter.Search + "%"
+		q = q.Where("code LIKE ? OR prefix LIKE ? OR suffix LIKE ? OR uuid_file_name LIKE ?",
+			like, like, like, like)
+	}
+
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	var files []*model.FileCode
+	if err := q.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&files).Error; err != nil {
+		return nil, 0, err
+	}
+	return files, total, nil
+}
+
+// BatchSoftDeleteByCodes 按 code 列表软删除（限定 userID 防止越权）
+// 返回 (受影响行数, error)
+func (r *FileCodeRepository) BatchSoftDeleteByCodes(ctx context.Context, userID uint, codes []string) (int, error) {
+	if len(codes) == 0 {
+		return 0, nil
+	}
+	res := r.db().WithContext(ctx).Model(&model.FileCode{}).
+		Where("user_id = ? AND code IN ?", userID, codes).
+		Update("deleted_at", time.Now())
+	if res.Error != nil {
+		return 0, res.Error
+	}
+	return int(res.RowsAffected), nil
+}
+
+// BatchExtendByCodes 批量延期
+// newExpireAt 为 nil 表示永久（清空 expired_at 字段）
+func (r *FileCodeRepository) BatchExtendByCodes(ctx context.Context, userID uint, codes []string, newExpireAt *time.Time) (int, error) {
+	if len(codes) == 0 {
+		return 0, nil
+	}
+	updates := map[string]interface{}{}
+	if newExpireAt == nil {
+		updates["expired_at"] = nil
+		updates["expired_count"] = -1
+	} else {
+		updates["expired_at"] = *newExpireAt
+		// 次数设为 -1（无限）让延期后能继续取
+		updates["expired_count"] = -1
+	}
+	res := r.db().WithContext(ctx).Model(&model.FileCode{}).
+		Where("user_id = ? AND code IN ?", userID, codes).
+		Updates(updates)
+	if res.Error != nil {
+		return 0, res.Error
+	}
+	return int(res.RowsAffected), nil
+}
+
+// RestoreByCode 恢复软删除的分享（仅 owner）
+func (r *FileCodeRepository) RestoreByCode(ctx context.Context, userID uint, code string) error {
+	return r.db().WithContext(ctx).Unscoped().Model(&model.FileCode{}).
+		Where("user_id = ? AND code = ? AND deleted_at IS NOT NULL", userID, code).
+		Update("deleted_at", nil).Error
+}
+
+// HardDeleteByCode 永久删除（仅 owner，已软删除的）
+func (r *FileCodeRepository) HardDeleteByCode(ctx context.Context, userID uint, code string) error {
+	return r.db().WithContext(ctx).Unscoped().Model(&model.FileCode{}).
+		Where("user_id = ? AND code = ? AND deleted_at IS NOT NULL", userID, code).
+		Delete(&model.FileCode{}).Error
+}
+
+// UpdateViewer 记录取件人信息（IP + 时间 + 累计 +1）
+func (r *FileCodeRepository) UpdateViewer(ctx context.Context, code, viewerIP string) error {
+	now := time.Now()
+	// 用 SQL 原子自增 viewer_count
+	return r.db().WithContext(ctx).Model(&model.FileCode{}).
+		Where("code = ?", code).
+		Updates(map[string]interface{}{
+			"viewer_ip":    viewerIP,
+			"viewer_at":    now,
+			"viewer_count": gorm.Expr("viewer_count + 1"),
+		}).Error
+}

@@ -259,3 +259,124 @@ func ParseID(s string) (uint, error) {
 	}
 	return uint(id), nil
 }
+
+// ============ Per-user 通知（A2 取件通知） ============
+
+// UserNotifyItem 用户通知项
+type UserNotifyItem struct {
+	ID         uint       `json:"id"`
+	Title      string     `json:"title"`
+	Content    string     `json:"content"`
+	Type       string     `json:"type"`
+	Level      string     `json:"level"`
+	ReadAt     *time.Time `json:"read_at,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	IsRead     bool       `json:"is_read"`
+}
+
+// UserNotifyListData 用户通知列表
+type UserNotifyListData struct {
+	Items      []UserNotifyItem `json:"items"`
+	Total      int64            `json:"total"`
+	Unread     int64            `json:"unread"`
+	Page       int              `json:"page"`
+	PageSize   int              `json:"page_size"`
+	TotalPages int64            `json:"total_pages"`
+}
+
+// ListForUser 列出某用户的通知（含广播 + 定向给该用户）
+func (s *Service) ListForUser(ctx context.Context, userID uint, page, pageSize int) (*UserNotifyListData, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+	q := s.db.WithContext(ctx).Model(&model.Notify{}).
+		Where("status = 1").
+		Where("target_user_id IS NULL OR target_user_id = ?", userID)
+
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, err
+	}
+	var unread int64
+	if err := s.db.WithContext(ctx).Model(&model.Notify{}).
+		Where("status = 1 AND (target_user_id IS NULL OR target_user_id = ?) AND read_at IS NULL", userID).
+		Count(&unread).Error; err != nil {
+		return nil, err
+	}
+
+	var rows []model.Notify
+	if err := q.Order("created_at DESC").
+		Offset((page - 1) * pageSize).Limit(pageSize).
+		Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	items := make([]UserNotifyItem, 0, len(rows))
+	for i := range rows {
+		n := &rows[i]
+		items = append(items, UserNotifyItem{
+			ID:        n.ID,
+			Title:     n.Title,
+			Content:   n.Content,
+			Type:      n.Type,
+			Level:     n.Level,
+			ReadAt:    n.ReadAt,
+			CreatedAt: n.CreatedAt,
+			IsRead:    n.ReadAt != nil,
+		})
+	}
+
+	totalPages := (total + int64(pageSize) - 1) / int64(pageSize)
+	if totalPages < 1 {
+		totalPages = 1
+	}
+	return &UserNotifyListData{
+		Items: items, Total: total, Unread: unread,
+		Page: page, PageSize: pageSize, TotalPages: totalPages,
+	}, nil
+}
+
+// UnreadCountForUser 某用户未读数
+func (s *Service) UnreadCountForUser(ctx context.Context, userID uint) (int64, error) {
+	var n int64
+	err := s.db.WithContext(ctx).Model(&model.Notify{}).
+		Where("status = 1 AND (target_user_id IS NULL OR target_user_id = ?) AND read_at IS NULL", userID).
+		Count(&n).Error
+	return n, err
+}
+
+// MarkAllReadForUser 标记某用户所有通知为已读（只更新 read_at IS NULL 的）
+func (s *Service) MarkAllReadForUser(ctx context.Context, userID uint) (int64, error) {
+	now := time.Now()
+	res := s.db.WithContext(ctx).Model(&model.Notify{}).
+		Where("status = 1 AND (target_user_id IS NULL OR target_user_id = ?) AND read_at IS NULL", userID).
+		Update("read_at", now)
+	return res.RowsAffected, res.Error
+}
+
+// CreateForUser 创建一条定向通知（owner 取件通知用）
+func (s *Service) CreateForUser(ctx context.Context, userID uint, title, content, notifyType, level string) (*model.Notify, error) {
+	uid := userID
+	n := &model.Notify{
+		Title:         title,
+		Content:       content,
+		Type:          notifyType,
+		Level:         level,
+		Status:        1,
+		AuthorID:      0,
+		TargetUserID:  &uid,
+	}
+	if err := s.db.WithContext(ctx).Create(n).Error; err != nil {
+		return nil, err
+	}
+	return n, nil
+}
+
+// CreateForUserSimple 简化版（返回 error，匹配 share.NotifyServiceInterface）
+func (s *Service) CreateForUserSimple(ctx context.Context, userID uint, title, content, notifyType, level string) error {
+	_, err := s.CreateForUser(ctx, userID, title, content, notifyType, level)
+	return err
+}

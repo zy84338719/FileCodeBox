@@ -9,11 +9,29 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
 	handler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler"
+	customHandler "github.com/zy84338719/fileCodeBox/backend/internal/transport/http/handler"
+	customMw "github.com/zy84338719/fileCodeBox/backend/internal/transport/http/middleware"
 )
 
 // customizeRegister registers customize routers.
 func customizedRegister(r *server.Hertz) {
 	r.GET("/ping", handler.Ping)
+
+	// ===== 自定义：我的分享管理 API（不走 IDL） =====
+	apiV1 := r.Group("/api/v1", customMw.UserAuth())
+	{
+		userShares := apiV1.Group("/user/shares", customMw.UserAuth())
+		userShares.GET("", customHandler.ListUserShares)
+		userShares.POST("/batch-delete", customHandler.BatchDeleteUserShares)
+		userShares.POST("/batch-extend", customHandler.BatchExtendUserShares)
+		userShares.POST("/:code/restore", customHandler.RestoreUserShare)
+		userShares.DELETE("/:code/hard", customHandler.HardDeleteUserShare)
+
+		// 通知（per-user）
+		apiV1.GET("/notifies/mine", customMw.UserAuth(), customHandler.ListMyNotifications)
+		apiV1.GET("/notifies/unread-count", customMw.UserAuth(), customHandler.UnreadNotifyCount)
+		apiV1.POST("/notifies/mark-read", customMw.UserAuth(), customHandler.MarkNotifyRead)
+	}
 
 	// 服务前端静态文件
 	r.Static("/static", "./static")

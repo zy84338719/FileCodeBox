@@ -24,7 +24,9 @@ import (
 	notifyHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/notify"
 	presignHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/presign"
 	ratelimitHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/ratelimit"
+	notifyAppService "github.com/zy84338719/fileCodeBox/backend/internal/app/notify"
 	shareService "github.com/zy84338719/fileCodeBox/backend/internal/app/share"
+	customHandler "github.com/zy84338719/fileCodeBox/backend/internal/transport/http/handler"
 )
 
 // 使用 internal/conf 包中的统一配置类型
@@ -265,7 +267,10 @@ func initPreviewService() error {
 // 关联 internal/app/ → gen/http/handler/ 各 SetXxx 入口
 func initThriftIDLServices(database *gorm.DB) {
 	// 1. notify service（需要 DB）
+	notifyApp := notifyAppService.NewService(database)
 	notifyHandler.SetDB(database)
+	// 1.1 注入定制路由的 notify service
+	customHandler.SetNotifyService(notifyApp)
 
 	// 2. presign service（需要 Redis + baseURL + signingKey + share service）
 	baseURL := fmt.Sprintf("http://%s:%d", config.Server.Host, config.Server.Port)
@@ -275,6 +280,10 @@ func initThriftIDLServices(database *gorm.DB) {
 	// 2.1 注入 share service（Complete 时写分享表）
 	shareSvc := shareService.NewService(baseURL, getBootstrapStorageService())
 	presignHandler.SetShareService(shareSvc)
+	// 2.2 注入定制路由的 share service
+	customHandler.SetShareService(shareSvc)
+	// 2.3 注入 notify service（取件时给 owner 发通知）
+	shareSvc.SetNotifyService(notifyApp) // *Service 已实现 CreateForUserSimple
 
 	// 3. anonymous service（需要 Redis）
 	anonHandler.SetService(redis.GetClient())
@@ -282,11 +291,16 @@ func initThriftIDLServices(database *gorm.DB) {
 	// 4. ratelimit service（直接用 default limiter）
 	ratelimitHandler.SetLimiter(middleware.GetDefaultRateLimiter())
 
-	// 5. 自动迁移 notify 表
+	// 5. 自动迁移 notify 表 + file_codes viewer 字段
 	if err := database.AutoMigrate(&model.Notify{}); err != nil {
 		logger.Error("Failed to migrate notify table", zap.Error(err))
 	} else {
 		logger.Info("Notify table migrated")
+	}
+	if err := database.AutoMigrate(&model.FileCode{}); err != nil {
+		logger.Error("Failed to migrate file_codes table", zap.Error(err))
+	} else {
+		logger.Info("FileCode table migrated (viewer fields added)")
 	}
 }
 
