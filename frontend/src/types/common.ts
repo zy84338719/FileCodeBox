@@ -1,13 +1,15 @@
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   code: number
   data: T
   message: string
-  success: boolean
+  success?: boolean
+  trace_id?: string
 }
 
-export interface PaginatedResponse<T = any> {
+export interface PaginatedResponse<T = unknown> {
   code: number
   message: string
+  trace_id?: string
   data: {
     items: T[]
     total: number

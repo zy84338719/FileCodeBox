@@ -3,7 +3,15 @@
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { BizError, ERRCODE_KEY_MAP, translateError } from '@/utils/api-interceptor'
-import type { ErrorToastItem } from '@/components/ErrorToast.vue'
+
+export interface ErrorToastItem {
+  id: number
+  level: 'error' | 'warning' | 'info' | 'success'
+  title: string
+  message: string
+  traceId: string
+  duration: number
+}
 
 export interface HandleOptions {
   /** 静默：只 log，不弹 toast */

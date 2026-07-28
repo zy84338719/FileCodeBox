@@ -1,5 +1,30 @@
 <template>
   <div class="dashboard-container">
+    <!-- 欢迎卡片 -->
+    <div class="welcome-card">
+      <div class="welcome-left">
+        <h2 class="welcome-title">{{ greeting }}, {{ adminName }} 👋</h2>
+        <p class="welcome-subtitle">{{ t('admin.welcomeSubtitle') }}</p>
+        <div class="quick-actions">
+          <el-button type="primary" round @click="$router.push('/admin/files')">
+            <el-icon><Folder /></el-icon>
+            {{ t('admin.files') }}
+          </el-button>
+          <el-button round @click="$router.push('/admin/users')">
+            <el-icon><User /></el-icon>
+            {{ t('admin.users') }}
+          </el-button>
+          <el-button round @click="$router.push('/admin/config')">
+            <el-icon><Setting /></el-icon>
+            {{ t('admin.config') }}
+          </el-button>
+        </div>
+      </div>
+      <div class="welcome-right">
+        <el-icon size="80" color="rgba(255,255,255,0.3)"><Avatar /></el-icon>
+      </div>
+    </div>
+
     <!-- 统计卡片 -->
     <el-row :gutter="24" class="stats-row">
       <el-col :span="6">
@@ -9,12 +34,12 @@
           </div>
           <div class="stat-content">
             <div class="stat-value">{{ animatedStats.userCount }}</div>
-            <div class="stat-label">用户总数</div>
+            <div class="stat-label">{{ t('admin.totalUsers') }}</div>
           </div>
           <div class="stat-decoration"></div>
         </div>
       </el-col>
-      
+
       <el-col :span="6">
         <div class="stat-card gradient-purple">
           <div class="stat-icon">
@@ -22,12 +47,12 @@
           </div>
           <div class="stat-content">
             <div class="stat-value">{{ animatedStats.fileCount }}</div>
-            <div class="stat-label">文件总数</div>
+            <div class="stat-label">{{ t('admin.totalFiles') }}</div>
           </div>
           <div class="stat-decoration"></div>
         </div>
       </el-col>
-      
+
       <el-col :span="6">
         <div class="stat-card gradient-green">
           <div class="stat-icon">
@@ -35,12 +60,12 @@
           </div>
           <div class="stat-content">
             <div class="stat-value">{{ formatFileSize(stats.totalStorage) }}</div>
-            <div class="stat-label">总存储使用</div>
+            <div class="stat-label">{{ t('admin.storageUsed') }}</div>
           </div>
           <div class="stat-decoration"></div>
         </div>
       </el-col>
-      
+
       <el-col :span="6">
         <div class="stat-card gradient-orange">
           <div class="stat-icon">
@@ -48,7 +73,7 @@
           </div>
           <div class="stat-content">
             <div class="stat-value">{{ animatedStats.todayUploads }}</div>
-            <div class="stat-label">今日上传</div>
+            <div class="stat-label">{{ t('admin.todayUploads') }}</div>
           </div>
           <div class="stat-decoration"></div>
         </div>
@@ -61,34 +86,34 @@
         <el-card class="chart-card" shadow="hover">
           <template #header>
             <div class="card-header">
-              <h3>近7天上传趋势</h3>
-              <el-tag type="info">实时数据</el-tag>
+              <h3>{{ t('admin.trend7d') }}</h3>
+              <el-tag type="info">{{ t('admin.realtime') }}</el-tag>
             </div>
           </template>
           <div class="chart-placeholder">
             <el-icon size="60" color="#e4e7ed"><TrendCharts /></el-icon>
-            <p>图表功能开发中...</p>
+            <p>{{ t('admin.chartTbd') }}</p>
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="12">
         <el-card class="chart-card" shadow="hover">
           <template #header>
             <div class="card-header">
-              <h3>文件类型分布</h3>
-              <el-tag type="info">实时数据</el-tag>
+              <h3>{{ t('admin.fileTypeDist') }}</h3>
+              <el-tag type="info">{{ t('admin.realtime') }}</el-tag>
             </div>
           </template>
           <div class="chart-placeholder">
             <el-icon size="60" color="#e4e7ed"><PieChart /></el-icon>
-            <p>图表功能开发中...</p>
+            <p>{{ t('admin.chartTbd') }}</p>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 最新数据 -->
+    <!-- 最近活动 -->
     <el-row :gutter="24" class="recent-row">
       <el-col :span="12">
         <el-card class="recent-card" shadow="hover">
@@ -96,21 +121,21 @@
             <div class="card-header">
               <h3>
                 <el-icon><User /></el-icon>
-                最新用户
+                {{ t('admin.recentUsers') }}
               </h3>
               <el-button text type="primary" @click="$router.push('/admin/users')">
-                查看全部
+                {{ t('common.viewAll') }}
                 <el-icon><ArrowRight /></el-icon>
               </el-button>
             </div>
           </template>
-          <el-table 
-            :data="recentUsers" 
+          <el-table
+            :data="recentUsers"
             size="small"
             v-loading="loading"
-            :header-cell-style="{ background: '#fafafa', fontWeight: '600' }"
+            :header-cell-style="{ background: 'var(--color-muted)', fontWeight: '600' }"
           >
-            <el-table-column prop="username" label="用户名">
+            <el-table-column :label="t('common.username')">
               <template #default="{ row }">
                 <div class="user-cell">
                   <el-avatar :size="32" class="user-avatar-small">
@@ -120,53 +145,53 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="nickname" label="昵称" />
-            <el-table-column prop="created_at" label="注册时间" width="160">
+            <el-table-column :label="t('admin.nickname')" prop="nickname" />
+            <el-table-column :label="t('admin.registeredAt')" width="160">
               <template #default="{ row }">
                 {{ formatDate(row.created_at) }}
               </template>
             </el-table-column>
-            <el-table-column prop="status" label="状态" width="100">
+            <el-table-column :label="t('common.status')" width="100">
               <template #default="{ row }">
                 <el-tag :type="row.status === 'active' ? 'success' : 'danger'" size="small">
-                  {{ row.status === 'active' ? '正常' : '禁用' }}
+                  {{ row.status === 'active' ? t('common.normal') : t('common.disabled') }}
                 </el-tag>
               </template>
             </el-table-column>
           </el-table>
         </el-card>
       </el-col>
-      
+
       <el-col :span="12">
         <el-card class="recent-card" shadow="hover">
           <template #header>
             <div class="card-header">
               <h3>
                 <el-icon><Folder /></el-icon>
-                最新文件
+                {{ t('admin.recentFiles') }}
               </h3>
               <el-button text type="primary" @click="$router.push('/admin/files')">
-                查看全部
+                {{ t('common.viewAll') }}
                 <el-icon><ArrowRight /></el-icon>
               </el-button>
             </div>
           </template>
-          <el-table 
-            :data="recentFiles" 
+          <el-table
+            :data="recentFiles"
             size="small"
             v-loading="loading"
-            :header-cell-style="{ background: '#fafafa', fontWeight: '600' }"
+            :header-cell-style="{ background: 'var(--color-muted)', fontWeight: '600' }"
           >
-            <el-table-column prop="filename" label="文件名" show-overflow-tooltip />
-            <el-table-column prop="file_size" label="大小" width="100">
+            <el-table-column :label="t('admin.fileName')" prop="filename" show-overflow-tooltip />
+            <el-table-column :label="t('admin.size')" width="100">
               <template #default="{ row }">
                 <el-tag type="info" size="small">
                   {{ formatFileSize(row.file_size) }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="username" label="上传者" width="100" />
-            <el-table-column prop="created_at" label="上传时间" width="160">
+            <el-table-column :label="t('admin.uploader')" width="100" prop="username" />
+            <el-table-column :label="t('admin.uploadedAt')" width="160">
               <template #default="{ row }">
                 {{ formatDate(row.created_at) }}
               </template>
@@ -179,29 +204,72 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { 
-  User, Folder, Coin, TrendCharts, ArrowRight, PieChart 
+import { ref, reactive, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import {
+  User, Folder, Coin, TrendCharts, ArrowRight, PieChart,
+  Setting, Avatar
 } from '@element-plus/icons-vue'
 import { adminApi } from '@/api/admin'
+import { useUserStore } from '@/stores/user'
+
+const { t, locale } = useI18n()
+const userStore = useUserStore()
 
 const loading = ref(false)
+
+interface DashboardStats {
+  total_users: number
+  total_files: number
+  total_size: number
+  today_uploads: number
+}
+
+interface RecentUser {
+  username: string
+  nickname?: string
+  created_at: string
+  status: string
+}
+
+interface RecentFile {
+  filename: string
+  file_size: number
+  username: string
+  created_at: string
+}
 
 const stats = reactive({
   userCount: 0,
   fileCount: 0,
   totalStorage: 0,
-  todayUploads: 0
+  todayUploads: 0,
 })
 
 const animatedStats = reactive({
   userCount: 0,
   fileCount: 0,
-  todayUploads: 0
+  todayUploads: 0,
 })
 
-const recentUsers = ref<any[]>([])
-const recentFiles = ref<any[]>([])
+const recentUsers = ref<RecentUser[]>([])
+const recentFiles = ref<RecentFile[]>([])
+
+const adminName = computed(() => userStore.userInfo?.username || 'Admin')
+const greeting = computed(() => {
+  // 根据小时返回不同时段问候语（仅 zh-CN）
+  const h = new Date().getHours()
+  if (locale.value === 'zh-CN') {
+    if (h < 6) return '夜深了'
+    if (h < 12) return '早上好'
+    if (h < 18) return '下午好'
+    return '晚上好'
+  }
+  if (h < 6) return 'Good night'
+  if (h < 12) return 'Good morning'
+  if (h < 18) return 'Good afternoon'
+  return 'Good evening'
+})
 
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 B'
@@ -214,14 +282,14 @@ const formatFileSize = (bytes: number): string => {
 const formatDate = (dateStr: string): string => {
   if (!dateStr) return '-'
   try {
-    return new Date(dateStr).toLocaleString('zh-CN')
+    return new Date(dateStr).toLocaleString(locale.value === 'zh-CN' ? 'zh-CN' : 'en-US')
   } catch {
     return '-'
   }
 }
 
-// 数字动画效果
-const animateNumber = (key: keyof typeof animatedStats, target: number) => {
+// 数字动画
+const animateNumber = (key: 'userCount' | 'fileCount' | 'todayUploads', target: number) => {
   const duration = 1000
   const steps = 60
   const increment = target / steps
@@ -241,18 +309,17 @@ const fetchDashboardStats = async () => {
   try {
     const res = await adminApi.getDashboardStats()
     if (res.code === 200 && res.data) {
-      stats.userCount = res.data.total_users || 0
-      stats.fileCount = res.data.total_files || 0
-      stats.totalStorage = res.data.total_size || 0
-      stats.todayUploads = res.data.today_uploads || 0
-
-      // 启动动画
+      const data = res.data as DashboardStats
+      stats.userCount = data.total_users || 0
+      stats.fileCount = data.total_files || 0
+      stats.totalStorage = data.total_size || 0
+      stats.todayUploads = data.today_uploads || 0
       animateNumber('userCount', stats.userCount)
       animateNumber('fileCount', stats.fileCount)
       animateNumber('todayUploads', stats.todayUploads)
     }
   } catch (error) {
-    console.error('获取统计信息失败:', error)
+    console.error('Failed to fetch dashboard stats:', error)
   }
 }
 
@@ -260,16 +327,17 @@ const fetchRecentUsers = async () => {
   try {
     const res = await adminApi.getRecentUsers()
     if (res.code === 200) {
-      if (res.data && Array.isArray(res.data.users)) {
-        recentUsers.value = res.data.users.slice(0, 5)
-      } else if (Array.isArray(res.data)) {
-        recentUsers.value = res.data.slice(0, 5)
+      const data = res.data as { users?: RecentUser[] } | RecentUser[] | undefined
+      if (data && Array.isArray((data as { users: RecentUser[] }).users)) {
+        recentUsers.value = (data as { users: RecentUser[] }).users.slice(0, 5)
+      } else if (Array.isArray(data)) {
+        recentUsers.value = data.slice(0, 5)
       } else {
         recentUsers.value = []
       }
     }
   } catch (error) {
-    console.error('获取最新用户失败:', error)
+    console.error('Failed to fetch recent users:', error)
     recentUsers.value = []
   }
 }
@@ -278,21 +346,37 @@ const fetchRecentFiles = async () => {
   try {
     const res = await adminApi.getRecentFiles()
     if (res.code === 200) {
-      if (res.data && Array.isArray(res.data.list)) {
-        recentFiles.value = res.data.list.slice(0, 5).map((file: any) => ({
-          filename: file.uuid_file_name || file.code,
-          file_size: file.size || 0,
-          username: file.username || '-',
-          created_at: file.CreatedAt || file.created_at || ''
+      const data = res.data as { list?: Array<{
+        uuid_file_name?: string
+        code?: string
+        size?: number
+        username?: string
+        CreatedAt?: string
+        created_at?: string
+      }> } | RecentFile[] | undefined
+      if (data && Array.isArray((data as { list: unknown[] }).list)) {
+        const list = (data as { list: Array<{
+          uuid_file_name?: string
+          code?: string
+          size?: number
+          username?: string
+          CreatedAt?: string
+          created_at?: string
+        }> }).list
+        recentFiles.value = list.slice(0, 5).map((f) => ({
+          filename: f.uuid_file_name || f.code || '-',
+          file_size: f.size || 0,
+          username: f.username || '-',
+          created_at: f.CreatedAt || f.created_at || '',
         }))
-      } else if (Array.isArray(res.data)) {
-        recentFiles.value = res.data.slice(0, 5)
+      } else if (Array.isArray(data)) {
+        recentFiles.value = (data as RecentFile[]).slice(0, 5)
       } else {
         recentFiles.value = []
       }
     }
   } catch (error) {
-    console.error('获取最新文件失败:', error)
+    console.error('Failed to fetch recent files:', error)
     recentFiles.value = []
   }
 }
@@ -303,7 +387,7 @@ onMounted(async () => {
     await Promise.all([
       fetchDashboardStats(),
       fetchRecentUsers(),
-      fetchRecentFiles()
+      fetchRecentFiles(),
     ])
   } finally {
     loading.value = false
@@ -317,19 +401,77 @@ onMounted(async () => {
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.stats-row {
+/* 欢迎卡片 */
+.welcome-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32px 36px;
   margin-bottom: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  color: white;
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.25);
+  position: relative;
+  overflow: hidden;
 }
+
+.welcome-card::before {
+  content: '';
+  position: absolute;
+  right: -100px;
+  top: -100px;
+  width: 300px;
+  height: 300px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.welcome-left {
+  flex: 1;
+  z-index: 1;
+}
+
+.welcome-title {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.welcome-subtitle {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.quick-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.quick-actions .el-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-weight: 500;
+}
+
+.quick-actions .el-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.welcome-right {
+  z-index: 1;
+  opacity: 0.5;
+}
+
+.stats-row { margin-bottom: 24px; }
 
 .stat-card {
   position: relative;
@@ -346,21 +488,10 @@ onMounted(async () => {
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
-.gradient-blue {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.gradient-purple {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-}
-
-.gradient-green {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
-
-.gradient-orange {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-}
+.gradient-blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.gradient-purple { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.gradient-green { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.gradient-orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
 
 .stat-icon {
   position: relative;
@@ -395,9 +526,7 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.charts-row {
-  margin-bottom: 24px;
-}
+.charts-row { margin-bottom: 24px; }
 
 .chart-card {
   border-radius: 16px;
@@ -417,7 +546,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #1a1f3a;
+  color: var(--color-text-primary, #1a1f3a);
 }
 
 .chart-placeholder {
@@ -426,16 +555,12 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #909399;
+  color: var(--color-text-secondary, #909399);
 }
 
-.chart-placeholder p {
-  margin-top: 16px;
-}
+.chart-placeholder p { margin-top: 16px; }
 
-.recent-row {
-  margin-bottom: 24px;
-}
+.recent-row { margin-bottom: 24px; }
 
 .recent-card {
   border-radius: 16px;
@@ -456,11 +581,21 @@ onMounted(async () => {
 }
 
 :deep(.el-card__header) {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-border, #f0f0f0);
   padding: 20px 24px;
 }
 
 :deep(.el-card__body) {
   padding: 20px 24px;
+}
+
+@media (max-width: 768px) {
+  .welcome-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 24px 20px;
+  }
+  .welcome-right { display: none; }
+  .quick-actions { justify-content: center; }
 }
 </style>

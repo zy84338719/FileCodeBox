@@ -152,7 +152,7 @@ const handleRetrieve = async () => {
         query: { data: encodeURIComponent(JSON.stringify(res.data)) },
       })
     } else {
-      handleError({ code: res.code, message: res.message })
+      handleError({ code: res.code, message: res.message, trace_id: res.trace_id })
     }
   } catch (e) {
     handleError(e)

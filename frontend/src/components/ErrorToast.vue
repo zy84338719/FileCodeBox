@@ -44,15 +44,7 @@ import {
   CircleCloseFilled, WarningFilled, InfoFilled, CircleCheckFilled,
   CopyDocument, Close
 } from '@element-plus/icons-vue'
-
-export interface ErrorToastItem {
-  id: number
-  level: 'error' | 'warning' | 'info' | 'success'
-  title: string
-  message: string
-  traceId: string
-  duration: number
-}
+import type { ErrorToastItem } from '@/composables/useErrorHandler'
 
 const items = ref<ErrorToastItem[]>([])
 const { t } = useI18n()
@@ -91,7 +83,6 @@ function copyTrace(traceId: string) {
   )
 }
 
-// 全局事件总线：useErrorHandler 通过 window event 触发
 function onPush(e: Event) {
   const ce = e as CustomEvent<Omit<ErrorToastItem, 'id'>>
   if (ce.detail) push(ce.detail)
@@ -139,25 +130,15 @@ defineExpose({ push, dismiss })
 .error-toast.type-success { border-left-color: #67c23a; }
 .error-toast.type-info { border-left-color: #909399; }
 
-.toast-icon {
-  flex-shrink: 0;
-  margin-top: 2px;
-}
+.toast-icon { flex-shrink: 0; margin-top: 2px; }
 .type-error .toast-icon { color: #f56c6c; }
 .type-warning .toast-icon { color: #e6a23c; }
 .type-success .toast-icon { color: #67c23a; }
 .type-info .toast-icon { color: #909399; }
 
-.toast-content {
-  flex: 1;
-  min-width: 0;
-}
+.toast-content { flex: 1; min-width: 0; }
 
-.toast-title {
-  font-weight: 600;
-  font-size: 14px;
-  margin-bottom: 4px;
-}
+.toast-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
 
 .toast-message {
   font-size: 13px;
@@ -176,9 +157,7 @@ defineExpose({ push, dismiss })
   color: var(--color-text-secondary, #909399);
 }
 
-.trace-label {
-  flex-shrink: 0;
-}
+.trace-label { flex-shrink: 0; }
 
 .trace-code {
   background: var(--color-muted, #fafafa);
@@ -189,31 +168,18 @@ defineExpose({ push, dismiss })
   word-break: break-all;
 }
 
-.trace-copy {
-  padding: 0 4px;
-  font-size: 12px;
-}
+.trace-copy { padding: 0 4px; font-size: 12px; }
 
-.toast-close {
-  flex-shrink: 0;
-  padding: 0 4px;
-  color: var(--color-text-secondary, #909399);
-}
+.toast-close { flex-shrink: 0; padding: 0 4px; color: var(--color-text-secondary, #909399); }
 
 .error-toast-enter-active,
 .error-toast-leave-active {
   transition: all 0.25s ease;
 }
 
-.error-toast-enter-from {
-  opacity: 0;
-  transform: translateX(20px);
-}
+.error-toast-enter-from { opacity: 0; transform: translateX(20px); }
 
-.error-toast-leave-to {
-  opacity: 0;
-  transform: translateX(20px);
-}
+.error-toast-leave-to { opacity: 0; transform: translateX(20px); }
 
 @media (max-width: 768px) {
   .error-toast-container {
