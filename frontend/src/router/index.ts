@@ -63,6 +63,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '通知', requiresAuth: true },
   },
   {
+    path: '/api-docs',
+    name: 'ApiDocs',
+    component: () => import('@/views/Docs.vue'),
+    meta: { title: 'API 文档' },
+  },
+  {
     path: '/admin/login',
     name: 'AdminLogin',
     component: () => import('@/views/admin/Login.vue'),

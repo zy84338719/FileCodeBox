@@ -53,3 +53,13 @@ declare module '@/types/share' {
     username?: string
   }
 }
+
+declare module 'swagger-ui-dist/swagger-ui-es-bundle' {
+  export const SwaggerUIBundle: any
+  export const SwaggerUIStandalonePreset: any
+}
+
+declare module 'swagger-ui-dist/swagger-ui.css' {
+  const css: string
+  export default css
+}

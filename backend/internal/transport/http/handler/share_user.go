@@ -3,6 +3,7 @@ package handler
 
 import (
 	"context"
+	"os"
 	"strconv"
 	"time"
 
@@ -232,4 +233,23 @@ func HardDeleteUserShare(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	c.JSON(consts.StatusOK, map[string]interface{}{"code": 200, "message": "ok"})
+}
+
+// OpenAPISpec 返回 OpenAPI 3.0 规范（尝试多个路径）
+// GET /openapi.json
+func OpenAPISpec(_ context.Context, c *app.RequestContext) {
+	candidates := []string{
+		"./docs/openapi.json",
+		"docs/openapi.json",
+		"./backend/docs/openapi.json",
+	}
+	for _, p := range candidates {
+		if data, err := os.ReadFile(p); err == nil {
+			c.Data(consts.StatusOK, "application/json", data)
+			return
+		}
+	}
+	c.JSON(consts.StatusNotFound, map[string]interface{}{
+		"code": 404, "message": "openapi.json not found",
+	})
 }

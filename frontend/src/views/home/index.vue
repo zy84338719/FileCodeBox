@@ -25,6 +25,10 @@
           <LocaleSwitcher />
           <ThemeSwitcher />
           <NotifyBell v-if="userStore.isLoggedIn" />
+          <el-button class="docs-btn" @click="$router.push('/api-docs')">
+            <el-icon><Document /></el-icon>
+            {{ t('home.apiDocs') }}
+          </el-button>
           <el-button class="retrieve-btn" @click="$router.push('/retrieve')">
             <el-icon><Postcard /></el-icon>
             {{ t('home.retrieve') }}

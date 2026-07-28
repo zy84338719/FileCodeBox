@@ -17,6 +17,9 @@ import (
 func customizedRegister(r *server.Hertz) {
 	r.GET("/ping", handler.Ping)
 
+	// ===== OpenAPI 文档（B7） =====
+	r.GET("/openapi.json", customHandler.OpenAPISpec)
+
 	// ===== 自定义：我的分享管理 API（不走 IDL） =====
 	apiV1 := r.Group("/api/v1", customMw.UserAuth())
 	{

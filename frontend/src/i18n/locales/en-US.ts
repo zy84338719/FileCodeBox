@@ -136,6 +136,7 @@ export default {
       copyCode: 'Copy code',
     },
     codeCopied: 'Code copied',
+    apiDocs: 'API Docs',
   },
   anonymous: {
     title: 'Anonymous retrieve',
@@ -458,6 +459,12 @@ export default {
     openInOfficeOnline: 'Open in Office Online',
     officeOnlineHint: 'Online preview powered by Microsoft Office Online',
     unsupported: 'Preview not supported for this file type',
+  },
+  docs: {
+    title: 'API Documentation',
+    subtitle: 'FileCodeBox backend API (thrift IDL + custom routes)',
+    openInNew: 'Open OpenAPI JSON',
+    loadFailed: 'Failed to load API docs',
   },
   admin_layout: {
     title: 'Admin',

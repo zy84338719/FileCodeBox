@@ -1,0 +1,426 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "FileCodeBox API",
+    "description": "FileCodeBox 后端 API 文档（基于 thrift IDL + 自定义路由）",
+    "version": "1.0.0",
+    "contact": {
+      "name": "FileCodeBox"
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "当前服务"
+    }
+  ],
+  "tags": [
+    {"name": "share", "description": "分享管理（thrift IDL: share）"},
+    {"name": "share_anonymous", "description": "匿名取件（thrift IDL: share_anonymous）"},
+    {"name": "user", "description": "用户中心（thrift IDL: user）"},
+    {"name": "user-shares", "description": "我的分享管理（自定义 API）"},
+    {"name": "user-notify", "description": "我的通知（自定义 API）"},
+    {"name": "presign", "description": "预签名直传（thrift IDL: presign）"},
+    {"name": "notify", "description": "系统通知（thrift IDL: notify）"},
+    {"name": "ratelimit", "description": "限流（thrift IDL: ratelimit）"},
+    {"name": "admin", "description": "管理后台（thrift IDL: admin）"},
+    {"name": "common", "description": "通用（thrift IDL: common）"}
+  ],
+  "paths": {
+    "/ping": {
+      "get": {
+        "tags": ["common"],
+        "summary": "Ping",
+        "responses": {
+          "200": {"description": "pong"}
+        }
+      }
+    },
+    "/share/text/": {
+      "post": {
+        "tags": ["share"],
+        "summary": "分享文本",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["text", "expire_value", "expire_style", "require_auth"],
+                "properties": {
+                  "text": {"type": "string"},
+                  "expire_value": {"type": "integer"},
+                  "expire_style": {"type": "string", "enum": ["minute", "hour", "day", "week", "month", "year", "forever"]},
+                  "require_auth": {"type": "boolean"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/share/file/": {
+      "post": {
+        "tags": ["share"],
+        "summary": "分享文件（multipart/form-data）",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {"type": "string", "format": "binary"},
+                  "expire_value": {"type": "integer"},
+                  "expire_style": {"type": "string"},
+                  "require_auth": {"type": "boolean"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/share/select/": {
+      "get": {
+        "tags": ["share"],
+        "summary": "获取分享内容",
+        "parameters": [
+          {"name": "code", "in": "query", "required": true, "schema": {"type": "string"}},
+          {"name": "password", "in": "query", "required": false, "schema": {"type": "string"}}
+        ],
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/share/download": {
+      "get": {
+        "tags": ["share"],
+        "summary": "下载分享文件",
+        "parameters": [
+          {"name": "code", "in": "query", "required": true, "schema": {"type": "string"}},
+          {"name": "password", "in": "query", "required": false, "schema": {"type": "string"}}
+        ],
+        "responses": {"200": {"description": "file stream"}}
+      }
+    },
+    "/anonymous/generate": {
+      "post": {
+        "tags": ["share_anonymous"],
+        "summary": "生成 6 位取件码",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["file_name", "file_size"],
+                "properties": {
+                  "file_name": {"type": "string"},
+                  "file_size": {"type": "integer", "format": "int64"},
+                  "expire_value": {"type": "string"},
+                  "expire_style": {"type": "string"},
+                  "max_pickup_count": {"type": "integer"},
+                  "password": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/anonymous/retrieve": {
+      "post": {
+        "tags": ["share_anonymous"],
+        "summary": "按取件码取件（不下载）",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["code"],
+                "properties": {
+                  "code": {"type": "string"},
+                  "password": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/anonymous/download/{code}": {
+      "get": {
+        "tags": ["share_anonymous"],
+        "summary": "下载文件",
+        "parameters": [
+          {"name": "code", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {"200": {"description": "file stream"}}
+      }
+    },
+    "/anonymous/search/{code}": {
+      "get": {
+        "tags": ["share_anonymous"],
+        "summary": "按码查询分享信息",
+        "parameters": [
+          {"name": "code", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/user/register": {
+      "post": {
+        "tags": ["user"],
+        "summary": "用户注册",
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/user/login": {
+      "post": {
+        "tags": ["user"],
+        "summary": "用户登录",
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/user/info": {
+      "get": {
+        "tags": ["user"],
+        "summary": "获取用户信息",
+        "security": [{"bearerAuth": []}],
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/user/files": {
+      "get": {
+        "tags": ["user"],
+        "summary": "我的文件列表（thrift）",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"name": "page", "in": "query", "schema": {"type": "integer", "default": 1}},
+          {"name": "page_size", "in": "query", "schema": {"type": "integer", "default": 20}}
+        ],
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/api/v1/user/shares": {
+      "get": {
+        "tags": ["user-shares"],
+        "summary": "我的分享列表（自定义，支持筛选）",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"name": "status", "in": "query", "description": "active/expired/text/file/deleted/all", "schema": {"type": "string"}},
+          {"name": "search", "in": "query", "schema": {"type": "string"}},
+          {"name": "page", "in": "query", "schema": {"type": "integer", "default": 1}},
+          {"name": "page_size", "in": "query", "schema": {"type": "integer", "default": 20}}
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {"type": "integer"},
+                    "message": {"type": "string"},
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {"type": "array", "items": {"$ref": "#/components/schemas/UserShareItem"}},
+                        "total": {"type": "integer"},
+                        "page": {"type": "integer"},
+                        "page_size": {"type": "integer"},
+                        "total_pages": {"type": "integer"},
+                        "has_next": {"type": "boolean"},
+                        "has_prev": {"type": "boolean"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/user/shares/batch-delete": {
+      "post": {
+        "tags": ["user-shares"],
+        "summary": "批量软删除我的分享",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["codes"],
+                "properties": {
+                  "codes": {"type": "array", "items": {"type": "string"}}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/api/v1/user/shares/batch-extend": {
+      "post": {
+        "tags": ["user-shares"],
+        "summary": "批量延期",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["codes"],
+                "properties": {
+                  "codes": {"type": "array", "items": {"type": "string"}},
+                  "hours": {"type": "integer", "description": "延长小时数"},
+                  "forever": {"type": "boolean", "description": "设为永久"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/api/v1/user/shares/{code}/restore": {
+      "post": {
+        "tags": ["user-shares"],
+        "summary": "恢复软删除的分享",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"name": "code", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/api/v1/user/shares/{code}/hard": {
+      "delete": {
+        "tags": ["user-shares"],
+        "summary": "永久删除（仅已软删除的）",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"name": "code", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/api/v1/notifies/mine": {
+      "get": {
+        "tags": ["user-notify"],
+        "summary": "我的通知列表",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"name": "page", "in": "query", "schema": {"type": "integer"}},
+          {"name": "page_size", "in": "query", "schema": {"type": "integer"}}
+        ],
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/api/v1/notifies/unread-count": {
+      "get": {
+        "tags": ["user-notify"],
+        "summary": "我的未读通知数",
+        "security": [{"bearerAuth": []}],
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/api/v1/notifies/mark-read": {
+      "post": {
+        "tags": ["user-notify"],
+        "summary": "标记全部已读",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "all": {"type": "boolean", "default": true}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/presign/init": {
+      "post": {
+        "tags": ["presign"],
+        "summary": "申请上传地址",
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/presign/complete": {
+      "post": {
+        "tags": ["presign"],
+        "summary": "完成上传",
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/presign/abort": {
+      "post": {
+        "tags": ["presign"],
+        "summary": "取消上传",
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/notifies/active": {
+      "get": {
+        "tags": ["notify"],
+        "summary": "获取当前活跃通知（公开）",
+        "responses": {"200": {"description": "ok"}}
+      }
+    },
+    "/admin/notifies": {
+      "get": {
+        "tags": ["admin"],
+        "summary": "通知列表（管理）",
+        "responses": {"200": {"description": "ok"}}
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "UserShareItem": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer"},
+          "code": {"type": "string"},
+          "file_name": {"type": "string"},
+          "size": {"type": "integer", "format": "int64"},
+          "text": {"type": "string"},
+          "expired_at": {"type": "string", "nullable": true},
+          "expired_count": {"type": "integer"},
+          "used_count": {"type": "integer"},
+          "viewer_ip": {"type": "string"},
+          "viewer_at": {"type": "string", "nullable": true},
+          "viewer_count": {"type": "integer"},
+          "is_expired": {"type": "boolean"},
+          "is_text_share": {"type": "boolean"},
+          "deleted_at": {"type": "string", "nullable": true},
+          "created_at": {"type": "string"}
+        }
+      }
+    }
+  }
+}
