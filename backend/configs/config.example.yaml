@@ -108,3 +108,13 @@ observability:
     exporter: "otlp"      # otlp | stdout
     endpoint: "localhost:4317"  # OTLP collector 地址
     service_name: "filecodebox"
+
+# 安全配置
+security:
+  cors:
+    # 跨域可信来源白名单（逗号分隔，env: FCB_CORS_ALLOW_ORIGINS）。
+    # 生产环境务必显式列出可信域名；留空时退化为反射 Origin（仅适合开发）。
+    allow_origins: []
+    # allow_credentials: false  # 是否允许携带凭证(Cookie)，生产白名单模式下建议 true
+    # enable_hsts: false         # 启用 HSTS（仅 HTTPS 部署时开启，否则可能锁死 https）
+

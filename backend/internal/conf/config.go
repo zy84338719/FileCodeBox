@@ -18,6 +18,7 @@ type AppConfiguration struct {
 	Storage       StorageConfig       `mapstructure:"storage"`
 	UI            UIConfig            `mapstructure:"ui"`
 	Observability ObservabilityConfig `mapstructure:"observability"`
+	Security      SecurityConfig      `mapstructure:"security"`
 }
 
 // SetGlobalConfig 设置全局配置
@@ -172,4 +173,20 @@ type TracingConfig struct {
 // IsProduction 是否生产模式（综合 server.mode 与 app.production 判断）
 func (c *AppConfiguration) IsProduction() bool {
 	return c.App.Production || c.Server.Mode == "release"
+}
+
+// SecurityConfig 安全相关配置（CORS / 安全头）
+type SecurityConfig struct {
+	CORS CORSConfig `mapstructure:"cors"`
+}
+
+// CORSConfig 跨域配置。
+//
+// 安全说明：当 AllowCredentials=true 时，AllowOrigins 不可为 "*"（浏览器规范），
+// 必须显式列出可信来源。若 AllowOrigins 为空且 AllowCredentials=true，
+// 中间件会退化为反射 Origin（仅适合开发环境）。
+type CORSConfig struct {
+	AllowOrigins     []string `mapstructure:"allow_origins"`      // 可信来源列表，env: FCB_CORS_ALLOW_ORIGINS（逗号分隔）
+	AllowCredentials bool     `mapstructure:"allow_credentials"`  // 是否允许携带凭证
+	EnableHSTS       bool     `mapstructure:"enable_hsts"`        // 启用 HSTS（仅 HTTPS 部署）
 }

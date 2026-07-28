@@ -41,25 +41,71 @@ import (
 // 使用 internal/conf 包中的统一配置类型
 type Config = conf.AppConfiguration
 
-// CORS 跨域中间件
+// CORS 跨域中间件（配置化）。
+//
+// 安全策略：
+//   - 配置了 allow_origins 白名单时，仅放行白名单内的 Origin（生产推荐）
+//   - 未配置白名单时，退化为反射 Origin（便于本地开发，等同于宽松模式）
+//   - allow_credentials=true 时，绝不返回 "*"，而是精确匹配的 Origin
+//
+// 同时允许 X-Trace-Id / X-API-Key 等自定义请求头跨域。
+// allow_origins 来源：yaml 的 security.cors.allow_origins（数组）或
+// 环境变量 FCB_CORS_ALLOW_ORIGINS（逗号分隔，如 "https://a.com,https://b.com"）。
 func CORS() app.HandlerFunc {
+	allowOrigins := map[string]bool{}
+	// 优先从环境变量读取（逗号分隔），兼容 slice 字段在 env 下的传递
+	if envOrigins := os.Getenv("FCB_CORS_ALLOW_ORIGINS"); envOrigins != "" {
+		for _, o := range strings.Split(envOrigins, ",") {
+			if o = strings.TrimSpace(o); o != "" {
+				allowOrigins[o] = true
+			}
+		}
+	}
+	// 再合并配置文件中的白名单
+	for _, o := range config.Security.CORS.AllowOrigins {
+		allowOrigins[o] = true
+	}
+	allowCredentials := config.Security.CORS.AllowCredentials
+	if len(allowOrigins) == 0 {
+		// 无白名单默认允许凭证（开发友好）；生产应显式配置白名单
+		allowCredentials = true
+	}
+
 	return func(ctx context.Context, c *app.RequestContext) {
 		origin := string(c.GetHeader("Origin"))
-		if origin == "" {
-			origin = "*"
+
+		allowedOrigin := ""
+		if origin != "" {
+			if len(allowOrigins) > 0 {
+				// 白名单模式：精确匹配
+				if allowOrigins[origin] {
+					allowedOrigin = origin
+				}
+			} else {
+				// 宽松模式：反射任意 Origin（开发用）
+				allowedOrigin = origin
+			}
 		}
 
-		// 设置 CORS 头
-		c.Header("Access-Control-Allow-Origin", origin)
+		if allowedOrigin != "" {
+			c.Header("Access-Control-Allow-Origin", allowedOrigin)
+			c.Header("Vary", "Origin")
+			if allowCredentials {
+				// 凭证模式下不能返回 "*"，必须是具体 origin（上面已保证）
+				c.Header("Access-Control-Allow-Credentials", "true")
+			}
+		} else if origin == "" {
+			// 无 Origin（同源请求），放行且不设 ACAO
+		}
+
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-		c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type")
-		c.Header("Access-Control-Allow-Credentials", "true")
-		c.Header("Access-Control-Max-Age", "86400") // 24小时
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-Trace-Id, X-API-Key")
+		c.Header("Access-Control-Expose-Headers", "Content-Length, Content-Type, X-Trace-Id")
+		c.Header("Access-Control-Max-Age", "86400")
 
 		// 处理预检请求
 		if string(c.Method()) == "OPTIONS" {
-			c.AbortWithStatus(204)
+			c.AbortWithStatus(consts.StatusNoContent)
 			return
 		}
 
@@ -175,6 +221,9 @@ var envBindings = map[string][]string{
 	"observability.metrics.enabled": {"FCB_METRICS_ENABLED"},
 	"observability.metrics.path":    {"FCB_METRICS_PATH"},
 	"observability.tracing.enabled": {"FCB_TRACING_ENABLED"},
+	// security
+	"security.cors.allow_origins":     {"FCB_CORS_ALLOW_ORIGINS"},
+	"security.cors.enable_hsts":       {"FCB_ENABLE_HSTS"},
 }
 
 // bindEnvironment 把环境变量绑定到 viper 配置 key。
@@ -351,12 +400,21 @@ func Bootstrap(configPath string) (*server.Hertz, error) {
 			zap.String("path", config.Observability.Metrics.Path))
 	}
 
+	// 安全：配置安全响应头（HSTS 仅在显式启用时开启，避免非 HTTPS 部署锁死）
+	middleware.SetSecurityHeadersConfig(middleware.SecurityHeadersConfig{
+		EnableHSTS: config.Security.CORS.EnableHSTS,
+	})
+	if config.Security.CORS.EnableHSTS {
+		logger.Info("HSTS enabled (ensure HTTPS deployment)")
+	}
+
 	// 全局中间件链（顺序敏感）：
-	//   Recovery → RequestID → AccessLog → Metrics → CORS → handler
+	//   Recovery → RequestID → AccessLog → Metrics → SecurityHeaders → CORS → handler
 	//   - Recovery 最外层，捕获任意 panic 转 500，避免进程崩溃
 	//   - RequestID 生成/透传 trace_id（X-Trace-Id），写入 ctx 供下游使用
 	//   - AccessLog 结构化访问日志（带 trace_id），在 handler 执行后记录 status
 	//   - Metrics 采集 RED 指标（延迟/计数/在途），在 handler 执行后记录
+	//   - SecurityHeaders 设置 X-Content-Type-Options / X-Frame-Options / HSTS 等
 	//   - CORS 跨域，最贴近 handler
 	h.Use(middleware.Recovery())
 	h.Use(middleware.RequestID())
@@ -364,6 +422,7 @@ func Bootstrap(configPath string) (*server.Hertz, error) {
 	if config.Observability.Metrics.Enabled {
 		h.Use(middleware.MetricsMiddleware())
 	}
+	h.Use(middleware.SecurityHeaders())
 	h.Use(CORS())
 
 	// 6. 注册路由
