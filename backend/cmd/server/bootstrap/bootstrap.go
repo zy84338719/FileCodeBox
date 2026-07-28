@@ -262,20 +262,22 @@ func validateSecrets(cfg *Config) error {
 	return nil
 }
 
-// InitDatabase 初始化数据库
+// InitDatabase 初始化数据库。
+//
+// 迁移策略（按配置）：
+//   - database.migrate=true：先执行版本化迁移(migrations/*.sql)，适合生产/需要版本控制
+//   - database.auto_migrate（默认 true）：GORM AutoMigrate，开发友好、自动补表/列
+//   - 两者可共存：版本化迁移建表后，AutoMigrate 兜底补充新字段
 func InitDatabase(config *conf.DatabaseConfig) (*gorm.DB, error) {
 	// 创建数据目录
 	if config.Driver == "sqlite" {
-		// 确保数据目录存在
 		dbPath := config.DBName
 		if dbPath != ":memory:" {
-			// 创建目录（如果需要）
-			// 这里简化处理，GORM 会自动创建数据库文件
 			log.Printf("SQLite database path: %s", dbPath)
 		}
 	}
 
-	// 初始化数据库连接
+	// 初始化数据库连接（db.Init 内部会执行 AutoMigrate 兜底）
 	err := db.Init(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect database: %w", err)
@@ -283,19 +285,28 @@ func InitDatabase(config *conf.DatabaseConfig) (*gorm.DB, error) {
 
 	database := db.GetDB()
 
-	// 自动迁移表结构
-	log.Println("Auto migrating database tables...")
-	err = database.AutoMigrate(
-		&model.User{},
-		&model.FileCode{},
-		&model.UploadChunk{},
-		&model.TransferLog{},
-		&model.AdminOperationLog{},
-		&model.UserAPIKey{},
-		&model.FilePreview{}, // 添加预览表
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to migrate database: %w", err)
+	// 版本化迁移（企业级，可选）
+	if config.Migrate {
+		log.Println("Running versioned database migrations...")
+		migrator, err := db.NewMigrator(database, config.Driver)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create migrator: %w", err)
+		}
+		applied, err := migrator.Up()
+		if err != nil {
+			return nil, fmt.Errorf("versioned migration failed: %w", err)
+		}
+		if len(applied) > 0 {
+			log.Printf("Applied %d migration(s): %v", len(applied), applied)
+		} else {
+			log.Println("No new migrations to apply (already up to date)")
+		}
+		// AutoMigrate 兜底：补充 baseline 未覆盖的表（如 file_previews/notifies）
+		if err := database.AutoMigrate(
+			&model.FilePreview{},
+		); err != nil {
+			logger.Error("AutoMigrate fallback for previews failed", zap.Error(err))
+		}
 	}
 
 	log.Println("Database initialized successfully")

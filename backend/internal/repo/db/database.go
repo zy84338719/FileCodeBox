@@ -55,7 +55,13 @@ func Init(cfg *conf.DatabaseConfig) error {
 		sqlDB.SetConnMaxLifetime(time.Hour)
 	}
 
-	// 自动迁移数据库表
+	// 自动迁移数据库表（开发默认；若启用版本化迁移则跳过，避免与 baseline 冲突）
+	// AutoMigrate 字段零值视为 true（兼容旧配置），显式 false 时跳过
+	if cfg.Migrate {
+		// 版本化迁移由 bootstrap 接管，这里跳过 AutoMigrate 避免表已存在冲突
+		zap.L().Info("Database connected (auto_migrate skipped, versioned migration will run)", zap.String("driver", cfg.Driver))
+		return nil
+	}
 	if err := autoMigrate(); err != nil {
 		return fmt.Errorf("failed to auto migrate: %w", err)
 	}

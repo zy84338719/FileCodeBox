@@ -206,3 +206,24 @@ gen-update-all: gen-http-update-all
 
 .PHONY: all build run test clean docker-build docker-run lint gen-http-new gen-http-update gen-http-update-all gen-http-init gen-rpc gen-rpc-all gen-thrift-new gen-thrift-update gen-thrift-update-all kitex-install hz-install thriftgo-install tools-install install-tools thrift-gen thrift-gen-all hz-gen rpc-gen generate
 all: tidy build
+
+
+# ===== 数据库版本化迁移 =====
+# 迁移文件位于 internal/repo/db/migrations/，命名：<version>_<name>.{up,down}.sql
+# 启动时执行迁移：config database.migrate=true，或 env FCB_DATABASE_MIGRATE=true
+# 新部署建议用版本化迁移；旧部署兼容默认仍用 GORM AutoMigrate。
+
+# 创建新迁移文件：make migrate-create NAME=add_user_column
+migrate-create:
+	@if [ -z "$(NAME)" ]; then echo "用法: make migrate-create NAME=add_user_column"; exit 1; fi; \
+	LAST=$$(ls internal/repo/db/migrations/*.up.sql 2>/dev/null | xargs -n1 basename 2>/dev/null | cut -d_ -f1 | sort -n | tail -1); \
+	LAST_NUM=$$(echo $$LAST | sed 's/^0*//'); \
+	NEXT_NUM=$$(($${LAST_NUM:-1}+1)); \
+	NEXT=$$(printf "%06d" $$NEXT_NUM); \
+	touch "internal/repo/db/migrations/$${NEXT}_$(NAME).up.sql"; \
+	touch "internal/repo/db/migrations/$${NEXT}_$(NAME).down.sql"; \
+	echo "✅ 已创建迁移文件:"; \
+	echo "   internal/repo/db/migrations/$${NEXT}_$(NAME).up.sql"; \
+	echo "   internal/repo/db/migrations/$${NEXT}_$(NAME).down.sql"
+
+.PHONY: migrate-create

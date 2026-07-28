@@ -43,12 +43,14 @@ type ServerConfig struct {
 
 // DatabaseConfig 数据库配置
 type DatabaseConfig struct {
-	Driver   string `mapstructure:"driver"` // sqlite, mysql, postgres
-	DBName   string `mapstructure:"db_name"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
+	Driver      string `mapstructure:"driver"`       // sqlite, mysql, postgres
+	DBName      string `mapstructure:"db_name"`
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	User        string `mapstructure:"user"`
+	Password    string `mapstructure:"password"`
+	AutoMigrate bool   `mapstructure:"auto_migrate"` // true=GORM AutoMigrate(开发友好,默认); false=版本化迁移(migrations/)
+	Migrate     bool   `mapstructure:"migrate"`      // 启动时执行版本化迁移(企业级)。与 AutoMigrate 可共存：先 migrate 后 AutoMigrate 兜底
 }
 
 // RedisConfig Redis配置
