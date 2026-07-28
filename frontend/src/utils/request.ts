@@ -2,7 +2,10 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig } from 'axios'
 
 const instance: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:12345',
+  // 默认用空 baseURL（相对路径），让请求自动走页面同源——
+  // 这样单二进制/任意域名部署都能正确请求后端，避免构建时 bake 错误端口。
+  // 仅当显式设置 VITE_API_BASE_URL 时才用绝对地址（前后端分离部署）。
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   timeout: 30000,
 })
 

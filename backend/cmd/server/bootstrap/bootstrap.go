@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -20,12 +21,14 @@ import (
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/auth"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/logger"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/middleware"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/resp"
 	previewPkg "github.com/zy84338719/fileCodeBox/backend/internal/preview"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/redis"
 	"github.com/zy84338719/fileCodeBox/backend/internal/storage"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
 	notifyHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/notify"
@@ -299,7 +302,11 @@ func InitDatabase(config *conf.DatabaseConfig) (*gorm.DB, error) {
 	return database, nil
 }
 
-// CreateDefaultAdmin 创建默认管理员
+// CreateDefaultAdmin 创建默认管理员。
+//
+// 密码来源（优先级）：FCB_ADMIN_PASSWORD 环境变量 > 默认 admin123。
+// 密码用 bcrypt 现场哈希（此前硬编码的哈希与 admin123 不匹配，导致管理员无法登录）。
+// 生产环境务必通过 FCB_ADMIN_PASSWORD 注入强密码并在首次登录后修改。
 func CreateDefaultAdmin(database *gorm.DB) error {
 	var count int64
 	database.Model(&model.User{}).Where("role = ?", "admin").Count(&count)
@@ -309,11 +316,22 @@ func CreateDefaultAdmin(database *gorm.DB) error {
 		return nil
 	}
 
-	// 创建默认管理员
+	// 密码：env 注入优先，否则默认 admin123
+	password := os.Getenv("FCB_ADMIN_PASSWORD")
+	if password == "" {
+		password = "admin123"
+	}
+
+	// 现场生成 bcrypt 哈希（避免硬编码哈希与明文不一致）
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash admin password: %w", err)
+	}
+
 	admin := &model.User{
 		Username:     "admin",
 		Email:        "admin@filecodebox.local",
-		PasswordHash: "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZRGdjGj/n3.rsQ5pPjZ5yVlWK5WAe", // password: admin123
+		PasswordHash: string(hashed),
 		Nickname:     "Administrator",
 		Role:         "admin",
 		Status:       "active",
@@ -323,7 +341,11 @@ func CreateDefaultAdmin(database *gorm.DB) error {
 		return fmt.Errorf("failed to create admin user: %w", err)
 	}
 
-	log.Println("Default admin user created (username: admin, password: admin123)")
+	if os.Getenv("FCB_ADMIN_PASSWORD") == "" {
+		logger.Warn("Default admin created with default password 'admin123' — change it immediately in production (set FCB_ADMIN_PASSWORD for a custom one)")
+	} else {
+		logger.Info("Default admin created with password from FCB_ADMIN_PASSWORD")
+	}
 	return nil
 }
 
@@ -458,6 +480,22 @@ func customizedRegister(r *server.Hertz) {
 	// ===== OpenAPI 文档（Swagger UI）=====
 	r.GET("/openapi.json", customHandler.OpenAPISpec)
 
+	// ===== 公开配置端点（前端 configStore 启动时拉取）=====
+	// 前端 publicApi.getConfig() 请求 /api/config 获取站点配置（名称、上传限制等），
+	// 此前端点缺失导致前端启动报 "获取配置失败: Network Error"。此处补齐。
+	r.GET("/api/config", publicConfigHandler)
+
+	// ===== 前端构建产物静态资源 =====
+	// Vite 输出的 index.html 用根级绝对路径引用资源（/assets/xxx、/vite.svg），
+	// 故把 ./static/assets 挂到 /assets。用 StaticFS 正确处理 Range 请求、MIME、
+	// 缓存（NoRoute 里手写的 c.File 对大文件 ES module 的 Range/缓冲处理不够稳定，
+	// 会导致浏览器 "Failed to fetch dynamically imported module"）。
+	r.StaticFS("/assets", &app.FS{
+		Root:          "./static/assets",
+		PathRewrite:   app.NewPathSlashesStripper(1),
+		CacheDuration: 7 * 24 * time.Hour,
+	})
+
 	// ===== Prometheus 指标端点 =====
 	if config.Observability.Metrics.Enabled {
 		metricsPath := config.Observability.Metrics.Path
@@ -491,16 +529,11 @@ func customizedRegister(r *server.Hertz) {
 	}
 
 	// ===== 前端 SPA 静态资源服务 =====
-	// 服务 /static 前缀的构建产物（JS/CSS/图片等）。
-	// 注意：必须用 NewPathSlashesStripper(1) 剥离 "/static" 前缀，
-	// 否则 handler 会在 root 下重复拼接导致 404。
-	r.StaticFS("/static", &app.FS{
-		Root:         "./static",
-		PathRewrite:  app.NewPathSlashesStripper(1),
-		CacheDuration: 7 * 24 * time.Hour,
-	})
-	// SPA fallback：根路径 "/" 与所有非 API 路径一律回退到 index.html，
-	// 交给前端 hash 路由处理（前端使用 createWebHashHistory）。
+	// Vite 构建的 index.html 使用根级绝对路径引用资源（/assets/xxx.js、/vite.svg），
+	// 因此不能把资源挂在 /static 前缀下。这里采用"文件优先 + SPA 回退"策略：
+	//   1. 静态资源请求（/assets/*、/vite.svg 等带扩展名路径）→ 从 ./static 读取
+	//   2. 非 API 的其他路径 → 回退 index.html（交给前端 hash 路由）
+	//   3. API 路径未命中 → 404 JSON
 	r.NoRoute(func(ctx context.Context, c *app.RequestContext) {
 		path := string(c.Request.URI().Path())
 		if isAPIPath(path) {
@@ -510,6 +543,11 @@ func customizedRegister(r *server.Hertz) {
 			})
 			return
 		}
+		// 静态资源：尝试从 ./static 下读取（去掉前导 /）
+		if tryServeStatic(c, path) {
+			return
+		}
+		// 其余路径回退到 SPA index.html
 		c.File("./static/index.html")
 	})
 }
@@ -536,6 +574,51 @@ func isAPIPath(path string) bool {
 		}
 	}
 	return false
+}
+
+// staticFileExtensions 视为静态资源（而非 SPA 路由）的文件扩展名。
+// Vite 构建产物（js/css/图片/字体等）走这里直接返回文件。
+var staticFileExtensions = map[string]bool{
+	".js": true, ".mjs": true, ".css": true,
+	".html": true, ".svg": true, ".png": true, ".jpg": true, ".jpeg": true,
+	".gif": true, ".ico": true, ".webp": true, ".woff": true, ".woff2": true,
+	".ttf": true, ".eot": true, ".map": true, ".json": true, ".txt": true,
+}
+
+// tryServeStatic 尝试从 ./static 目录服务静态资源。
+// 命中（文件存在且是静态资源扩展名）时写入响应并返回 true，否则返回 false。
+// 用于在 NoRoute 中优先服务 Vite 构建产物（/assets/xxx.js 等），再回退 SPA。
+func tryServeStatic(c *app.RequestContext, path string) bool {
+	// 仅对带静态资源扩展名的路径尝试（避免目录穿越和无谓的文件系统查找）
+	ext := strings.ToLower(filepath.Ext(path))
+	if !staticFileExtensions[ext] {
+		return false
+	}
+	// 去掉前导 /，拼接到 static 根目录；filepath.Join 会清理 ../ 等穿越
+	rel := strings.TrimPrefix(path, "/")
+	fullPath := filepath.Join("./static", rel)
+	info, err := os.Stat(fullPath)
+	if err != nil || info.IsDir() {
+		return false
+	}
+	c.File(fullPath)
+	return true
+}
+
+// publicConfigHandler 返回公开配置（前端 configStore 启动时拉取）。
+// 返回结构与前端 PublicConfig 接口对齐：
+// name / description / uploadSize / enableChunk / openUpload / expireStyle。
+func publicConfigHandler(ctx context.Context, c *app.RequestContext) {
+	resp.Success(c, map[string]interface{}{
+		"name":        config.App.Name,
+		"description": config.App.Description,
+		"uploadSize":  config.Upload.UploadSize,
+		"enableChunk": config.Upload.EnableChunk,
+		"openUpload":  config.Upload.OpenUpload,
+		// 前端 expireStyle 下拉选项（与 utils.CalculateExpireTime 支持的风格对齐）
+		"expireStyle": []string{"minute", "hour", "day", "week", "month", "year", "forever"},
+		"initialized": true,
+	})
 }
 
 // metricsHandler 暴露 Prometheus 指标（/metrics）。
