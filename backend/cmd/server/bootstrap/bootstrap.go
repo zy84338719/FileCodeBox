@@ -758,8 +758,8 @@ func initPreviewService() error {
 // initThriftIDLServices 初始化 thrift IDL 对应的新服务
 // 关联 internal/app/ → gen/http/handler/ 各 SetXxx 入口
 func initThriftIDLServices(database *gorm.DB) {
-	// 1. notify service（需要 DB）
-	notifyApp := notifyAppService.NewService(database)
+	// 1. notify service（走 DAO，内部用全局 db.GetDB()）
+	notifyApp := notifyAppService.NewService()
 	notifyHandler.SetDB(database)
 	// 1.1 注入定制路由的 notify service
 	customHandler.SetNotifyService(notifyApp)

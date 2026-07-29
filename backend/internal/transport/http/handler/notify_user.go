@@ -20,7 +20,7 @@ func SetNotifyService(s *notifyapp.Service) {
 
 func getNotifyService() *notifyapp.Service {
 	if notifySvc == nil {
-		notifySvc = notifyapp.NewService(nil)
+		notifySvc = notifyapp.NewService()
 	}
 	return notifySvc
 }
