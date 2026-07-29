@@ -4,7 +4,6 @@ import ElementPlus from 'element-plus'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import { VueQueryPlugin } from '@tanstack/vue-query'
 
 import App from './App.vue'
 import router from './router'
@@ -23,7 +22,6 @@ app.use(createPinia())
 app.use(router)
 app.use(i18n)
 app.use(ElementPlus)
-app.use(VueQueryPlugin)
 
 // 主题状态：pinia 已就绪后从 localStorage 还原并应用到 <html>
 const themeStore = useThemeStore()

@@ -156,6 +156,8 @@ router.beforeEach((to, _from, next) => {
     }
 
     // 检查是否需要管理员权限
+    // NOTE: userRole 仅作客户端 UX 路由控制，非安全鉴权。
+    // 真正的 admin 权限由后端中间件（admin_auth）在每个 /admin API 强制校验。
     if (to.meta.requiresAdmin) {
       const userRole = localStorage.getItem('userRole')
       if (userRole !== 'admin') {
