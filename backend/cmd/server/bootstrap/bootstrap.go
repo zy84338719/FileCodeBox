@@ -71,23 +71,17 @@ func CORS() app.HandlerFunc {
 		allowOrigins[o] = true
 	}
 	allowCredentials := config.Security.CORS.AllowCredentials
-	if len(allowOrigins) == 0 {
-		// 无白名单默认允许凭证（开发友好）；生产应显式配置白名单
-		allowCredentials = true
-	}
 
 	return func(ctx context.Context, c *app.RequestContext) {
 		origin := string(c.GetHeader("Origin"))
 
 		allowedOrigin := ""
 		if origin != "" {
-			if len(allowOrigins) > 0 {
-				// 白名单模式：精确匹配
-				if allowOrigins[origin] {
-					allowedOrigin = origin
-				}
-			} else {
-				// 宽松模式：反射任意 Origin（开发用）
+			if allowOrigins[origin] {
+				// 白名单精确匹配
+				allowedOrigin = origin
+			} else if isLocalhostOrigin(origin) {
+				// 无白名单或未命中白名单时，允许 localhost 跨域（开发友好）
 				allowedOrigin = origin
 			}
 		}
@@ -96,7 +90,7 @@ func CORS() app.HandlerFunc {
 			c.Header("Access-Control-Allow-Origin", allowedOrigin)
 			c.Header("Vary", "Origin")
 			if allowCredentials {
-				// 凭证模式下不能返回 "*"，必须是具体 origin（上面已保证）
+				// 凭证仅对允许的 origin 生效
 				c.Header("Access-Control-Allow-Credentials", "true")
 			}
 		} else if origin == "" {
@@ -116,6 +110,17 @@ func CORS() app.HandlerFunc {
 
 		c.Next(ctx)
 	}
+}
+
+// isLocalhostOrigin 判断是否 localhost/127.0.0.1 的任意端口（开发环境跨域放行）。
+// 生产环境应通过 FCB_CORS_ALLOW_ORIGINS 显式配置白名单。
+func isLocalhostOrigin(origin string) bool {
+	return strings.HasPrefix(origin, "http://localhost:") ||
+		strings.HasPrefix(origin, "http://127.0.0.1:") ||
+		strings.HasPrefix(origin, "https://localhost:") ||
+		strings.HasPrefix(origin, "https://127.0.0.1:") ||
+		origin == "http://localhost" || origin == "http://127.0.0.1" ||
+		origin == "https://localhost" || origin == "https://127.0.0.1"
 }
 
 // GetConfig 获取全局配置
