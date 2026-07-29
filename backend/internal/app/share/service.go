@@ -345,31 +345,16 @@ func (s *Service) GetFileList(ctx context.Context, page, pageSize int, search st
 	return s.fileCodeRepo.List(ctx, page, pageSize, search)
 }
 
-// UpdateFileUsage 更新文件使用次数（下载次数）
-func (s *Service) UpdateFileUsage(ctx context.Context, code string) error {
+// UpdateFileUsage 原子扣减剩余次数（DB 为准，防并发超卖）。
+// 返回 ok=true 表示扣减成功（可下载）；ok=false 表示已耗尽。
+func (s *Service) UpdateFileUsage(ctx context.Context, code string) (bool, error) {
 	s.ensureRepository()
-
-	fileCode, err := s.fileCodeRepo.GetByCode(ctx, code)
-	if err != nil {
-		return err
-	}
-
-	// 检查剩余次数
-	if fileCode.ExpiredCount > 0 {
-		fileCode.ExpiredCount--
-		if fileCode.ExpiredCount < 0 {
-			fileCode.ExpiredCount = 0
-		}
-	}
-
-	// 增加使用次数
-	fileCode.UsedCount++
-
-	return s.fileCodeRepo.Update(ctx, fileCode)
+	return s.fileCodeRepo.DecrementExpiredCount(ctx, code)
 }
 
-// GetFileWithUsage 获取文件并增加使用次数
-func (s *Service) GetFileWithUsage(ctx context.Context, code string, password string) (*model.FileCode, error) {
+// GetFileWithUsage 获取文件并校验密码（不扣次数，扣次数由下载链路调 UpdateFileUsage）。
+// viewerIP 由 handler 从 c.ClientIP() 注入。
+func (s *Service) GetFileWithUsage(ctx context.Context, code, password, viewerIP string) (*model.FileCode, error) {
 	s.ensureRepository()
 
 	fileCode, err := s.GetFileByCode(ctx, code)
@@ -377,25 +362,28 @@ func (s *Service) GetFileWithUsage(ctx context.Context, code string, password st
 		return nil, err
 	}
 
-	// 检查是否需要密码
-	if fileCode.RequireAuth && password == "" {
-		return nil, errors.New("需要密码")
+	// 真实密码校验（替代原 TODO：仅检查非空）
+	if fileCode.RequireAuth {
+		if !utils.CheckPassword(fileCode.PasswordHash, password) {
+			return nil, errors.New("密码错误")
+		}
 	}
 
-	// TODO: 验证密码逻辑（当前仅检查非空）
-
-	// 记录取件人 + 通知 owner（fire-and-forget，失败不影响主流程）
-	viewerIP := "" // caller 已知 caller IP；这里仅占位，详细 IP 由 handler 注入
-	_ = s.RecordViewerAndNotify(ctx, code, viewerIP, "")
+	// 记录取件人 + 通知 owner（fire-and-forget，recover 防 panic 影响进程）
+	go func() {
+		defer func() { _ = recover() }()
+		_ = s.RecordViewerAndNotify(context.Background(), code, viewerIP, "")
+	}()
 
 	return fileCode, nil
 }
 
-// RecordViewerAndNotify 记录取件人 + 给 owner 发通知
-//   - viewerIP: 取件人 IP
-//   - notifyType/level: 通知 type / level
+// RecordViewerAndNotify 记录取件人 + 给 owner 发通知。
+//   - viewerIP: 取件人 IP（由 handler 从 c.ClientIP() 注入）
+//   - viewerDetail: 额外通知内容
 //
-// 若 file_codes 找不到（anonymous 路径 share_code 是 file_name 占位），静默跳过
+// 通知去重：同 code 5 分钟内只通知一次（用 LastNotifiedAt 字段）。
+// 若 file_codes 找不到，静默跳过。
 func (s *Service) RecordViewerAndNotify(ctx context.Context, code, viewerIP, viewerDetail string) error {
 	s.ensureRepository()
 	if err := s.fileCodeRepo.UpdateViewer(ctx, code, viewerIP); err != nil {
@@ -410,11 +398,19 @@ func (s *Service) RecordViewerAndNotify(ctx context.Context, code, viewerIP, vie
 	if fc.UserID == nil || s.notifySvc == nil {
 		return nil
 	}
+	// 通知去重：同 code 5 分钟内只通知一次
+	if fc.LastNotifiedAt != nil && time.Since(*fc.LastNotifiedAt) < 5*time.Minute {
+		return nil
+	}
+	// 更新 LastNotifiedAt（先更新，避免并发重复通知）
+	now := time.Now()
+	_ = s.fileCodeRepo.UpdateColumns(ctx, fc.ID, map[string]interface{}{"last_notified_at": now})
+
 	title := "您的分享已被取件"
 	if fc.Text != "" {
 		title = "您的文本分享已被查看"
 	}
-	content := fmt.Sprintf("分享码: %s\n取件人 IP: %s\n时间: %s", code, viewerIP, time.Now().Format("2006-01-02 15:04:05"))
+	content := fmt.Sprintf("分享码: %s\n取件人 IP: %s\n时间: %s", code, viewerIP, now.Format("2006-01-02 15:04:05"))
 	if viewerDetail != "" {
 		content += "\n" + viewerDetail
 	}
