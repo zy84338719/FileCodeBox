@@ -188,6 +188,7 @@ import {
 } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js/lib/core'
+import { sanitizeHtml } from '@/utils/sanitize'
 import plaintext from 'highlight.js/lib/languages/plaintext'
 import javascript from 'highlight.js/lib/languages/javascript'
 import typescript from 'highlight.js/lib/languages/typescript'
@@ -350,7 +351,8 @@ const mdView = ref<'rendered' | 'source'>('rendered')
 const renderedMarkdown = computed(() => {
   if (!props.textContent) return ''
   try {
-    return marked.parse(props.textContent, { breaks: true }) as string
+    const raw = marked.parse(props.textContent, { breaks: true }) as string
+    return sanitizeHtml(raw)
   } catch {
     return props.textContent
   }
@@ -363,7 +365,8 @@ const highlightedCode = computed(() => {
   const supportedLangs = ['plaintext', 'javascript', 'typescript', 'xml', 'html', 'css', 'json', 'yaml', 'bash', 'shell', 'python', 'go', 'java', 'sql', 'markdown']
   const useLang = supportedLangs.includes(lang) ? lang : 'plaintext'
   try {
-    return hljs.highlight(props.textContent, { language: useLang, ignoreIllegals: true }).value
+    const raw = hljs.highlight(props.textContent, { language: useLang, ignoreIllegals: true }).value
+    return sanitizeHtml(raw)
   } catch {
     return escapeHtml(props.textContent)
   }

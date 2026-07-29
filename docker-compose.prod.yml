@@ -35,9 +35,10 @@ services:
       FCB_REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
       # 安全（必填！生成: openssl rand -hex 32）
       FCB_JWT_SECRET: "${JWT_SECRET}"
-      # 可观测性
-      FCB_METRICS_ENABLED: "true"
-      FCB_METRICS_PATH: "/metrics"
+      # 可观测性：metrics 默认关闭，开启时绑定内网 127.0.0.1:9090（按需取消注释）
+      # FCB_METRICS_ENABLED: "true"
+      # FCB_METRICS_PATH: "/metrics"
+      # FCB_METRICS_ADDR: "127.0.0.1:9090"
       # 上传
       FCB_OPEN_UPLOAD: "true"
       FCB_UPLOAD_SIZE: "10485760"

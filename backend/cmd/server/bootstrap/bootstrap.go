@@ -71,23 +71,17 @@ func CORS() app.HandlerFunc {
 		allowOrigins[o] = true
 	}
 	allowCredentials := config.Security.CORS.AllowCredentials
-	if len(allowOrigins) == 0 {
-		// 无白名单默认允许凭证（开发友好）；生产应显式配置白名单
-		allowCredentials = true
-	}
 
 	return func(ctx context.Context, c *app.RequestContext) {
 		origin := string(c.GetHeader("Origin"))
 
 		allowedOrigin := ""
 		if origin != "" {
-			if len(allowOrigins) > 0 {
-				// 白名单模式：精确匹配
-				if allowOrigins[origin] {
-					allowedOrigin = origin
-				}
-			} else {
-				// 宽松模式：反射任意 Origin（开发用）
+			if allowOrigins[origin] {
+				// 白名单精确匹配
+				allowedOrigin = origin
+			} else if isLocalhostOrigin(origin) {
+				// 无白名单或未命中白名单时，允许 localhost 跨域（开发友好）
 				allowedOrigin = origin
 			}
 		}
@@ -96,7 +90,7 @@ func CORS() app.HandlerFunc {
 			c.Header("Access-Control-Allow-Origin", allowedOrigin)
 			c.Header("Vary", "Origin")
 			if allowCredentials {
-				// 凭证模式下不能返回 "*"，必须是具体 origin（上面已保证）
+				// 凭证仅对允许的 origin 生效
 				c.Header("Access-Control-Allow-Credentials", "true")
 			}
 		} else if origin == "" {
@@ -116,6 +110,17 @@ func CORS() app.HandlerFunc {
 
 		c.Next(ctx)
 	}
+}
+
+// isLocalhostOrigin 判断是否 localhost/127.0.0.1 的任意端口（开发环境跨域放行）。
+// 生产环境应通过 FCB_CORS_ALLOW_ORIGINS 显式配置白名单。
+func isLocalhostOrigin(origin string) bool {
+	return strings.HasPrefix(origin, "http://localhost:") ||
+		strings.HasPrefix(origin, "http://127.0.0.1:") ||
+		strings.HasPrefix(origin, "https://localhost:") ||
+		strings.HasPrefix(origin, "https://127.0.0.1:") ||
+		origin == "http://localhost" || origin == "http://127.0.0.1" ||
+		origin == "https://localhost" || origin == "https://127.0.0.1"
 }
 
 // GetConfig 获取全局配置
@@ -181,7 +186,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.db_name", "./data/filecodebox.db")
 	v.SetDefault("user.allow_user_registration", true)
 	v.SetDefault("user.require_email_verify", false)
-	v.SetDefault("observability.metrics.enabled", true)
+	v.SetDefault("observability.metrics.enabled", false)
 	v.SetDefault("observability.metrics.path", "/metrics")
 	v.SetDefault("observability.tracing.enabled", false)
 }
@@ -246,20 +251,22 @@ func bindEnvironment(v *viper.Viper) {
 	}
 }
 
-// insecureDefaultSecrets 已知的不安全默认密钥（禁止在生产环境使用）。
+// insecureDefaultSecrets 已知的不安全默认/占位密钥（全环境禁止使用）。
 var insecureDefaultSecrets = map[string]string{
-	"FileCodeBox2025JWT":                   "user.jwt_secret",
-	"filecodebox-dev-signing-key-change-me": "presign signing key",
+	"FileCodeBox2025JWT":                       "user.jwt_secret",
+	"filecodebox-dev-signing-key-change-me":    "presign signing key",
+	"FileCodeBox2025SecretKey":                 "auth default secret",
+	"please-change-me":                         "placeholder secret",
+	"dev-only-change-me":                       "dev placeholder secret",
+	"dev-only-change-me-to-random-32chars":     "dev placeholder secret",
 }
 
-// validateSecrets 在生产环境校验敏感配置，避免使用默认/弱密钥启动（fail-fast）。
+// validateSecrets 全环境校验敏感配置，避免使用默认/弱密钥启动（fail-fast）。
+// 所有环境（含开发）都必须设置强随机的 user.jwt_secret。
 func validateSecrets(cfg *Config) error {
-	if !cfg.IsProduction() {
-		return nil
-	}
-	// jwt_secret
+	// jwt_secret：空或命中黑名单一律拒绝
 	if sec := cfg.User.JWTSecret; sec == "" || insecureDefaultSecrets[sec] != "" {
-		return fmt.Errorf("production mode requires a secure user.jwt_secret: current value is empty or a known default; set FCB_JWT_SECRET env to a strong random string")
+		return fmt.Errorf("a secure user.jwt_secret is required in ALL environments: current value is empty or a known default; set FCB_JWT_SECRET env to a strong random string (>=32 chars)")
 	}
 	return nil
 }
@@ -424,8 +431,14 @@ func Bootstrap(configPath string) (*server.Hertz, error) {
 	if port == 0 {
 		port = 12345
 	}
+	// 上传 body 上限（应用层强制，覆盖 Hertz 默认无限制）
+	uploadSize := int(config.Upload.UploadSize)
+	if uploadSize <= 0 {
+		uploadSize = 10 * 1024 * 1024 // 默认 10MB
+	}
 	h := server.New(
 		server.WithHostPorts(fmt.Sprintf("%s:%d", config.Server.Host, port)),
+		server.WithMaxRequestBodySize(uploadSize),
 	)
 
 	// 可观测性：初始化 Prometheus 指标（在注册中间件前完成）
@@ -459,6 +472,27 @@ func Bootstrap(configPath string) (*server.Hertz, error) {
 	}
 	h.Use(middleware.SecurityHeaders())
 	h.Use(CORS())
+
+	// 限流：路径感知，按接口类型选择限流维度（登录/上传/下载）。
+	// 防止暴力破解登录、取件码枚举、上传下载 DoS。
+	rl := middleware.GetDefaultRateLimiter()
+	h.Use(func(ctx context.Context, c *app.RequestContext) {
+		path := string(c.Request.URI().Path())
+		switch {
+		case strings.HasPrefix(path, "/admin/login"),
+			strings.HasPrefix(path, "/api/v1/user/login"):
+			rl.LoginMiddleware()(ctx, c)
+		case strings.HasPrefix(path, "/anonymous/generate"),
+			strings.HasPrefix(path, "/anonymous/retrieve"),
+			strings.HasPrefix(path, "/api/v1/presign"),
+			strings.HasPrefix(path, "/api/v1/chunk"):
+			rl.UploadMiddleware()(ctx, c)
+		case strings.Contains(path, "/download"):
+			rl.DownloadMiddleware()(ctx, c)
+		default:
+			c.Next(ctx)
+		}
+	})
 
 	// 6. 注册路由
 	router.GeneratedRegister(h)
@@ -509,13 +543,26 @@ func customizedRegister(r *server.Hertz) {
 		CacheDuration: 7 * 24 * time.Hour,
 	})
 
-	// ===== Prometheus 指标端点 =====
+	// ===== Prometheus 指标端点（独立内网 server，默认不暴露到主端口）=====
+	// 开启时绑定 127.0.0.1:9090（可用 FCB_METRICS_ADDR 配置），供同节点 Prometheus 抓取。
+	// 主 server 不注册 /metrics，避免公网泄露内部指标。
 	if config.Observability.Metrics.Enabled {
 		metricsPath := config.Observability.Metrics.Path
 		if metricsPath == "" {
 			metricsPath = "/metrics"
 		}
-		r.GET(metricsPath, metricsHandler)
+		metricsAddr := os.Getenv("FCB_METRICS_ADDR")
+		if metricsAddr == "" {
+			metricsAddr = "127.0.0.1:9090"
+		}
+		metricsServer := server.New(server.WithHostPorts(metricsAddr))
+		metricsServer.GET(metricsPath, metricsHandler)
+		go func() {
+			logger.Info("metrics server listening", zap.String("addr", metricsAddr))
+			if err := metricsServer.Run(); err != nil {
+				logger.Error("metrics server failed", zap.Error(err))
+			}
+		}()
 	}
 
 	// ===== 深度就绪检查 =====

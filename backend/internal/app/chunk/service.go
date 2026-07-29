@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/utils"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 )
@@ -57,6 +58,15 @@ func NewService() *Service {
 
 // InitiateUpload 初始化分片上传
 func (s *Service) InitiateUpload(ctx context.Context, req *InitiateUploadReq) (*ChunkResp, error) {
+	// 上传大小 + 类型校验（应用层）
+	maxSize := utils.GetMaxUploadSize()
+	if err := utils.CheckUploadSize(req.FileSize, maxSize); err != nil {
+		return nil, fmt.Errorf("文件过大: 最大允许 %d 字节", maxSize)
+	}
+	if utils.IsBlockedExtension(req.FileName, utils.DefaultBlockedExtensions()) {
+		return nil, fmt.Errorf("该文件类型禁止上传")
+	}
+
 	// 检查是否已存在相同的上传ID
 	existing, err := s.chunkRepo.GetByUploadID(ctx, req.UploadID)
 	if err == nil && existing != nil {
