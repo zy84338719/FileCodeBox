@@ -527,6 +527,9 @@ func customizedRegister(r *server.Hertz) {
 	// ===== OpenAPI 文档（Swagger UI）=====
 	r.GET("/openapi.json", customHandler.OpenAPISpec)
 
+	// ===== presign 预签名直传端点（gen router 未注册，在此补）=====
+	r.PUT("/api/v1/presign/upload-direct/:uploadID", presignHandler.UploadDirect)
+
 	// ===== 公开配置端点（前端 configStore 启动时拉取）=====
 	// 前端 publicApi.getConfig() 请求 /api/config 获取站点配置（名称、上传限制等），
 	// 此前端点缺失导致前端启动报 "获取配置失败: Network Error"。此处补齐。

@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -292,6 +294,40 @@ func (s *Service) GetMeta(ctx context.Context, uploadID string) (*InitMeta, erro
 		return nil, err
 	}
 	return &meta, nil
+}
+
+// UploadDirect 处理预签名直传：校验 token → 写文件到 data 目录（meta.ObjectKey 路径）。
+// 由 bootstrap 注册的 PUT /api/v1/presign/upload-direct/:uploadID 端点调用。
+func (s *Service) UploadDirect(ctx context.Context, uploadID, token string, data []byte) error {
+	// 1. 读 meta
+	meta, err := s.GetMeta(ctx, uploadID)
+	if err != nil {
+		return err
+	}
+	// 2. 校验过期
+	if time.Now().After(meta.ExpireAt) {
+		s.rdb.Del(ctx, fmt.Sprintf(keyUploadMeta, uploadID))
+		return ErrUploadExpired
+	}
+	// 3. 校验 token
+	expected := s.signToken(meta.UploadID, meta.ObjectKey, meta.ExpireAt)
+	if !hmac.Equal([]byte(expected), []byte(token)) {
+		return ErrTokenInvalid
+	}
+	// 4. 校验大小（body 实际大小 vs meta 声明）
+	if err := utils.CheckUploadSize(int64(len(data)), utils.GetMaxUploadSize()); err != nil {
+		return fmt.Errorf("文件过大")
+	}
+	// 5. 写入 data 目录（meta.ObjectKey 作为相对路径）
+	dataPath := "./data"
+	targetPath := filepath.Join(dataPath, meta.ObjectKey)
+	if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
+		return fmt.Errorf("create dir failed: %w", err)
+	}
+	if err := os.WriteFile(targetPath, data, 0o644); err != nil {
+		return fmt.Errorf("write file failed: %w", err)
+	}
+	return nil
 }
 
 // ============ 内部 ============
