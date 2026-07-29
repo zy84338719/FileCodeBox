@@ -22,6 +22,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/utils"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 )
 
 // 6 位取件码字符表（去掉易混淆字符 0/O/1/I/L）
@@ -144,6 +145,25 @@ func (s *Service) Cancel(ctx context.Context, code string) error {
 	return s.cleanup(ctx, code)
 }
 
+// Peek 按取件码查询分享信息（不扣次数、不校验密码），仅供展示。
+// 返回展示信息 CodeMeta + DB 记录（含剩余次数、过期时间等）。
+func (s *Service) Peek(ctx context.Context, code string) (*CodeMeta, *model.FileCode, error) {
+	shareCode, err := s.rdb.Get(ctx, fmt.Sprintf(keyPickupCodeMapping, code)).Result()
+	if errors.Is(err, redis.Nil) {
+		return nil, nil, ErrCodeNotFound
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	metaStr, _ := s.rdb.Get(ctx, fmt.Sprintf(keyPickupCodeMeta, code)).Result()
+	meta := parseMeta(metaStr, shareCode)
+	fc, err := s.fileCodeRepo.GetByCode(ctx, shareCode)
+	if err != nil {
+		return nil, nil, ErrCodeNotFound
+	}
+	return meta, fc, nil
+}
+
 // ============ 内部辅助 ============
 
 // randomCode 生成 6 位随机码（crypto/rand）
@@ -204,4 +224,78 @@ func (s *Service) cleanup(ctx context.Context, code string) error {
 		fmt.Sprintf(keyPickupCodeMapping, code),
 		fmt.Sprintf(keyPickupCodeMeta, code),
 	).Err()
+}
+
+// AnonymousShareParams 匿名分享端到端参数
+type AnonymousShareParams struct {
+	FilePath       string
+	FileName       string
+	FileSize       int64
+	ContentType    string
+	ExpireAt       *time.Time // 必填，决定 DB 过期时间 + Redis TTL
+	MaxPickupCount int        // -1=无限, 0=默认无限, >0=限制
+	Password       string     // 空=无密码
+}
+
+// CreateAnonymousShare 端到端：建 file_codes 记录 + 生成取件码。
+// 供 gen handler 调用，避免 handler 直接操作 DAO；密码在此 bcrypt 哈希后存 DB。
+// 返回 6 位取件码。
+func (s *Service) CreateAnonymousShare(ctx context.Context, p AnonymousShareParams) (string, error) {
+	if p.ExpireAt == nil {
+		return "", errors.New("ExpireAt 必填")
+	}
+	maxCount := p.MaxPickupCount
+	if maxCount == 0 {
+		maxCount = -1 // 默认无限
+	}
+
+	hash, err := utils.HashPassword(p.Password)
+	if err != nil {
+		return "", err
+	}
+
+	fc := &model.FileCode{
+		Code:          randomShareCode(),
+		FilePath:      p.FilePath,
+		UUIDFileName:  p.FileName,
+		Size:          p.FileSize,
+		ExpiredAt:     p.ExpireAt,
+		ExpiredCount:  maxCount,
+		RequireAuth:   p.Password != "",
+		PasswordHash:  hash,
+		UploadType:    "anonymous",
+	}
+	if err := s.fileCodeRepo.Create(ctx, fc); err != nil {
+		return "", err
+	}
+
+	pickupCode, err := s.GenerateCode(ctx, CodeMeta{
+		ShareCode:   fc.Code,
+		FileName:    p.FileName,
+		FileSize:    p.FileSize,
+		ContentType: p.ContentType,
+		RequireAuth: p.Password != "",
+	}, *p.ExpireAt)
+	if err != nil {
+		// 回滚 DB 记录（物理文件未落库，无需清）
+		_ = s.fileCodeRepo.Delete(ctx, fc.ID)
+		return "", err
+	}
+	return pickupCode, nil
+}
+
+// randomShareCode 8 位 file_code（crypto/rand，小写字母+数字）
+func randomShareCode() string {
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	const length = 8
+	max := big.NewInt(int64(len(charset)))
+	b := make([]byte, length)
+	for i := range b {
+		n, err := rand.Int(rand.Reader, max)
+		if err != nil {
+			n = big.NewInt(int64(time.Now().UnixNano()) % int64(len(charset)))
+		}
+		b[i] = charset[n.Int64()]
+	}
+	return string(b)
 }
