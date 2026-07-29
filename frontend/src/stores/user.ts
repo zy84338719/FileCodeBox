@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import axios from 'axios'
 import { userApi } from '@/api/user'
 import type { UserInfo } from '@/types/user'
 
@@ -39,6 +40,28 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // refreshToken 用旧 token 换新 token（401 拦截器调用）。
+  // 用裸 axios 避免触发 request.ts 的拦截器递归。
+  const refreshToken = async (): Promise<string | null> => {
+    const oldToken = token.value
+    if (!oldToken) return null
+    try {
+      const res = await axios.post('/api/v1/user/refresh', null, {
+        baseURL: import.meta.env.VITE_API_BASE_URL || '',
+        headers: { Authorization: `Bearer ${oldToken}` },
+      })
+      const newToken = res.data?.data?.token
+      if (newToken) {
+        token.value = newToken
+        localStorage.setItem('token', newToken)
+        return newToken
+      }
+    } catch {
+      // refresh 失败，返回 null，调用方处理登出
+    }
+    return null
+  }
+
   return {
     token,
     userInfo,
@@ -47,5 +70,6 @@ export const useUserStore = defineStore('user', () => {
     login,
     logout,
     fetchUserInfo,
+    refreshToken,
   }
 })
