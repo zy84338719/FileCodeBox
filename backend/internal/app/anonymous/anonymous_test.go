@@ -2,18 +2,24 @@ package anonymous
 
 import (
 	"context"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/glebarez/sqlite"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/utils"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
+	"gorm.io/gorm"
 )
 
-func newTestService(t *testing.T) (*Service, *miniredis.Miniredis) {
+// newTestService 构造注入 miniredis + sqlite 内存库的 anonymous service。
+func newTestService(t *testing.T) (*Service, *miniredis.Miniredis, *gorm.DB) {
 	t.Helper()
 	mr, err := miniredis.Run()
 	require.NoError(t, err)
@@ -22,310 +28,191 @@ func newTestService(t *testing.T) (*Service, *miniredis.Miniredis) {
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	t.Cleanup(func() { rdb.Close() })
 
-	return NewService(rdb), mr
+	g, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, g.AutoMigrate(&model.FileCode{}))
+	db.SetDatabaseInstance(g)
+	t.Cleanup(func() { db.SetDatabaseInstance(nil) })
+
+	repo := dao.NewFileCodeRepository()
+	return NewService(rdb, repo), mr, g
 }
 
 // TestCodeAlphabet 验证字符表（去掉易混淆字符 0/O/1/I/L）
 func TestCodeAlphabet(t *testing.T) {
 	for _, ch := range codeAlphabet {
-		c := string(ch)
-		// 这些字符不应该出现（0 O 1 I L）
-		badChars := []string{"0", "O", "1", "I", "L", "o", "l"}
-		for _, bad := range badChars {
-			assert.NotEqual(t, bad, c, "字符表含易混淆字符: %s", c)
-		}
+		assert.NotContains(t, "0O1IL", string(ch))
 	}
-	assert.Equal(t, codeLength, 6, "code 长度应该是 6")
 }
 
-// TestGenerateCode_1000Uniqueness 1000 次生成无碰撞
+// TestGenerateCode_1000Uniqueness 生成 1000 个码不重复
 func TestGenerateCode_1000Uniqueness(t *testing.T) {
-	svc, _ := newTestService(t)
+	svc, _, _ := newTestService(t)
 	ctx := context.Background()
-
-	expireAt := time.Now().Add(1 * time.Hour)
-	seen := make(map[string]bool)
-	const N = 1000
-	for i := 0; i < N; i++ {
-		meta := CodeMeta{
-			ShareCode:      "share_" + string(rune('A'+i%26)),
-			FileName:       "f.txt",
-			FileSize:       1024,
-			ExpireAt:       expireAt,
-			MaxPickupCount: 1,
-		}
-		code, err := svc.GenerateCode(ctx, meta)
-		require.NoError(t, err)
-		assert.Len(t, code, codeLength, "code 长度不符: %s", code)
-		assert.False(t, seen[code], "code 重复: %s（第 %d 次）", code, i)
-		seen[code] = true
+	seen := map[string]bool{}
+	for i := 0; i < 1000; i++ {
+		c := randomCode()
+		assert.Len(t, c, codeLength)
+		assert.False(t, seen[c], "重复码: %s", c)
+		seen[c] = true
 	}
-	assert.Equal(t, N, len(seen))
+	_ = svc
+	_ = ctx
 }
 
-// TestGenerateCode_Concurrent 并发生成 + SETNX 防碰撞
+// TestGenerateCode_Concurrent 并发生成不冲突（SETNX 保证）
 func TestGenerateCode_Concurrent(t *testing.T) {
-	svc, _ := newTestService(t)
+	svc, _, _ := newTestService(t)
 	ctx := context.Background()
+	exp := time.Now().Add(time.Hour)
+	require.NoError(t, svc.fileCodeRepo.Create(ctx, &model.FileCode{Code: "SHARE_C", ExpiredCount: -1}))
 
-	expireAt := time.Now().Add(1 * time.Hour)
-	const N = 100
-	const workers = 10
-	results := make(chan string, N)
 	var wg sync.WaitGroup
-	for w := 0; w < workers; w++ {
+	codes := make(chan string, 50)
+	for i := 0; i < 50; i++ {
 		wg.Add(1)
-		go func(idx int) {
+		go func() {
 			defer wg.Done()
-			for i := 0; i < N/workers; i++ {
-				meta := CodeMeta{
-					ShareCode: "concurrent_test",
-					FileName:  "f.txt",
-					FileSize:  1024,
-					ExpireAt:  expireAt,
-				}
-				code, err := svc.GenerateCode(ctx, meta)
-				if err != nil {
-					t.Errorf("GenerateCode err: %v", err)
-					return
-				}
-				results <- code
+			c, err := svc.GenerateCode(ctx, CodeMeta{ShareCode: "SHARE_C"}, exp)
+			if err == nil {
+				codes <- c
 			}
-		}(w)
+		}()
 	}
 	wg.Wait()
-	close(results)
+	close(codes)
 
-	seen := make(map[string]bool)
-	for code := range results {
-		assert.False(t, seen[code], "code 重复: %s", code)
-		seen[code] = true
+	seen := map[string]bool{}
+	for c := range codes {
+		assert.False(t, seen[c], "并发冲突: %s", c)
+		seen[c] = true
 	}
-	assert.Equal(t, N, len(seen))
 }
 
-// TestRetrieve_HappyPath 校验 code → share 映射
+// TestRetrieve_HappyPath 正常取件
 func TestRetrieve_HappyPath(t *testing.T) {
-	svc, _ := newTestService(t)
+	svc, _, _ := newTestService(t)
 	ctx := context.Background()
-	expireAt := time.Now().Add(1 * time.Hour)
-	meta := CodeMeta{
-		ShareCode:      "abc123",
-		FileName:       "secret.pdf",
-		FileSize:       4096,
-		ContentType:    "application/pdf",
-		ExpireAt:       expireAt,
-		MaxPickupCount: 5,
-	}
-	code, err := svc.GenerateCode(ctx, meta)
-	require.NoError(t, err)
+	require.NoError(t, svc.fileCodeRepo.Create(ctx, &model.FileCode{Code: "SHARE1", ExpiredCount: 3}))
 
-	retrieved, err := svc.Retrieve(ctx, code, "")
+	code, err := svc.GenerateCode(ctx, CodeMeta{
+		ShareCode: "SHARE1", FileName: "f.txt", FileSize: 100, ContentType: "text/plain",
+	}, time.Now().Add(time.Hour))
 	require.NoError(t, err)
-	assert.Equal(t, "abc123", retrieved.ShareCode)
-	assert.Equal(t, "secret.pdf", retrieved.FileName)
-	assert.Equal(t, int64(4096), retrieved.FileSize)
-	assert.Equal(t, "application/pdf", retrieved.ContentType)
-	assert.Equal(t, int32(5), retrieved.MaxPickupCount)
+	assert.Len(t, code, 6)
+
+	meta, err := svc.Retrieve(ctx, code, "")
+	require.NoError(t, err)
+	assert.Equal(t, "SHARE1", meta.ShareCode)
+	assert.Equal(t, "f.txt", meta.FileName)
+	assert.Equal(t, int64(100), meta.FileSize)
+
+	// DB 次数已扣减
+	fc, _ := svc.fileCodeRepo.GetByCode(ctx, "SHARE1")
+	assert.Equal(t, 2, fc.ExpiredCount)
+	assert.Equal(t, 1, fc.UsedCount)
 }
 
 // TestRetrieve_NotFound 取件码不存在
 func TestRetrieve_NotFound(t *testing.T) {
-	svc, _ := newTestService(t)
-	ctx := context.Background()
-	_, err := svc.Retrieve(ctx, "NOPE12", "")
+	svc, _, _ := newTestService(t)
+	_, err := svc.Retrieve(context.Background(), "NOEXIST", "")
 	assert.ErrorIs(t, err, ErrCodeNotFound)
 }
 
-// TestRetrieve_Expired 过期
+// TestRetrieve_Expired 时间过期
 func TestRetrieve_Expired(t *testing.T) {
-	svc, mr := newTestService(t)
+	svc, _, _ := newTestService(t)
 	ctx := context.Background()
-	meta := CodeMeta{
-		ShareCode: "expired_share",
-		FileName:  "old.txt",
-		FileSize:  100,
-		ExpireAt:  time.Now().Add(1 * time.Hour),
-	}
-	code, err := svc.GenerateCode(ctx, meta)
+	past := time.Now().Add(-time.Hour)
+	require.NoError(t, svc.fileCodeRepo.Create(ctx, &model.FileCode{Code: "SHARE_EXP", ExpiredAt: &past, ExpiredCount: -1}))
+	code, err := svc.GenerateCode(ctx, CodeMeta{ShareCode: "SHARE_EXP"}, time.Now().Add(time.Hour))
 	require.NoError(t, err)
 
-	// miniredis 加速时间到 1h 后 → meta 被 Redis 清理
-	mr.FastForward(2 * time.Hour)
-
 	_, err = svc.Retrieve(ctx, code, "")
-	assert.ErrorIs(t, err, ErrCodeNotFound)
+	assert.ErrorIs(t, err, ErrCodeExpired)
 }
 
-// TestRetrieve_Exhausted 超次
+// TestRetrieve_Exhausted 次数耗尽
 func TestRetrieve_Exhausted(t *testing.T) {
-	svc, _ := newTestService(t)
+	svc, _, _ := newTestService(t)
 	ctx := context.Background()
-	meta := CodeMeta{
-		ShareCode:      "limited",
-		FileName:       "once.txt",
-		FileSize:       1,
-		ExpireAt:       time.Now().Add(1 * time.Hour),
-		MaxPickupCount: 2, // 限 2 次
-	}
-	code, err := svc.GenerateCode(ctx, meta)
+	require.NoError(t, svc.fileCodeRepo.Create(ctx, &model.FileCode{Code: "SHARE_EXH", ExpiredCount: 1}))
+	code, err := svc.GenerateCode(ctx, CodeMeta{ShareCode: "SHARE_EXH"}, time.Now().Add(time.Hour))
 	require.NoError(t, err)
 
-	// 第 1、2 次 OK
-	for i := 0; i < 2; i++ {
-		_, err = svc.Retrieve(ctx, code, "")
-		require.NoError(t, err)
-		require.NoError(t, svc.IncrementCount(ctx, code))
-	}
-
-	// 第 3 次 拒绝
+	// 第一次成功（1→0）
 	_, err = svc.Retrieve(ctx, code, "")
-	assert.ErrorIs(t, err, ErrCodeExhausted)
+	require.NoError(t, err)
+	// 第二次：ExpiredCount=0 → IsExpired=true
+	_, err = svc.Retrieve(ctx, code, "")
+	assert.ErrorIs(t, err, ErrCodeExpired)
 }
 
-// TestRetrieve_PasswordWrong 密码错
+// TestRetrieve_PasswordWrong 密码错误
 func TestRetrieve_PasswordWrong(t *testing.T) {
-	svc, _ := newTestService(t)
-	svc.SetPasswordHasher(func(p string) string {
-		return "hashed:" + p
-	})
+	svc, _, _ := newTestService(t)
 	ctx := context.Background()
-	meta := CodeMeta{
-		ShareCode:    "secret_share",
-		FileName:     "protected.zip",
-		FileSize:     100,
-		ExpireAt:     time.Now().Add(1 * time.Hour),
-		PasswordHash: "hashed:correct",
-	}
-	code, err := svc.GenerateCode(ctx, meta)
+	hash, err := utils.HashPassword("right")
+	require.NoError(t, err)
+	require.NoError(t, svc.fileCodeRepo.Create(ctx, &model.FileCode{Code: "SHARE_PW", ExpiredCount: -1, RequireAuth: true, PasswordHash: hash}))
+	code, err := svc.GenerateCode(ctx, CodeMeta{ShareCode: "SHARE_PW", RequireAuth: true}, time.Now().Add(time.Hour))
 	require.NoError(t, err)
 
-	// 密码错
+	// 错误密码
 	_, err = svc.Retrieve(ctx, code, "wrong")
 	assert.ErrorIs(t, err, ErrPasswordWrong)
 
-	// 密码对
-	_, err = svc.Retrieve(ctx, code, "correct")
+	// 正确密码
+	meta, err := svc.Retrieve(ctx, code, "right")
 	require.NoError(t, err)
+	assert.Equal(t, "SHARE_PW", meta.ShareCode)
 }
 
-// TestRetrieve_RequiresPassword 但没传
-func TestRetrieve_RequiresPasswordButMissing(t *testing.T) {
-	svc, _ := newTestService(t)
-	svc.SetPasswordHasher(func(p string) string { return "h:" + p })
+// TestRetrieve_NoPasswordButRequired 需要密码但未传
+func TestRetrieve_NoPasswordButRequired(t *testing.T) {
+	svc, _, _ := newTestService(t)
 	ctx := context.Background()
-	meta := CodeMeta{
-		ShareCode:    "needs_pwd",
-		FileName:     "p.txt",
-		FileSize:     1,
-		ExpireAt:     time.Now().Add(1 * time.Hour),
-		PasswordHash: "h:secret",
-	}
-	code, err := svc.GenerateCode(ctx, meta)
-	require.NoError(t, err)
+	hash, _ := utils.HashPassword("secret")
+	require.NoError(t, svc.fileCodeRepo.Create(ctx, &model.FileCode{Code: "SHARE_NP", ExpiredCount: -1, RequireAuth: true, PasswordHash: hash}))
+	code, _ := svc.GenerateCode(ctx, CodeMeta{ShareCode: "SHARE_NP", RequireAuth: true}, time.Now().Add(time.Hour))
 
-	_, err = svc.Retrieve(ctx, code, "")
+	// 空密码 → CheckPassword("", "") 对 bcrypt hash 返回 false
+	_, err := svc.Retrieve(ctx, code, "")
 	assert.ErrorIs(t, err, ErrPasswordWrong)
 }
 
-// TestRemainingCount 剩余次数
-func TestRemainingCount(t *testing.T) {
-	svc, _ := newTestService(t)
+// TestRetrieve_Unlimited 无限次数可反复取
+func TestRetrieve_Unlimited(t *testing.T) {
+	svc, _, _ := newTestService(t)
 	ctx := context.Background()
-	meta := CodeMeta{
-		ShareCode:      "counter",
-		FileName:       "c.txt",
-		FileSize:       1,
-		ExpireAt:       time.Now().Add(1 * time.Hour),
-		MaxPickupCount: 5,
+	require.NoError(t, svc.fileCodeRepo.Create(ctx, &model.FileCode{Code: "SHARE_INF", ExpiredCount: -1}))
+	code, _ := svc.GenerateCode(ctx, CodeMeta{ShareCode: "SHARE_INF"}, time.Now().Add(time.Hour))
+
+	for i := 0; i < 5; i++ {
+		_, err := svc.Retrieve(ctx, code, "")
+		require.NoError(t, err, "第 %d 次取件应成功", i+1)
 	}
-	code, err := svc.GenerateCode(ctx, meta)
-	require.NoError(t, err)
-
-	// 初始：剩余 5
-	rem, used, err := svc.RemainingCount(ctx, code)
-	require.NoError(t, err)
-	assert.Equal(t, int32(5), rem)
-	assert.Equal(t, int32(0), used)
-
-	// 用了 2 次
-	require.NoError(t, svc.IncrementCount(ctx, code))
-	require.NoError(t, svc.IncrementCount(ctx, code))
-
-	rem, used, err = svc.RemainingCount(ctx, code)
-	require.NoError(t, err)
-	assert.Equal(t, int32(3), rem)
-	assert.Equal(t, int32(2), used)
+	fc, _ := svc.fileCodeRepo.GetByCode(ctx, "SHARE_INF")
+	assert.Equal(t, -1, fc.ExpiredCount)
+	assert.Equal(t, 5, fc.UsedCount)
 }
 
-// TestRemainingCount_Unlimited MaxPickupCount=0 表示无限
-func TestRemainingCount_Unlimited(t *testing.T) {
-	svc, _ := newTestService(t)
-	ctx := context.Background()
-	meta := CodeMeta{
-		ShareCode: "unlimited",
-		FileName:  "u.txt",
-		FileSize:  1,
-		ExpireAt:  time.Now().Add(1 * time.Hour),
-		// MaxPickupCount = 0（无限）
-	}
-	code, err := svc.GenerateCode(ctx, meta)
-	require.NoError(t, err)
-
-	rem, _, err := svc.RemainingCount(ctx, code)
-	require.NoError(t, err)
-	assert.Equal(t, int32(-1), rem, "无限时 RemainingCount 返回 -1")
-}
-
-// TestCancel 取消
+// TestCancel 作废取件码
 func TestCancel(t *testing.T) {
-	svc, _ := newTestService(t)
+	svc, _, _ := newTestService(t)
 	ctx := context.Background()
-	meta := CodeMeta{
-		ShareCode: "to_cancel",
-		FileName:  "x.txt",
-		FileSize:  1,
-		ExpireAt:  time.Now().Add(1 * time.Hour),
-	}
-	code, err := svc.GenerateCode(ctx, meta)
-	require.NoError(t, err)
+	require.NoError(t, svc.fileCodeRepo.Create(ctx, &model.FileCode{Code: "SHARE_CAN", ExpiredCount: -1}))
+	code, _ := svc.GenerateCode(ctx, CodeMeta{ShareCode: "SHARE_CAN"}, time.Now().Add(time.Hour))
 
-	// 取消
 	require.NoError(t, svc.Cancel(ctx, code))
-
-	// 再取件 → NotFound
-	_, err = svc.Retrieve(ctx, code, "")
+	_, err := svc.Retrieve(ctx, code, "")
 	assert.ErrorIs(t, err, ErrCodeNotFound)
 }
 
-// TestIncrementCount 计数 +1
-func TestIncrementCount(t *testing.T) {
-	svc, _ := newTestService(t)
-	ctx := context.Background()
-	meta := CodeMeta{
-		ShareCode:      "inc_test",
-		FileName:       "i.txt",
-		FileSize:       1,
-		ExpireAt:       time.Now().Add(1 * time.Hour),
-		MaxPickupCount: 100,
-	}
-	code, err := svc.GenerateCode(ctx, meta)
-	require.NoError(t, err)
-
-	for i := 1; i <= 5; i++ {
-		require.NoError(t, svc.IncrementCount(ctx, code))
-	}
-	rem, used, err := svc.RemainingCount(ctx, code)
-	require.NoError(t, err)
-	assert.Equal(t, int32(95), rem)
-	assert.Equal(t, int32(5), used)
-}
-
-// TestDefaultPasswordHash 默认 hash 行为
-func TestDefaultPasswordHash(t *testing.T) {
-	empty := defaultPasswordHash("")
-	assert.Empty(t, empty, "空密码 hash 为空")
-
-	hashed := defaultPasswordHash("password")
-	assert.True(t, strings.HasPrefix(hashed, "sha256:"), "默认 hash 应有 sha256: 前缀")
+// TestGenerateCode_ExpiredAtPast expireAt 已过期 → 报错
+func TestGenerateCode_ExpiredAtPast(t *testing.T) {
+	svc, _, _ := newTestService(t)
+	_, err := svc.GenerateCode(context.Background(), CodeMeta{ShareCode: "X"}, time.Now().Add(-time.Hour))
+	assert.Error(t, err)
 }

@@ -1,18 +1,14 @@
 // Package anonymous 实现匿名取件 service（仿 vastsa/FileCodeBox UX）。
 //
 // 核心流程：
-//  1. 上传方：上传文件后，调用 GenerateCode 获取 6 位取件码
+//  1. 上传方：上传文件后，调用 GenerateCode 获取 6 位取件码（建立 pickup_code → share_code 映射）
 //  2. 取件方：输入 6 位码 + 可选密码，按码取文件
-//  3. 系统：校验 → 限次 → 返回下载信息
+//  3. 系统：校验（DB 为准）→ 扣减次数（DB 原子）→ 返回下载信息
 //
-// 取件码生成：
-//   - 6 位字母数字（去掉易混淆字符 0/O/1/I/L）
-//   - 用 Redis 缓存 mapping: pickup_code -> share_code
-//   - 缓存 TTL = 分享过期时间
-//
-// 限次：
-//   - 每 code 独立 counter（pickup_count）
-//   - 达到 max_pickup_count 后拒绝
+// 设计要点（DB 为唯一真相源）：
+//   - Redis 仅存 pickup_code → share_code 映射 + 展示信息（文件名等）
+//   - 过期时间、剩余次数、密码哈希全部以 file_codes 表为准
+//   - 取件码字符表去掉易混淆字符 0/O/1/I/L
 package anonymous
 
 import (
@@ -24,95 +20,72 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/utils"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
 )
 
-// Code 6 位取件码字符表（去掉易混淆字符 0/O/1/I/L）
+// 6 位取件码字符表（去掉易混淆字符 0/O/1/I/L）
 const codeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 const codeLength = 6
 
-// Redis key 模板
+// Redis key 模板（仅存映射 + 展示信息，真实状态查 DB）
 const (
-	keyPickupCodeMapping = "anon:code:%s"  // pickup_code -> share_code
-	keyPickupCodeMeta    = "anon:meta:%s"  // pickup_code -> meta (JSON-ish: file_name|expire_at|max_count|password_hash)
-	keyPickupCodeCounter = "anon:count:%s" // pickup_code -> current pickup count
+	keyPickupCodeMapping = "anon:code:%s" // pickup_code -> share_code
+	keyPickupCodeMeta    = "anon:meta:%s" // pickup_code -> 展示信息(share_code|file_name|file_size|content_type|require_auth)
 )
 
-// ErrCodeNotFound 取件码不存在
-var ErrCodeNotFound = errors.New("pickup code not found")
+// 错误哨兵
+var (
+	ErrCodeNotFound  = errors.New("pickup code not found")
+	ErrCodeExpired   = errors.New("pickup code expired")
+	ErrCodeExhausted = errors.New("pickup code exhausted")
+	ErrPasswordWrong = errors.New("password wrong")
+)
 
-// ErrCodeExpired 取件码已过期
-var ErrCodeExpired = errors.New("pickup code expired")
-
-// ErrCodeExhausted 取件码已达上限
-var ErrCodeExhausted = errors.New("pickup code exhausted")
-
-// ErrPasswordWrong 密码错误
-var ErrPasswordWrong = errors.New("password wrong")
-
-// Service 匿名取件 service
+// Service 匿名取件 service。
+// Redis 仅存映射 + 展示信息；过期/次数/密码等真实状态全部以 file_codes 表为准。
 type Service struct {
-	rdb *redis.Client
-	// passwordHasher 注入的密码哈希函数（默认用 simple）
-	passwordHasher func(string) string
+	rdb          *redis.Client
+	fileCodeRepo *dao.FileCodeRepository
 }
 
-// NewService 创建 service
-func NewService(rdb *redis.Client) *Service {
-	return &Service{
-		rdb:            rdb,
-		passwordHasher: defaultPasswordHash,
+// NewService 创建 service。fileCodeRepo 为 nil 时内部自建（Retrieve 需查 DB）。
+func NewService(rdb *redis.Client, fileCodeRepo *dao.FileCodeRepository) *Service {
+	if fileCodeRepo == nil {
+		fileCodeRepo = dao.NewFileCodeRepository()
 	}
+	return &Service{rdb: rdb, fileCodeRepo: fileCodeRepo}
 }
 
-// SetPasswordHasher 设置自定义密码哈希函数
-func (s *Service) SetPasswordHasher(fn func(string) string) {
-	s.passwordHasher = fn
-}
-
-// CodeMeta 取件码元信息
+// CodeMeta 取件码展示信息（仅存于 Redis，真实状态查 DB）
 type CodeMeta struct {
-	ShareCode      string
-	FileName       string
-	FileSize       int64
-	ContentType    string
-	RequireAuth    bool
-	PasswordHash   string
-	ExpireAt       time.Time
-	MaxPickupCount int32
+	ShareCode   string // 真实 file_code
+	FileName    string
+	FileSize    int64
+	ContentType string
+	RequireAuth bool // 仅展示"是否需要密码"
 }
 
-// GenerateCode 生成 6 位取件码
-// 返回 (pickup_code, error)；如所有组合都冲突（极低概率），返回 error
-func (s *Service) GenerateCode(ctx context.Context, meta CodeMeta) (string, error) {
-	// 最多重试 10 次
+// GenerateCode 生成 6 位取件码，建立 pickup_code → share_code 映射。
+// expireAt 决定 Redis key 的 TTL（应与 DB 记录过期时间对齐）。
+func (s *Service) GenerateCode(ctx context.Context, meta CodeMeta, expireAt time.Time) (string, error) {
+	ttl := time.Until(expireAt)
+	if ttl <= 0 {
+		return "", errors.New("expireAt 已过期")
+	}
 	for i := 0; i < 10; i++ {
 		code := randomCode()
-		// 用 SETNX 抢占：成功则保留
-		ok, err := s.rdb.SetNX(ctx, fmt.Sprintf(keyPickupCodeMapping, code), meta.ShareCode, time.Until(meta.ExpireAt)).Result()
+		ok, err := s.rdb.SetNX(ctx, fmt.Sprintf(keyPickupCodeMapping, code), meta.ShareCode, ttl).Result()
 		if err != nil {
 			return "", err
 		}
 		if !ok {
 			continue // 已存在，重试
 		}
-		// 写 meta
-		metaKey := fmt.Sprintf(keyPickupCodeMeta, code)
-		metaStr := fmt.Sprintf("%s|%d|%s|%s|%d|%d",
-			meta.FileName,
-			meta.FileSize,
-			meta.ContentType,
-			meta.PasswordHash,
-			meta.ExpireAt.Unix(),
-			meta.MaxPickupCount,
-		)
-		if err := s.rdb.Set(ctx, metaKey, metaStr, time.Until(meta.ExpireAt)).Err(); err != nil {
-			// 回滚
+		metaStr := fmt.Sprintf("%s|%s|%d|%s|%t",
+			meta.ShareCode, meta.FileName, meta.FileSize, meta.ContentType, meta.RequireAuth)
+		if err := s.rdb.Set(ctx, fmt.Sprintf(keyPickupCodeMeta, code), metaStr, ttl).Err(); err != nil {
 			s.rdb.Del(ctx, fmt.Sprintf(keyPickupCodeMapping, code))
-			return "", err
-		}
-		// 初始化 counter = 0
-		if err := s.rdb.Set(ctx, fmt.Sprintf(keyPickupCodeCounter, code), 0, time.Until(meta.ExpireAt)).Err(); err != nil {
-			s.rdb.Del(ctx, fmt.Sprintf(keyPickupCodeMapping, code), metaKey)
 			return "", err
 		}
 		return code, nil
@@ -120,8 +93,10 @@ func (s *Service) GenerateCode(ctx context.Context, meta CodeMeta) (string, erro
 	return "", errors.New("failed to generate unique code after 10 retries")
 }
 
-// Retrieve 按取件码取件（不下载）
+// Retrieve 按取件码取件（校验 + 扣减次数，DB 为准）。
+// 返回展示信息 CodeMeta。每次成功调用扣减一次剩余次数。
 func (s *Service) Retrieve(ctx context.Context, code, password string) (*CodeMeta, error) {
+	// 1. 取 share_code（仅映射）
 	shareCode, err := s.rdb.Get(ctx, fmt.Sprintf(keyPickupCodeMapping, code)).Result()
 	if errors.Is(err, redis.Nil) {
 		return nil, ErrCodeNotFound
@@ -130,79 +105,52 @@ func (s *Service) Retrieve(ctx context.Context, code, password string) (*CodeMet
 		return nil, err
 	}
 
-	metaStr, err := s.rdb.Get(ctx, fmt.Sprintf(keyPickupCodeMeta, code)).Result()
-	if errors.Is(err, redis.Nil) {
+	// 2. 展示信息（兼容旧格式：解析失败用空值）
+	metaStr, _ := s.rdb.Get(ctx, fmt.Sprintf(keyPickupCodeMeta, code)).Result()
+	meta := parseMeta(metaStr, shareCode)
+
+	// 3. 查 DB 真实状态
+	fc, err := s.fileCodeRepo.GetByCode(ctx, shareCode)
+	if err != nil {
 		return nil, ErrCodeNotFound
 	}
-	if err != nil {
-		return nil, err
-	}
 
-	meta, err := parseMeta(code, shareCode, metaStr)
-	if err != nil {
-		return nil, err
-	}
-
-	// 校验过期
-	if time.Now().After(meta.ExpireAt) {
-		// 主动清理
-		s.cleanup(ctx, code)
+	// 4. 校验过期（时间 + 次数）
+	if fc.IsExpired() {
 		return nil, ErrCodeExpired
 	}
 
-	// 校验密码
-	if meta.PasswordHash != "" {
-		if s.passwordHasher(password) != meta.PasswordHash {
+	// 5. 校验密码（bcrypt，DB 为准）
+	if fc.RequireAuth {
+		if !utils.CheckPassword(fc.PasswordHash, password) {
 			return nil, ErrPasswordWrong
 		}
 	}
 
-	// 校验限次
-	count, err := s.rdb.Get(ctx, fmt.Sprintf(keyPickupCodeCounter, code)).Int()
-	if err != nil && !errors.Is(err, redis.Nil) {
+	// 6. 原子扣减次数（DB 为准，防并发超卖）
+	ok, err := s.fileCodeRepo.DecrementExpiredCount(ctx, shareCode)
+	if err != nil {
 		return nil, err
 	}
-	if meta.MaxPickupCount > 0 && int32(count) >= meta.MaxPickupCount {
+	if !ok {
 		return nil, ErrCodeExhausted
 	}
 
 	return meta, nil
 }
 
-// IncrementCount 取件成功后 +1
-func (s *Service) IncrementCount(ctx context.Context, code string) error {
-	return s.rdb.Incr(ctx, fmt.Sprintf(keyPickupCodeCounter, code)).Err()
-}
-
-// RemainingCount 剩余取件次数
-func (s *Service) RemainingCount(ctx context.Context, code string) (int32, int32, error) {
-	used, err := s.rdb.Get(ctx, fmt.Sprintf(keyPickupCodeCounter, code)).Int()
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return 0, 0, err
-	}
-	metaStr, err := s.rdb.Get(ctx, fmt.Sprintf(keyPickupCodeMeta, code)).Result()
-	if err != nil {
-		return 0, 0, err
-	}
-	_, _, _, _, _, maxCount := parseMetaRaw(metaStr)
-	if maxCount <= 0 {
-		return -1, 0, nil // 无限
-	}
-	return int32(maxCount) - int32(used), int32(used), nil
-}
-
-// Cancel 取消/作废取件码
+// Cancel 作废取件码（删 Redis 映射）
 func (s *Service) Cancel(ctx context.Context, code string) error {
 	return s.cleanup(ctx, code)
 }
 
 // ============ 内部辅助 ============
 
-// randomCode 生成 6 位随机码
+// randomCode 生成 6 位随机码（crypto/rand）
 func randomCode() string {
 	result := make([]byte, codeLength)
 	max := big.NewInt(int64(len(codeAlphabet)))
-	for i := 0; i < codeLength; i++ {
+	for i := range result {
 		n, err := rand.Int(rand.Reader, max)
 		if err != nil {
 			// 极端情况下回退到时间戳
@@ -213,51 +161,33 @@ func randomCode() string {
 	return string(result)
 }
 
-func defaultPasswordHash(p string) string {
-	// 占位实现：生产环境应该用 bcrypt/scrypt
-	// 这里用 SHA256 简化（实际项目换 bcrypt）
-	if p == "" {
-		return ""
+// parseMeta 解析展示信息（兼容旧格式：字段不足时用空值）
+// 新格式: share_code|file_name|file_size|content_type|require_auth
+func parseMeta(metaStr, shareCode string) *CodeMeta {
+	meta := &CodeMeta{ShareCode: shareCode}
+	if metaStr == "" {
+		return meta
 	}
-	// TODO: 替换成 bcrypt
-	return "sha256:" + p
-}
-
-// parseMeta 解析 meta 字符串为 CodeMeta
-func parseMeta(code, shareCode, metaStr string) (*CodeMeta, error) {
-	fileName, fileSize, contentType, passwordHash, expireAt, maxCount := parseMetaRaw(metaStr)
-	expireTime := time.Unix(expireAt, 0)
-	return &CodeMeta{
-		ShareCode:      shareCode,
-		FileName:       fileName,
-		FileSize:       fileSize,
-		ContentType:    contentType,
-		PasswordHash:   passwordHash,
-		ExpireAt:       expireTime,
-		MaxPickupCount: int32(maxCount),
-	}, nil
-}
-
-// parseMetaRaw 解析元信息原始格式
-//
-//	fileName|fileSize|contentType|passwordHash|expireAt|maxCount
-func parseMetaRaw(metaStr string) (string, int64, string, string, int64, int64) {
-	parts := splitBy(metaStr, '|', 6)
-	if len(parts) < 6 {
-		return "", 0, "", "", 0, 0
+	parts := splitBy(metaStr, '|', 5)
+	if len(parts) >= 2 {
+		meta.FileName = parts[1]
 	}
-	var fileSize, expireAt, maxCount int64
-	fmt.Sscanf(parts[1], "%d", &fileSize)
-	fmt.Sscanf(parts[4], "%d", &expireAt)
-	fmt.Sscanf(parts[5], "%d", &maxCount)
-	return parts[0], fileSize, parts[2], parts[3], expireAt, maxCount
+	if len(parts) >= 3 {
+		fmt.Sscanf(parts[2], "%d", &meta.FileSize)
+	}
+	if len(parts) >= 4 {
+		meta.ContentType = parts[3]
+	}
+	if len(parts) >= 5 {
+		meta.RequireAuth = parts[4] == "true"
+	}
+	return meta
 }
 
 // splitBy 简易 split（避免引入 strings.Split 提升可读性）
 func splitBy(s string, sep byte, max int) []string {
 	result := make([]string, 0, max)
-	start := 0
-	count := 0
+	start, count := 0, 0
 	for i := 0; i < len(s); i++ {
 		if s[i] == sep && count < max-1 {
 			result = append(result, s[start:i])
@@ -273,6 +203,5 @@ func (s *Service) cleanup(ctx context.Context, code string) error {
 	return s.rdb.Del(ctx,
 		fmt.Sprintf(keyPickupCodeMapping, code),
 		fmt.Sprintf(keyPickupCodeMeta, code),
-		fmt.Sprintf(keyPickupCodeCounter, code),
 	).Err()
 }
