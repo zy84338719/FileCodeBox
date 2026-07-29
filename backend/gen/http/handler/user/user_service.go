@@ -149,21 +149,21 @@ func UserInfo(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := &usermodel.UserInfoResp{
-		Code:    200,
-		Message: "获取成功",
-		Data: &usermodel.UserData{
-			ID:        int64(user.ID),
-			Username:  user.Username,
-			Email:     user.Email,
-			Nickname:  user.Nickname,
-			Avatar:    user.Avatar,
-			Status:    int32(1),
-			CreatedAt: user.CreatedAt.Format("2006-01-02 15:04:05"),
+	// 用 map 返回，补充 role 字段（thrift model UserData 无 Role，前端 admin 登录依赖）
+	c.JSON(consts.StatusOK, map[string]interface{}{
+		"code":    200,
+		"message": "获取成功",
+		"data": map[string]interface{}{
+			"id":         int64(user.ID),
+			"username":   user.Username,
+			"email":      user.Email,
+			"nickname":   user.Nickname,
+			"avatar":     user.Avatar,
+			"status":     1,
+			"role":       user.Role,
+			"created_at": user.CreatedAt.Format("2006-01-02 15:04:05"),
 		},
-	}
-
-	c.JSON(consts.StatusOK, resp)
+	})
 }
 
 // UpdateProfile .

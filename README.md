@@ -20,6 +20,26 @@ FileCodeBox 是一个使用 Go + Vue 3 实现的轻量级分享服务，采用�
 
 ---
 
+## 📸 界面预览
+
+| 首页（文件/文本分享） | 匿名取件 |
+|:---:|:---:|
+| ![首页](docs/screenshots/01-home.png) | ![匿名取件](docs/screenshots/08-retrieve.png) |
+
+| 管理后台 - 仪表盘 | 管理后台 - 文件管理 |
+|:---:|:---:|
+| ![仪表盘](docs/screenshots/04-admin-dashboard.png) | ![文件管理](docs/screenshots/05-admin-files.png) |
+
+| 管理后台 - 用户管理 | 管理后台 - 存储管理 |
+|:---:|:---:|
+| ![用户管理](docs/screenshots/06-admin-users.png) | ![存储管理](docs/screenshots/07-admin-storage.png) |
+
+| 用户登录 | 管理员登录 |
+|:---:|:---:|
+| ![用户登录](docs/screenshots/02-user-login.png) | ![管理员登录](docs/screenshots/03-admin-login.png) |
+
+---
+
 ## 🌟 关键特性
 
 | 分类 | 能力速览 |

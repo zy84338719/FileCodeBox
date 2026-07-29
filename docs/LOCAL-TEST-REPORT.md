@@ -35,6 +35,7 @@
 | Bug | 原因 | 修复 |
 |---|---|---|
 | **匿名取件 panic**（`anonymous.go:81` nil pointer） | 本地无 Redis 时 `s.rdb` 为 nil，`SetNX` 解引用 panic | GenerateCode/Retrieve/Peek 开头加 nil 检查，返回明确错误 `Redis 未配置` |
+| **admin 登录后卡在登录页**（第三批引入的回归） | admin Login.vue 改用 fetchUserInfo 拿 role，但 `/user/info` 接口不返回 role 字段，导致 role 判断失败登出 | `/user/info` handler 补充 role 字段返回（用 map 替代 thrift model） |
 
 修复后匿名取件在无 Redis 时返回：
 ```json
