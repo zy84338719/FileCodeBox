@@ -1,42 +1,5 @@
-declare module '@/api/user' {
-  export const userApi: any
-}
-
-declare module '@/api/share' {
-  export const shareApi: any
-}
-
-declare module '@/api/admin' {
-  export const adminApi: any
-}
-
-declare module '@/api' {
-  export * from '@/api/user'
-  export * from '@/api/share'
-  export * from '@/api/admin'
-}
-
-declare module '@/types/user' {
-  export interface UserInfo {
-    id: number
-    username: string
-    email: string
-    nickname: string
-    avatar?: string
-    status: number
-    role?: string
-    created_at: string
-  }
-
-  export interface UserStats {
-    total_uploads: number
-    total_downloads: number
-    total_storage: number
-    max_storage_quota: number
-    current_files: number
-    file_count: number
-  }
-}
+// NOTE: @/api/* 和 @/types/user 的真实模块已存在且有完整类型，
+// 不再在此用 any 声明覆盖（避免降级类型检查）。仅保留无真实文件的类型声明。
 
 declare module '@/types/share' {
   export interface ShareInfo {

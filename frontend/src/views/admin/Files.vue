@@ -210,12 +210,14 @@ const fetchFiles = async () => {
     })
     
     if (res.code === 200) {
-      if (res.data && Array.isArray(res.data.list)) {
-        filesList.value = res.data.list
-        pagination.total = res.data.total || res.data.list.length
-      } else if (res.data && Array.isArray(res.data.items)) {
+      if (res.data && Array.isArray(res.data.items)) {
         filesList.value = res.data.items
         pagination.total = res.data.total || res.data.items.length
+      } else if (res.data && Array.isArray((res.data as Record<string, unknown>).list)) {
+        // 兼容历史响应结构
+        const legacy = res.data as Record<string, unknown>
+        filesList.value = legacy.list as typeof filesList.value
+        pagination.total = (legacy.total as number) || (legacy.list as unknown[]).length
       } else if (Array.isArray(res.data)) {
         filesList.value = res.data
         pagination.total = res.data.length

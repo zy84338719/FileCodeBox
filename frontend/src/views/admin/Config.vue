@@ -150,8 +150,8 @@ const fetchConfig = async () => {
       if (res.data.transfer) {
         Object.assign(configForm.transfer, res.data.transfer)
       }
-      if (res.data.user) {
-        Object.assign(configForm.user, res.data.user)
+      if ((res.data as Record<string, unknown>).user) {
+        Object.assign(configForm.user, (res.data as Record<string, unknown>).user)
       }
     }
   } catch (error) {

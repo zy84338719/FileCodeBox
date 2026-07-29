@@ -164,10 +164,12 @@ const fetchUsers = async () => {
       if (res.data && Array.isArray(res.data.items)) {
         usersList.value = res.data.items
         pagination.total = res.data.total ?? res.data.items.length
-      } else if (res.data && Array.isArray(res.data.users)) {
+      } else if (res.data && Array.isArray((res.data as Record<string, unknown>).users)) {
         // 兼容历史响应结构
-        usersList.value = res.data.users
-        pagination.total = res.data.pagination?.total ?? res.data.users.length
+        const legacy = res.data as Record<string, unknown>
+        usersList.value = legacy.users as typeof usersList.value
+        const pg = legacy.pagination as { total?: number } | undefined
+        pagination.total = pg?.total ?? (legacy.users as unknown[]).length
       } else if (Array.isArray(res.data)) {
         usersList.value = res.data
         pagination.total = res.data.length

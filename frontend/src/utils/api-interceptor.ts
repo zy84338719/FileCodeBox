@@ -9,18 +9,40 @@ export interface BizResponse<T = unknown> {
   success?: boolean
 }
 
-// 业务错误码 → i18n key
+// 业务错误码 → i18n key（覆盖后端 errcode 全部错误码）
 const ERRCODE_KEY_MAP: Record<number, string> = {
+  10000: 'errcode.10000',
+  10001: 'errcode.10001',
   10002: 'errcode.10002',
   10003: 'errcode.10003',
+  10004: 'errcode.10004',
   10005: 'errcode.10005',
+  10006: 'errcode.10006',
+  10007: 'errcode.10007',
+  10008: 'errcode.10008',
+  10009: 'errcode.10009',
+  10010: 'errcode.10010',
   20001: 'errcode.20001',
   20002: 'errcode.20002',
   20003: 'errcode.20003',
   20004: 'errcode.20004',
+  20005: 'errcode.20005',
+  20006: 'errcode.20006',
+  20007: 'errcode.20007',
+  20008: 'errcode.20008',
+  20009: 'errcode.20009',
   30001: 'errcode.30001',
   30002: 'errcode.30002',
   30003: 'errcode.30003',
+  30004: 'errcode.30004',
+  30005: 'errcode.30005',
+  30006: 'errcode.30006',
+  30007: 'errcode.30007',
+  30008: 'errcode.30008',
+  30009: 'errcode.30009',
+  40001: 'errcode.40001',
+  40002: 'errcode.40002',
+  40004: 'errcode.40004',
 }
 
 export class BizError extends Error {

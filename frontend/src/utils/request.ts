@@ -33,17 +33,56 @@ instance.interceptors.request.use(
   }
 )
 
-// 响应拦截器 — 不在这里弹 toast，由调用方 useErrorHandler 处理
+// 响应拦截器 — 不在这里弹 toast，由调用方 useErrorHandler 处理。
+// 401 自动刷新：token 过期时调 /user/refresh 换新，重放原请求；刷新失败跳登录。
+// 防并发：多个 401 共享同一次 refresh（refreshPromise）。
+let refreshPromise: Promise<string | null> | null = null
+
 instance.interceptors.response.use(
   (response) => {
     // 提取 X-Trace-Id header（如果后端改了）
     const traceId = response.headers?.['x-trace-id'] as string | undefined
     if (traceId && response.data && typeof response.data === 'object') {
-      (response.data as Record<string, unknown>).trace_id = traceId
+      ;(response.data as Record<string, unknown>).trace_id = traceId
     }
     return response.data
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config
+    // 401 且未重试且非登录/刷新接口本身 → 尝试刷新 token
+    const url: string = originalRequest?.url || ''
+    const isAuthEndpoint =
+      url.includes('/user/login') ||
+      url.includes('/admin/login') ||
+      url.includes('/user/refresh')
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isAuthEndpoint
+    ) {
+      originalRequest._retry = true
+      if (!refreshPromise) {
+        // 动态 import 避免循环依赖（user store 反向 import request）
+        const { useUserStore } = await import('@/stores/user')
+        refreshPromise = useUserStore()
+          .refreshToken()
+          .finally(() => {
+            refreshPromise = null
+          })
+      }
+      const newToken = await refreshPromise
+      if (newToken) {
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
+        return instance(originalRequest)
+      }
+      // refresh 失败 → 跳登录页
+      const { useUserStore } = await import('@/stores/user')
+      useUserStore().logout()
+      window.location.href = '/login'
+      return Promise.reject(error)
+    }
+
     // 归一化错误对象 — 把 axios 错误包装成 {code, message, trace_id, response}
     if (error.response) {
       const data = error.response.data || {}

@@ -1,6 +1,28 @@
 import { request } from '@/utils/request'
 import type { ApiResponse, PaginatedResponse } from '@/types/common'
 
+// 管理员配置更新类型（替代 any）
+export interface BasicConfigUpdate {
+  site_name?: string
+  site_description?: string
+  [key: string]: unknown
+}
+
+export interface SecurityConfigUpdate {
+  allow_registration?: boolean
+  [key: string]: unknown
+}
+
+export interface EmailConfigUpdate {
+  smtp_host?: string
+  smtp_port?: number
+  [key: string]: unknown
+}
+
+export type AdminConfigUpdate = Partial<BasicConfigUpdate & SecurityConfigUpdate & EmailConfigUpdate> & {
+  [key: string]: unknown
+}
+
 export const adminApi = {
   // 管理员登录
   login: (data: { username: string; password: string }) => {
@@ -221,7 +243,7 @@ export const adminApi = {
   getSystemConfig: () => adminApi.getConfig(),
 
   // 更新系统配置
-  updateConfig: (config: any) => {
+  updateConfig: (config: AdminConfigUpdate) => {
     return request<ApiResponse<void>>({
       url: '/admin/config',
       method: 'PUT',
@@ -230,20 +252,20 @@ export const adminApi = {
   },
 
   // 更新基础配置
-  updateBasicConfig: (data: any) => adminApi.updateConfig({ basic: data }),
+  updateBasicConfig: (data: BasicConfigUpdate) => adminApi.updateConfig({ basic: data }),
 
   // 更新安全配置
-  updateSecurityConfig: (data: any) => adminApi.updateConfig({ security: data }),
+  updateSecurityConfig: (data: SecurityConfigUpdate) => adminApi.updateConfig({ security: data }),
 
   // 更新邮件配置
-  updateEmailConfig: (data: any) => adminApi.updateConfig({ email: data }),
+  updateEmailConfig: (data: EmailConfigUpdate) => adminApi.updateConfig({ email: data }),
 
   // 获取传输日志
   getTransferLogs: (params: {
     page?: number
     page_size?: number
   }) => {
-    return request<PaginatedResponse<any>>({
+    return request<PaginatedResponse<Record<string, unknown>>>({
       url: '/admin/logs/transfer',
       method: 'GET',
       params,

@@ -159,9 +159,15 @@ const fetchLogs = async () => {
     })
 
     if (res.code === 200) {
-      if (res.data && Array.isArray(res.data.logs)) {
-        logsList.value = res.data.logs
-        pagination.total = res.data.pagination?.total || res.data.logs.length
+      if (res.data && Array.isArray(res.data.items)) {
+        logsList.value = res.data.items as typeof logsList.value
+        pagination.total = res.data.total || res.data.items.length
+      } else if (res.data && Array.isArray((res.data as Record<string, unknown>).logs)) {
+        // 兼容历史响应结构
+        const legacy = res.data as Record<string, unknown>
+        logsList.value = legacy.logs as typeof logsList.value
+        const pg = legacy.pagination as { total?: number } | undefined
+        pagination.total = pg?.total || (legacy.logs as unknown[]).length
       } else if (Array.isArray(res.data)) {
         logsList.value = res.data
         pagination.total = res.data.length
@@ -184,7 +190,7 @@ const fetchStats = async () => {
       stats.totalOperations = res.data.today_uploads || 0
       stats.uploads = res.data.today_uploads || 0
       stats.downloads = res.data.today_downloads || 0
-      stats.activeUsers = res.data.active_users || 0
+      stats.activeUsers = ((res.data as Record<string, unknown>).active_users as number) || 0
     }
   } catch (error) {
     console.error('获取统计失败:', error)

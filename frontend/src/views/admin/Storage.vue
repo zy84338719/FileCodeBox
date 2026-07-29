@@ -89,7 +89,7 @@ const fetchStorageInfo = async () => {
     if (statsRes.code === 200 && statsRes.data) {
       storageInfo.totalFiles = statsRes.data.total_files || 0
       storageInfo.totalSize = statsRes.data.total_size || 0
-      storageInfo.sysStart = statsRes.data.sys_start || ''
+      storageInfo.sysStart = (statsRes.data as Record<string, unknown>).sys_start as string || ''
     }
   } catch (error) {
     console.error('获取存储信息失败:', error)

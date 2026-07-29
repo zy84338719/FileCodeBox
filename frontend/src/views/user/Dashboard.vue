@@ -304,7 +304,7 @@ const fetchRecentShares = async () => {
     sharesLoading.value = true
     const res = await shareApi.getUserShares({ page: 1, page_size: 10 })
     if (res.code === 200) {
-      recentShares.value = res.data.files || []
+      recentShares.value = res.data.items || []
     }
   } catch (error) {
     ElMessage.error(t('user.fetchSharesFailed'))

@@ -1,8 +1,0 @@
-allowBuilds:
-  '@parcel/watcher': false
-  '@scarf/scarf': false
-  esbuild: false
-  vue-demi: false
-
-ignoredBuiltDependencies:
-  - '@scarf/scarf'
