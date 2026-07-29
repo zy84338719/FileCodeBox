@@ -20,9 +20,11 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/logger"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/utils"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
+	"go.uber.org/zap"
 )
 
 // 6 位取件码字符表（去掉易混淆字符 0/O/1/I/L）
@@ -278,7 +280,9 @@ func (s *Service) CreateAnonymousShare(ctx context.Context, p AnonymousSharePara
 	}, *p.ExpireAt)
 	if err != nil {
 		// 回滚 DB 记录（物理文件未落库，无需清）
-		_ = s.fileCodeRepo.Delete(ctx, fc.ID)
+		if dErr := s.fileCodeRepo.Delete(ctx, fc.ID); dErr != nil {
+			logger.Warn("rollback file_code on generate code failed", zap.Uint("id", fc.ID), zap.Error(dErr))
+		}
 		return "", err
 	}
 	return pickupCode, nil

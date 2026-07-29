@@ -10,20 +10,24 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 )
 
 func newTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	g, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&model.Notify{}))
-	return db
+	require.NoError(t, g.AutoMigrate(&model.Notify{}))
+	return g
 }
 
 func newTestService(t *testing.T) *Service {
 	t.Helper()
-	return NewService(newTestDB(t))
+	g := newTestDB(t)
+	db.SetDatabaseInstance(g) // 注入全局，使 DAO 的 db.GetDB() 指向测试库
+	t.Cleanup(func() { db.SetDatabaseInstance(nil) })
+	return NewService()
 }
 
 // TestCreate_CreateNotify 创建通知

@@ -7,9 +7,11 @@ import (
 	"time"
 
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/auth"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/logger"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 	"github.com/zy84338719/fileCodeBox/backend/internal/storage"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -326,9 +328,7 @@ func (s *Service) CleanExpiredFiles(ctx context.Context) (int64, int64, error) {
 			fp := file.GetFilePath()
 			if fp != "" {
 				if err := s.storage.DeleteFile(ctx, fp); err != nil {
-					// 物理删除失败，记日志但不阻止 DB 清理
-					// TODO: 接 logger
-					_ = err
+					logger.Warn("delete physical file failed during cleanup", zap.String("path", fp), zap.Error(err))
 				}
 			}
 		}

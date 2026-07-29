@@ -1,4 +1,7 @@
-// Package notify 实现系统通知（管理员公告）service。
+// Package notify 实现系统通知（管理员公告 + per-user 取件通知）service。
+//
+// 分层：通过 dao.NotifyRepository 访问数据（与其他 service 一致），
+// 不再直接持有 *gorm.DB。
 package notify
 
 import (
@@ -9,6 +12,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 )
 
@@ -20,12 +24,12 @@ var (
 
 // Service 通知 service
 type Service struct {
-	db *gorm.DB
+	notifyRepo *dao.NotifyRepository
 }
 
-// NewService 创建 service
-func NewService(db *gorm.DB) *Service {
-	return &Service{db: db}
+// NewService 创建 service（内部自建 repo，走全局 db.GetDB()）
+func NewService() *Service {
+	return &Service{notifyRepo: dao.NewNotifyRepository()}
 }
 
 // ListItem 列表项
@@ -67,7 +71,7 @@ func (s *Service) List(ctx context.Context, req ListReq) (*ListData, error) {
 	if req.PageSize <= 0 || req.PageSize > 100 {
 		req.PageSize = 20
 	}
-	tx := s.db.WithContext(ctx).Model(&model.Notify{})
+	tx := s.notifyRepo.Query(ctx)
 	if req.Type != "" {
 		tx = tx.Where("type = ?", req.Type)
 	}
@@ -99,20 +103,20 @@ func (s *Service) List(ctx context.Context, req ListReq) (*ListData, error) {
 
 // Get 单条
 func (s *Service) Get(ctx context.Context, id uint) (*ListItem, error) {
-	var n model.Notify
-	if err := s.db.WithContext(ctx).First(&n, id).Error; err != nil {
+	n, err := s.notifyRepo.GetByID(ctx, id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotifyNotFound
 		}
 		return nil, err
 	}
-	item := toListItem(&n)
+	item := toListItem(n)
 	return &item, nil
 }
 
 // Active 当前活跃通知（公开 API）
 func (s *Service) Active(ctx context.Context, typ string) ([]ListItem, error) {
-	tx := s.db.WithContext(ctx).Model(&model.Notify{}).
+	tx := s.notifyRepo.Query(ctx).
 		Where("status = ?", 1).
 		Where("start_at IS NULL OR start_at <= ?", time.Now()).
 		Where("end_at IS NULL OR end_at >= ?", time.Now())
@@ -166,7 +170,7 @@ func (s *Service) Create(ctx context.Context, req CreateReq) (*ListItem, error) 
 		EndAt:    req.EndAt,
 		AuthorID: req.AuthorID,
 	}
-	if err := s.db.WithContext(ctx).Create(&n).Error; err != nil {
+	if err := s.notifyRepo.Create(ctx, &n); err != nil {
 		return nil, err
 	}
 	item := toListItem(&n)
@@ -212,11 +216,11 @@ func (s *Service) Update(ctx context.Context, req UpdateReq) error {
 	if len(updates) == 0 {
 		return nil
 	}
-	res := s.db.WithContext(ctx).Model(&model.Notify{}).Where("id = ?", req.ID).Updates(updates)
-	if res.Error != nil {
-		return res.Error
+	affected, err := s.notifyRepo.UpdateByID(ctx, req.ID, updates)
+	if err != nil {
+		return err
 	}
-	if res.RowsAffected == 0 {
+	if affected == 0 {
 		return ErrNotifyNotFound
 	}
 	return nil
@@ -224,11 +228,11 @@ func (s *Service) Update(ctx context.Context, req UpdateReq) error {
 
 // Delete 删除
 func (s *Service) Delete(ctx context.Context, id uint) error {
-	res := s.db.WithContext(ctx).Delete(&model.Notify{}, id)
-	if res.Error != nil {
-		return res.Error
+	affected, err := s.notifyRepo.DeleteByID(ctx, id)
+	if err != nil {
+		return err
 	}
-	if res.RowsAffected == 0 {
+	if affected == 0 {
 		return ErrNotifyNotFound
 	}
 	return nil
@@ -292,7 +296,7 @@ func (s *Service) ListForUser(ctx context.Context, userID uint, page, pageSize i
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = 20
 	}
-	q := s.db.WithContext(ctx).Model(&model.Notify{}).
+	q := s.notifyRepo.Query(ctx).
 		Where("status = 1").
 		Where("target_user_id IS NULL OR target_user_id = ?", userID)
 
@@ -300,10 +304,10 @@ func (s *Service) ListForUser(ctx context.Context, userID uint, page, pageSize i
 	if err := q.Count(&total).Error; err != nil {
 		return nil, err
 	}
-	var unread int64
-	if err := s.db.WithContext(ctx).Model(&model.Notify{}).
-		Where("status = 1 AND (target_user_id IS NULL OR target_user_id = ?) AND read_at IS NULL", userID).
-		Count(&unread).Error; err != nil {
+	unread, err := s.notifyRepo.CountWhere(ctx,
+		"status = 1 AND (target_user_id IS NULL OR target_user_id = ?) AND read_at IS NULL",
+		[]interface{}{userID})
+	if err != nil {
 		return nil, err
 	}
 
@@ -341,20 +345,16 @@ func (s *Service) ListForUser(ctx context.Context, userID uint, page, pageSize i
 
 // UnreadCountForUser 某用户未读数
 func (s *Service) UnreadCountForUser(ctx context.Context, userID uint) (int64, error) {
-	var n int64
-	err := s.db.WithContext(ctx).Model(&model.Notify{}).
-		Where("status = 1 AND (target_user_id IS NULL OR target_user_id = ?) AND read_at IS NULL", userID).
-		Count(&n).Error
-	return n, err
+	return s.notifyRepo.CountWhere(ctx,
+		"status = 1 AND (target_user_id IS NULL OR target_user_id = ?) AND read_at IS NULL",
+		[]interface{}{userID})
 }
 
 // MarkAllReadForUser 标记某用户所有通知为已读（只更新 read_at IS NULL 的）
 func (s *Service) MarkAllReadForUser(ctx context.Context, userID uint) (int64, error) {
-	now := time.Now()
-	res := s.db.WithContext(ctx).Model(&model.Notify{}).
-		Where("status = 1 AND (target_user_id IS NULL OR target_user_id = ?) AND read_at IS NULL", userID).
-		Update("read_at", now)
-	return res.RowsAffected, res.Error
+	return s.notifyRepo.UpdateWhere(ctx,
+		"status = 1 AND (target_user_id IS NULL OR target_user_id = ?) AND read_at IS NULL",
+		[]interface{}{userID}, "read_at", time.Now())
 }
 
 // CreateForUser 创建一条定向通知（owner 取件通知用）
@@ -369,7 +369,7 @@ func (s *Service) CreateForUser(ctx context.Context, userID uint, title, content
 		AuthorID:     0,
 		TargetUserID: &uid,
 	}
-	if err := s.db.WithContext(ctx).Create(n).Error; err != nil {
+	if err := s.notifyRepo.Create(ctx, n); err != nil {
 		return nil, err
 	}
 	return n, nil

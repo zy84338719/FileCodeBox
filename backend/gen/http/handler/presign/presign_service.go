@@ -170,3 +170,34 @@ func boolDeref(p *bool) bool {
 	}
 	return *p
 }
+
+// UploadDirect 预签名直传端点（手写覆盖，gen router 未注册）。
+// @router /api/v1/presign/upload-direct/:uploadID [PUT]
+// NOTE: 业务逻辑手写，重新生成 IDL 后需同步。
+func UploadDirect(ctx context.Context, c *app.RequestContext) {
+	uploadID := c.Param("uploadID")
+	if uploadID == "" {
+		resp.NewErrorWithMessage(c, errcode.CodeInvalidParam, "uploadID required")
+		return
+	}
+	token := string(c.GetHeader("X-Upload-Token"))
+	if token == "" {
+		resp.NewErrorWithMessage(c, errcode.CodeInvalidParam, "X-Upload-Token required")
+		return
+	}
+	data := c.Request.Body()
+	if err := getService().UploadDirect(ctx, uploadID, token, data); err != nil {
+		switch {
+		case errors.Is(err, presignapp.ErrUploadNotFound):
+			resp.NewErrorByCode(c, errcode.CodeNotFound)
+		case errors.Is(err, presignapp.ErrTokenInvalid):
+			resp.NewErrorByCode(c, errcode.CodeUnauthorized)
+		case errors.Is(err, presignapp.ErrUploadExpired):
+			resp.NewErrorWithMessage(c, errcode.CodeInvalidParam, "upload expired")
+		default:
+			resp.NewErrorWithMessage(c, errcode.CodeInternal, err.Error())
+		}
+		return
+	}
+	resp.Success(c, nil)
+}

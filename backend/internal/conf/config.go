@@ -2,7 +2,10 @@ package conf
 
 import "fmt"
 
-// 全局配置
+// globalConfig 全局配置单例。
+// 设计权衡：bootstrap 启动时 SetGlobalConfig 注入，各处用 GetGlobalConfig 读取。
+// 采用全局单例避免配置在 service/handler 间层层透传。运行期不可变（无写并发）。
+// 未来若迁移到 DI 容器，可改为构造注入。
 var globalConfig *AppConfiguration
 
 // AppConfiguration 完整应用配置
