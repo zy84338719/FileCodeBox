@@ -27,11 +27,11 @@ FileCodeBox 是一个使用 Go + Vue 3 实现的轻量级分享服务，采用�
 | 性能 | Go 原生并发、分片上传、断点续传、秒传校验 |
 | 分享体验 | 文本/文件双通道、链接有效期控制、密码和访问次数限制、**匿名取件（vastsa UX）** |
 | 管理后台 | 仪表板、文件列表、用户管理、存储面板、系统配置、**系统通知公告** |
-| 安全 | JWT 认证、API Key 支持、**限流中间件（IP+接口双层）**、**配置化 CORS**、**安全响应头**（HSTS/X-Frame-Options 等）、**生产 secret fail-fast** |
+| 安全 | JWT 认证（全环境 fail-fast + 并发安全）、API Key 支持、**限流中间件（登录/上传/下载路径感知）**、**CORS 默认仅 localhost 跨域**、**安全响应头**（HSTS/X-Frame-Options 等）、**取件密码 bcrypt**、**上传大小+类型黑名单校验**、**metrics 默认关闭+内网绑定** |
 | 存储 | 本地磁盘、S3 兼容对象存储、WebDAV、NFS、**OpenDAL 风格抽象** |
 | 上传 | 直传 + **预签名上传**（init/complete/abort） |
 | 可观测性 | **Prometheus 指标（HTTP RED）**、**结构化访问日志（trace_id 全链路）**、**深度就绪探针（/readyz）** |
-| 工程 | **统一错误码体系**、**统一响应 envelope**（code/message/data/trace_id）、**84 个单测覆盖核心业务** |
+| 工程 | **统一错误码体系**、**统一响应 envelope**（code/message/data/trace_id）、**核心写操作事务保证**、**全量结构化日志**、**120+ 单测覆盖核心业务** |
 | 部署 | **单二进制**（内置前端 SPA）、Docker、**生产 Compose（含 Redis+Nginx）**、**K8s（探针/Ingress/HPA/ServiceMonitor）**、**环境变量配置（12-factor）** |
 | 前端 | Vue 3 + TypeScript、自适应布局、现代化 UI |
 
@@ -158,13 +158,15 @@ kubectl apply -k deploy/k8s/overlays/prod
 ```bash
 # 常用环境变量（FCB_ 前缀完整名 或 短名均可）
 FCB_SERVER_PORT=12345        # 服务端口
-FCB_PRODUCTION=1             # 生产模式（强制校验 secret）
-FCB_JWT_SECRET=xxx           # JWT 密钥（生产必填）
+FCB_JWT_SECRET=xxx           # JWT 密钥（⚠️ 全环境必填！未设或为默认值启动即报错退出）
 FCB_DATABASE_DRIVER=sqlite   # sqlite/mysql/postgres
-FCB_REDIS_HOST=redis         # Redis 地址
-FCB_METRICS_ENABLED=true     # Prometheus 指标开关
-FCB_CORS_ALLOW_ORIGINS=https://your-domain.com  # CORS 白名单
+FCB_REDIS_HOST=redis         # Redis 地址（匿名取件功能依赖 Redis）
+FCB_METRICS_ENABLED=false    # Prometheus 指标开关（默认关闭，开启时绑定内网）
+FCB_METRICS_ADDR=127.0.0.1:9090  # metrics 独立监听地址（开启时生效）
+FCB_CORS_ALLOW_ORIGINS=https://your-domain.com  # CORS 白名单（未配时默认仅 localhost 跨域）
 ```
+
+> ⚠️ **安全提示**：`FCB_JWT_SECRET` 在所有环境（含开发）都必须设置为强随机值（≥32 字符），否则启动 fail-fast。生成方式：`openssl rand -hex 32`。
 
 完整配置模板见 [`backend/configs/config.example.yaml`](backend/configs/config.example.yaml)。
 
@@ -172,7 +174,7 @@ FCB_CORS_ALLOW_ORIGINS=https://your-domain.com  # CORS 白名单
 
 | 端点 | 用途 |
 | --- | --- |
-| `GET /metrics` | Prometheus 指标（HTTP RED：请求数/延迟/在途） |
+| `GET 127.0.0.1:9090/metrics` | Prometheus 指标（HTTP RED，**默认关闭，开启时绑定内网独立端口**，主端口不暴露） |
 | `GET /readyz` | 深度就绪检查（含 DB ping，供 K8s readinessProbe） |
 | `GET /live` | 存活检查（轻量，供 livenessProbe） |
 | `GET /health` | 健康检查 |
@@ -201,6 +203,7 @@ FCB_CORS_ALLOW_ORIGINS=https://your-domain.com  # CORS 白名单
 | 接口 | 说明 |
 | --- | --- |
 | `GET /user/info` | 用户信息 |
+| `POST /api/v1/user/refresh` | **刷新 token**（前端 401 拦截器自动调用） |
 | `GET /user/files` | 用户文件列表 |
 | `GET /user/api-keys` | API Key 列表 |
 | `POST /user/api-keys` | 创建 API Key |
@@ -225,12 +228,69 @@ FCB_CORS_ALLOW_ORIGINS=https://your-domain.com  # CORS 白名单
 | `GET /chunk/upload/status/:id` | 上传状态 |
 | `DELETE /chunk/upload/cancel/:id` | 取消上传 |
 
+### 预签名上传 & 匿名取件
+
+| 接口 | 说明 |
+| --- | --- |
+| `POST /api/v1/presign/upload` | 申请预签名上传（返回 upload_id + token） |
+| `PUT /api/v1/presign/upload-direct/:uploadID` | **预签名直传**（带 X-Upload-Token，写文件到存储） |
+| `POST /api/v1/presign/complete` | 完成上传（写分享表） |
+| `POST /anonymous/generate` | 匿名生成 6 位取件码（需 Redis） |
+| `POST /anonymous/retrieve` | 匿名取件（校验密码 + 扣减次数，DB 为准） |
+| `GET /anonymous/search/:code` | 匿名查询分享信息 |
+
 ---
 
 ## 🔐 认证方式
 
-1. **JWT Token**: 用户/管理员登录后获取，放在 `Authorization: Bearer <token>` 头中
+1. **JWT Token**: 用户/管理员登录后获取，放在 `Authorization: Bearer <token>` 头中。token 过期时前端自动调 `/api/v1/user/refresh` 刷新。
 2. **API Key**: 格式 `fcb_sk_xxx`，放在 `X-API-Key` 头或 `api_key` 查询参数中
+
+---
+
+## 🏗️ 架构总览
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                      浏览器 (Vue 3 SPA)                  │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────┐ │
+│  │ 文件分享 │  │ 匿名取件 │  │ 管理后台 │  │ 用户中心│ │
+│  └─────┬────┘  └─────┬────┘  └─────┬────┘  └────┬────┘ │
+└────────┼────────────┼────────────┼────────────┼────────┘
+         │            │            │            │
+         ▼            ▼            ▼            ▼
+┌─────────────────────────────────────────────────────────┐
+│              Hertz HTTP Server (:12345)                  │
+│  ┌────────────────────────────────────────────────────┐ │
+│  │ 中间件链: Recovery → RequestID → AccessLog →       │ │
+│  │   Metrics → SecurityHeaders → CORS → 限流(路径感知)│ │
+│  └────────────────────────────────────────────────────┘ │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐ │
+│  │  app/share  │  │app/anonymous│  │   app/admin     │ │
+│  │ (分享/取件) │  │ (6位取件码) │  │  (后台/统计)    │ │
+│  └──────┬──────┘  └──────┬──────┘  └────────┬────────┘ │
+│         │                │                  │          │
+│  ┌──────▼────────────────▼──────────────────▼────────┐ │
+│  │   DAO 层 (dao.FileCodeRepository / Notify / ...)  │ │
+│  │   统一走全局 db.GetDB()，事务保证写一致性          │ │
+│  └──────┬──────────────────────────────┬─────────────┘ │
+└─────────┼──────────────────────────────┼───────────────┘
+          ▼                              ▼
+   ┌────────────┐               ┌────────────────┐
+   │  数据库     │               │     Redis      │
+   │ SQLite/     │               │ 匿名取件码映射 │
+   │ MySQL/PG    │               │ presign meta   │
+   └────────────┘               └────────────────┘
+          ▲
+          │
+   ┌──────┴──────┐   ┌──────────────┐
+   │  存储抽象   │   │ metrics 独立 │
+   │ local/s3/   │   │ :9090(内网)  │
+   │ webdav/nfs  │   │ 默认关闭     │
+   └─────────────┘   └──────────────┘
+```
+
+> 📊 详细测试验证见 [本地测试报告](docs/LOCAL-TEST-REPORT.md)
 
 ---
 
@@ -284,9 +344,9 @@ user:
 | 前端暗色模式 | ✅ 已完成 | 暗色模式 + 顶栏切换器 |
 | 环境变量配置 | ✅ 已完成 | viper env 绑定（FCB_ 前缀 + 短名），12-factor 合规 |
 | 生产可观测性 | ✅ 已完成 | Prometheus 指标 + 结构化访问日志(trace_id) + 深度就绪探针 |
-| 安全加固 | ✅ 已完成 | 配置化 CORS + 安全响应头 + secret fail-fast + JWT 统一注入 |
+| 安全加固 | ✅ 已完成 | 密码 bcrypt + 限流挂载 + JWT 全环境 fail-fast + CORS 收紧 + 上传校验 + metrics 内网隔离 + 前端 XSS 消毒 |
 | K8s 生产部署 | ✅ 已完成 | 探针/Ingress/HPA/ServiceMonitor/Secret/ConfigMap + prod overlay |
-| 业务单测覆盖率 | ✅ 起步完成 | 6 service + storage + middleware 共 84 个 case（share/user/chunk/anonymous/notify/presign/ratelimit/storage） |
+| 业务单测覆盖率 | ✅ 已完成 | 12 包 120+ case，覆盖核心业务（含事务/原子扣减/密码校验/匿名取件 DB 打通） |
 | 数据库版本化迁移 | 待做 | 当前用 GORM AutoMigrate；企业级可引入 golang-migrate 做版本化 baseline |
 | 限流持久化 | 待做 | 当前 ratelimit 为内存态；多副本需 Redis 持久化保证一致 |
 | OpenTelemetry 追踪 | 待做 | 已留 observability.tracing 配置位，OTel 中间件 + OTLP exporter 待接入 |
