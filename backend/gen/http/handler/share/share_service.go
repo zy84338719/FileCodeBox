@@ -440,13 +440,14 @@ func DownloadFile(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 获取分享内容并增加使用次数
-	fileCode, err := getShareService().GetFileWithUsage(ctx, code, password)
+	// 获取分享内容并校验密码（viewer IP 由 handler 注入）
+	viewerIP := c.ClientIP()
+	fileCode, err := getShareService().GetFileWithUsage(ctx, code, password, viewerIP)
 	if err != nil {
-		if err.Error() == "需要密码" {
+		if err.Error() == "密码错误" {
 			c.JSON(consts.StatusUnauthorized, map[string]interface{}{
 				"code":    401,
-				"message": "需要密码",
+				"message": "密码错误",
 				"data": map[string]interface{}{
 					"has_password": true,
 				},
@@ -460,10 +461,17 @@ func DownloadFile(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 更新下载次数
-	if err := getShareService().UpdateFileUsage(ctx, code); err != nil {
+	// 原子扣减下载次数（DB 为准）
+	if ok, err := getShareService().UpdateFileUsage(ctx, code); err != nil {
 		// 记录错误但不阻止下载
 		fmt.Printf("更新下载次数失败: %v\n", err)
+	} else if !ok {
+		// 次数已耗尽（并发场景下可能在 GetFileWithUsage 之后耗尽）
+		c.JSON(consts.StatusForbidden, map[string]interface{}{
+			"code":    403,
+			"message": "取件次数已用完",
+		})
+		return
 	}
 
 	// 如果是文本分享，直接返回文本

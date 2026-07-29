@@ -9,6 +9,7 @@ import (
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/auth"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
+	"github.com/zy84338719/fileCodeBox/backend/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -47,6 +48,7 @@ type Service struct {
 	transferLogRepo    *dao.TransferLogRepository
 	adminOperationRepo *dao.AdminOperationLogRepository
 	chunkRepo          *dao.ChunkRepository
+	storage            storage.StorageInterface
 	config             *SystemConfig
 }
 
@@ -64,6 +66,11 @@ func NewService() *Service {
 // SetConfig 设置配置
 func (s *Service) SetConfig(config *SystemConfig) {
 	s.config = config
+}
+
+// SetStorage 注入存储服务（用于过期清理删物理文件）
+func (s *Service) SetStorage(st storage.StorageInterface) {
+	s.storage = st
 }
 
 // GetStats 获取管理员统计信息
@@ -304,29 +311,35 @@ func (s *Service) GenerateTokenForAdmin(ctx context.Context, username, password 
 
 // ==================== 维护工具 API ====================
 
-// CleanExpiredFiles 清理过期文件
+// CleanExpiredFiles 清理过期文件（DB 记录 + 物理文件）。
+// 物理删除失败不阻断 DB 删除（记日志）；DB 删除失败不阻断（下轮重试）。
 func (s *Service) CleanExpiredFiles(ctx context.Context) (int64, int64, error) {
-	// 获取过期文件
 	expiredFiles, err := s.fileCodeRepo.GetExpiredFiles(ctx)
 	if err != nil {
 		return 0, 0, err
 	}
 
-	// 删除过期文件并计算释放的空间
-	deletedCount := int64(0)
 	freedSpace := int64(0)
 	for _, file := range expiredFiles {
+		// 删物理文件（失败不阻断 DB 删除）
+		if s.storage != nil && file.FilePath != "" {
+			fp := file.GetFilePath()
+			if fp != "" {
+				if err := s.storage.DeleteFile(ctx, fp); err != nil {
+					// 物理删除失败，记日志但不阻止 DB 清理
+					// TODO: 接 logger
+					_ = err
+				}
+			}
+		}
 		freedSpace += file.Size
 	}
 
-	// 删除数据库记录
 	count, err := s.fileCodeRepo.DeleteExpiredFiles(ctx, expiredFiles)
 	if err != nil {
-		return deletedCount, 0, err
+		return 0, 0, err
 	}
-	deletedCount = int64(count)
-
-	return deletedCount, freedSpace, nil
+	return int64(count), freedSpace, nil
 }
 
 // CleanTempFiles 清理临时文件

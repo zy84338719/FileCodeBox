@@ -19,7 +19,7 @@ type FileCode struct {
 	Size         int64      `gorm:"default:0" json:"size"`
 	Text         string     `gorm:"type:text" json:"text"`
 	ExpiredAt    *time.Time `json:"expired_at"`
-	ExpiredCount int        `gorm:"default:0" json:"expired_count"`
+	ExpiredCount int        `gorm:"default:0" json:"expired_count"` // 剩余可取次数：-1=无限, 0=已耗尽, >0=剩余
 	UsedCount    int        `gorm:"default:0" json:"used_count"`
 
 	FileHash  string `gorm:"size:64" json:"file_hash"`
@@ -29,7 +29,8 @@ type FileCode struct {
 	// 新增：用户认证相关字段
 	UserID      *uint  `gorm:"index" json:"user_id"`                           // 上传用户ID，为null表示匿名上传
 	UploadType  string `gorm:"size:20;default:'anonymous'" json:"upload_type"` // anonymous, authenticated
-	RequireAuth bool   `gorm:"default:false" json:"require_auth"`              // 是否需要登录才能下载
+	RequireAuth bool   `gorm:"default:false" json:"require_auth"`              // 是否需要密码才能下载
+	PasswordHash string `gorm:"size:255" json:"-"`                              // 取件密码的 bcrypt 哈希（json:"-" 不外泄）
 	OwnerIP     string `gorm:"size:45" json:"owner_ip"`                        // 上传者IP地址
 
 	// 取件追踪（软删除字段 gorm.Model.DeletedAt 已自带）
@@ -47,9 +48,7 @@ func (f *FileCode) IsExpired() bool {
 	}
 
 	// 检查次数过期
-	// ExpiredCount = -1 表示无限制次数，不过期
-	// ExpiredCount = 0 表示已用完所有次数，过期
-	// ExpiredCount > 0 表示剩余次数，不过期
+	// ExpiredCount 语义：-1=无限(不过期), 0=已耗尽(过期), >0=剩余(不过期)
 	if f.ExpiredCount == 0 {
 		return true
 	}

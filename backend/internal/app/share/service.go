@@ -2,9 +2,10 @@ package share
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"strings"
 	"time"
 
@@ -20,6 +21,7 @@ type ShareTextReq struct {
 	ExpiredAt    *time.Time
 	ExpiredCount int
 	RequireAuth  bool
+	PasswordHash string
 	UserID       *uint
 	UploadType   string
 	OwnerIP      string
@@ -32,6 +34,7 @@ type ShareFileReq struct {
 	ExpiredAt    *time.Time
 	ExpiredCount int
 	RequireAuth  bool
+	PasswordHash string
 	UserID       *uint
 	UploadType   string
 	OwnerIP      string
@@ -107,37 +110,56 @@ func (s *Service) SetNotifyService(svc NotifyServiceInterface) {
 	s.notifySvc = svc
 }
 
-// GenerateCode 生成分享代码
+// GenerateCode 生成分享代码（crypto/rand，8 位字母数字）。
 func (s *Service) GenerateCode() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	code := make([]byte, 8)
-	for i := range code {
-		code[i] = charset[seededRand.Intn(len(charset))]
+	const length = 8
+	max := big.NewInt(int64(len(charset)))
+	b := make([]byte, length)
+	for i := range b {
+		n, err := rand.Int(rand.Reader, max)
+		if err != nil {
+			// 极端回退（crypto/rand 几乎不会失败）
+			n = big.NewInt(int64(time.Now().UnixNano()) % int64(len(charset)))
+		}
+		b[i] = charset[n.Int64()]
 	}
+	return string(b)
+}
 
-	return string(code)
+// createWithRetry 通用写库重试（code 唯一冲突时换码重试，最多 5 次）。
+func (s *Service) createWithRetry(ctx context.Context, build func(code string) *model.FileCode) (*model.FileCode, error) {
+	for i := 0; i < 5; i++ {
+		fc := build(s.GenerateCode())
+		if err := s.fileCodeRepo.Create(ctx, fc); err != nil {
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				continue // 换 code 重试
+			}
+			return nil, err
+		}
+		return fc, nil
+	}
+	return nil, errors.New("生成分享码失败：多次冲突")
 }
 
 // ShareText 分享文本
 func (s *Service) ShareText(ctx context.Context, req *ShareTextReq) (*ShareResp, error) {
 	s.ensureRepository()
 
-	code := s.GenerateCode()
-
-	fileCode := &model.FileCode{
-		Code:         code,
-		Text:         req.Text,
-		ExpiredAt:    req.ExpiredAt,
-		ExpiredCount: req.ExpiredCount,
-		RequireAuth:  req.RequireAuth,
-		UserID:       req.UserID,
-		UploadType:   req.UploadType,
-		OwnerIP:      req.OwnerIP,
-	}
-
-	if err := s.fileCodeRepo.Create(ctx, fileCode); err != nil {
+	fileCode, err := s.createWithRetry(ctx, func(code string) *model.FileCode {
+		return &model.FileCode{
+			Code:         code,
+			Text:         req.Text,
+			ExpiredAt:    req.ExpiredAt,
+			ExpiredCount: req.ExpiredCount,
+			RequireAuth:  req.RequireAuth,
+			PasswordHash: req.PasswordHash,
+			UserID:       req.UserID,
+			UploadType:   req.UploadType,
+			OwnerIP:      req.OwnerIP,
+		}
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -193,25 +215,25 @@ func (s *Service) ShareFile(ctx context.Context, req *ShareFileReq) (*ShareResp,
 func (s *Service) CreateShare(ctx context.Context, req *ShareFileReq) (*ShareResp, error) {
 	s.ensureRepository()
 
-	code := s.GenerateCode()
-
-	fileCode := &model.FileCode{
-		Code:         code,
-		FilePath:     req.FilePath,
-		Size:         req.Size,
-		Text:         req.Text,
-		ExpiredAt:    req.ExpiredAt,
-		ExpiredCount: req.ExpiredCount,
-		RequireAuth:  req.RequireAuth,
-		UserID:       req.UserID,
-		UploadType:   req.UploadType,
-		OwnerIP:      req.OwnerIP,
-		FileHash:     req.FileHash,
-		IsChunked:    req.IsChunked,
-		UploadID:     req.UploadID,
-	}
-
-	if err := s.fileCodeRepo.Create(ctx, fileCode); err != nil {
+	fileCode, err := s.createWithRetry(ctx, func(code string) *model.FileCode {
+		return &model.FileCode{
+			Code:         code,
+			FilePath:     req.FilePath,
+			Size:         req.Size,
+			Text:         req.Text,
+			ExpiredAt:    req.ExpiredAt,
+			ExpiredCount: req.ExpiredCount,
+			RequireAuth:  req.RequireAuth,
+			PasswordHash: req.PasswordHash,
+			UserID:       req.UserID,
+			UploadType:   req.UploadType,
+			OwnerIP:      req.OwnerIP,
+			FileHash:     req.FileHash,
+			IsChunked:    req.IsChunked,
+			UploadID:     req.UploadID,
+		}
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -225,25 +247,7 @@ func (s *Service) CreateShare(ctx context.Context, req *ShareFileReq) (*ShareRes
 		}
 	}
 
-	return &ShareResp{
-		Code:         fileCode.Code,
-		Prefix:       fileCode.Prefix,
-		Suffix:       fileCode.Suffix,
-		UUIDFileName: fileCode.UUIDFileName,
-		FilePath:     fileCode.FilePath,
-		Size:         fileCode.Size,
-		Text:         fileCode.Text,
-		ExpiredAt:    fileCode.ExpiredAt,
-		ExpiredCount: fileCode.ExpiredCount,
-		UsedCount:    fileCode.UsedCount,
-		FileHash:     fileCode.FileHash,
-		IsChunked:    fileCode.IsChunked,
-		UploadID:     fileCode.UploadID,
-		UserID:       fileCode.UserID,
-		UploadType:   fileCode.UploadType,
-		RequireAuth:  fileCode.RequireAuth,
-		OwnerIP:      fileCode.OwnerIP,
-	}, nil
+	return s.modelToResp(fileCode), nil
 }
 
 // GetFileByCode 通过代码获取文件
@@ -341,31 +345,16 @@ func (s *Service) GetFileList(ctx context.Context, page, pageSize int, search st
 	return s.fileCodeRepo.List(ctx, page, pageSize, search)
 }
 
-// UpdateFileUsage 更新文件使用次数（下载次数）
-func (s *Service) UpdateFileUsage(ctx context.Context, code string) error {
+// UpdateFileUsage 原子扣减剩余次数（DB 为准，防并发超卖）。
+// 返回 ok=true 表示扣减成功（可下载）；ok=false 表示已耗尽。
+func (s *Service) UpdateFileUsage(ctx context.Context, code string) (bool, error) {
 	s.ensureRepository()
-
-	fileCode, err := s.fileCodeRepo.GetByCode(ctx, code)
-	if err != nil {
-		return err
-	}
-
-	// 检查剩余次数
-	if fileCode.ExpiredCount > 0 {
-		fileCode.ExpiredCount--
-		if fileCode.ExpiredCount < 0 {
-			fileCode.ExpiredCount = 0
-		}
-	}
-
-	// 增加使用次数
-	fileCode.UsedCount++
-
-	return s.fileCodeRepo.Update(ctx, fileCode)
+	return s.fileCodeRepo.DecrementExpiredCount(ctx, code)
 }
 
-// GetFileWithUsage 获取文件并增加使用次数
-func (s *Service) GetFileWithUsage(ctx context.Context, code string, password string) (*model.FileCode, error) {
+// GetFileWithUsage 获取文件并校验密码（不扣次数，扣次数由下载链路调 UpdateFileUsage）。
+// viewerIP 由 handler 从 c.ClientIP() 注入。
+func (s *Service) GetFileWithUsage(ctx context.Context, code, password, viewerIP string) (*model.FileCode, error) {
 	s.ensureRepository()
 
 	fileCode, err := s.GetFileByCode(ctx, code)
@@ -373,25 +362,28 @@ func (s *Service) GetFileWithUsage(ctx context.Context, code string, password st
 		return nil, err
 	}
 
-	// 检查是否需要密码
-	if fileCode.RequireAuth && password == "" {
-		return nil, errors.New("需要密码")
+	// 真实密码校验（替代原 TODO：仅检查非空）
+	if fileCode.RequireAuth {
+		if !utils.CheckPassword(fileCode.PasswordHash, password) {
+			return nil, errors.New("密码错误")
+		}
 	}
 
-	// TODO: 验证密码逻辑（当前仅检查非空）
-
-	// 记录取件人 + 通知 owner（fire-and-forget，失败不影响主流程）
-	viewerIP := "" // caller 已知 caller IP；这里仅占位，详细 IP 由 handler 注入
-	_ = s.RecordViewerAndNotify(ctx, code, viewerIP, "")
+	// 记录取件人 + 通知 owner（fire-and-forget，recover 防 panic 影响进程）
+	go func() {
+		defer func() { _ = recover() }()
+		_ = s.RecordViewerAndNotify(context.Background(), code, viewerIP, "")
+	}()
 
 	return fileCode, nil
 }
 
-// RecordViewerAndNotify 记录取件人 + 给 owner 发通知
-//   - viewerIP: 取件人 IP
-//   - notifyType/level: 通知 type / level
+// RecordViewerAndNotify 记录取件人 + 给 owner 发通知。
+//   - viewerIP: 取件人 IP（由 handler 从 c.ClientIP() 注入）
+//   - viewerDetail: 额外通知内容
 //
-// 若 file_codes 找不到（anonymous 路径 share_code 是 file_name 占位），静默跳过
+// 通知去重：同 code 5 分钟内只通知一次（用 LastNotifiedAt 字段）。
+// 若 file_codes 找不到，静默跳过。
 func (s *Service) RecordViewerAndNotify(ctx context.Context, code, viewerIP, viewerDetail string) error {
 	s.ensureRepository()
 	if err := s.fileCodeRepo.UpdateViewer(ctx, code, viewerIP); err != nil {
@@ -406,11 +398,19 @@ func (s *Service) RecordViewerAndNotify(ctx context.Context, code, viewerIP, vie
 	if fc.UserID == nil || s.notifySvc == nil {
 		return nil
 	}
+	// 通知去重：同 code 5 分钟内只通知一次
+	if fc.LastNotifiedAt != nil && time.Since(*fc.LastNotifiedAt) < 5*time.Minute {
+		return nil
+	}
+	// 更新 LastNotifiedAt（先更新，避免并发重复通知）
+	now := time.Now()
+	_ = s.fileCodeRepo.UpdateColumns(ctx, fc.ID, map[string]interface{}{"last_notified_at": now})
+
 	title := "您的分享已被取件"
 	if fc.Text != "" {
 		title = "您的文本分享已被查看"
 	}
-	content := fmt.Sprintf("分享码: %s\n取件人 IP: %s\n时间: %s", code, viewerIP, time.Now().Format("2006-01-02 15:04:05"))
+	content := fmt.Sprintf("分享码: %s\n取件人 IP: %s\n时间: %s", code, viewerIP, now.Format("2006-01-02 15:04:05"))
 	if viewerDetail != "" {
 		content += "\n" + viewerDetail
 	}

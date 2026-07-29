@@ -10,6 +10,7 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/utils"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 	"github.com/zy84338719/fileCodeBox/backend/internal/storage"
@@ -178,7 +179,7 @@ func TestGetFileByCode_NotFound(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// 测试：按次数过期——UpdateFileUsage 递减 ExpiredCount
+// 测试：按次数过期——UpdateFileUsage 原子递减 ExpiredCount
 func TestUpdateFileUsage_DecrementCount(t *testing.T) {
 	svc, _, _, _ := newTestService(t)
 
@@ -189,18 +190,27 @@ func TestUpdateFileUsage_DecrementCount(t *testing.T) {
 	require.NoError(t, err)
 
 	// 第一次取件：2 → 1
-	require.NoError(t, svc.UpdateFileUsage(context.Background(), resp.Code))
+	ok, err := svc.UpdateFileUsage(context.Background(), resp.Code)
+	require.NoError(t, err)
+	assert.True(t, ok)
 	fc, err := svc.GetFileByCode(context.Background(), resp.Code)
 	require.NoError(t, err)
 	assert.Equal(t, 1, fc.ExpiredCount)
 	assert.Equal(t, 1, fc.UsedCount)
 
 	// 第二次取件：1 → 0（此时变为已过期）
-	require.NoError(t, svc.UpdateFileUsage(context.Background(), resp.Code))
-	fc2, err := svc.GetFileByCode(context.Background(), resp.Code)
+	ok2, err := svc.UpdateFileUsage(context.Background(), resp.Code)
+	require.NoError(t, err)
+	assert.True(t, ok2)
 	// ExpiredCount=0 → IsExpired()=true → GetFileByCode 报错
+	fc2, err := svc.GetFileByCode(context.Background(), resp.Code)
 	assert.Error(t, err)
 	assert.Nil(t, fc2)
+
+	// 第三次：已耗尽，ok=false
+	ok3, err := svc.UpdateFileUsage(context.Background(), resp.Code)
+	require.NoError(t, err)
+	assert.False(t, ok3)
 }
 
 // 测试：无限次数分享（ExpiredCount=-1）可反复取件
@@ -214,12 +224,39 @@ func TestUpdateFileUsage_Unlimited(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 0; i < 5; i++ {
-		require.NoError(t, svc.UpdateFileUsage(context.Background(), resp.Code))
+		ok, err := svc.UpdateFileUsage(context.Background(), resp.Code)
+		require.NoError(t, err)
+		assert.True(t, ok)
 	}
 	fc, err := svc.GetFileByCode(context.Background(), resp.Code)
 	require.NoError(t, err)
 	assert.Equal(t, -1, fc.ExpiredCount) // 不递减
 	assert.Equal(t, 5, fc.UsedCount)
+}
+
+// 测试：GetFileWithUsage 真实密码校验
+func TestGetFileWithUsage_PasswordCheck(t *testing.T) {
+	svc, _, _, _ := newTestService(t)
+	ctx := context.Background()
+
+	hash, err := utils.HashPassword("rightpwd")
+	require.NoError(t, err)
+
+	resp, err := svc.CreateShare(ctx, &ShareFileReq{
+		FilePath: "a/b", Size: 1, ExpiredCount: -1,
+		RequireAuth: true, PasswordHash: hash,
+	})
+	require.NoError(t, err)
+
+	// 错误密码 → 报错
+	_, err = svc.GetFileWithUsage(ctx, resp.Code, "wrongpwd", "1.2.3.4")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "密码错误")
+
+	// 正确密码 → 成功
+	fc, err := svc.GetFileWithUsage(ctx, resp.Code, "rightpwd", "1.2.3.4")
+	require.NoError(t, err)
+	assert.Equal(t, resp.Code, fc.Code)
 }
 
 // 测试：按时间过期——ExpiredAt 在过去
@@ -283,4 +320,33 @@ func TestGenerateCode(t *testing.T) {
 	assert.Len(t, c1, 8)
 	assert.Len(t, c2, 8)
 	assert.NotEqual(t, c1, c2)
+}
+
+// 测试：GenerateCode 1000 次内不重复（crypto/rand 质量）
+func TestGenerateCode_UniqueHighVolume(t *testing.T) {
+	svc, _, _, _ := newTestService(t)
+	seen := map[string]bool{}
+	for i := 0; i < 1000; i++ {
+		c := svc.GenerateCode()
+		assert.Len(t, c, 8)
+		assert.False(t, seen[c], "1000 次内不应重复: %s", c)
+		seen[c] = true
+	}
+}
+
+// 测试：CreateShare 正常路径（含 PasswordHash）
+func TestCreateShare_WithPassword(t *testing.T) {
+	svc, _, _, _ := newTestService(t)
+	resp, err := svc.CreateShare(context.Background(), &ShareFileReq{
+		FilePath: "x/y", Size: 10, ExpiredCount: -1,
+		RequireAuth: true, PasswordHash: "$2a$10$dummyhash",
+	})
+	require.NoError(t, err)
+	assert.Len(t, resp.Code, 8)
+	assert.True(t, resp.RequireAuth)
+
+	// DB 里确实写入了
+	fc, err := svc.GetFileByCode(context.Background(), resp.Code)
+	require.NoError(t, err)
+	assert.Equal(t, "$2a$10$dummyhash", fc.PasswordHash)
 }
