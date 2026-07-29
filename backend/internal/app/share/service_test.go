@@ -284,3 +284,32 @@ func TestGenerateCode(t *testing.T) {
 	assert.Len(t, c2, 8)
 	assert.NotEqual(t, c1, c2)
 }
+
+// 测试：GenerateCode 1000 次内不重复（crypto/rand 质量）
+func TestGenerateCode_UniqueHighVolume(t *testing.T) {
+	svc, _, _, _ := newTestService(t)
+	seen := map[string]bool{}
+	for i := 0; i < 1000; i++ {
+		c := svc.GenerateCode()
+		assert.Len(t, c, 8)
+		assert.False(t, seen[c], "1000 次内不应重复: %s", c)
+		seen[c] = true
+	}
+}
+
+// 测试：CreateShare 正常路径（含 PasswordHash）
+func TestCreateShare_WithPassword(t *testing.T) {
+	svc, _, _, _ := newTestService(t)
+	resp, err := svc.CreateShare(context.Background(), &ShareFileReq{
+		FilePath: "x/y", Size: 10, ExpiredCount: -1,
+		RequireAuth: true, PasswordHash: "$2a$10$dummyhash",
+	})
+	require.NoError(t, err)
+	assert.Len(t, resp.Code, 8)
+	assert.True(t, resp.RequireAuth)
+
+	// DB 里确实写入了
+	fc, err := svc.GetFileByCode(context.Background(), resp.Code)
+	require.NoError(t, err)
+	assert.Equal(t, "$2a$10$dummyhash", fc.PasswordHash)
+}

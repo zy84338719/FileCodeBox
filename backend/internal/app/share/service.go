@@ -2,9 +2,10 @@ package share
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"strings"
 	"time"
 
@@ -20,6 +21,7 @@ type ShareTextReq struct {
 	ExpiredAt    *time.Time
 	ExpiredCount int
 	RequireAuth  bool
+	PasswordHash string
 	UserID       *uint
 	UploadType   string
 	OwnerIP      string
@@ -32,6 +34,7 @@ type ShareFileReq struct {
 	ExpiredAt    *time.Time
 	ExpiredCount int
 	RequireAuth  bool
+	PasswordHash string
 	UserID       *uint
 	UploadType   string
 	OwnerIP      string
@@ -107,37 +110,56 @@ func (s *Service) SetNotifyService(svc NotifyServiceInterface) {
 	s.notifySvc = svc
 }
 
-// GenerateCode 生成分享代码
+// GenerateCode 生成分享代码（crypto/rand，8 位字母数字）。
 func (s *Service) GenerateCode() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	code := make([]byte, 8)
-	for i := range code {
-		code[i] = charset[seededRand.Intn(len(charset))]
+	const length = 8
+	max := big.NewInt(int64(len(charset)))
+	b := make([]byte, length)
+	for i := range b {
+		n, err := rand.Int(rand.Reader, max)
+		if err != nil {
+			// 极端回退（crypto/rand 几乎不会失败）
+			n = big.NewInt(int64(time.Now().UnixNano()) % int64(len(charset)))
+		}
+		b[i] = charset[n.Int64()]
 	}
+	return string(b)
+}
 
-	return string(code)
+// createWithRetry 通用写库重试（code 唯一冲突时换码重试，最多 5 次）。
+func (s *Service) createWithRetry(ctx context.Context, build func(code string) *model.FileCode) (*model.FileCode, error) {
+	for i := 0; i < 5; i++ {
+		fc := build(s.GenerateCode())
+		if err := s.fileCodeRepo.Create(ctx, fc); err != nil {
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				continue // 换 code 重试
+			}
+			return nil, err
+		}
+		return fc, nil
+	}
+	return nil, errors.New("生成分享码失败：多次冲突")
 }
 
 // ShareText 分享文本
 func (s *Service) ShareText(ctx context.Context, req *ShareTextReq) (*ShareResp, error) {
 	s.ensureRepository()
 
-	code := s.GenerateCode()
-
-	fileCode := &model.FileCode{
-		Code:         code,
-		Text:         req.Text,
-		ExpiredAt:    req.ExpiredAt,
-		ExpiredCount: req.ExpiredCount,
-		RequireAuth:  req.RequireAuth,
-		UserID:       req.UserID,
-		UploadType:   req.UploadType,
-		OwnerIP:      req.OwnerIP,
-	}
-
-	if err := s.fileCodeRepo.Create(ctx, fileCode); err != nil {
+	fileCode, err := s.createWithRetry(ctx, func(code string) *model.FileCode {
+		return &model.FileCode{
+			Code:         code,
+			Text:         req.Text,
+			ExpiredAt:    req.ExpiredAt,
+			ExpiredCount: req.ExpiredCount,
+			RequireAuth:  req.RequireAuth,
+			PasswordHash: req.PasswordHash,
+			UserID:       req.UserID,
+			UploadType:   req.UploadType,
+			OwnerIP:      req.OwnerIP,
+		}
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -193,25 +215,25 @@ func (s *Service) ShareFile(ctx context.Context, req *ShareFileReq) (*ShareResp,
 func (s *Service) CreateShare(ctx context.Context, req *ShareFileReq) (*ShareResp, error) {
 	s.ensureRepository()
 
-	code := s.GenerateCode()
-
-	fileCode := &model.FileCode{
-		Code:         code,
-		FilePath:     req.FilePath,
-		Size:         req.Size,
-		Text:         req.Text,
-		ExpiredAt:    req.ExpiredAt,
-		ExpiredCount: req.ExpiredCount,
-		RequireAuth:  req.RequireAuth,
-		UserID:       req.UserID,
-		UploadType:   req.UploadType,
-		OwnerIP:      req.OwnerIP,
-		FileHash:     req.FileHash,
-		IsChunked:    req.IsChunked,
-		UploadID:     req.UploadID,
-	}
-
-	if err := s.fileCodeRepo.Create(ctx, fileCode); err != nil {
+	fileCode, err := s.createWithRetry(ctx, func(code string) *model.FileCode {
+		return &model.FileCode{
+			Code:         code,
+			FilePath:     req.FilePath,
+			Size:         req.Size,
+			Text:         req.Text,
+			ExpiredAt:    req.ExpiredAt,
+			ExpiredCount: req.ExpiredCount,
+			RequireAuth:  req.RequireAuth,
+			PasswordHash: req.PasswordHash,
+			UserID:       req.UserID,
+			UploadType:   req.UploadType,
+			OwnerIP:      req.OwnerIP,
+			FileHash:     req.FileHash,
+			IsChunked:    req.IsChunked,
+			UploadID:     req.UploadID,
+		}
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -225,25 +247,7 @@ func (s *Service) CreateShare(ctx context.Context, req *ShareFileReq) (*ShareRes
 		}
 	}
 
-	return &ShareResp{
-		Code:         fileCode.Code,
-		Prefix:       fileCode.Prefix,
-		Suffix:       fileCode.Suffix,
-		UUIDFileName: fileCode.UUIDFileName,
-		FilePath:     fileCode.FilePath,
-		Size:         fileCode.Size,
-		Text:         fileCode.Text,
-		ExpiredAt:    fileCode.ExpiredAt,
-		ExpiredCount: fileCode.ExpiredCount,
-		UsedCount:    fileCode.UsedCount,
-		FileHash:     fileCode.FileHash,
-		IsChunked:    fileCode.IsChunked,
-		UploadID:     fileCode.UploadID,
-		UserID:       fileCode.UserID,
-		UploadType:   fileCode.UploadType,
-		RequireAuth:  fileCode.RequireAuth,
-		OwnerIP:      fileCode.OwnerIP,
-	}, nil
+	return s.modelToResp(fileCode), nil
 }
 
 // GetFileByCode 通过代码获取文件
