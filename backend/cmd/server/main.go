@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/zy84338719/fileCodeBox/backend/cmd/server/bootstrap"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/logger"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -20,8 +20,7 @@ func main() {
 
 	h, err := bootstrap.Bootstrap(*configPath)
 	if err != nil {
-		fmt.Printf("Bootstrap failed: %v\n", err)
-		os.Exit(1)
+		logger.Fatal("bootstrap failed", zap.Error(err))
 	}
 	defer bootstrap.Cleanup()
 
