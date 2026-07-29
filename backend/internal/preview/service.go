@@ -6,7 +6,9 @@ import (
 	"os"
 )
 
-// Service 预览服务
+// svc 预览服务全局单例。
+// 设计权衡：bootstrap 调 InitService 初始化，各处 GetService 读取。预览功能可选
+// （依赖 ffmpeg），用全局单例 + nil 判断简化调用方。未来若迁移到 DI 容器可改为构造注入。
 var svc *Service
 
 // InitService 初始化预览服务
