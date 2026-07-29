@@ -530,6 +530,25 @@ func customizedRegister(r *server.Hertz) {
 	// ===== presign 预签名直传端点（gen router 未注册，在此补）=====
 	r.PUT("/api/v1/presign/upload-direct/:uploadID", presignHandler.UploadDirect)
 
+	// ===== token 刷新端点（前端 401 拦截器调用，换发新 token）=====
+	r.POST("/api/v1/user/refresh", func(ctx context.Context, c *app.RequestContext) {
+		authHeader := string(c.GetHeader("Authorization"))
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			c.JSON(consts.StatusUnauthorized, map[string]interface{}{"code": 401, "message": "missing token"})
+			return
+		}
+		oldToken := strings.TrimPrefix(authHeader, "Bearer ")
+		newToken, err := auth.RefreshToken(oldToken)
+		if err != nil {
+			c.JSON(consts.StatusUnauthorized, map[string]interface{}{"code": 401, "message": "token invalid or expired"})
+			return
+		}
+		c.JSON(consts.StatusOK, map[string]interface{}{
+			"code": 200, "message": "ok",
+			"data": map[string]string{"token": newToken},
+		})
+	})
+
 	// ===== 公开配置端点（前端 configStore 启动时拉取）=====
 	// 前端 publicApi.getConfig() 请求 /api/config 获取站点配置（名称、上传限制等），
 	// 此前端点缺失导致前端启动报 "获取配置失败: Network Error"。此处补齐。
