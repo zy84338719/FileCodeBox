@@ -246,20 +246,22 @@ func bindEnvironment(v *viper.Viper) {
 	}
 }
 
-// insecureDefaultSecrets 已知的不安全默认密钥（禁止在生产环境使用）。
+// insecureDefaultSecrets 已知的不安全默认/占位密钥（全环境禁止使用）。
 var insecureDefaultSecrets = map[string]string{
-	"FileCodeBox2025JWT":                   "user.jwt_secret",
-	"filecodebox-dev-signing-key-change-me": "presign signing key",
+	"FileCodeBox2025JWT":                       "user.jwt_secret",
+	"filecodebox-dev-signing-key-change-me":    "presign signing key",
+	"FileCodeBox2025SecretKey":                 "auth default secret",
+	"please-change-me":                         "placeholder secret",
+	"dev-only-change-me":                       "dev placeholder secret",
+	"dev-only-change-me-to-random-32chars":     "dev placeholder secret",
 }
 
-// validateSecrets 在生产环境校验敏感配置，避免使用默认/弱密钥启动（fail-fast）。
+// validateSecrets 全环境校验敏感配置，避免使用默认/弱密钥启动（fail-fast）。
+// 所有环境（含开发）都必须设置强随机的 user.jwt_secret。
 func validateSecrets(cfg *Config) error {
-	if !cfg.IsProduction() {
-		return nil
-	}
-	// jwt_secret
+	// jwt_secret：空或命中黑名单一律拒绝
 	if sec := cfg.User.JWTSecret; sec == "" || insecureDefaultSecrets[sec] != "" {
-		return fmt.Errorf("production mode requires a secure user.jwt_secret: current value is empty or a known default; set FCB_JWT_SECRET env to a strong random string")
+		return fmt.Errorf("a secure user.jwt_secret is required in ALL environments: current value is empty or a known default; set FCB_JWT_SECRET env to a strong random string (>=32 chars)")
 	}
 	return nil
 }
