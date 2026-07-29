@@ -236,18 +236,18 @@ onMounted(() => {
 .stat-item {
   text-align: center;
   padding: 20px;
-  background: #f5f7fa;
+  background: var(--color-muted);
   border-radius: 8px;
 }
 
 .stat-item.upload {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--primary-bg);
+  color: var(--primary-color);
 }
 
 .stat-item.download {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
+  background: var(--primary-bg);
+  color: var(--primary-color);
 }
 
 .stat-value {

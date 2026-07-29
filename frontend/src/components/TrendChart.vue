@@ -60,7 +60,7 @@
         v-if="uploadPath"
         :d="uploadPath"
         fill="none"
-        stroke="#667eea"
+        stroke="#5e6ad2"
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
@@ -86,15 +86,15 @@
           :cx="p.x"
           :cy="p.uploadY"
           r="3"
-          fill="#667eea"
+          fill="#5e6ad2"
         />
       </g>
 
       <!-- 定义渐变 -->
       <defs>
         <linearGradient id="uploadGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#667eea" stop-opacity="0.6" />
-          <stop offset="100%" stop-color="#667eea" stop-opacity="0" />
+          <stop offset="0%" stop-color="#5e6ad2" stop-opacity="0.6" />
+          <stop offset="100%" stop-color="#5e6ad2" stop-opacity="0" />
         </linearGradient>
       </defs>
     </svg>
@@ -234,7 +234,7 @@ const gridLines = computed(() => {
 }
 
 .legend-dot.upload {
-  background: #667eea;
+  background: #5e6ad2;
 }
 
 .legend-dot.download {

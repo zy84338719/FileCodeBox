@@ -5,7 +5,7 @@
       <el-col :span="6">
         <el-card class="status-card">
           <div class="status-item">
-            <el-icon size="30" color="#67c23a"><CircleCheckFilled /></el-icon>
+            <el-icon size="30" class="icon-success"><CircleCheckFilled /></el-icon>
             <div class="status-info">
               <h4>系统状态</h4>
               <p class="text-success">运行正常</p>
@@ -17,7 +17,7 @@
       <el-col :span="6">
         <el-card class="status-card">
           <div class="status-item">
-            <el-icon size="30" color="#409eff"><Timer /></el-icon>
+            <el-icon size="30" class="icon-info"><Timer /></el-icon>
             <div class="status-info">
               <h4>版本</h4>
               <p>{{ systemInfo.version }}</p>
@@ -29,7 +29,7 @@
       <el-col :span="6">
         <el-card class="status-card">
           <div class="status-item">
-            <el-icon size="30" color="#e6a23c"><Files /></el-icon>
+            <el-icon size="30" class="icon-warning"><Files /></el-icon>
             <div class="status-info">
               <h4>总文件数</h4>
               <p>{{ systemInfo.totalFiles }}</p>
@@ -41,7 +41,7 @@
       <el-col :span="6">
         <el-card class="status-card">
           <div class="status-item">
-            <el-icon size="30" color="#f56c6c"><Folder /></el-icon>
+            <el-icon size="30" class="icon-danger"><Folder /></el-icon>
             <div class="status-info">
               <h4>总大小</h4>
               <p>{{ formatFileSize(systemInfo.totalSize) }}</p>
@@ -262,18 +262,34 @@ onMounted(() => {
 .status-info h4 {
   margin: 0 0 5px;
   font-size: 14px;
-  color: #909399;
+  color: var(--color-text-secondary);
 }
 
 .status-info p {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 
 .text-success {
-  color: #67c23a !important;
+  color: var(--color-success) !important;
+}
+
+.icon-success {
+  color: var(--color-success);
+}
+
+.icon-info {
+  color: var(--primary-color);
+}
+
+.icon-warning {
+  color: var(--color-warning);
+}
+
+.icon-danger {
+  color: var(--color-danger);
 }
 
 .tool-card {
@@ -308,6 +324,6 @@ onMounted(() => {
 .tool-info p {
   margin: 0;
   font-size: 14px;
-  color: #909399;
+  color: var(--color-text-secondary);
 }
 </style>

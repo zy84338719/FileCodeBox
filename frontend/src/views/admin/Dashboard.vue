@@ -480,23 +480,12 @@ const generateMockFileTypeDist = () => {
   justify-content: space-between;
   padding: 32px 36px;
   margin-bottom: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 20px;
-  color: white;
-  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.25);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  color: var(--color-text-primary);
   position: relative;
   overflow: hidden;
-}
-
-.welcome-card::before {
-  content: '';
-  position: absolute;
-  right: -100px;
-  top: -100px;
-  width: 300px;
-  height: 300px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
 }
 
 .welcome-left {
@@ -508,12 +497,13 @@ const generateMockFileTypeDist = () => {
   margin: 0 0 8px;
   font-size: 28px;
   font-weight: 700;
+  color: var(--color-text-primary);
 }
 
 .welcome-subtitle {
   margin: 0 0 20px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-text-secondary);
 }
 
 .quick-actions {
@@ -523,15 +513,15 @@ const generateMockFileTypeDist = () => {
 }
 
 .quick-actions .el-button {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
+  background: var(--primary-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
   font-weight: 500;
 }
 
 .quick-actions .el-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
+  background: var(--color-surface);
+  border-color: var(--primary-color);
 }
 
 .welcome-right {
@@ -544,28 +534,32 @@ const generateMockFileTypeDist = () => {
 .stat-card {
   position: relative;
   padding: 24px;
-  border-radius: 16px;
-  color: white;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  color: var(--color-text-primary);
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease;
   cursor: pointer;
 }
 
 .stat-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary-color);
 }
 
-.gradient-blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.gradient-purple { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-.gradient-green { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-.gradient-orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.gradient-blue,
+.gradient-purple,
+.gradient-green,
+.gradient-orange {
+  background: var(--color-surface);
+}
 
 .stat-icon {
   position: relative;
   z-index: 1;
   margin-bottom: 16px;
-  opacity: 0.9;
+  background: var(--primary-bg);
+  color: var(--primary-color);
 }
 
 .stat-content {
@@ -577,28 +571,23 @@ const generateMockFileTypeDist = () => {
   font-size: 32px;
   font-weight: 700;
   margin-bottom: 8px;
+  color: var(--color-text-primary);
 }
 
 .stat-label {
   font-size: 14px;
-  opacity: 0.9;
+  color: var(--color-text-secondary);
 }
 
 .stat-decoration {
-  position: absolute;
-  right: -20px;
-  bottom: -20px;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  display: none;
 }
 
 .charts-row { margin-bottom: 24px; }
 
 .chart-card {
-  border-radius: 16px;
-  border: none;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
 }
 
 .card-header {
@@ -614,7 +603,7 @@ const generateMockFileTypeDist = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-text-primary, #1a1f3a);
+  color: var(--color-text-primary);
 }
 
 .chart-placeholder {
@@ -623,7 +612,7 @@ const generateMockFileTypeDist = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-secondary, #909399);
+  color: var(--color-text-secondary);
 }
 
 .chart-placeholder p { margin-top: 16px; }
@@ -646,7 +635,7 @@ const generateMockFileTypeDist = () => {
   top: 0;
   bottom: 0;
   height: 32px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   opacity: 0.2;
   transition: width 0.5s ease;
   z-index: 0;
@@ -660,7 +649,7 @@ const generateMockFileTypeDist = () => {
   width: 100%;
   padding: 0 12px;
   font-size: 13px;
-  color: var(--color-text-primary, #303133);
+  color: var(--color-text-primary);
 }
 
 .file-type-name {
@@ -668,7 +657,7 @@ const generateMockFileTypeDist = () => {
 }
 
 .file-type-count {
-  color: var(--color-text-secondary, #909399);
+  color: var(--color-text-secondary);
 }
 
 .file-type-dist .empty {
@@ -677,14 +666,14 @@ const generateMockFileTypeDist = () => {
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: var(--color-text-secondary, #909399);
+  color: var(--color-text-secondary);
 }
 
 .recent-row { margin-bottom: 24px; }
 
 .recent-card {
-  border-radius: 16px;
-  border: none;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
 }
 
 .user-cell {
@@ -694,14 +683,14 @@ const generateMockFileTypeDist = () => {
 }
 
 .user-avatar-small {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--primary-bg);
+  color: var(--primary-color);
   font-weight: 600;
   font-size: 14px;
 }
 
 :deep(.el-card__header) {
-  border-bottom: 1px solid var(--color-border, #f0f0f0);
+  border-bottom: 1px solid var(--color-border);
   padding: 20px 24px;
 }
 

@@ -139,20 +139,80 @@ onMounted(() => loadList(1))
 </script>
 
 <style scoped>
-.history-page { max-width: 1200px; margin: 0 auto; padding: 24px; }
-.page-header h2 { margin: 0 0 4px; color: #303133; }
-.page-desc { margin: 0 0 24px; color: #909399; font-size: 14px; }
-.toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.search-input { width: 280px; }
-.history-table { border-radius: 8px; overflow: hidden; }
-.mono { font-family: 'Courier New', monospace; font-size: 13px; color: #606266; }
-.code-cell { background: #f5f7fa; padding: 2px 8px; border-radius: 4px; }
+.history-page {
+  max-width: 100%;
+}
+
+.page-header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.page-header h2 {
+  margin: 0 0 4px;
+  color: var(--color-text-primary);
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.page-desc {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.search-input {
+  width: 280px;
+}
+
+.history-table {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.mono {
+  font-family: 'SF Mono', 'Courier New', monospace;
+  font-size: var(--text-sm);
+  color: var(--color-text-regular);
+}
+
+.code-cell {
+  background: var(--color-muted);
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--radius-sm);
+}
+
 .text-preview {
-  color: #606266; font-size: 13px; max-width: 220px;
-  display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--color-text-regular);
+  font-size: var(--text-sm);
+  max-width: 220px;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   vertical-align: middle;
 }
-.muted { color: #c0c4cc; }
-.pagination-wrapper { display: flex; justify-content: flex-end; margin-top: 16px; }
-.empty-hint { color: #909399; font-size: 13px; margin: 8px 0 0; }
+
+.muted {
+  color: var(--color-text-tertiary);
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-lg);
+}
+
+.empty-hint {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  margin: var(--spacing-sm) 0 0;
+}
 </style>

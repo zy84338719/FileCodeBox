@@ -1,12 +1,5 @@
 <template>
   <div class="share-view-container">
-    <!-- 动态背景 -->
-    <div class="bg-decoration">
-      <div class="circle circle1"></div>
-      <div class="circle circle2"></div>
-      <div class="circle circle3"></div>
-    </div>
-
     <!-- 主容器 -->
     <div class="main-wrapper">
       <div class="glass-card">
@@ -69,31 +62,14 @@
 
           <el-divider />
 
-          <!-- 文本分享 -->
-          <div v-if="shareData.text" class="text-share-content">
-            <div class="content-label">
-              <el-icon><Document /></el-icon>
-              <span>文本内容</span>
-            </div>
-            <div class="text-box">
-              <pre>{{ shareData.text }}</pre>
-            </div>
-            <div class="actions">
-              <el-button type="primary" @click="copyText">
-                <el-icon><CopyDocument /></el-icon>
-                复制文本
-              </el-button>
-            </div>
-          </div>
-
-          <!-- 文件分享 -->
-          <div v-else-if="shareData.name || shareData.file_name" class="file-share-content">
+          <!-- 文件分享（有下载链接或文件名优先判定为文件） -->
+          <div v-if="shareData.url || shareData.name || shareData.file_name" class="file-share-content">
             <div class="file-card">
               <div class="file-icon">
-                <el-icon :size="80" color="#667eea"><Folder /></el-icon>
+                <el-icon :size="80" class="icon-primary"><Folder /></el-icon>
               </div>
               <div class="file-info">
-                <h3 class="file-name">{{ shareData.name || shareData.file_name }}</h3>
+                <h3 class="file-name">{{ shareData.name || shareData.file_name || shareData.text }}</h3>
                 <div class="file-meta">
                   <el-tag type="info" size="large">
                     {{ formatFileSize(shareData.size || shareData.file_size || 0) }}
@@ -106,6 +82,23 @@
               <el-button type="primary" size="large" class="download-btn" @click="downloadFile">
                 <el-icon><Download /></el-icon>
                 下载文件
+              </el-button>
+            </div>
+          </div>
+
+          <!-- 文本分享 -->
+          <div v-else-if="shareData.text" class="text-share-content">
+            <div class="content-label">
+              <el-icon><Document /></el-icon>
+              <span>文本内容</span>
+            </div>
+            <div class="text-box">
+              <pre>{{ shareData.text }}</pre>
+            </div>
+            <div class="actions">
+              <el-button type="primary" @click="copyText">
+                <el-icon><CopyDocument /></el-icon>
+                复制文本
               </el-button>
             </div>
           </div>
@@ -223,58 +216,8 @@ onMounted(() => {
 .share-view-container {
   position: relative;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--color-bg);
   overflow-x: hidden;
-}
-
-/* 背景装饰 */
-.bg-decoration {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.circle {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  animation: float 20s infinite ease-in-out;
-}
-
-.circle1 {
-  width: 500px;
-  height: 500px;
-  top: -200px;
-  left: -200px;
-}
-
-.circle2 {
-  width: 400px;
-  height: 400px;
-  bottom: -150px;
-  right: -150px;
-  animation-delay: 5s;
-}
-
-.circle3 {
-  width: 300px;
-  height: 300px;
-  top: 50%;
-  right: 10%;
-  animation-delay: 10s;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-50px) scale(1.1);
-  }
 }
 
 /* 主容器 */
@@ -292,10 +235,11 @@ onMounted(() => {
 
 .glass-card {
   width: 100%;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 24px;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
   padding: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-xs);
 }
 
 /* 加载状态 */
@@ -306,7 +250,7 @@ onMounted(() => {
 
 .loading-icon {
   animation: spin 1s linear infinite;
-  color: #667eea;
+  color: var(--primary-color);
 }
 
 @keyframes spin {
@@ -317,7 +261,7 @@ onMounted(() => {
 .loading-section p {
   margin-top: 20px;
   font-size: 16px;
-  color: #909399;
+  color: var(--color-text-secondary);
 }
 
 /* 错误状态 */
@@ -348,8 +292,8 @@ onMounted(() => {
 .logo-icon {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 14px;
+  background: var(--primary-color);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -360,20 +304,20 @@ onMounted(() => {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 
 .logo-text p {
   margin: 4px 0 0;
   font-size: 13px;
-  color: #909399;
+  color: var(--color-text-secondary);
 }
 
 .home-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-color);
   border: none;
   color: white;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   font-weight: 500;
 }
 
@@ -389,12 +333,12 @@ onMounted(() => {
   margin-bottom: 16px;
   font-weight: 600;
   font-size: 16px;
-  color: #606266;
+  color: var(--color-text-regular);
 }
 
 .text-box {
-  background: #f5f7fa;
-  border-radius: 12px;
+  background: var(--color-muted);
+  border-radius: var(--radius-lg);
   padding: 24px;
   margin-bottom: 20px;
 }
@@ -406,7 +350,7 @@ onMounted(() => {
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   line-height: 1.8;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 
 .actions {
@@ -424,8 +368,8 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 40px;
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
-  border-radius: 16px;
+  background: var(--color-muted);
+  border-radius: var(--radius-xl);
 }
 
 .file-icon {
@@ -441,7 +385,7 @@ onMounted(() => {
   margin: 0 0 16px;
   font-size: 20px;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 
 .file-meta {
@@ -451,11 +395,19 @@ onMounted(() => {
 }
 
 .download-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-color);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 12px 32px;
   font-weight: 600;
+}
+
+.icon-secondary {
+  color: var(--color-text-secondary);
+}
+
+.icon-primary {
+  color: var(--primary-color);
 }
 
 /* 分享信息 */

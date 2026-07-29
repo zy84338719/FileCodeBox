@@ -292,8 +292,8 @@ onMounted(() => {
 }
 
 .files-card {
-  border-radius: 16px;
-  border: none;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
 }
 
 .card-header {
@@ -306,26 +306,25 @@ onMounted(() => {
   margin: 0 0 4px;
   font-size: 24px;
   font-weight: 600;
-  color: #1a1f3a;
+  color: var(--color-text-primary);
 }
 
 .header-title p {
   margin: 0;
   font-size: 14px;
-  color: #909399;
+  color: var(--color-text-secondary);
 }
 
 .refresh-btn {
-  border-radius: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: var(--radius-md);
+  background: var(--primary-color);
   border: none;
   color: white;
   transition: all 0.3s;
 }
 
 .refresh-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: var(--shadow-xs);
 }
 
 .files-table {
@@ -341,8 +340,8 @@ onMounted(() => {
 .file-icon {
   width: 56px;
   height: 56px;
-  border-radius: 12px;
-  background: #f5f7fa;
+  border-radius: var(--radius-lg);
+  background: var(--color-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -354,7 +353,7 @@ onMounted(() => {
 
 .file-name {
   font-weight: 600;
-  color: #1a1f3a;
+  color: var(--color-text-primary);
   margin-bottom: 6px;
   font-size: 15px;
 }
@@ -365,7 +364,7 @@ onMounted(() => {
 }
 
 .anonymous {
-  color: #909399;
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
@@ -375,15 +374,15 @@ onMounted(() => {
   justify-content: center;
   gap: 4px;
   font-weight: 600;
-  color: #667eea;
+  color: var(--primary-color);
 }
 
 .expire-time {
-  color: #606266;
+  color: var(--color-text-regular);
 }
 
 .expire-time.expired {
-  color: #f56c6c;
+  color: var(--color-danger);
   font-weight: 600;
 }
 
@@ -394,14 +393,14 @@ onMounted(() => {
 }
 
 :deep(.el-table) {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
 :deep(.el-table th) {
-  background: #fafafa !important;
+  background: var(--color-muted) !important;
   font-weight: 600;
-  color: #1a1f3a;
+  color: var(--color-text-primary);
 }
 
 :deep(.el-table td) {
@@ -409,6 +408,6 @@ onMounted(() => {
 }
 
 :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
-  background: #fafafa;
+  background: var(--color-muted);
 }
 </style>

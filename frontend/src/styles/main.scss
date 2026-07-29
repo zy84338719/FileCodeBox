@@ -1,4 +1,8 @@
-// 全局样式
+// =============================================================================
+// FileCodeBox 全局样式 — 极简专业风(Linear / Vercel)
+// 设计语言:黑白主导 + 冷色强调,锐利 1px 边框,极轻阴影,克制圆角
+// =============================================================================
+
 * {
   margin: 0;
   padding: 0;
@@ -6,137 +10,367 @@
 }
 
 :root {
-  // 主题色
-  --primary-color: #667eea;
-  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  // 主色 / 强调色 —— 单色,去渐变化
+  --primary-color: #5e6ad2;        // Linear 紫蓝,仅用于按钮/链接/激活态
+  --primary-hover: #4f5ac1;
+  --primary-active: #444eb0;
+  --primary-bg: #eef0fc;           // 强调色浅底(tag/选中行/hover)
+  --primary-color-rgb: 94, 106, 210;
+  --primary-gradient: linear-gradient(135deg, #5e6ad2 0%, #5e6ad2 100%); // 兼容旧引用,实为单色
 
-  // 中性色（亮色模式）
-  --color-bg: #f5f7fb;
+  // 中性色(亮色模式)—— 纯净、锐利
+  --color-bg: #fafafa;
   --color-surface: #ffffff;
-  --color-border: #e4e7ed;
-  --color-text-primary: #303133;
-  --color-text-regular: #606266;
-  --color-text-secondary: #909399;
-  --color-muted: #fafafa;
-  --color-card-bg: #ffffff;
   --color-elevated: #ffffff;
+  --color-card-bg: #ffffff;
   --color-input-bg: #ffffff;
-  --color-alert-bg: #ecf5ff;
-  --color-warn-bg: #fdf6ec;
-  --color-success-bg: #f0f9eb;
-  --color-danger-bg: #fef0f0;
+  --color-muted: #f5f5f5;
 
-  // 功能色
-  --color-success: #67c23a;
-  --color-warning: #e6a23c;
-  --color-danger: #f56c6c;
-  --color-info: #909399;
+  --color-border: #e5e5e5;         // 实色 1px 边框
+  --color-border-light: #f0f0f0;
 
-  // 间距
-  --spacing-xs: 8px;
-  --spacing-sm: 12px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
+  // 文字 —— 纯灰阶
+  --color-text-primary: #0a0a0a;   // 近黑
+  --color-text-regular: #404040;
+  --color-text-secondary: #737373;
+  --color-text-tertiary: #a3a3a3;
 
-  // 圆角
+  // 功能色 —— 降饱和、更冷调
+  --color-success: #16a34a;
+  --color-success-bg: #f0fdf4;
+  --color-warning: #ca8a04;
+  --color-warn-bg: #fefce8;
+  --color-danger: #dc2626;
+  --color-danger-bg: #fef2f2;
+  --color-info: #6b7280;
+  --color-alert-bg: #f8fafc;
+
+  // 间距 —— 紧凑、信息密度高
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+
+  // 圆角 —— 克制
   --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-md: 6px;      // 按钮/输入框
+  --radius-lg: 8px;      // 默认容器
+  --radius-xl: 12px;     // 大卡片
+  --radius-2xl: 16px;
+
+  // 阴影 —— 极轻,Linear 式
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+
+  // 字号系统
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+
+  // =============================================================================
+  // Element Plus 全局主题覆盖 —— 所有 EP 组件自动跟随
+  // =============================================================================
+  --el-color-primary: #5e6ad2;
+  --el-color-primary-light-3: #828bee;
+  --el-color-primary-light-5: #a4abf3;
+  --el-color-primary-light-7: #c6ccf8;
+  --el-color-primary-light-8: #d7dbfa;
+  --el-color-primary-light-9: #eef0fc;
+  --el-color-primary-dark-2: #4f5ac1;
+
+  --el-color-success: #16a34a;
+  --el-color-warning: #ca8a04;
+  --el-color-danger: #dc2626;
+  --el-color-error: #dc2626;
+  --el-color-info: #6b7280;
+
+  --el-border-radius-base: 6px;
+  --el-border-radius-small: 4px;
+  --el-border-radius-round: 6px;
+  --el-border-radius-circle: 20px;
+
+  --el-border-color: #e5e5e5;
+  --el-border-color-light: #e5e5e5;
+  --el-border-color-lighter: #f0f0f0;
+  --el-border-color-extra-light: #f5f5f5;
+  --el-border-color-dark: #d4d4d4;
+
+  --el-bg-color: #ffffff;
+  --el-bg-color-page: #fafafa;
+  --el-bg-color-overlay: #ffffff;
+  --el-fill-color: #f5f5f5;
+  --el-fill-color-light: #fafafa;
+  --el-fill-color-lighter: #fafafa;
+  --el-fill-color-blank: #ffffff;
+
+  --el-text-color-primary: #0a0a0a;
+  --el-text-color-regular: #404040;
+  --el-text-color-secondary: #737373;
+  --el-text-color-placeholder: #a3a3a3;
+
+  --el-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --el-box-shadow-light: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-// 暗色模式覆盖（由 theme store 注入 .dark class）
+// =============================================================================
+// 暗色模式(由 theme store 注入 .dark class)
+// =============================================================================
 html.dark {
-  --color-bg: #0f1117;
-  --color-surface: #1a1f2e;
-  --color-border: #2a2f3e;
-  --color-text-primary: #e4e7ed;
-  --color-text-regular: #c0c4cc;
-  --color-text-secondary: #909399;
-  --color-muted: #232734;
-  --color-card-bg: #1a1f2e;
-  --color-elevated: #232734;
-  --color-input-bg: #232734;
-  --color-alert-bg: #1d2c3a;
-  --color-warn-bg: #2d2519;
-  --color-success-bg: #1a2b1c;
-  --color-danger-bg: #2c1a1a;
-  --primary-color: #7e8cf3;
-  --primary-gradient: linear-gradient(135deg, #7e8cf3 0%, #9c6dd6 100%);
+  --primary-color: #7c87f0;
+  --primary-hover: #8d96f2;
+  --primary-active: #6b76ee;
+  --primary-bg: rgba(124, 135, 240, 0.12);
+  --primary-color-rgb: 124, 135, 240;
+
+  --color-bg: #0a0a0a;
+  --color-surface: #141414;
+  --color-elevated: #1a1a1a;
+  --color-card-bg: #141414;
+  --color-input-bg: #141414;
+  --color-muted: #1a1a1a;
+
+  --color-border: #262626;
+  --color-border-light: #1f1f1f;
+
+  --color-text-primary: #fafafa;
+  --color-text-regular: #d4d4d4;
+  --color-text-secondary: #a3a3a3;
+  --color-text-tertiary: #737373;
+
+  --color-success-bg: rgba(22, 163, 74, 0.12);
+  --color-warn-bg: rgba(202, 138, 4, 0.12);
+  --color-danger-bg: rgba(220, 38, 38, 0.12);
+  --color-alert-bg: #1a1a1a;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+
+  // EP 暗色覆盖
+  --el-color-primary: #7c87f0;
+  --el-color-primary-light-3: #5e6ad2;
+  --el-color-primary-light-5: #4f5ac1;
+  --el-color-primary-light-7: #3d4596;
+  --el-color-primary-light-8: #2f3678;
+  --el-color-primary-light-9: rgba(124, 135, 240, 0.12);
+  --el-color-primary-dark-2: #8d96f2;
+
+  --el-border-color: #262626;
+  --el-border-color-light: #262626;
+  --el-border-color-lighter: #1f1f1f;
+  --el-border-color-extra-light: #1a1a1a;
+  --el-border-color-dark: #404040;
+
+  --el-bg-color: #141414;
+  --el-bg-color-page: #0a0a0a;
+  --el-bg-color-overlay: #1a1a1a;
+  --el-fill-color: #1a1a1a;
+  --el-fill-color-light: #141414;
+  --el-fill-color-lighter: #141414;
+  --el-fill-color-blank: #141414;
+
+  --el-text-color-primary: #fafafa;
+  --el-text-color-regular: #d4d4d4;
+  --el-text-color-secondary: #a3a3a3;
+  --el-text-color-placeholder: #525252;
+
+  --el-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --el-box-shadow-light: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
+// =============================================================================
+// 基础元素
+// =============================================================================
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  font-size: var(--text-base);
   background: var(--color-bg);
   color: var(--color-text-primary);
   line-height: 1.6;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #app {
   min-height: 100vh;
 }
 
-// 通用工具类
-.text-center {
-  text-align: center;
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: var(--primary-hover);
+  }
 }
 
+// =============================================================================
+// 工具类
+// =============================================================================
+.text-center { text-align: center; }
+.text-xs { font-size: var(--text-xs); }
+.text-sm { font-size: var(--text-sm); }
+.text-base { font-size: var(--text-base); }
+.text-lg { font-size: var(--text-lg); }
+.text-xl { font-size: var(--text-xl); }
+.text-2xl { font-size: var(--text-2xl); }
+.text-3xl { font-size: var(--text-3xl); }
+
+.text-primary { color: var(--color-text-primary); }
+.text-regular { color: var(--color-text-regular); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+
+.mt-xs { margin-top: var(--spacing-xs); }
 .mt-sm { margin-top: var(--spacing-sm); }
 .mt-md { margin-top: var(--spacing-md); }
 .mt-lg { margin-top: var(--spacing-lg); }
+.mt-xl { margin-top: var(--spacing-xl); }
 
+.mb-xs { margin-bottom: var(--spacing-xs); }
 .mb-sm { margin-bottom: var(--spacing-sm); }
 .mb-md { margin-bottom: var(--spacing-md); }
 .mb-lg { margin-bottom: var(--spacing-lg); }
+.mb-xl { margin-bottom: var(--spacing-xl); }
 
-// 卡片样式
+// =============================================================================
+// 通用组件样式
+// =============================================================================
+
+// 卡片 —— 1px 边框 + 极轻阴影,Linear 风
 .card {
   background: var(--color-card-bg);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  padding: var(--spacing-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+  padding: var(--spacing-xl);
   color: var(--color-text-primary);
-  transition: background-color 0.3s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-// 按钮样式
+// 按钮 —— 强调色实底,去上浮动画
 .btn-primary {
-  background: var(--primary-gradient);
-  color: white;
-  border: none;
+  background: var(--primary-color);
+  color: #fff;
+  border: 1px solid var(--primary-color);
   padding: var(--spacing-sm) var(--spacing-lg);
   border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+  }
+
+  &:active {
+    background: var(--primary-active);
+    border-color: var(--primary-active);
   }
 }
 
-// EP 4 dark 模式适配
+// =============================================================================
+// Element Plus 全局精修(贯穿所有页面的统一观感)
+// =============================================================================
+.el-button {
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+// 默认按钮:白底 + 1px 边框
+.el-button.is-default,
+.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info) {
+  &:hover {
+    background: var(--color-muted);
+    border-color: var(--color-border);
+  }
+}
+
+// 卡片:统一边框 + 阴影,去除 EP 默认重阴影
+.el-card {
+  border-radius: var(--radius-xl);
+  border-color: var(--color-border);
+
+  &.is-hover-shadow:hover,
+  &.is-always-shadow {
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+// 输入框:focus 态强调色边框
+.el-input__wrapper {
+  border-radius: var(--radius-md);
+  transition: box-shadow 0.15s ease;
+
+  &.is-focus {
+    box-shadow: 0 0 0 1px var(--primary-color) inset !important;
+  }
+}
+
+// 表格:表头浅底加粗,无斑马纹,1px 分隔
+.el-table {
+  --el-table-border-color: var(--color-border);
+  --el-table-header-bg-color: var(--color-muted);
+
+  th.el-table__cell {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    background-color: var(--color-muted) !important;
+  }
+
+  // 去斑马纹
+  .el-table__row:hover > td.el-table__cell {
+    background-color: var(--primary-bg) !important;
+  }
+}
+
+// 菜单:扁平化
+.el-menu {
+  border-right: none !important;
+}
+
+// 标签:低饱和浅底深字
+.el-tag {
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+// =============================================================================
+// 暗色模式 EP 适配(补充 token 无法覆盖的部分)
+// =============================================================================
 html.dark {
   .el-card {
-    background-color: var(--el-fill-color-blank) !important;
-    border-color: var(--el-border-color-lighter) !important;
+    background-color: var(--el-bg-color) !important;
+    border-color: var(--el-border-color) !important;
   }
 
   .el-card__header {
-    border-bottom-color: var(--el-border-color-lighter) !important;
+    border-bottom-color: var(--el-border-color) !important;
   }
 
   .el-table {
     background-color: transparent !important;
     --el-table-bg-color: transparent;
     --el-table-tr-bg-color: transparent;
-    --el-table-header-bg-color: var(--color-elevated);
+    --el-table-header-bg-color: var(--color-muted);
   }
 
   .el-table th.el-table__cell {
-    background-color: var(--color-elevated) !important;
+    background-color: var(--color-muted) !important;
   }
 
   .el-table tr {

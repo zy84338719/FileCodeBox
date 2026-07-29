@@ -1,23 +1,15 @@
 <template>
   <div class="home-container">
-    <!-- 动态背景 -->
-    <div class="bg-decoration">
-      <div class="circle circle1"></div>
-      <div class="circle circle2"></div>
-      <div class="circle circle3"></div>
-    </div>
-
     <!-- 主容器 -->
     <div class="main-wrapper">
-      <!-- 顶部导航 -->
+      <!-- 顶部导航 —— 扁平纯色 + 1px 底边框 -->
       <header class="top-nav">
         <div class="logo-section">
           <div class="logo-icon">
-            <el-icon size="32"><Box /></el-icon>
+            <el-icon size="22"><Box /></el-icon>
           </div>
           <div class="logo-text">
             <h1>{{ configStore.siteName() }}</h1>
-            <p>{{ configStore.siteDescription() }}</p>
           </div>
         </div>
 
@@ -25,24 +17,21 @@
           <LocaleSwitcher />
           <ThemeSwitcher />
           <NotifyBell v-if="userStore.isLoggedIn" />
-          <el-button class="docs-btn" @click="$router.push('/api-docs')">
+          <el-button text @click="$router.push('/api-docs')">
             <el-icon><Document /></el-icon>
             {{ t('home.apiDocs') }}
           </el-button>
-          <el-button class="retrieve-btn" @click="$router.push('/retrieve')">
+          <el-button text @click="$router.push('/retrieve')">
             <el-icon><Postcard /></el-icon>
             {{ t('home.retrieve') }}
           </el-button>
           <template v-if="userStore.isLoggedIn">
             <el-dropdown trigger="click" @command="handleUserCommand">
               <div class="user-info-card">
-                <el-avatar :size="40" class="user-avatar">
+                <el-avatar :size="32" class="user-avatar">
                   {{ userStore.userInfo?.username?.charAt(0).toUpperCase() }}
                 </el-avatar>
-                <div class="user-details">
-                  <span class="user-name">{{ userStore.userInfo?.username }}</span>
-                  <span class="user-label">{{ t('home.loggedIn') }}</span>
-                </div>
+                <span class="user-name">{{ userStore.userInfo?.username }}</span>
                 <el-icon><ArrowDown /></el-icon>
               </div>
               <template #dropdown>
@@ -60,8 +49,7 @@
             </el-dropdown>
           </template>
           <template v-else>
-            <el-button type="primary" class="login-btn" @click="$router.push('/user/login')">
-              <el-icon><User /></el-icon>
+            <el-button type="primary" @click="$router.push('/user/login')">
               {{ t('home.login') }}
             </el-button>
           </template>
@@ -70,6 +58,7 @@
 
       <!-- 主内容区 -->
       <main class="content-area">
+        <!-- Hero —— 左对齐大标题,Linear 风 -->
         <div class="intro-section">
           <h2>{{ t('home.slogan') }}</h2>
           <p>{{ t('home.description') }}</p>
@@ -77,7 +66,7 @@
 
         <!-- 场景选择 Tab：自己用 / 给他人 -->
         <div class="scenario-tabs">
-          <el-radio-group v-model="scenario" size="large" class="scenario-radio">
+          <el-radio-group v-model="scenario" class="scenario-radio">
             <el-radio-button value="others">
               <el-icon><Promotion /></el-icon>
               {{ t('home.scenario.others') }}
@@ -89,34 +78,39 @@
           </el-radio-group>
         </div>
 
-        <!-- 给他人场景：4 步流程图 -->
+        <!-- 给他人场景：极简横向时间线 -->
         <div v-if="scenario === 'others'" class="workflow-section">
           <h3 class="workflow-title">{{ t('home.workflow.title') }}</h3>
           <div class="workflow-steps">
             <div class="workflow-step">
-              <div class="step-num">1</div>
-              <div class="step-icon"><el-icon size="28"><UploadFilled /></el-icon></div>
+              <div class="step-marker">
+                <span class="step-num">1</span>
+                <el-icon size="20"><UploadFilled /></el-icon>
+              </div>
               <div class="step-title">{{ t('home.workflow.step1Title') }}</div>
               <div class="step-desc">{{ t('home.workflow.step1Desc') }}</div>
             </div>
-            <div class="workflow-arrow">→</div>
             <div class="workflow-step">
-              <div class="step-num">2</div>
-              <div class="step-icon"><el-icon size="28"><Postcard /></el-icon></div>
+              <div class="step-marker">
+                <span class="step-num">2</span>
+                <el-icon size="20"><Postcard /></el-icon>
+              </div>
               <div class="step-title">{{ t('home.workflow.step2Title') }}</div>
               <div class="step-desc">{{ t('home.workflow.step2Desc') }}</div>
             </div>
-            <div class="workflow-arrow">→</div>
             <div class="workflow-step">
-              <div class="step-num">3</div>
-              <div class="step-icon"><el-icon size="28"><Share /></el-icon></div>
+              <div class="step-marker">
+                <span class="step-num">3</span>
+                <el-icon size="20"><Share /></el-icon>
+              </div>
               <div class="step-title">{{ t('home.workflow.step3Title') }}</div>
               <div class="step-desc">{{ t('home.workflow.step3Desc') }}</div>
             </div>
-            <div class="workflow-arrow">→</div>
             <div class="workflow-step">
-              <div class="step-num">4</div>
-              <div class="step-icon"><el-icon size="28"><Download /></el-icon></div>
+              <div class="step-marker">
+                <span class="step-num">4</span>
+                <el-icon size="20"><Download /></el-icon>
+              </div>
               <div class="step-title">{{ t('home.workflow.step4Title') }}</div>
               <div class="step-desc">{{ t('home.workflow.step4Desc') }}</div>
             </div>
@@ -159,16 +153,7 @@
 
       <!-- 页脚 -->
       <footer class="footer-section">
-        <el-alert
-          type="info"
-          :closable="false"
-        >
-          <template #title>
-            <div class="footer-content">
-              <p>{{ t('home.notice') }}</p>
-            </div>
-          </template>
-        </el-alert>
+        <p class="footer-notice">{{ t('home.notice') }}</p>
         <div class="footer-links">
           <a href="https://github.com/zy84338719/fileCodeBox/backend" target="_blank">
             <el-icon><Link /></el-icon>
@@ -379,511 +364,385 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 主容器 —— 纯净背景 */
 .home-container {
-  position: relative;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  overflow-x: hidden;
+  background: var(--color-bg);
 }
 
-/* 背景装饰 */
-.bg-decoration {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.circle {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  animation: float 20s infinite ease-in-out;
-}
-
-.circle1 {
-  width: 500px;
-  height: 500px;
-  top: -200px;
-  left: -200px;
-}
-
-.circle2 {
-  width: 400px;
-  height: 400px;
-  bottom: -150px;
-  right: -150px;
-  animation-delay: 5s;
-}
-
-.circle3 {
-  width: 300px;
-  height: 300px;
-  top: 50%;
-  right: 10%;
-  animation-delay: 10s;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-50px) scale(1.1);
-  }
-}
-
-/* 主容器 */
 .main-wrapper {
-  position: relative;
-  z-index: 1;
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 24px;
+  padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-2xl);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
+/* 顶部导航 —— 扁平纯色 + 1px 底边框 */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 56px;
+  padding: 0 var(--spacing-md);
+  margin-bottom: var(--spacing-2xl);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--primary-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.logo-text h1 {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.user-info-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) var(--spacing-xs);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--color-muted);
+  }
+}
+
+.user-avatar {
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.user-name {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-size: var(--text-sm);
+}
+
+/* 主内容区 */
+.content-area {
+  flex: 1;
+}
+
+/* Hero —— 左对齐 */
+.intro-section {
+  margin-bottom: var(--spacing-2xl);
+  padding-top: var(--spacing-lg);
+}
+
+.intro-section h2 {
+  margin: 0 0 var(--spacing-md);
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.intro-section p {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--color-text-regular);
+  max-width: 600px;
+  line-height: 1.5;
+}
+
 /* 场景选择 Tab */
 .scenario-tabs {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-xl);
 }
 
 .scenario-radio :deep(.el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: white;
-  padding: 12px 28px;
   font-weight: 500;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
-.scenario-radio :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: white;
-  color: #667eea;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+/* 极简横向时间线 */
+.workflow-section {
+  margin-bottom: var(--spacing-2xl);
 }
 
-/* 分享方式三选一 */
+.workflow-title {
+  margin: 0 0 var(--spacing-lg);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.workflow-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  background: var(--color-muted);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.workflow-step {
+  padding: var(--spacing-xl) var(--spacing-lg);
+  border-right: 1px solid var(--color-border-light);
+  position: relative;
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.step-marker {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  color: var(--primary-color);
+}
+
+.step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: #fff;
+  background: var(--primary-color);
+}
+
+.step-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 4px;
+}
+
+.step-desc {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* 功能标签页 */
+.function-tabs {
+  margin-top: var(--spacing-xl);
+}
+
+.tab-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+:deep(.el-tabs__header) {
+  margin-bottom: var(--spacing-xl);
+}
+
+:deep(.el-tabs__nav-wrap::after) {
+  height: 1px;
+  background: var(--color-border);
+}
+
+:deep(.el-tabs__item) {
+  padding: 0 var(--spacing-xl);
+  height: 44px;
+  line-height: 44px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+:deep(.el-tabs__item:hover) {
+  color: var(--color-text-primary);
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: var(--color-text-primary);
+}
+
+:deep(.el-tabs__active-bar) {
+  background: var(--primary-color);
+  height: 2px;
+}
+
+/* 分享方式 Tab */
 .share-method-tabs {
-  margin-top: 20px;
+  margin-top: var(--spacing-lg);
 }
 
 .share-method-tabs :deep(.el-tabs__item) {
-  font-size: 15px;
+  font-size: var(--text-sm);
   font-weight: 500;
-  padding: 0 20px;
+  padding: 0 var(--spacing-lg);
 }
 
 .share-method-tabs :deep(.el-tabs__active-bar) {
-  height: 3px;
+  height: 2px;
 }
 
 .code-display {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 32px 16px;
+  padding: var(--spacing-2xl) var(--spacing-md);
 }
 
 .code-big {
-  font-size: 56px;
+  font-size: 48px;
   font-weight: 700;
   letter-spacing: 8px;
-  color: #667eea;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e8eaf6 100%);
-  padding: 24px 48px;
-  border-radius: 16px;
-  font-family: 'Courier New', monospace;
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
-  margin-bottom: 16px;
+  color: var(--primary-color);
+  background: var(--primary-bg);
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  font-family: 'SF Mono', 'Courier New', monospace;
+  margin-bottom: var(--spacing-md);
 }
 
 .code-hint {
-  color: #909399;
-  font-size: 13px;
-  margin: 8px 0 16px;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  margin: var(--spacing-sm) 0 var(--spacing-md);
   text-align: center;
 }
 
 .url-display {
-  padding: 20px 8px;
+  padding: var(--spacing-lg) var(--spacing-sm);
 }
 
 .qrcode-display {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px 16px;
+  padding: var(--spacing-xl) var(--spacing-md);
 }
 
 .qrcode-image {
-  width: 220px;
-  height: 220px;
-  border: 4px solid #f5f7fa;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  width: 200px;
+  height: 200px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
 .qrcode-loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 48px;
-  color: #909399;
-  font-size: 14px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-2xl);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
 }
 
-/* 顶部导航 */
-.top-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 40px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.logo-section {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.logo-icon {
-  width: 56px;
-  height: 56px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.logo-text h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 700;
-  color: white;
-}
-
-.logo-text p {
-  margin: 4px 0 0;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.user-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.user-info-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.user-info-card:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-}
-
-.user-avatar {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-  font-weight: 600;
-}
-
-.user-details {
-  display: flex;
-  flex-direction: column;
-}
-
-.user-name {
-  font-weight: 600;
-  color: white;
-  font-size: 15px;
-}
-
-.user-label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.login-btn,
-.retrieve-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  border-radius: 12px;
-  padding: 12px 24px;
-  font-weight: 600;
-  transition: all 0.3s;
-}
-
-.login-btn:hover,
-.retrieve-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-/* 主内容区 */
-.content-area {
-  flex: 1;
-  background: white;
-  border-radius: 24px;
-  padding: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-}
-
-.intro-section {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.intro-section h2 {
-  margin: 0 0 12px;
-  font-size: 32px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.intro-section p {
-  margin: 0;
-  font-size: 16px;
-  color: #909399;
-}
-
-/* 流程说明 */
-.workflow-section {
-  margin-bottom: 40px;
-  padding: 24px;
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
-  border-radius: 16px;
-}
-
-.workflow-title {
-  margin: 0 0 20px;
-  text-align: center;
-  font-size: 18px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.workflow-steps {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.workflow-step {
-  flex: 1;
-  min-width: 160px;
-  text-align: center;
-  padding: 16px 12px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  position: relative;
-}
-
-.step-num {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 24px;
-  height: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.step-icon {
-  margin: 8px 0;
-  color: #667eea;
-}
-
-.step-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 4px;
-}
-
-.step-desc {
-  font-size: 12px;
-  color: #909399;
-  line-height: 1.4;
-}
-
-.workflow-arrow {
-  font-size: 24px;
-  color: #c0c4cc;
-}
-
-/* 功能标签页 */
-.function-tabs {
-  margin-top: 20px;
-}
-
-.tab-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-:deep(.el-tabs__header) {
-  margin-bottom: 30px;
-}
-
-:deep(.el-tabs__nav-wrap::after) {
-  height: 1px;
-  background: #e8e8e8;
-}
-
-:deep(.el-tabs__item) {
-  padding: 0 32px;
-  height: 48px;
-  line-height: 48px;
-  color: #606266;
-  transition: all 0.3s;
-}
-
-:deep(.el-tabs__item:hover) {
-  color: #667eea;
-}
-
-:deep(.el-tabs__item.is-active) {
-  color: #667eea;
-  font-weight: 600;
-}
-
-:deep(.el-tabs__active-bar) {
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  height: 3px;
-  border-radius: 2px;
-}
-
-/* 分享结果 */
 .share-result {
-  padding: 20px 0;
-}
-
-.qrcode-section {
-  text-align: center;
-  margin-bottom: 24px;
-  padding: 20px;
-  background: #fafafa;
-  border-radius: 12px;
-}
-
-.qrcode-image {
-  width: 200px;
-  height: 200px;
-  border-radius: 8px;
-}
-
-.qrcode-tip {
-  margin: 12px 0 0;
-  font-size: 14px;
-  color: #909399;
-}
-
-.share-link-box {
-  margin-top: 20px;
+  padding: var(--spacing-lg) 0;
 }
 
 /* 页脚 */
 .footer-section {
-  margin-top: 40px;
+  margin-top: var(--spacing-2xl);
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
 }
 
-.footer-content p {
+.footer-notice {
   margin: 0;
   line-height: 1.6;
-  font-size: 14px;
-}
-
-.footer-links {
-  margin-top: 16px;
-  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
 }
 
 .footer-links a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: rgba(255, 255, 255, 0.8);
-  text-decoration: none;
-  font-size: 14px;
-  transition: all 0.3s;
-}
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  transition: color 0.15s ease;
 
-.footer-links a:hover {
-  color: white;
-  transform: translateY(-2px);
+  &:hover {
+    color: var(--color-text-primary);
+  }
 }
 
 /* 响应式 */
 @media (max-width: 768px) {
   .main-wrapper {
-    padding: 16px;
+    padding: var(--spacing-md);
   }
 
   .top-nav {
+    height: auto;
     flex-direction: column;
-    gap: 16px;
-    padding: 16px;
+    align-items: stretch;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
   }
 
-  .content-area {
-    padding: 24px;
+  .user-section {
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
 
   .intro-section h2 {
-    font-size: 24px;
+    font-size: var(--text-2xl);
+  }
+
+  .workflow-steps {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .workflow-step {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
   }
 
   :deep(.el-tabs__item) {
-    padding: 0 16px;
-  }
-
-  .workflow-arrow {
-    display: none;
+    padding: 0 var(--spacing-md);
   }
 }
 </style>

@@ -9,7 +9,7 @@
   >
     <div class="presign-dialog">
       <div class="file-summary">
-        <el-icon size="32" color="#667eea"><Document /></el-icon>
+        <el-icon size="32" class="icon-primary"><Document /></el-icon>
         <div class="file-info">
           <div class="file-name">{{ file?.name }}</div>
           <div class="file-size">{{ formatFileSize(file?.size || 0) }}</div>
@@ -257,8 +257,8 @@ watch(visible, (v) => {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: var(--color-muted, #fafafa);
-  border-radius: 12px;
+  background: var(--color-muted);
+  border-radius: var(--radius-lg);
   margin-bottom: 24px;
 }
 
@@ -269,14 +269,14 @@ watch(visible, (v) => {
 
 .file-name {
   font-weight: 600;
-  color: var(--color-text-primary, #303133);
+  color: var(--color-text-primary);
   word-break: break-all;
   margin-bottom: 4px;
 }
 
 .file-size {
   font-size: 13px;
-  color: var(--color-text-secondary, #909399);
+  color: var(--color-text-secondary);
 }
 
 .upload-progress {
@@ -289,10 +289,14 @@ watch(visible, (v) => {
   gap: 8px;
   justify-content: center;
   font-size: 14px;
-  color: var(--color-text-regular, #606266);
+  color: var(--color-text-regular);
 }
 
 .error-detail {
   margin-top: 16px;
+}
+
+.icon-primary {
+  color: var(--primary-color);
 }
 </style>

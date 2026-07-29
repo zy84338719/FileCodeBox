@@ -46,7 +46,7 @@
                 :step="1048576"
                 controls-position="right"
               />
-              <span style="margin-left: 10px; color: #909399">字节 (默认 10MB = 10485760)</span>
+              <span style="margin-left: 10px; color: var(--color-text-secondary)">字节 (默认 10MB = 10485760)</span>
             </el-form-item>
 
             <el-form-item label="需要登录">
@@ -73,7 +73,7 @@
                 :step="1048576"
                 controls-position="right"
               />
-              <span style="margin-left: 10px; color: #909399">字节 (默认 50MB)</span>
+              <span style="margin-left: 10px; color: var(--color-text-secondary)">字节 (默认 50MB)</span>
             </el-form-item>
 
             <el-form-item label="用户存储配额">
@@ -83,7 +83,7 @@
                 :step="1048576"
                 controls-position="right"
               />
-              <span style="margin-left: 10px; color: #909399">字节 (默认 1GB)</span>
+              <span style="margin-left: 10px; color: var(--color-text-secondary)">字节 (默认 1GB)</span>
             </el-form-item>
 
             <el-form-item label="会话过期时间">
@@ -93,7 +93,7 @@
                 :max="720"
                 controls-position="right"
               />
-              <span style="margin-left: 10px; color: #909399">小时</span>
+              <span style="margin-left: 10px; color: var(--color-text-secondary)">小时</span>
             </el-form-item>
           </el-form>
         </el-tab-pane>

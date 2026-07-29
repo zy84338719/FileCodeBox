@@ -39,28 +39,35 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '注册' },
   },
   {
-    path: '/user/dashboard',
-    name: 'UserDashboard',
-    component: () => import('@/views/user/Dashboard.vue'),
-    meta: { title: '用户中心', requiresAuth: true },
-  },
-  {
-    path: '/user/shares',
-    name: 'UserShares',
-    component: () => import('@/views/user/Shares.vue'),
-    meta: { title: '我的分享', requiresAuth: true },
-  },
-  {
-    path: '/user/history',
-    name: 'UserHistory',
-    component: () => import('@/views/user/History.vue'),
-    meta: { title: '取件历史', requiresAuth: true },
-  },
-  {
-    path: '/user/notifications',
-    name: 'UserNotifications',
-    component: () => import('@/views/user/Notifications.vue'),
-    meta: { title: '通知', requiresAuth: true },
+    path: '/user',
+    component: () => import('@/layouts/AppLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: 'dashboard',
+        name: 'UserDashboard',
+        component: () => import('@/views/user/Dashboard.vue'),
+        meta: { title: '用户中心', requiresAuth: true },
+      },
+      {
+        path: 'shares',
+        name: 'UserShares',
+        component: () => import('@/views/user/Shares.vue'),
+        meta: { title: '我的分享', requiresAuth: true },
+      },
+      {
+        path: 'history',
+        name: 'UserHistory',
+        component: () => import('@/views/user/History.vue'),
+        meta: { title: '取件历史', requiresAuth: true },
+      },
+      {
+        path: 'notifications',
+        name: 'UserNotifications',
+        component: () => import('@/views/user/Notifications.vue'),
+        meta: { title: '通知', requiresAuth: true },
+      },
+    ],
   },
   {
     path: '/api-docs',

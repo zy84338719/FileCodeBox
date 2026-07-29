@@ -2,7 +2,7 @@
   <div class="get-share-container">
     <div class="input-section">
       <div class="input-icon">
-        <el-icon size="40" color="#667eea"><Search /></el-icon>
+        <el-icon size="40" class="icon-primary"><Search /></el-icon>
       </div>
       <el-input
         v-model="shareCode"
@@ -103,16 +103,7 @@ const handleGetShare = () => {
 }
 
 .input-icon {
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
+  color: var(--primary-color);
 }
 
 .code-input {
@@ -122,17 +113,17 @@ const handleGetShare = () => {
 
 .code-input :deep(.el-input__wrapper) {
   padding: 12px 16px;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  transition: box-shadow 0.2s ease;
 }
 
 .code-input :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-xs);
 }
 
 .code-input :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 0 0 1px var(--primary-color) inset;
 }
 
 .get-btn {
@@ -141,21 +132,20 @@ const handleGetShare = () => {
   height: 48px;
   font-size: 16px;
   font-weight: 600;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: var(--radius-md);
+  background: var(--primary-color);
   border: none;
-  transition: all 0.3s;
+  transition: opacity 0.2s ease;
 }
 
 .get-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  opacity: 0.92;
 }
 
 .tips-section {
   padding: 20px;
-  background: #f5f7fa;
-  border-radius: 12px;
+  background: var(--color-muted);
+  border-radius: var(--radius-lg);
 }
 
 .tips-content p {
@@ -170,5 +160,9 @@ const handleGetShare = () => {
 
 .tips-content p:last-child {
   margin-bottom: 0;
+}
+
+.icon-primary {
+  color: var(--primary-color);
 }
 </style>

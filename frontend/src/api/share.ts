@@ -17,9 +17,10 @@ export const shareApi = {
 
     return request<ApiResponse<{
       code: string
-      share_url: string
-      full_share_url: string
-      qr_code_data: string
+      url: string
+      share_url?: string
+      full_share_url?: string
+      qr_code_data?: string
     }>>({
       url: '/share/text/',
       method: 'POST',
@@ -44,9 +45,10 @@ export const shareApi = {
 
     return request<ApiResponse<{
       code: string
-      share_url: string
-      full_share_url: string
-      qr_code_data: string
+      url: string
+      share_url?: string
+      full_share_url?: string
+      qr_code_data?: string
     }>>({
       url: '/share/file/',
       method: 'POST',

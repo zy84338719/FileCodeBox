@@ -102,12 +102,13 @@ const handleShare = async () => {
 
     if (res.code === 200) {
       ElMessage.success('分享成功')
-      
+
+      const fullUrl = res.data.full_share_url || res.data.share_url || res.data.url || ''
       emit('success', {
         code: res.data.code,
-        share_url: res.data.share_url,
-        full_share_url: res.data.full_share_url,
-        qr_code_data: res.data.qr_code_data,
+        share_url: res.data.share_url || res.data.url || '',
+        full_share_url: fullUrl,
+        qr_code_data: res.data.qr_code_data || fullUrl,
       })
       
       // 重置
@@ -133,24 +134,23 @@ const handleShare = async () => {
 }
 
 .text-area :deep(.el-textarea__inner) {
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 16px;
   font-size: 15px;
   line-height: 1.6;
-  transition: all 0.3s;
+  transition: border-color 0.2s ease;
 }
 
 .text-area :deep(.el-textarea__inner:focus) {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--primary-color);
 }
 
 .text-settings {
   margin-bottom: 24px;
   padding: 20px;
-  background: #fafafa;
-  border-radius: 12px;
+  background: var(--color-muted);
+  border-radius: var(--radius-lg);
 }
 
 .setting-group {
@@ -167,7 +167,7 @@ const handleShare = async () => {
   gap: 8px;
   margin-bottom: 12px;
   font-weight: 600;
-  color: #606266;
+  color: var(--color-text-regular);
   font-size: 14px;
 }
 
@@ -185,18 +185,21 @@ const handleShare = async () => {
   height: 48px;
   font-size: 16px;
   font-weight: 600;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: var(--radius-md);
+  background: var(--primary-color);
   border: none;
-  transition: all 0.3s;
+  transition: opacity 0.2s ease;
 }
 
 .share-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  opacity: 0.92;
 }
 
 .share-btn:disabled {
   opacity: 0.5;
+}
+
+.icon-primary {
+  color: var(--primary-color);
 }
 </style>

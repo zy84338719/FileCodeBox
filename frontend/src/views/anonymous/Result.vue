@@ -1,11 +1,5 @@
 <template>
   <div class="result-container">
-    <!-- 背景 -->
-    <div class="bg-decoration">
-      <div class="circle circle1"></div>
-      <div class="circle circle2"></div>
-    </div>
-
     <div class="result-wrapper">
       <!-- 顶部 -->
       <header class="result-header">
@@ -23,7 +17,7 @@
 
       <main class="result-main">
         <div v-if="!data" class="result-card empty">
-          <el-icon size="48" color="#909399"><WarningFilled /></el-icon>
+          <el-icon size="48" class="icon-secondary"><WarningFilled /></el-icon>
           <h2 class="card-title">{{ t('anonymous.notFound') }}</h2>
           <p class="card-subtitle">{{ t('anonymous.notFoundHint') }}</p>
           <el-button type="primary" size="large" @click="$router.push('/retrieve')">
@@ -170,45 +164,8 @@ const handleSave = () => {
 .result-container {
   position: relative;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--color-bg);
   overflow-x: hidden;
-}
-
-.bg-decoration {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.circle {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  animation: float 18s infinite ease-in-out;
-}
-
-.circle1 {
-  width: 500px;
-  height: 500px;
-  top: -200px;
-  left: -150px;
-}
-
-.circle2 {
-  width: 400px;
-  height: 400px;
-  bottom: -200px;
-  right: -150px;
-  animation-delay: 6s;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-40px) scale(1.05); }
 }
 
 .result-wrapper {
@@ -228,9 +185,9 @@ const handleSave = () => {
   align-items: center;
   margin-bottom: 32px;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
 }
 
 .logo-section {
@@ -238,14 +195,14 @@ const handleSave = () => {
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  color: white;
+  color: var(--color-text-primary);
 }
 
 .logo-icon {
   width: 40px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -271,10 +228,11 @@ const handleSave = () => {
 
 .result-card {
   width: 100%;
-  background: var(--color-card-bg, white);
-  border-radius: 24px;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
   padding: 48px 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-xs);
   text-align: center;
   transition: background-color 0.3s ease;
 }
@@ -289,33 +247,29 @@ const handleSave = () => {
   height: 96px;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #67c23a 0%, #4a9a2a 100%);
+  background: var(--color-success);
   color: white;
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   margin-bottom: 24px;
-  box-shadow: 0 8px 24px rgba(103, 194, 58, 0.3);
 }
 
 .card-title {
   margin: 0 0 24px;
   font-size: 26px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--color-text-primary);
 }
 
 .card-subtitle {
   margin: 0 0 24px;
-  color: var(--color-text-secondary, #909399);
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
 .file-info {
   text-align: left;
-  background: var(--color-muted, #fafafa);
-  border-radius: 12px;
+  background: var(--color-muted);
+  border-radius: var(--radius-lg);
   padding: 16px 20px;
   margin-bottom: 28px;
   display: flex;
@@ -335,12 +289,12 @@ const handleSave = () => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--color-text-secondary, #909399);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
 }
 
 .info-value {
-  color: var(--color-text-primary, #303133);
+  color: var(--color-text-primary);
   font-weight: 600;
   text-align: right;
   word-break: break-all;
@@ -360,26 +314,33 @@ const handleSave = () => {
   height: 48px;
   font-size: 16px;
   font-weight: 600;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: var(--radius-lg);
+  background: var(--primary-color);
   border: none;
   margin-bottom: 12px;
 }
 
 .download-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  background: var(--primary-hover);
 }
 
 .save-btn {
   width: 100%;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   margin-bottom: 8px;
 }
 
 .back-link {
   margin-top: 8px;
+}
+
+.icon-secondary {
+  color: var(--color-text-secondary);
+}
+
+.icon-primary {
+  color: var(--primary-color);
 }
 
 @media (max-width: 768px) {

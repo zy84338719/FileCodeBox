@@ -469,7 +469,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  color: #909399;
+  color: var(--color-text-secondary);
   padding: 48px;
 }
 
@@ -483,12 +483,12 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  color: #909399;
+  color: var(--color-text-secondary);
   padding: 64px;
 }
 
 .pdf-error {
-  color: #f56c6c;
+  color: var(--color-danger);
 }
 
 .preview-video,
@@ -516,7 +516,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  color: #909399;
+  color: var(--color-text-secondary);
   padding: 32px;
 }
 
@@ -567,7 +567,7 @@ onMounted(() => {
   padding: 0;
 }
 .md-rendered :deep(a) {
-  color: #409eff;
+  color: var(--primary-color);
 }
 .md-rendered :deep(ul),
 .md-rendered :deep(ol) {
@@ -584,7 +584,7 @@ onMounted(() => {
 }
 
 .md-source {
-  background: #f5f7fa;
+  background: var(--color-muted);
   padding: 16px;
   border-radius: 6px;
   font-family: monospace;
@@ -608,7 +608,7 @@ onMounted(() => {
 }
 
 .office-icon {
-  color: #409eff;
+  color: var(--primary-color);
 }
 
 .office-actions {
@@ -618,7 +618,7 @@ onMounted(() => {
 }
 
 .office-hint {
-  color: #909399;
+  color: var(--color-text-secondary);
   font-size: 12px;
   margin: 4px 0 0;
   text-align: center;
@@ -630,6 +630,6 @@ onMounted(() => {
   align-items: center;
   gap: 16px;
   padding: 64px;
-  color: #909399;
+  color: var(--color-text-secondary);
 }
 </style>

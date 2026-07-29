@@ -4,7 +4,7 @@
     <transition name="fade">
       <div v-if="isDragging" class="global-drop-overlay">
         <div class="drop-hint">
-          <el-icon size="64" color="#667eea"><UploadFilled /></el-icon>
+          <el-icon size="64" class="icon-primary"><UploadFilled /></el-icon>
           <h2>{{ t('upload.dragHint') }}</h2>
         </div>
       </div>
@@ -22,7 +22,7 @@
     >
       <div class="upload-content">
         <div class="upload-icon">
-          <el-icon size="60" color="#667eea"><UploadFilled /></el-icon>
+          <el-icon size="60" class="icon-primary"><UploadFilled /></el-icon>
         </div>
         <div class="upload-text">
           <h3>{{ t('upload.dragHint') }}</h3>
@@ -321,12 +321,20 @@ const uploadOne = (item: FileItem) => {
     }
     xhr.onload = () => {
       try {
-        const data = JSON.parse(xhr.responseText) as { code: number; data?: { code: string; share_url: string; full_share_url: string; qr_code_data: string }; message?: string }
+        const data = JSON.parse(xhr.responseText) as { code: number; data?: { code: string; url: string; share_url?: string; full_share_url?: string; qr_code_data?: string }; message?: string }
         if (xhr.status >= 200 && xhr.status < 300 && data.code === 200 && data.data) {
           item.status = 'success'
           item.progress = 100
           item.statusText = t('common.success')
-          resolve(data.data)
+          // 后端返回 { code, url }，补齐首页 handleShareSuccess 期望的字段
+          const d = data.data
+          const fullUrl = d.full_share_url || d.share_url || d.url || ''
+          resolve({
+            code: d.code,
+            share_url: d.share_url || d.url || '',
+            full_share_url: fullUrl,
+            qr_code_data: d.qr_code_data || fullUrl,
+          })
         } else {
           item.status = 'error'
           item.error = data.message || `HTTP ${xhr.status}`
@@ -466,7 +474,7 @@ onBeforeUnmount(() => {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(102, 126, 234, 0.1);
+  background: rgba(var(--primary-color-rgb), 0.08);
   backdrop-filter: blur(4px);
   pointer-events: none;
   display: flex;
@@ -476,11 +484,12 @@ onBeforeUnmount(() => {
 
 .drop-hint {
   text-align: center;
-  color: #667eea;
-  background: white;
+  color: var(--primary-color);
+  background: var(--color-elevated, white);
   padding: 48px 64px;
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xs);
 }
 
 .drop-hint h2 {
@@ -493,16 +502,15 @@ onBeforeUnmount(() => {
 }
 
 .upload-dragger :deep(.el-upload-dragger) {
-  border: 2px dashed #e0e0e0;
-  border-radius: 16px;
-  background: var(--color-muted, #fafafa);
-  transition: all 0.3s;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-muted);
+  transition: all 0.2s ease;
   padding: 40px 20px;
 }
 
 .upload-dragger :deep(.el-upload-dragger:hover) {
-  border-color: #667eea;
-  background: var(--color-elevated, #f5f7fa);
+  border-color: var(--primary-color);
 }
 
 .upload-content {
@@ -511,29 +519,23 @@ onBeforeUnmount(() => {
 
 .upload-icon {
   margin-bottom: 16px;
-  animation: bounce 2s infinite;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
 }
 
 .upload-text h3 {
   margin: 0 0 8px;
   font-size: 18px;
-  color: var(--color-text-regular, #606266);
+  color: var(--color-text-regular);
 }
 
 .upload-text p {
   margin: 0;
-  color: var(--color-text-secondary, #909399);
+  color: var(--color-text-secondary);
 }
 
 .upload-hint {
   margin-top: 12px;
   font-size: 13px;
-  color: var(--color-text-secondary, #909399);
+  color: var(--color-text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -553,36 +555,37 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: var(--color-muted, #fafafa);
-  border-radius: 12px;
-  border: 1px solid transparent;
-  transition: all 0.3s;
+  background: var(--color-muted);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .file-item.uploading {
-  border-color: #667eea;
-  background: var(--color-alert-bg, #ecf5ff);
+  border-color: var(--primary-color);
+  background: var(--color-alert-bg);
 }
 
 .file-item.success {
-  border-color: #67c23a;
-  background: var(--color-success-bg, #f0f9eb);
+  border-color: var(--color-success);
+  background: var(--color-success-bg);
 }
 
 .file-item.error {
-  border-color: #f56c6c;
-  background: var(--color-danger-bg, #fef0f0);
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
 }
 
 .file-icon {
   width: 48px;
   height: 48px;
-  background: var(--color-card-bg, white);
-  border-radius: 10px;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #667eea;
+  color: var(--primary-color);
   flex-shrink: 0;
 }
 
@@ -593,7 +596,7 @@ onBeforeUnmount(() => {
 
 .file-name {
   font-weight: 600;
-  color: var(--color-text-primary, #303133);
+  color: var(--color-text-primary);
   font-size: 14px;
   word-break: break-all;
   margin-bottom: 4px;
@@ -603,7 +606,7 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 12px;
   font-size: 12px;
-  color: var(--color-text-secondary, #909399);
+  color: var(--color-text-secondary);
   flex-wrap: wrap;
   align-items: center;
 }
@@ -614,10 +617,10 @@ onBeforeUnmount(() => {
   gap: 3px;
 }
 
-.status.success { color: #67c23a; }
-.status.error { color: #f56c6c; }
-.status.uploading { color: #667eea; }
-.status.pending { color: #c0c4cc; }
+.status.success { color: var(--color-success); }
+.status.error { color: var(--color-danger); }
+.status.uploading { color: var(--primary-color); }
+.status.pending { color: var(--color-text-secondary); }
 
 .file-progress {
   margin-top: 8px;
@@ -627,8 +630,8 @@ onBeforeUnmount(() => {
 .upload-settings {
   margin-bottom: 16px;
   padding: 20px;
-  background: var(--color-muted, #fafafa);
-  border-radius: 12px;
+  background: var(--color-muted);
+  border-radius: var(--radius-lg);
 }
 
 .setting-group {
@@ -645,7 +648,7 @@ onBeforeUnmount(() => {
   gap: 8px;
   margin-bottom: 12px;
   font-weight: 600;
-  color: var(--color-text-regular, #606266);
+  color: var(--color-text-regular);
   font-size: 14px;
 }
 
@@ -663,19 +666,22 @@ onBeforeUnmount(() => {
   height: 48px;
   font-size: 16px;
   font-weight: 600;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: var(--radius-md);
+  background: var(--primary-color);
   border: none;
-  transition: all 0.3s;
+  transition: background 0.2s ease, opacity 0.2s ease;
 }
 
 .upload-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  opacity: 0.92;
 }
 
 .upload-btn:disabled {
   opacity: 0.5;
+}
+
+.icon-primary {
+  color: var(--primary-color);
 }
 
 /* 过渡 */

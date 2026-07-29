@@ -1,15 +1,19 @@
 <template>
   <div class="login-container">
-    <el-card class="login-card">
-      <template #header>
-        <h2>{{ t('login.title') }}</h2>
-      </template>
+    <div class="login-card">
+      <!-- Logo 区 -->
+      <div class="login-header">
+        <div class="logo-icon">
+          <el-icon size="22"><Box /></el-icon>
+        </div>
+        <h1>{{ t('login.title') }}</h1>
+      </div>
 
       <el-form
         ref="loginFormRef"
         :model="loginForm"
         :rules="rules"
-        label-width="80px"
+        label-position="top"
         @submit.prevent="handleLogin"
       >
         <el-form-item :label="t('login.username')" prop="username">
@@ -17,6 +21,7 @@
             v-model="loginForm.username"
             :placeholder="t('login.usernamePlaceholder')"
             prefix-icon="User"
+            size="large"
             clearable
           />
         </el-form-item>
@@ -27,6 +32,7 @@
             type="password"
             :placeholder="t('login.passwordPlaceholder')"
             prefix-icon="Lock"
+            size="large"
             show-password
             clearable
             @keyup.enter="handleLogin"
@@ -36,21 +42,22 @@
         <el-form-item>
           <el-button
             type="primary"
+            size="large"
             :loading="loading"
-            style="width: 100%"
+            class="submit-btn"
             @click="handleLogin"
           >
             {{ t('login.submit') }}
           </el-button>
         </el-form-item>
 
-        <el-form-item>
-          <el-link type="primary" @click="$router.push('/user/register')">
+        <div class="login-footer">
+          <el-link type="primary" underline="never" @click="$router.push('/user/register')">
             {{ t('login.noAccount') }}
           </el-link>
-        </el-form-item>
+        </div>
       </el-form>
-    </el-card>
+    </div>
   </div>
 </template>
 
@@ -58,6 +65,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { Box } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
 
@@ -112,21 +120,51 @@ const handleLogin = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--color-bg);
+  padding: var(--spacing-2xl) var(--spacing-xl);
 }
 
 .login-card {
   width: 100%;
   max-width: 400px;
-  margin: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-2xl);
 }
 
-.login-card :deep(.el-card__header) {
+.login-header {
   text-align: center;
+  margin-bottom: var(--spacing-2xl);
 }
 
-.login-card :deep(.el-card__header h2) {
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--primary-color);
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin-bottom: var(--spacing-md);
+}
+
+.login-header h1 {
   margin: 0;
-  color: #303133;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.submit-btn {
+  width: 100%;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: var(--spacing-sm);
 }
 </style>

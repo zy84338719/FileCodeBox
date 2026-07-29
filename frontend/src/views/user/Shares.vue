@@ -431,31 +431,35 @@ onMounted(() => {
 
 <style scoped>
 .shares-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px;
+  max-width: 100%;
+}
+
+.page-header {
+  margin-bottom: var(--spacing-xl);
 }
 
 .page-header h2 {
   margin: 0 0 4px;
-  color: #303133;
+  color: var(--color-text-primary);
+  font-size: var(--text-xl);
+  font-weight: 600;
 }
 
 .page-desc {
-  margin: 0 0 24px;
-  color: #909399;
-  font-size: 14px;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
 }
 
 .status-tabs {
-  margin-bottom: 16px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
   flex-wrap: wrap;
 }
 
@@ -466,36 +470,37 @@ onMounted(() => {
 .toolbar-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   margin-left: auto;
 }
 
 .batch-hint {
-  color: #409eff;
-  font-size: 13px;
-  margin-right: 8px;
+  color: var(--primary-color);
+  font-size: var(--text-sm);
+  margin-right: var(--spacing-sm);
 }
 
 .shares-table {
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
 .mono {
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  color: #606266;
+  font-family: 'SF Mono', 'Courier New', monospace;
+  font-size: var(--text-sm);
+  color: var(--color-text-regular);
 }
 
 .code-cell {
-  background: #f5f7fa;
-  padding: 2px 8px;
-  border-radius: 4px;
+  background: var(--color-muted);
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--radius-sm);
 }
 
 .text-preview {
-  color: #606266;
-  font-size: 13px;
+  color: var(--color-text-regular);
+  font-size: var(--text-sm);
   max-width: 220px;
   display: inline-block;
   white-space: nowrap;
@@ -505,16 +510,16 @@ onMounted(() => {
 }
 
 .muted {
-  color: #c0c4cc;
+  color: var(--color-text-tertiary);
 }
 
 .is-expired {
-  color: #f56c6c;
+  color: var(--color-danger);
 }
 
 .viewer-icon {
   margin-left: 4px;
-  color: #67c23a;
+  color: var(--color-success);
   cursor: help;
   vertical-align: middle;
 }
@@ -522,12 +527,12 @@ onMounted(() => {
 .pagination-wrapper {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: var(--spacing-lg);
 }
 
 .form-hint {
-  margin-left: 12px;
-  color: #909399;
-  font-size: 12px;
+  margin-left: var(--spacing-md);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
 }
 </style>

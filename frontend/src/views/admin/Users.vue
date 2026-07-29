@@ -47,11 +47,11 @@
 
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag 
-              :type="row.status === 'active' ? 'success' : 'danger'"
+            <el-tag
+              :type="row.status === 1 || row.status === 'active' ? 'success' : 'danger'"
               effect="light"
             >
-              {{ row.status === 'active' ? '正常' : '禁用' }}
+              {{ row.status === 1 || row.status === 'active' ? '正常' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -64,7 +64,7 @@
               :color="getStorageColor(row)"
             />
             <div class="storage-text">
-              {{ formatFileSize(row.total_storage || 0) }}
+              {{ formatFileSize(row.quota_used || row.total_storage || 0) }}
             </div>
           </template>
         </el-table-column>
@@ -79,11 +79,11 @@
           <template #default="{ row }">
             <el-button
               @click="toggleUserStatus(row)"
-              :type="row.status === 'active' ? 'warning' : 'success'"
+              :type="row.status === 1 || row.status === 'active' ? 'warning' : 'success'"
               size="small"
               round
             >
-              {{ row.status === 'active' ? '禁用' : '启用' }}
+              {{ row.status === 1 || row.status === 'active' ? '禁用' : '启用' }}
             </el-button>
           </template>
         </el-table-column>
@@ -138,9 +138,9 @@ const formatDate = (dateStr: string): string => {
 }
 
 const getStoragePercentage = (user: any): number => {
-  if (!user.total_storage || user.total_storage === 0) return 0
+  if (!((user.quota_used || user.total_storage) && (user.quota_used || user.total_storage) !== 0)) return 0
   const quota = 1073741824 // 1GB
-  const percentage = (user.total_storage / quota) * 100
+  const percentage = ((user.quota_used || user.total_storage) / quota) * 100
   return Math.min(percentage, 100)
 }
 
@@ -187,14 +187,15 @@ const fetchUsers = async () => {
 
 const toggleUserStatus = async (user: any) => {
   try {
-    const newStatus = user.status === 'active' ? 'inactive' : 'active'
+    const isActive = user.status === 1 || user.status === 'active'
+    const newStatus = isActive ? 0 : 1
     await ElMessageBox.confirm(
-      `确定要${newStatus === 'active' ? '启用' : '禁用'}用户 ${user.username} 吗？`,
+      `确定要${isActive ? '禁用' : '启用'}用户 ${user.username} 吗？`,
       '确认操作',
       { type: 'warning' }
     )
-    
-    const res = await adminApi.updateUserStatus(user.id, newStatus === 'active' ? 1 : 0)
+
+    const res = await adminApi.updateUserStatus(user.id, newStatus)
     if (res.code === 200) {
       ElMessage.success('操作成功')
       await fetchUsers()
@@ -239,7 +240,7 @@ onMounted(() => {
 }
 
 .users-card {
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   border: none;
 }
 
@@ -253,26 +254,25 @@ onMounted(() => {
   margin: 0 0 4px;
   font-size: 24px;
   font-weight: 600;
-  color: #1a1f3a;
+  color: var(--color-text-primary);
 }
 
 .header-title p {
   margin: 0;
   font-size: 14px;
-  color: #909399;
+  color: var(--color-text-secondary);
 }
 
 .refresh-btn {
-  border-radius: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: var(--radius-md);
+  background: var(--primary-color);
   border: none;
   color: white;
   transition: all 0.3s;
 }
 
 .refresh-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: var(--shadow-xs);
 }
 
 .users-table {
@@ -286,7 +286,7 @@ onMounted(() => {
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-color);
   color: white;
   font-weight: 600;
   font-size: 16px;
@@ -298,7 +298,7 @@ onMounted(() => {
 
 .user-name {
   font-weight: 600;
-  color: #1a1f3a;
+  color: var(--color-text-primary);
   margin-bottom: 4px;
   display: flex;
   align-items: center;
@@ -307,13 +307,13 @@ onMounted(() => {
 
 .user-email {
   font-size: 13px;
-  color: #909399;
+  color: var(--color-text-secondary);
 }
 
 .storage-text {
   margin-top: 4px;
   font-size: 12px;
-  color: #909399;
+  color: var(--color-text-secondary);
   text-align: center;
 }
 
@@ -324,14 +324,14 @@ onMounted(() => {
 }
 
 :deep(.el-table) {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
 :deep(.el-table th) {
-  background: #fafafa !important;
+  background: var(--color-muted) !important;
   font-weight: 600;
-  color: #1a1f3a;
+  color: var(--color-text-primary);
 }
 
 :deep(.el-table td) {
@@ -339,6 +339,6 @@ onMounted(() => {
 }
 
 :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
-  background: #fafafa;
+  background: var(--color-muted);
 }
 </style>

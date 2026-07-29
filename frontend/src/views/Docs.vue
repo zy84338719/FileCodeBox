@@ -113,11 +113,11 @@ onUnmounted(() => {
 
 .docs-header h2 {
   margin: 0 0 4px;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 
 .docs-subtitle {
-  color: #909399;
+  color: var(--color-text-secondary);
   font-size: 14px;
   margin: 0 0 16px;
 }
@@ -132,12 +132,12 @@ onUnmounted(() => {
   justify-content: center;
   gap: 12px;
   padding: 64px;
-  color: #909399;
+  color: var(--color-text-secondary);
 }
 
 .swagger-container {
-  background: #ffffff;
-  border-radius: 8px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
   min-height: 600px;
   overflow: hidden;
 }

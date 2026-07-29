@@ -1,15 +1,19 @@
 <template>
   <div class="register-container">
-    <el-card class="register-card">
-      <template #header>
-        <h2>{{ t('register.title') }}</h2>
-      </template>
+    <div class="register-card">
+      <!-- Logo 区 -->
+      <div class="register-header">
+        <div class="logo-icon">
+          <el-icon size="22"><Box /></el-icon>
+        </div>
+        <h1>{{ t('register.title') }}</h1>
+      </div>
 
       <el-form
         ref="registerFormRef"
         :model="registerForm"
         :rules="rules"
-        label-width="80px"
+        label-position="top"
         @submit.prevent="handleRegister"
       >
         <el-form-item :label="t('register.username')" prop="username">
@@ -17,6 +21,7 @@
             v-model="registerForm.username"
             :placeholder="t('register.username')"
             prefix-icon="User"
+            size="large"
             clearable
           />
         </el-form-item>
@@ -27,6 +32,7 @@
             type="email"
             :placeholder="t('register.email')"
             prefix-icon="Message"
+            size="large"
             clearable
           />
         </el-form-item>
@@ -36,6 +42,7 @@
             v-model="registerForm.nickname"
             :placeholder="t('register.nickname')"
             prefix-icon="UserFilled"
+            size="large"
             clearable
           />
         </el-form-item>
@@ -46,6 +53,7 @@
             type="password"
             :placeholder="t('register.password')"
             prefix-icon="Lock"
+            size="large"
             show-password
             clearable
           />
@@ -57,6 +65,7 @@
             type="password"
             :placeholder="t('register.confirmPassword')"
             prefix-icon="Lock"
+            size="large"
             show-password
             clearable
             @keyup.enter="handleRegister"
@@ -66,21 +75,22 @@
         <el-form-item>
           <el-button
             type="primary"
+            size="large"
             :loading="loading"
-            style="width: 100%"
+            class="submit-btn"
             @click="handleRegister"
           >
             {{ t('register.submit') }}
           </el-button>
         </el-form-item>
 
-        <el-form-item>
-          <el-link type="primary" @click="$router.push('/user/login')">
+        <div class="register-footer">
+          <el-link type="primary" underline="never" @click="$router.push('/user/login')">
             {{ t('register.hasAccount') }}
           </el-link>
-        </el-form-item>
+        </div>
       </el-form>
-    </el-card>
+    </div>
   </div>
 </template>
 
@@ -88,6 +98,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { Box } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { userApi } from '@/api/user'
 
@@ -171,21 +182,51 @@ const handleRegister = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--color-bg);
+  padding: var(--spacing-xl);
 }
 
 .register-card {
   width: 100%;
   max-width: 400px;
-  margin: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-2xl);
 }
 
-.register-card :deep(.el-card__header) {
+.register-header {
   text-align: center;
+  margin-bottom: var(--spacing-2xl);
 }
 
-.register-card :deep(.el-card__header h2) {
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--primary-color);
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin-bottom: var(--spacing-md);
+}
+
+.register-header h1 {
   margin: 0;
-  color: #303133;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.submit-btn {
+  width: 100%;
+}
+
+.register-footer {
+  text-align: center;
+  margin-top: var(--spacing-sm);
 }
 </style>
