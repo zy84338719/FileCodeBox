@@ -61,3 +61,6 @@ uploads/
 temp/
 backend/bin/
 backend/bin/
+
+# 浏览器测试缓存
+.playwright-mcp/

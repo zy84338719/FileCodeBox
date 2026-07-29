@@ -5,6 +5,7 @@ package admin
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
@@ -80,11 +81,24 @@ func AdminStats(ctx context.Context, c *app.RequestContext) {
 	var req admin.AdminStatsReq
 	err = c.BindAndValidate(&req)
 	if err != nil {
-		c.String(consts.StatusBadRequest, err.Error())
+		c.JSON(consts.StatusOK, &admin.AdminStatsResp{Code: 400, Message: err.Error()})
 		return
 	}
 
-	resp := new(admin.AdminStatsResp)
+	stats, err := adminService.GetStats(ctx)
+	resp := &admin.AdminStatsResp{Code: 200, Message: "success"}
+	if err != nil {
+		resp.Code = 500
+		resp.Message = err.Error()
+	} else {
+		resp.Data = &admin.AdminStatsData{
+			TotalFiles:     stats.TotalFiles,
+			TotalUsers:     stats.TotalUsers,
+			TotalSize:      stats.TotalSize,
+			TodayUploads:   stats.TodayUploads,
+			TodayDownloads: stats.TodayDownloads,
+		}
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }
@@ -96,11 +110,57 @@ func AdminListFiles(ctx context.Context, c *app.RequestContext) {
 	var req admin.AdminListFilesReq
 	err = c.BindAndValidate(&req)
 	if err != nil {
-		c.String(consts.StatusBadRequest, err.Error())
+		c.JSON(consts.StatusOK, &admin.AdminListFilesResp{Code: 400, Message: err.Error()})
 		return
 	}
 
-	resp := new(admin.AdminListFilesResp)
+	page := int(req.Page)
+	pageSize := int(req.PageSize)
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	search := ""
+	if req.Keyword != nil {
+		search = *req.Keyword
+	}
+
+	files, total, err := adminService.GetFiles(ctx, page, pageSize, search)
+	resp := &admin.AdminListFilesResp{Code: 200, Message: "success"}
+	if err != nil {
+		resp.Code = 500
+		resp.Message = err.Error()
+	} else {
+		items := make([]*admin.FileItem, 0, len(files))
+		for _, f := range files {
+			expireStr := "永久"
+			if f.ExpiredAt != nil {
+				expireStr = f.ExpiredAt.Format("2006-01-02 15:04:05")
+			}
+			fileName := f.Prefix + f.Suffix
+			if f.Text != "" && fileName == "" {
+				fileName = "[文本分享]"
+			}
+			items = append(items, &admin.FileItem{
+				ID:            int64(f.ID),
+				Code:          f.Code,
+				FileName:      fileName,
+				FileSize:      f.Size,
+				ExpireTime:    expireStr,
+				ViewCount:     int32(f.ViewerCount),
+				DownloadCount: int32(f.UsedCount),
+				CreatedAt:     f.CreatedAt.Format("2006-01-02 15:04:05"),
+			})
+		}
+		resp.Data = &admin.AdminFileList{
+			Items:    items,
+			Total:    total,
+			Page:     int32(page),
+			PageSize: int32(pageSize),
+		}
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }
@@ -108,15 +168,34 @@ func AdminListFiles(ctx context.Context, c *app.RequestContext) {
 // AdminDeleteFile .
 // @router /admin/files/:id [DELETE]
 func AdminDeleteFile(ctx context.Context, c *app.RequestContext) {
-	var err error
 	var req admin.AdminDeleteFileReq
-	err = c.BindAndValidate(&req)
-	if err != nil {
-		c.String(consts.StatusBadRequest, err.Error())
-		return
+	// path 参数 :id 前端传的可能是 code（8 位取件码），无法绑定为 int64，
+	// 这里忽略绑定错误，直接用 c.Param 取原始值。
+	_ = c.BindAndValidate(&req)
+
+	pathParam := c.Param("id")
+	resp := &admin.AdminDeleteFileResp{Code: 200, Message: "success"}
+	var err error
+
+	// 尝试按数字 id 删除
+	if id, parseErr := strconv.ParseUint(pathParam, 10, 64); parseErr == nil {
+		err = adminService.DeleteFile(ctx, uint(id))
+	} else {
+		// 按 code 删除：先查出记录再删
+		fc, getErr := adminService.GetFileByCode(ctx, pathParam)
+		if getErr != nil || fc == nil {
+			resp.Code = 404
+			resp.Message = "file not found"
+			c.JSON(consts.StatusOK, resp)
+			return
+		}
+		err = adminService.DeleteFile(ctx, fc.ID)
 	}
 
-	resp := new(admin.AdminDeleteFileResp)
+	if err != nil {
+		resp.Code = 500
+		resp.Message = err.Error()
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }
@@ -128,11 +207,49 @@ func AdminListUsers(ctx context.Context, c *app.RequestContext) {
 	var req admin.AdminListUsersReq
 	err = c.BindAndValidate(&req)
 	if err != nil {
-		c.String(consts.StatusBadRequest, err.Error())
+		c.JSON(consts.StatusOK, &admin.AdminListUsersResp{Code: 400, Message: err.Error()})
 		return
 	}
 
-	resp := new(admin.AdminListUsersResp)
+	page := int(req.Page)
+	pageSize := int(req.PageSize)
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+
+	users, total, err := adminService.GetUsers(ctx, page, pageSize)
+	resp := &admin.AdminListUsersResp{Code: 200, Message: "success"}
+	if err != nil {
+		resp.Code = 500
+		resp.Message = err.Error()
+	} else {
+		items := make([]*admin.UserItem, 0, len(users))
+		for _, u := range users {
+			statusVal := int32(1)
+			if u.Status != "active" {
+				statusVal = 0
+			}
+			items = append(items, &admin.UserItem{
+				ID:         int64(u.ID),
+				Username:   u.Username,
+				Email:      u.Email,
+				Nickname:   u.Nickname,
+				Status:     statusVal,
+				QuotaUsed:  u.TotalStorage,
+				QuotaLimit: u.MaxStorageQuota,
+				CreatedAt:  u.CreatedAt.Format("2006-01-02 15:04:05"),
+			})
+		}
+		resp.Data = &admin.AdminUserList{
+			Items:    items,
+			Total:    total,
+			Page:     int32(page),
+			PageSize: int32(pageSize),
+		}
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }
@@ -144,11 +261,21 @@ func AdminUpdateUserStatus(ctx context.Context, c *app.RequestContext) {
 	var req admin.AdminUpdateUserStatusReq
 	err = c.BindAndValidate(&req)
 	if err != nil {
-		c.String(consts.StatusBadRequest, err.Error())
+		c.JSON(consts.StatusOK, &admin.AdminUpdateUserStatusResp{Code: 400, Message: err.Error()})
 		return
 	}
 
-	resp := new(admin.AdminUpdateUserStatusResp)
+	// 1=正常(active), 0=禁用(inactive)
+	statusStr := "inactive"
+	if req.Status == 1 {
+		statusStr = "active"
+	}
+	err = adminService.UpdateUserStatus(ctx, uint(req.ID), statusStr)
+	resp := &admin.AdminUpdateUserStatusResp{Code: 200, Message: "success"}
+	if err != nil {
+		resp.Code = 500
+		resp.Message = err.Error()
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }
@@ -160,11 +287,32 @@ func AdminGetConfig(ctx context.Context, c *app.RequestContext) {
 	var req admin.AdminGetConfigReq
 	err = c.BindAndValidate(&req)
 	if err != nil {
-		c.String(consts.StatusBadRequest, err.Error())
+		c.JSON(consts.StatusOK, &admin.AdminGetConfigResp{Code: 400, Message: err.Error()})
 		return
 	}
 
-	resp := new(admin.AdminGetConfigResp)
+	cfg, err := adminService.GetConfig(ctx)
+	resp := &admin.AdminGetConfigResp{Code: 200, Message: "success"}
+	if err != nil {
+		resp.Code = 500
+		resp.Message = err.Error()
+	} else {
+		resp.Data = &admin.ConfigData{
+			Base: &admin.BaseConfig{
+				Name:        cfg.Base.Name,
+				Description: cfg.Base.Description,
+				Port:        int32(cfg.Base.Port),
+			},
+			Storage: &admin.StorageConfig{
+				Type:    cfg.Storage.Type,
+				MaxSize: cfg.Storage.MaxSize,
+			},
+			Transfer: &admin.TransferConfig{
+				MaxCount:      int32(cfg.Transfer.MaxCount),
+				ExpireDefault: int32(cfg.Transfer.ExpireDefault),
+			},
+		}
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }

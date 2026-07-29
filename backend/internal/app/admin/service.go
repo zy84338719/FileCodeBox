@@ -165,6 +165,11 @@ func (s *Service) DeleteFile(ctx context.Context, fileID uint) error {
 	return s.fileCodeRepo.Delete(ctx, fileID)
 }
 
+// GetFileByCode 按取件码获取文件
+func (s *Service) GetFileByCode(ctx context.Context, code string) (*model.FileCode, error) {
+	return s.fileCodeRepo.GetByCode(ctx, code)
+}
+
 // GetTransferLogs 获取传输日志
 func (s *Service) GetTransferLogs(ctx context.Context, query model.TransferLogQuery) ([]*model.TransferLog, int64, error) {
 	return s.transferLogRepo.List(ctx, query)
