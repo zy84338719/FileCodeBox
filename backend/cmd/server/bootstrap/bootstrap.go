@@ -426,8 +426,14 @@ func Bootstrap(configPath string) (*server.Hertz, error) {
 	if port == 0 {
 		port = 12345
 	}
+	// 上传 body 上限（应用层强制，覆盖 Hertz 默认无限制）
+	uploadSize := int(config.Upload.UploadSize)
+	if uploadSize <= 0 {
+		uploadSize = 10 * 1024 * 1024 // 默认 10MB
+	}
 	h := server.New(
 		server.WithHostPorts(fmt.Sprintf("%s:%d", config.Server.Host, port)),
+		server.WithMaxRequestBodySize(uploadSize),
 	)
 
 	// 可观测性：初始化 Prometheus 指标（在注册中间件前完成）
@@ -461,6 +467,27 @@ func Bootstrap(configPath string) (*server.Hertz, error) {
 	}
 	h.Use(middleware.SecurityHeaders())
 	h.Use(CORS())
+
+	// 限流：路径感知，按接口类型选择限流维度（登录/上传/下载）。
+	// 防止暴力破解登录、取件码枚举、上传下载 DoS。
+	rl := middleware.GetDefaultRateLimiter()
+	h.Use(func(ctx context.Context, c *app.RequestContext) {
+		path := string(c.Request.URI().Path())
+		switch {
+		case strings.HasPrefix(path, "/admin/login"),
+			strings.HasPrefix(path, "/api/v1/user/login"):
+			rl.LoginMiddleware()(ctx, c)
+		case strings.HasPrefix(path, "/anonymous/generate"),
+			strings.HasPrefix(path, "/anonymous/retrieve"),
+			strings.HasPrefix(path, "/api/v1/presign"),
+			strings.HasPrefix(path, "/api/v1/chunk"):
+			rl.UploadMiddleware()(ctx, c)
+		case strings.Contains(path, "/download"):
+			rl.DownloadMiddleware()(ctx, c)
+		default:
+			c.Next(ctx)
+		}
+	})
 
 	// 6. 注册路由
 	router.GeneratedRegister(h)
