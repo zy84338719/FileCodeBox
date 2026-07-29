@@ -9,10 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/logger"
 	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/utils"
+	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
 	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
 	"github.com/zy84338719/fileCodeBox/backend/internal/storage"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -295,7 +298,15 @@ func (s *Service) DeleteFile(ctx context.Context, fileID uint, userID *uint) err
 	return s.fileCodeRepo.Delete(ctx, fileID)
 }
 
-// DeleteFileByCode 根据分享码删除文件
+// DeleteFileByCode 根据分享码删除文件。
+//
+// 删除顺序（保证一致性）：
+//  1. 查所有权
+//  2. 删 DB 记录（事务原子）
+//  3. 事务提交后删物理文件（不可回滚，失败记日志不阻断）
+//  4. 扣减用户 storage 统计（best-effort，失败记日志）
+//
+// 关键：先删 DB 再删物理，避免"物理删了但 DB 没删"的孤儿反向场景。
 func (s *Service) DeleteFileByCode(ctx context.Context, code string, userID uint) error {
 	s.ensureRepository()
 
@@ -310,29 +321,28 @@ func (s *Service) DeleteFileByCode(ctx context.Context, code string, userID uint
 		return fmt.Errorf("无权限删除此分享")
 	}
 
-	// 3. 如果是文件分享，删除物理文件
-	if file.FilePath != "" && file.UUIDFileName != "" {
-		// 获取完整的文件路径
-		filePath := file.GetFilePath()
+	// 3. 删除数据库记录（事务）
+	if err := db.GetDB().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Delete(&model.FileCode{}, file.ID).Error
+	}); err != nil {
+		return fmt.Errorf("删除分享记录失败: %w", err)
+	}
 
-		// 如果有存储服务，尝试删除物理文件
-		if s.storage != nil {
+	// 4. 事务提交成功后，删除物理文件（不可回滚，放事务外，失败记日志不阻断）
+	if file.FilePath != "" && file.UUIDFileName != "" && s.storage != nil {
+		filePath := file.GetFilePath()
+		if filePath != "" {
 			if err := s.storage.DeleteFile(ctx, filePath); err != nil {
-				// 记录错误但不阻止数据库删除
-				// 可以考虑添加日志记录
+				logger.Warn("delete physical file failed", zap.String("path", filePath), zap.Error(err))
 			}
 		}
 	}
 
-	// 4. 删除数据库记录
-	if err := s.fileCodeRepo.Delete(ctx, file.ID); err != nil {
-		return fmt.Errorf("删除分享记录失败: %w", err)
-	}
-
-	// 5. 更新用户统计（减少存储空间）
+	// 5. 扣减用户 storage 统计（best-effort，失败记日志）
 	if s.userService != nil {
 		if err := s.userService.UpdateUserStats(userID, "storage", -file.Size); err != nil {
-			// 记录错误但不影响主流程
+			logger.Warn("update user storage stat failed on delete",
+				zap.Uint("user_id", userID), zap.Int64("size", file.Size), zap.Error(err))
 		}
 	}
 
