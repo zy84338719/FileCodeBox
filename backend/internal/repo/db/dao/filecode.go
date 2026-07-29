@@ -337,6 +337,23 @@ func (r *FileCodeRepository) HardDeleteByCode(ctx context.Context, userID uint, 
 		Delete(&model.FileCode{}).Error
 }
 
+// DecrementExpiredCount 原子扣减剩余次数。
+// ExpiredCount 语义：-1=无限(只 +used_count), 0=已耗尽(拒绝), >0=剩余(扣减)
+// 返回 ok=true 表示扣减成功；ok=false 表示已耗尽（未扣减）。
+// 用单条 UPDATE 的 WHERE 条件保证原子性，避免并发超卖。
+func (r *FileCodeRepository) DecrementExpiredCount(ctx context.Context, code string) (bool, error) {
+	res := r.db().WithContext(ctx).Model(&model.FileCode{}).
+		Where("code = ? AND (expired_count = -1 OR expired_count > 0)", code).
+		UpdateColumns(map[string]interface{}{
+			"expired_count": gorm.Expr("CASE WHEN expired_count > 0 THEN expired_count - 1 ELSE expired_count END"),
+			"used_count":    gorm.Expr("used_count + 1"),
+		})
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected > 0, nil
+}
+
 // UpdateViewer 记录取件人信息（IP + 时间 + 累计 +1）
 func (r *FileCodeRepository) UpdateViewer(ctx context.Context, code, viewerIP string) error {
 	now := time.Now()
