@@ -102,6 +102,15 @@ type InitResult struct {
 
 // Init 申请预签名
 func (s *Service) Init(ctx context.Context, meta InitMeta) (*InitResult, error) {
+	// 上传大小 + 类型校验（应用层）
+	maxSize := utils.GetMaxUploadSize()
+	if err := utils.CheckUploadSize(meta.FileSize, maxSize); err != nil {
+		return nil, fmt.Errorf("文件过大: 最大允许 %d 字节", maxSize)
+	}
+	if utils.IsBlockedExtension(meta.FileName, utils.DefaultBlockedExtensions()) {
+		return nil, fmt.Errorf("该文件类型禁止上传")
+	}
+
 	// 1. 生成 upload_id
 	uploadID, err := genID("up")
 	if err != nil {

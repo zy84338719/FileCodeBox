@@ -4,10 +4,22 @@ import (
 	"errors"
 	"path/filepath"
 	"strings"
+
+	"github.com/zy84338719/fileCodeBox/backend/internal/conf"
 )
 
 // ErrFileTooLarge 文件超过允许大小
 var ErrFileTooLarge = errors.New("file size exceeds limit")
+
+// GetMaxUploadSize 从全局配置获取上传大小上限。
+// 配置未初始化（测试/启动早期）返回 0 表示不限，避免 nil 解引用。
+func GetMaxUploadSize() int64 {
+	cfg := conf.GetGlobalConfig()
+	if cfg == nil {
+		return 0
+	}
+	return cfg.Upload.UploadSize
+}
 
 // defaultBlockedExtensions 默认拒绝的可执行文件扩展名
 var defaultBlockedExtensions = []string{

@@ -41,6 +41,16 @@ func GenerateCode(ctx context.Context, c *app.RequestContext) {
 		resp.NewErrorWithMessage(c, errcode.CodeInvalidParam, err.Error())
 		return
 	}
+	// 上传大小 + 类型校验（应用层）
+	maxSize := utils.GetMaxUploadSize()
+	if err := utils.CheckUploadSize(req.FileSize, maxSize); err != nil {
+		resp.NewErrorWithMessage(c, errcode.CodeInvalidParam, "文件过大")
+		return
+	}
+	if utils.IsBlockedExtension(req.FileName, utils.DefaultBlockedExtensions()) {
+		resp.NewErrorWithMessage(c, errcode.CodeInvalidParam, "该文件类型禁止上传")
+		return
+	}
 	// 过期时间：从请求读，默认 24h
 	expireAt := time.Now().Add(24 * time.Hour)
 	if req.IsSetExpireValue() && req.IsSetExpireStyle() {
