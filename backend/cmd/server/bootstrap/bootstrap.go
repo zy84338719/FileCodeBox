@@ -186,7 +186,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.db_name", "./data/filecodebox.db")
 	v.SetDefault("user.allow_user_registration", true)
 	v.SetDefault("user.require_email_verify", false)
-	v.SetDefault("observability.metrics.enabled", true)
+	v.SetDefault("observability.metrics.enabled", false)
 	v.SetDefault("observability.metrics.path", "/metrics")
 	v.SetDefault("observability.tracing.enabled", false)
 }
@@ -543,13 +543,26 @@ func customizedRegister(r *server.Hertz) {
 		CacheDuration: 7 * 24 * time.Hour,
 	})
 
-	// ===== Prometheus 指标端点 =====
+	// ===== Prometheus 指标端点（独立内网 server，默认不暴露到主端口）=====
+	// 开启时绑定 127.0.0.1:9090（可用 FCB_METRICS_ADDR 配置），供同节点 Prometheus 抓取。
+	// 主 server 不注册 /metrics，避免公网泄露内部指标。
 	if config.Observability.Metrics.Enabled {
 		metricsPath := config.Observability.Metrics.Path
 		if metricsPath == "" {
 			metricsPath = "/metrics"
 		}
-		r.GET(metricsPath, metricsHandler)
+		metricsAddr := os.Getenv("FCB_METRICS_ADDR")
+		if metricsAddr == "" {
+			metricsAddr = "127.0.0.1:9090"
+		}
+		metricsServer := server.New(server.WithHostPorts(metricsAddr))
+		metricsServer.GET(metricsPath, metricsHandler)
+		go func() {
+			logger.Info("metrics server listening", zap.String("addr", metricsAddr))
+			if err := metricsServer.Run(); err != nil {
+				logger.Error("metrics server failed", zap.Error(err))
+			}
+		}()
 	}
 
 	// ===== 深度就绪检查 =====
