@@ -72,6 +72,9 @@ type CodeMeta struct {
 // GenerateCode 生成 6 位取件码，建立 pickup_code → share_code 映射。
 // expireAt 决定 Redis key 的 TTL（应与 DB 记录过期时间对齐）。
 func (s *Service) GenerateCode(ctx context.Context, meta CodeMeta, expireAt time.Time) (string, error) {
+	if s.rdb == nil {
+		return "", errors.New("Redis 未配置，匿名取件功能不可用")
+	}
 	ttl := time.Until(expireAt)
 	if ttl <= 0 {
 		return "", errors.New("expireAt 已过期")
@@ -99,6 +102,9 @@ func (s *Service) GenerateCode(ctx context.Context, meta CodeMeta, expireAt time
 // Retrieve 按取件码取件（校验 + 扣减次数，DB 为准）。
 // 返回展示信息 CodeMeta。每次成功调用扣减一次剩余次数。
 func (s *Service) Retrieve(ctx context.Context, code, password string) (*CodeMeta, error) {
+	if s.rdb == nil {
+		return nil, errors.New("Redis 未配置，匿名取件功能不可用")
+	}
 	// 1. 取 share_code（仅映射）
 	shareCode, err := s.rdb.Get(ctx, fmt.Sprintf(keyPickupCodeMapping, code)).Result()
 	if errors.Is(err, redis.Nil) {
@@ -150,6 +156,9 @@ func (s *Service) Cancel(ctx context.Context, code string) error {
 // Peek 按取件码查询分享信息（不扣次数、不校验密码），仅供展示。
 // 返回展示信息 CodeMeta + DB 记录（含剩余次数、过期时间等）。
 func (s *Service) Peek(ctx context.Context, code string) (*CodeMeta, *model.FileCode, error) {
+	if s.rdb == nil {
+		return nil, nil, errors.New("Redis 未配置，匿名取件功能不可用")
+	}
 	shareCode, err := s.rdb.Get(ctx, fmt.Sprintf(keyPickupCodeMapping, code)).Result()
 	if errors.Is(err, redis.Nil) {
 		return nil, nil, ErrCodeNotFound
