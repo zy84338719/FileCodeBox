@@ -119,36 +119,16 @@ const handleLogin = async () => {
       if (res.code === 200) {
         localStorage.setItem('token', res.data.token)
         userStore.token = res.data.token
-        
-        try {
-          const tokenParts = res.data.token.split('.')
-          if (tokenParts.length === 3) {
-            const payload = JSON.parse(atob(tokenParts[1]))
-            
-            userStore.userInfo = {
-              id: payload.user_id || 0,
-              username: payload.username || loginForm.username,
-              nickname: payload.username || 'Administrator',
-              role: payload.role || 'admin',
-              email: '',
-              status: 1,
-              created_at: ''
-            }
-            localStorage.setItem('userRole', payload.role || 'admin')
-          }
-        } catch (e) {
-          userStore.userInfo = {
-            id: 0,
-            username: loginForm.username,
-            nickname: 'Administrator',
-            role: 'admin',
-            email: '',
-            status: 1,
-            created_at: ''
-          }
-          localStorage.setItem('userRole', 'admin')
+
+        // 登录后用 token 拉取用户信息获取 role（不再浏览器 atob 解析 JWT）
+        await userStore.fetchUserInfo()
+        if (userStore.userInfo?.role !== 'admin') {
+          ElMessage.error('非管理员账号')
+          userStore.logout()
+          return
         }
-        
+        localStorage.setItem('userRole', 'admin')
+
         ElMessage.success('登录成功')
         router.push('/admin')
       } else {
