@@ -34,9 +34,11 @@ import (
 	notifyHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/notify"
 	presignHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/presign"
 	ratelimitHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/ratelimit"
+	adminHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/admin"
 	anonHandler "github.com/zy84338719/fileCodeBox/backend/gen/http/handler/share_anonymous"
 	notifyAppService "github.com/zy84338719/fileCodeBox/backend/internal/app/notify"
 	shareService "github.com/zy84338719/fileCodeBox/backend/internal/app/share"
+	adminApp "github.com/zy84338719/fileCodeBox/backend/internal/app/admin"
 	customHandler "github.com/zy84338719/fileCodeBox/backend/internal/transport/http/handler"
 	customMw "github.com/zy84338719/fileCodeBox/backend/internal/transport/http/middleware"
 )
@@ -753,6 +755,34 @@ func initThriftIDLServices(database *gorm.DB) {
 		logger.Error("Failed to migrate file_codes table", zap.Error(err))
 	} else {
 		logger.Info("FileCode table migrated (viewer fields added)")
+	}
+
+	// 6. 注入 storage 到 admin handler 的 service（过期清理删物理文件）
+	bootstrapStorage := getBootstrapStorageService()
+	adminHandler.SetStorage(bootstrapStorage)
+
+	// 7. 启动过期文件定时清理（默认每小时，删 DB 记录 + 物理文件）
+	//    独立 admin service 实例（避免与 handler 实例竞争），注入 storage
+	cleanupSvc := adminApp.NewService()
+	cleanupSvc.SetStorage(bootstrapStorage)
+	go startExpiredFileCleanup(cleanupSvc)
+}
+
+// startExpiredFileCleanup 定时清理过期文件（DB 记录 + 物理文件）。
+// 默认每 1 小时执行一次；懒清理由取件路径覆盖（GetFileByCode 发现过期即返回错误）。
+func startExpiredFileCleanup(svc *adminApp.Service) {
+	interval := time.Hour
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	ctx := context.Background()
+	for range ticker.C {
+		if n, freed, err := svc.CleanExpiredFiles(ctx); err != nil {
+			logger.Error("expired file cleanup failed", zap.Error(err))
+		} else if n > 0 {
+			logger.Info("expired files cleaned",
+				zap.Int64("count", n),
+				zap.Int64("freed_bytes", freed))
+		}
 	}
 }
 
