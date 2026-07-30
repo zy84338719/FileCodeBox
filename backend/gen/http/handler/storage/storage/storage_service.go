@@ -8,7 +8,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	storage "github.com/zy84338719/fileCodeBox/backend/gen/http/model/storage"
-	storagesvc "github.com/zy84338719/fileCodeBox/backend/internal/app/storage"
+	storagesvc "github.com/zy84338719/fileCodeBox/backend/api/app/storage"
 )
 
 var storageService *storagesvc.Service

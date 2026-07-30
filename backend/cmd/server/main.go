@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/zy84338719/fileCodeBox/backend/cmd/server/bootstrap"
-	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/logger"
+	"github.com/zy84338719/fileCodeBox/backend/api/pkg/logger"
 	"go.uber.org/zap"
 )
 

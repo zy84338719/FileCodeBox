@@ -11,8 +11,8 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	usermodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/user"
-	userservice "github.com/zy84338719/fileCodeBox/backend/internal/app/user"
-	"github.com/zy84338719/fileCodeBox/backend/internal/conf"
+	userservice "github.com/zy84338719/fileCodeBox/backend/api/app/user"
+	"github.com/zy84338719/fileCodeBox/backend/api/conf"
 )
 
 var userService = userservice.NewService()

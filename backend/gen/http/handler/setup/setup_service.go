@@ -10,7 +10,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	setupmodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/setup"
-	setupservice "github.com/zy84338719/fileCodeBox/backend/internal/app/setup"
+	setupservice "github.com/zy84338719/fileCodeBox/backend/api/app/setup"
 )
 
 var setupService = setupservice.NewService()

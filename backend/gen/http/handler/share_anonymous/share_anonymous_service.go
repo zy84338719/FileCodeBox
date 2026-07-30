@@ -13,10 +13,10 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	anonmodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/share_anonymous"
-	anonapp "github.com/zy84338719/fileCodeBox/backend/internal/app/anonymous"
-	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/errcode"
-	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/resp"
-	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/utils"
+	anonapp "github.com/zy84338719/fileCodeBox/backend/api/app/anonymous"
+	"github.com/zy84338719/fileCodeBox/backend/api/pkg/errcode"
+	"github.com/zy84338719/fileCodeBox/backend/api/pkg/resp"
+	"github.com/zy84338719/fileCodeBox/backend/api/pkg/utils"
 )
 
 var anonSvc *anonapp.Service

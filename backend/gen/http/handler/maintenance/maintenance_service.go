@@ -7,7 +7,7 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-	adminsvc "github.com/zy84338719/fileCodeBox/backend/internal/app/admin"
+	adminsvc "github.com/zy84338719/fileCodeBox/backend/api/app/admin"
 )
 
 var adminService *adminsvc.Service

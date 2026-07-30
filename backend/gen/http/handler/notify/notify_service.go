@@ -11,9 +11,9 @@ import (
 	"gorm.io/gorm"
 
 	notifymodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/notify"
-	notifyapp "github.com/zy84338719/fileCodeBox/backend/internal/app/notify"
-	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/errcode"
-	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/resp"
+	notifyapp "github.com/zy84338719/fileCodeBox/backend/api/app/notify"
+	"github.com/zy84338719/fileCodeBox/backend/api/pkg/errcode"
+	"github.com/zy84338719/fileCodeBox/backend/api/pkg/resp"
 )
 
 var notifySvc *notifyapp.Service

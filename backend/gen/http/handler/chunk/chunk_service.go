@@ -16,10 +16,10 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"github.com/google/uuid"
 	chunkmodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/chunk"
-	chunkService "github.com/zy84338719/fileCodeBox/backend/internal/app/chunk"
-	shareService "github.com/zy84338719/fileCodeBox/backend/internal/app/share"
-	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/utils"
-	"github.com/zy84338719/fileCodeBox/backend/internal/storage"
+	chunkService "github.com/zy84338719/fileCodeBox/backend/api/app/chunk"
+	shareService "github.com/zy84338719/fileCodeBox/backend/api/app/share"
+	"github.com/zy84338719/fileCodeBox/backend/api/pkg/utils"
+	"github.com/zy84338719/fileCodeBox/backend/api/storage"
 )
 
 var chunkSvc *chunkService.Service

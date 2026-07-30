@@ -7,10 +7,10 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-	previewService "github.com/zy84338719/fileCodeBox/backend/internal/preview"
-	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao"
-	dao_preview "github.com/zy84338719/fileCodeBox/backend/internal/repo/db/dao_preview"
-	"github.com/zy84338719/fileCodeBox/backend/internal/repo/db/model"
+	previewService "github.com/zy84338719/fileCodeBox/backend/api/preview"
+	"github.com/zy84338719/fileCodeBox/backend/api/repo/db/dao"
+	dao_preview "github.com/zy84338719/fileCodeBox/backend/api/repo/db/dao_preview"
+	"github.com/zy84338719/fileCodeBox/backend/api/repo/db/model"
 )
 
 // GetPreview 获取文件预览信息

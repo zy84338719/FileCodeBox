@@ -15,9 +15,9 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"github.com/google/uuid"
 	sharemodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/share"
-	shareService "github.com/zy84338719/fileCodeBox/backend/internal/app/share"
-	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/utils"
-	"github.com/zy84338719/fileCodeBox/backend/internal/storage"
+	shareService "github.com/zy84338719/fileCodeBox/backend/api/app/share"
+	"github.com/zy84338719/fileCodeBox/backend/api/pkg/utils"
+	"github.com/zy84338719/fileCodeBox/backend/api/storage"
 )
 
 var shareSvc *shareService.Service

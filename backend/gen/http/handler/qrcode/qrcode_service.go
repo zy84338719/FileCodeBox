@@ -9,7 +9,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	qrcode "github.com/zy84338719/fileCodeBox/backend/gen/http/model/qrcode"
-	qrcodeservice "github.com/zy84338719/fileCodeBox/backend/internal/app/qrcode"
+	qrcodeservice "github.com/zy84338719/fileCodeBox/backend/api/app/qrcode"
 )
 
 // QRCodeStore 存储生成的二维码（内存存储）

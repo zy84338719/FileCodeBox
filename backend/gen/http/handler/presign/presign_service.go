@@ -10,9 +10,9 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	presignmodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/presign"
-	presignapp "github.com/zy84338719/fileCodeBox/backend/internal/app/presign"
-	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/errcode"
-	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/resp"
+	presignapp "github.com/zy84338719/fileCodeBox/backend/api/app/presign"
+	"github.com/zy84338719/fileCodeBox/backend/api/pkg/errcode"
+	"github.com/zy84338719/fileCodeBox/backend/api/pkg/resp"
 )
 
 var presignSvc *presignapp.Service

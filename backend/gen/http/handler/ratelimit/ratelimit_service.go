@@ -8,8 +8,8 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 
 	ratelimitmodel "github.com/zy84338719/fileCodeBox/backend/gen/http/model/ratelimit"
-	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/middleware"
-	"github.com/zy84338719/fileCodeBox/backend/internal/pkg/resp"
+	"github.com/zy84338719/fileCodeBox/backend/api/pkg/middleware"
+	"github.com/zy84338719/fileCodeBox/backend/api/pkg/resp"
 )
 
 var limiter *middleware.RateLimiter
